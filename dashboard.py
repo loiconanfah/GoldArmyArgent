@@ -633,9 +633,9 @@ with tab_search:
         with col1:
              st.button("🎯 Compétences", on_click=set_search, args=("Analyser mes compétences CV",), use_container_width=True)
         with col2:
-             st.button("🐍 Dev Python Québec", on_click=set_search, args=("Développeur Python à Québec",), use_container_width=True)
+             st.button("🎓 Stage Informatique", on_click=set_search, args=("Stage en informatique (Développement, IA, Data)",), use_container_width=True)
         with col3:
-             st.button("📊 Data Scientist", on_click=set_search, args=("Data Scientist à Montréal",), use_container_width=True)
+             st.button("🏢 Emploi Junior", on_click=set_search, args=("Emploi Junior Informatique",), use_container_width=True)
 
     # Chat input (Always visible at bottom)
     if prompt := st.chat_input("Ex: Développeur Python à Québec..."):

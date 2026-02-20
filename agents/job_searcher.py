@@ -18,7 +18,7 @@ class JobSearchAgent(BaseAgent):
         """Initialise l'agent job searcher."""
         kwargs.setdefault("agent_type", "job_searcher")
         kwargs.setdefault("name", "JobSearcher")
-        kwargs.setdefault("temperature", 0.4)  # Plus précis pour le matching
+        kwargs.setdefault("temperature", 0.2)  # Encore plus précis pour le matching strict
         kwargs.setdefault("max_tokens", 3072)
         super().__init__(**kwargs)
     
@@ -188,6 +188,12 @@ class JobSearchAgent(BaseAgent):
                     
                     filters = action_plan["filters"]
                     keywords = " ".join(action_plan.get("keywords", ["informatique"]))
+                    
+                    # Force "Stage" keyword if requested
+                    if filters.get("job_type", "").lower() == "stage":
+                         if "stage" not in keywords.lower():
+                             keywords = f"Stage {keywords}"
+                    
                     location = filters.get("location", "Québec")
                     
                     # Initialiser le client avec la clé configurée
@@ -218,10 +224,21 @@ class JobSearchAgent(BaseAgent):
                     
                     # Utiliser les Target Roles du CV pour la query si dispos, sinon keywords
                     cv_roles = action_plan.get("cv_profile", {}).get("target_roles", [])
+                    
+                    # Base Query Construction
                     if cv_roles:
-                        query = cv_roles[0] # Prendre le premier rôle cible
+                        base_query = cv_roles[0] # Prendre le premier rôle cible
                     else:
-                        query = " ".join(action_plan.get("keywords", ["informatique"]))
+                        base_query = " ".join(action_plan.get("keywords", ["informatique"]))
+                    
+                    # Force "Stage" keyword for JSearch
+                    if action_plan["filters"].get("job_type", "").lower() == "stage":
+                        query = f"Stage {base_query}"
+                        # JSearch works better with "Intern" sometimes depending on region, but "Stage" for Quebec is good.
+                        if "intern" not in query.lower() and "stage" not in query.lower():
+                             query = f"Stage {base_query}"
+                    else:
+                        query = base_query
                         
                     location = action_plan["filters"].get("location", "Québec")
                     
@@ -239,13 +256,15 @@ class JobSearchAgent(BaseAgent):
                     )
                     
                     if jsearch_jobs:
-                        logger.info(f"JSearch: {len(jsearch_jobs)} jobs retrieved")
-                        all_jobs.extend(jsearch_jobs)
+                         logger.info(f"JSearch: {len(jsearch_jobs)} jobs retrieved")
+                         all_jobs.extend(jsearch_jobs)
                     else:
                         logger.warning("JSearch: 0 results.")
                         
                 except Exception as e:
                     logger.warning(f"JSearch Error: {e}")
+
+
 
             # 1) Recherche Web Scraping (Fallback ou Complément)
             try:
@@ -273,6 +292,66 @@ class JobSearchAgent(BaseAgent):
             # Si aucune offre trouvée au total
             if not all_jobs:
                 return []
+
+            # --- FILTRAGE STRICT POST-SEARCH (GLOBAL) ---
+            # Appliqué à toutes les sources (Jooble, JSearch, Web)
+            
+            job_type_filter = action_plan["filters"].get("job_type", "").lower()
+            keywords_text = " ".join(action_plan.get("keywords", [])).lower()
+            raw_desc = action_plan.get("description", "").lower() # Raw user query
+            
+            is_internship_or_junior = any(k in job_type_filter for k in ["stage", "intern", "junior"]) or \
+                                      any(k in keywords_text for k in ["stage", "junior"]) or \
+                                      any(k in raw_desc for k in ["stage", "junior"])
+            
+            if is_internship_or_junior:
+                logger.info("🕵️ Mode Stage/Junior activé: Filtrage strict des seniors...")
+                filtered_jobs = []
+                
+                # Use regex to strictly match whole words
+                import re
+                
+                non_intern_titles = [r"\bsenior\b", r"\bprincipal\b", r"\blead\b", r"\bstaff\b", r"\bmanager\b", r"\barchitect\b", r"\bhead of\b", r"\bdirector\b", r"\bexpert\b", r"\bchef\b", r"\bsr\.?\b"]
+                intern_keywords = [r"\bstage\b", r"\bstagiaire\b", r"\bintern\b", r"\binternship\b", r"\bco-op\b", r"\bstudent\b", r"\bétudiant\b", r"\betudiant\b", r"\bjunior\b", r"\bsummer\b", r"\bpfe\b", r"\bentry.?level\b", r"\bdébutant\b", r"\bgrad\b", r"\bgraduate\b"] 
+                
+                for job in all_jobs:
+                    title = job.get("title", "").lower()
+                    desc = job.get("description", "").lower()
+                    
+                    # 1. Exclusion Seniors using regex
+                    if any(re.search(bad, title) for bad in non_intern_titles):
+                        logger.debug(f"Skipping Senior role: {job.get('title')}")
+                        continue
+                        
+                    # 2. Inclusion Stricte et intelligente
+                    in_title = any(re.search(k, title) for k in intern_keywords)
+                    in_desc = any(re.search(k, desc) for k in intern_keywords)
+                    
+                    if not in_title:
+                        # Le titre ne mentionne pas "Stage/Intern". C'est TRÈS SUSPECT.
+                        # Cela peut être une pollution de description (autres offres suggérées en bas de page).
+                        
+                        # A. S'il n'y a pas non plus le mot dans la description -> Poubelle
+                        if not in_desc:
+                            logger.debug(f"Skipping unclear role (no intern keyword anywhere): {job.get('title')}")
+                            continue
+                            
+                        # B. Si le mot y est, mais qu'il demande des années d'expérience (ex: "5+ years", "3 ans") -> Poubelle
+                        # Regex : "2 à 99" + optionnel "+" + "ans/years"
+                        exp_match = re.search(r"\b([2-9]|[1-9][0-9])\+?\s*(?:ans?|years?)\b(?!\s*(?:d'études?|of university|of studies|of college|bachelor))", desc)
+                        if exp_match:
+                            logger.debug(f"Skipping non-intern title '{job.get('title')}' due to exp requirement: {exp_match.group(0)}")
+                            continue
+                            
+                        # C. On vérifie la densité du mot "stage" ou "intern" pour prouver que ce n'est pas juste un lien en bas de page
+                        # Si le mot n'apparait qu'une fois dans une tres longue description, c'est probablement du bruit.
+                        # Mais restons prudents, on l'accepte si on est arrivé ici.
+
+                    filtered_jobs.append(job)
+                
+                if len(filtered_jobs) < len(all_jobs):
+                    logger.warning(f"🧹 Filtrage terminé: {len(all_jobs)} -> {len(filtered_jobs)} offres pertinentes conservées.")
+                    all_jobs = filtered_jobs
 
             logger.info(f"Total combined: {len(all_jobs)} results. Enriching...")
             
@@ -441,25 +520,33 @@ Réponds UNIQUEMENT avec un JSON structuré."""
         # 2. Trier par score décroissant
         matched.sort(key=lambda x: x["match_score"], reverse=True)
         
-        # 3. Générer justification LLM UNIQUEMENT pour les Top 5
-        for i, job in enumerate(matched):
-            if i < 5:
-                # Si le score est très bas, on évite de demander au LLM de justifier "pourquoi ça matche"
-                # On lui demande plutôt "pourquoi ça ne matche pas" ou on reste générique
-                try:
-                    justification = await self._get_match_justification(job, cv_profile)
-                    job["match_justification"] = justification
-                except Exception:
-                    job["match_justification"] = "Analyse détaillée non disponible."
-            else:
-                # Justification générique pour les autres
-                skills_count = len(job["matched_skills"])
-                if skills_count > 0:
-                     job["match_justification"] = f"Correspondance partielle ({skills_count} compétences communes)."
-                else:
-                     job["match_justification"] = "Faible correspondance détectée."
+        # --- NEW LAYER 3: DEEP AI EVALUATION FOR NOISE CULLING ---
+        # Si le profil est vide (pas de CV fourni), on garde tout mais on justifie
+        valid_matched = []
+        import asyncio
+        for job in matched:
+            # Si le score heuristique est DÉSASTREUX (ex: < 35), on le lâche direct sans payer d'API
+            if score < 30 and cv_profile.get("skills"):
+                 logger.debug(f"🗑️ Dropping very low heuristic score job: {job.get('title')} (Score: {score})")
+                 continue
+                 
+            try:
+                justification = await self._get_match_justification(job, cv_profile)
+                job["match_justification"] = justification
+                
+                # Le LLM est instruit à commencer sa justification par [OUI] ou [NON]
+                if "[NON]" in justification.upper() or "ne correspond pas" in justification.lower() or "incompatible" in justification.lower():
+                     logger.debug(f"🗑️ AI Deep Reject: {job.get('title')} - {justification}")
+                     # On le drop complètement s'il y a un CV (sinon on garde)
+                     if cv_profile.get("skills"):
+                         continue
+                         
+            except Exception:
+                job["match_justification"] = "Analyse détaillée non disponible."
+                
+            valid_matched.append(job)
         
-        return matched
+        return valid_matched
     
     
     def _calculate_match_score(self, job: Dict, cv_profile: Dict) -> int:
@@ -556,17 +643,25 @@ Réponds UNIQUEMENT avec un JSON structuré."""
     
     async def _get_match_justification(self, job: Dict, cv_profile: Dict) -> str:
         """Génère une justification du match avec le LLM."""
-        prompt = f"""Explique en 1-2 phrases pourquoi ce profil correspond (ou non) à cette offre:
+        prompt = f"""Tu es un recruteur expert impitoyable.
+Évalue si le candidat suivant A LES COMPÉTENCES ET L'EXPÉRIENCE REQUISES pour le poste.
+Si le poste demande 5 ans d'expérience et le candidat en a 0, le match est [NON].
+Si le poste demande Azure et IA, et le candidat a seulement Python basique, c'est [NON].
 
-Profil:
-- Compétences: {', '.join(cv_profile.get('skills', [])[:5])}
+Ton analyse DOIT commencer obligatoirement par "[OUI]" si le profil est qualifié, ou "[NON]" si le profil est disqualifié (manque d'expérience évidente, etc.).
+Ensuite, justifie en 1 ou 2 phrases concises.
+
+Profil du Candidat:
+- Compétences: {', '.join(cv_profile.get('skills', [])[:10])}
 - Expérience: {cv_profile.get('experience_years', 0)} ans
+- Postes visés: {', '.join(cv_profile.get('target_roles', []))}
 
-Offre:
-- Poste: {job.get('title', 'N/A')}
-- Compétences requises: {', '.join(job.get('required_skills', [])[:5])}
-
-Sois concis et factuel."""
+Poste:
+- Titre: {job.get('title', 'N/A')}
+- Description courte: {job.get('description', '')[:200]}...
+- Compétences requises de l'offre: {', '.join(job.get('required_skills', [])[:10])}
+- Expérience de l'offre (généralement estimée): {job.get('required_experience', 'Non spécifiée')} ans
+"""
         
         return await self.generate_response(prompt)
     

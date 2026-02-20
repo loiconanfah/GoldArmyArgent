@@ -236,8 +236,23 @@ class JobWebSearcher:
             
             # Description
             desc_elem = soup.find('div', {'property': 'description'})
+            desc_text = ""
             if desc_elem:
-                job['description'] = desc_elem.get_text(strip=True)
+                desc_text = desc_elem.get_text(strip=True)
+                
+            # Comment postuler (How to apply - pour les emails)
+            howto_elem = soup.find('div', id='howtoapply') or soup.find(id=lambda x: x and 'howtoapply' in x.lower())
+            if howto_elem:
+                desc_text += "\n\nComment postuler:\n" + howto_elem.get_text(separator=' ', strip=True)
+                
+            # Email links explicitly
+            email_links = soup.find_all('a', href=lambda href: href and href.startswith('mailto:'))
+            for link in email_links:
+                email = link['href'].replace('mailto:', '').split('?')[0]
+                desc_text += f" Email: {email}"
+                
+            if desc_text:
+                job['description'] = desc_text
             
             # Compétences
             desc_text = job.get('description', '').lower()
