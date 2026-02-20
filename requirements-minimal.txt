@@ -1,0 +1,27 @@
+# Dépendances minimales pour démarrer GoldArmyArgent
+# Installer avec: python -m pip install -r requirements-minimal.txt
+
+# Core - Absolument nécessaire
+ollama
+python-dotenv
+pydantic
+pydantic-settings
+
+# Async & Networking - Nécessaire
+aiohttp
+httpx
+
+# CLI - Nécessaire pour l'interface
+rich
+typer
+
+# Utilities - Nécessaire
+pyyaml
+loguru
+tenacity
+jinja2
+
+# Optionnel (à installer plus tard si besoin)
+# chromadb  # Pour mémoire vectorielle
+# redis  # Pour cache
+# streamlit  # Pour dashboard

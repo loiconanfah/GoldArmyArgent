@@ -1,0 +1,96 @@
+---
+# Configuration des agents spécialisés
+
+agents:
+  researcher:
+    name: "Researcher Agent"
+    description: "Agent spécialisé dans la recherche et l'analyse d'informations"
+    model: "openrouter/free"
+    max_tokens: 4096
+    temperature: 0.7
+    capabilities:
+      - web_search
+      - data_analysis
+      - information_synthesis
+    tools:
+      - web_search
+      - file_reader
+    
+  coder:
+    name: "Coder Agent"
+    description: "Agent développeur capable d'écrire et débugger du code"
+    model: "qwen/qwen-2.5-coder-32b-instruct:free" # Keep specific coder if possible
+    max_tokens: 8192
+    temperature: 0.2
+    capabilities:
+      - code_generation
+      - code_review
+      - debugging
+      - optimization
+    tools:
+      - code_executor
+      - file_ops
+      - git_ops
+    
+  planner:
+    name: "Planner Agent" # LE COMMANDANT
+    description: "Agent commandant et planificateur pour la stratégie globale"
+    model: "deepseek/deepseek-r1:free" # Keep specific reasoner
+    max_tokens: 8192
+    temperature: 0.3
+    capabilities:
+      - task_decomposition
+      - strategy_creation
+      - workflow_optimization
+    tools:
+      - task_analyzer
+      - dependency_mapper
+    
+  analyst:
+    name: "Analyst Agent"
+    description: "Agent analyste pour traiter et interpréter des données"
+    model: "openrouter/free"
+    max_tokens: 4096
+    temperature: 0.4
+    capabilities:
+      - data_processing
+      - pattern_recognition
+      - report_generation
+    tools:
+      - data_processor
+      - visualizer
+    
+  executor:
+    name: "Executor Agent"
+    description: "Agent exécuteur pour réaliser des actions concrètes"
+    model: "openrouter/free"
+    max_tokens: 2048
+    temperature: 0.2
+    capabilities:
+      - command_execution
+      - process_management
+      - monitoring
+    tools:
+      - command_runner
+      - process_monitor
+      - file_ops
+
+  job_searcher:
+    name: "Job Search Agent"
+    description: "Agent spécialisé recherche emploi"
+    model: "openrouter/free"
+    max_tokens: 4096
+    temperature: 0.7
+    tools:
+      - web_searcher
+
+# Configuration globale des agents
+global:
+  max_concurrent_agents: 5
+  default_timeout: 300
+  retry_policy:
+    max_retries: 3
+    backoff_factor: 2
+  memory:
+    max_history: 100
+    context_window: 10
