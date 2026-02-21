@@ -37,11 +37,16 @@ class JobSearchAgent(BaseAgent):
         # Extraire les informations
         cv_text = task.get("cv_text", "")
         filters = task.get("filters", {})
+        query = task.get("query", "") or task.get("description", "")
         
         # Si les filtres sont vides, essayer d'extraire depuis la description
-        if not filters and task.get("description"):
-            logger.info("Extracting criteria from description...")
-            filters = await self._extract_criteria_from_text(task.get("description"))
+        if not filters and query:
+            logger.info("Extracting criteria from query...")
+            filters = await self._extract_criteria_from_text(query)
+            
+        # Injecter le nombre de résultats demandé si présent
+        if task.get("nb_results"):
+            filters["limit"] = int(task.get("nb_results"))
             
         # Analyser le CV avec le LLM
         cv_analysis = await self._analyze_cv(cv_text) if cv_text else {}
@@ -587,6 +592,8 @@ Réponds UNIQUEMENT avec un JSON structuré."""
         job_desc = job.get("description", "").lower()
         job_skills = set(s.lower() for s in job.get("required_skills", []))
         
+        skill_match = 0.0
+        
         # Si pas de skills explicites, on cherche les skills du CV dans la description
         if not job_skills and job_desc:
             found_desc_skills = [s for s in cv_skills if s in job_desc]
@@ -597,31 +604,43 @@ Réponds UNIQUEMENT avec un JSON structuré."""
             # Intersection pondérée
             common = cv_skills & job_skills
             if not job_skills:
-                skill_match = 0
+                skill_match = 0.0
             else:
                 skill_match = len(common) / len(job_skills)
             score += min(skill_match * 35, 35)
             
         total_weight += 35
 
-        # 3. Expérience (20 points)
+        # 3. Expérience (20 points) & Matching Transversal (Pilier 5)
         cv_exp = cv_profile.get("experience_years", 0)
         # Tenter d'extraire l'expérience de la description si non structurée
         job_exp = job.get("required_experience", 0)
         if job_exp == 0 and job_desc:
              job_exp = self._extract_experience(job_desc)
         
-        # Logique de pénalité/bonus seniorité
+        # Logique de pénalité/bonus seniorité + Transversal Matching
+        transversal_bonus = 0
         if cv_exp >= job_exp:
             score += 20 # Qualifié
         elif cv_exp >= job_exp * 0.7:
             score += 10 # Presque qualifié
         elif job_exp > 5 and cv_exp < 2:
-            score -= 10 # Junior postulant à Senior (Pénalité)
+            score -= 10 # Junior postulant à Senior (Pénalité fatale)
+        elif job_exp >= 2 and cv_exp < 2:
+            # --- PHASE 5: Transversal Match ---
+            # Junior applying to Mid-level (2-4 years)
+            # If they have high skill match, we give them a "Transversal Bonus" to advocate for them
+            if skill_match >= 0.6:
+                 transversal_bonus = 8
+                 score += transversal_bonus
+                 logger.debug(f"[Transversal] Boosting junior applied to mid-level due to strong skills (+{transversal_bonus})")
+            else:
+                 score += 0 # Pas assez d'xp et pas de skills exceptionnels
         else:
             score += 5 # Tentable
             
         total_weight += 20
+        job["transversal_match_applied"] = transversal_bonus > 0
         
         # 4. Localisation (10 points)
         if job.get("location", "").lower() in ["québec", "montreal", "remote"] or "télétravail" in job.get("location", "").lower():
@@ -643,7 +662,24 @@ Réponds UNIQUEMENT avec un JSON structuré."""
     
     async def _get_match_justification(self, job: Dict, cv_profile: Dict) -> str:
         """Génère une justification du match avec le LLM."""
-        prompt = f"""Tu es un recruteur expert impitoyable.
+        
+        # --- PHASE 5: The AI Plea (Transversal Matching) ---
+        if job.get("transversal_match_applied", False):
+            prompt = f"""Tu es un agent d'élite de placement (Agent GoldArmy).
+Ton client a un profil Junior ({cv_profile.get('experience_years', 0)} ans), mais postule à une offre qui demande probablement plus d'expérience. 
+Cependant, il possède de fortes compétences techniques communes avec l'offre.
+Ta mission: Rédige un PLAIDOYER de 2-3 phrases démontrant pourquoi ses compétences acquises ({', '.join(job.get('matched_skills', [])[:5])}) compensent son manque d'années d'expérience. 
+Commence par "[MATCH TRANSVERSAL]". Sois persuasif pour convaincre le recruteur de lui donner sa chance.
+
+Profil du Candidat:
+- Compétences: {', '.join(cv_profile.get('skills', [])[:10])}
+
+Poste:
+- Titre: {job.get('title', 'N/A')}
+- Description courte: {job.get('description', '')[:200]}...
+"""
+        else:
+            prompt = f"""Tu es un recruteur expert impitoyable.
 Évalue si le candidat suivant A LES COMPÉTENCES ET L'EXPÉRIENCE REQUISES pour le poste.
 Si le poste demande 5 ans d'expérience et le candidat en a 0, le match est [NON].
 Si le poste demande Azure et IA, et le candidat a seulement Python basique, c'est [NON].

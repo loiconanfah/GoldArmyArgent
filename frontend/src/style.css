@@ -7,3 +7,9 @@
     @apply bg-slate-900 text-slate-100 min-h-screen font-sans antialiased;
   }
 }
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-surface-900/60 backdrop-blur-xl border border-surface-700/50 shadow-2xl;
+  }
+}

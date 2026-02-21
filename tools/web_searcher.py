@@ -394,63 +394,61 @@ class JobWebSearcher:
         return jobs
 
     async def _search_general_web(self, keywords: str, location: str, max_results: int) -> List[Dict[str, Any]]:
-        """Recherche via Google HTML avec scraping individuel des offres."""
-        logger.info(f"🔎 Recherche Google HTML: {keywords} à {location}")
+        """Recherche via DuckDuckGo Lite (HTML) avec scraping individuel des offres."""
+        logger.info(f"🔎 Recherche DDG Lite: {keywords} à {location}")
         jobs = []
         
         # Requêtes ciblées pour trouver des offres spécifiques
-        sites = [
-            ("Indeed", f'site:ca.indeed.com/rc/clk "{keywords}" "{location}"'),
-            ("LinkedIn", f'site:ca.linkedin.com/jobs/view "{keywords}" "{location}"'), 
-            ("JobBank", f'site:jobbank.gc.ca/job "{keywords}" "{location}"')
+        queries = [
+            f'site:ca.indeed.com/rc/clk "{keywords}" "{location}"',
+            f'site:ca.linkedin.com/jobs/view "{keywords}" "{location}"',
+            f'site:jobbank.gc.ca/job "{keywords}" "{location}"'
         ]
         
         loop = asyncio.get_event_loop()
         
-        def _scrape_google(source_name, query_str):
+        def _scrape_ddg(query_str):
             found_jobs = []
             try:
-                q_enc = urllib.parse.quote_plus(query_str)
-                url = f"https://www.google.com/search?q={q_enc}&num=20&hl=fr"
+                url = "https://lite.duckduckgo.com/lite/"
+                data = urllib.parse.urlencode({'q': query_str, 'kl': 'ca-fr'}).encode('utf-8')
                 
                 headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Referer": "https://lite.duckduckgo.com/"
                 }
 
-                req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req, context=ssl_context, timeout=10) as response:
+                req = urllib.request.Request(url, data=data, headers=headers, method='POST')
+                with urllib.request.urlopen(req, context=ssl_context, timeout=15) as response:
                     html = response.read().decode('utf-8')
                 
                 from bs4 import BeautifulSoup
                 soup = BeautifulSoup(html, 'html.parser')
                 
-                results = soup.select('div.tF2Cxc') 
-                if not results:
-                     results = soup.select('div.g')
+                # Les liens sont dans des <a> avec class result-link
+                link_tags = soup.find_all('a', class_='result-link')
+                snippet_tags = soup.find_all('td', class_='result-snippet')
                 
-                logger.debug(f"  [{source_name}] Raw blocks found: {len(results)}")
+                source_name = "Web"
+                if "indeed" in query_str.lower(): source_name = "Indeed"
+                if "linkedin" in query_str.lower(): source_name = "LinkedIn"
+                if "jobbank" in query_str.lower(): source_name = "JobBank"
 
-                for i, res in enumerate(results):
+                logger.debug(f"  [{source_name}] Raw blocks found: {len(link_tags)}")
+
+                for i, link_tag in enumerate(link_tags):
                     if len(found_jobs) >= 5: break
                     
-                    link_tag = res.find('a', href=True)
-                    if not link_tag: continue
+                    href = link_tag.get('href', '')
+                    title = link_tag.get_text(strip=True)
                     
-                    href = link_tag['href']
-                    title_tag = res.find('h3')
-                    title = title_tag.get_text(strip=True) if title_tag else "Offre"
-                    
-                    snippet_tag = res.select_one('div.VwiC3b') 
-                    snippet = snippet_tag.get_text(strip=True) if snippet_tag else ""
+                    snippet = ""
+                    if i < len(snippet_tags):
+                        snippet = snippet_tags[i].get_text(strip=True)
                     
                     # Filtres stricts - exclure les pages de recherche
                     if not href.startswith("http"): continue
-                    if "google.com" in href: continue
-                    
-                    # Filtrer les URLs de recherche généraux
-                    if any(path in href.lower() for path in ['/jobs?', '/search?', '/jobsearch?', '/jobs/search', '/j2jk']):
-                        logger.debug(f"  Ignoring search page: {href}")
-                        continue
                     
                     # Nettoyage du titre
                     clean_title = title
@@ -468,7 +466,7 @@ class JobWebSearcher:
                                 company = company_part.capitalize()
                     
                     job = {
-                        "id": f"gg-{source_name}-{i}",
+                        "id": f"ddg-{source_name}-{i}",
                         "title": clean_title,
                         "company": company,
                         "location": location,
@@ -482,14 +480,14 @@ class JobWebSearcher:
                     found_jobs.append(job)
                     
             except Exception as e:
-                logger.error(f"⚠️ Erreur Google Scraper ({source_name}): {e}")
+                logger.error(f"⚠️ Erreur DDG Scraper: {e}")
             
             return found_jobs
 
         # Exécution parallèle
         tasks = []
-        for src, q in sites:
-            tasks.append(loop.run_in_executor(None, _scrape_google, src, q))
+        for q in queries:
+            tasks.append(loop.run_in_executor(None, _scrape_ddg, q))
             
         results_list = await asyncio.gather(*tasks)
         

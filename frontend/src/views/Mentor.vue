@@ -1,9 +1,12 @@
 <script setup>
+import { useRouter } from 'vue-router'
 import { 
   AcademicCapIcon, 
   BoltIcon, 
   CodeBracketIcon 
 } from '@heroicons/vue/24/outline'
+
+const router = useRouter()
 
 const mentorFeatures = [
   {
@@ -11,23 +14,31 @@ const mentorFeatures = [
     desc: 'Uploade ton CV complet. L\'IA va agir comme du Senior Management et déceler tes failles avant même que tu postules.',
     icon: BoltIcon,
     color: 'from-purple-500 to-fuchsia-500',
-    locked: false
+    locked: false,
+    actionPrompt: 'Fais un audit de mon CV'
+  },
+  {
+    title: 'Générateur de Portfolio',
+    desc: 'L\'Agent détecte tes compétences et ton expérience et génère sur mesure le code source de ton propre portfolio Web.',
+    icon: CodeBracketIcon,
+    color: 'from-emerald-500 to-teal-500',
+    locked: false,
+    actionPrompt: 'Génère mon portfolio web'
   },
   {
     title: 'Simulateur d\'Entretien',
     desc: 'Passe un examen blanc oral/écrit ultra-réaliste. L\'IA prend le rôle du CTO de la boîte que tu vises et te questionne.',
     icon: AcademicCapIcon,
     color: 'from-blue-500 to-cyan-500',
-    locked: false
-  },
-  {
-    title: 'Générateur de Projets',
-    desc: 'L\'Agent détecte ce qui manque à ton CV (ex: Docker) et génère sur mesure le code de départ d\'un projet GitHub à réaliser ce week-end.',
-    icon: CodeBracketIcon,
-    color: 'from-emerald-500 to-teal-500',
     locked: true
   }
 ]
+
+const handleFeatureClick = (feature) => {
+    if (!feature.locked && feature.actionPrompt) {
+        router.push({ name: 'AgentChat', query: { prompt: feature.actionPrompt }})
+    }
+}
 </script>
 
 <template>
@@ -64,7 +75,9 @@ const mentorFeatures = [
           </div>
           
           <div class="relative z-10 mt-auto pt-4 border-t border-slate-700 flex justify-between items-center">
-             <button :disabled="feature.locked" :class="[
+             <button 
+                @click="handleFeatureClick(feature)"
+                :disabled="feature.locked" :class="[
                'px-4 py-2 font-bold rounded-lg transition-colors text-sm w-full text-center',
                feature.locked ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-100/10 text-white hover:bg-slate-100/20'
              ]">

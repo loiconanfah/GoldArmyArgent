@@ -1,4 +1,5 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import { 
   ChartBarIcon, 
   EnvelopeIcon, 
@@ -7,27 +8,45 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const columns = [
-  { id: 'todo', title: 'À Postuler', count: 2, icon: EnvelopeIcon, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-  { id: 'applied', title: 'Candidatures Envoyées', count: 5, icon: ChartBarIcon, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-  { id: 'followup', title: 'Relance Requise', count: 1, icon: ExclamationCircleIcon, color: 'text-rose-400', bg: 'bg-rose-400/10' },
-  { id: 'interview', title: 'Entretiens', count: 1, icon: ArrowPathIcon, color: 'text-emerald-400', bg: 'bg-emerald-400/10' }
+  { id: 'todo', title: 'À Postuler', icon: EnvelopeIcon, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+  { id: 'applied', title: 'Candidatures Envoyées', icon: ChartBarIcon, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+  { id: 'followup', title: 'Relance Requise', icon: ExclamationCircleIcon, color: 'text-rose-400', bg: 'bg-rose-400/10' },
+  { id: 'interview', title: 'Entretiens', icon: ArrowPathIcon, color: 'text-emerald-400', bg: 'bg-emerald-400/10' }
 ]
 
-const crmCards = {
-  'todo': [
-     { id: 1, company: 'Stripe', role: 'Integration Engineer Intern', date: 'Ajouté hier' },
-     { id: 2, company: 'Shopify', role: 'Backend Developer (Junior)', date: 'Ajouté il y a 3j' }
-  ],
-  'applied': [
-     { id: 3, company: 'TechCorp QC', role: 'Stage Full-Stack', date: 'Envoyé le 12/03' }
-  ],
-  'followup': [
-     { id: 4, company: 'Innovatech', role: 'Développeur Logiciel', date: 'J+8 - Relance IA prête' }
-  ],
-  'interview': [
-     { id: 5, company: 'DataMinds Inc', role: 'Internship ML', date: 'Call RH Ven. 15h' }
-  ]
+const crmCards = ref({
+  'todo': [],
+  'applied': [],
+  'followup': [],
+  'interview': []
+})
+
+const isLoading = ref(true)
+
+const fetchCrmData = async () => {
+    try {
+        const res = await fetch('http://localhost:8000/api/crm')
+        const json = await res.json()
+        const rawData = json.data || []
+        
+        // Reset and group by status
+        const grouped = { todo: [], applied: [], followup: [], interview: [] }
+        rawData.forEach(item => {
+            if (grouped[item.status]) {
+                grouped[item.status].push(item)
+            }
+        })
+        crmCards.value = grouped
+    } catch(e) {
+        console.error("Failed to fetch CRM data", e)
+    } finally {
+        isLoading.value = false
+    }
 }
+
+onMounted(() => {
+    fetchCrmData()
+})
 </script>
 
 <template>

@@ -1,123 +1,184 @@
 <script setup>
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import {
-  HomeIcon,
-  ChatBubbleBottomCenterTextIcon,
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { 
+  HomeIcon, 
+  MapIcon,
+  ChatBubbleBottomCenterTextIcon, 
+  UserGroupIcon, 
   BriefcaseIcon,
-  AcademicCapIcon,
-  ChartBarIcon
+  Cog6ToothIcon,
+  Bars3Icon,
+  XMarkIcon,
+  MagnifyingGlassIcon,
+  BellIcon
 } from '@heroicons/vue/24/outline'
 
-const router = useRouter()
 const route = useRoute()
+const currentRoute = computed(() => route.path)
+const isMobileMenuOpen = ref(false)
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon },
-  { name: 'Agent Chat', href: '/chat', icon: ChatBubbleBottomCenterTextIcon },
-  { name: 'Opportunités', href: '/opportunities', icon: BriefcaseIcon },
-  { name: 'Mentor IA', href: '/mentor', icon: AcademicCapIcon },
-  { name: 'CRM Candidatures', href: '/crm', icon: ChartBarIcon },
+  { name: 'Dashboard', href: '/', icon: HomeIcon, exact: true },
+  { name: 'Sniper', href: '/opportunities', icon: MapIcon },
+  { name: 'Mentor IA', href: '/chat', icon: ChatBubbleBottomCenterTextIcon },
+  { name: 'CRM Candidatures', href: '/crm', icon: BriefcaseIcon },
+  { name: 'Réseau', href: '/network', icon: UserGroupIcon },
 ]
-
-const currentRoute = computed(() => route.path)
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-900 text-slate-200 flex">
-    
-    <!-- Sidebar -->
-    <aside class="w-64 bg-slate-800 border-r border-slate-700 hidden md:flex flex-col">
-      <!-- Logo -->
-      <div class="h-16 flex items-center px-6 border-b border-slate-700">
-        <span class="text-2xl mr-3" role="img" aria-label="helmet">🪖</span>
-        <h1 class="text-lg font-extrabold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent tracking-tight">
-          GoldArmy Agent
-        </h1>
+  <div class="min-h-screen bg-surface-950 text-slate-200 flex font-sans selection:bg-gold-500/30">
+    <!-- Mobile Menu Overlay -->
+    <div v-show="isMobileMenuOpen" class="fixed inset-0 bg-surface-950/80 backdrop-blur-sm z-40 md:hidden" @click="isMobileMenuOpen = false"></div>
+
+    <!-- Sidebar (Left Col) -->
+    <aside :class="[
+      'fixed inset-y-0 left-0 bg-surface-900 border-r border-surface-800 w-64 flex flex-col z-50 transition-transform duration-300 ease-in-out md:translate-x-0 md:static',
+      isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+    ]">
+      <!-- Logo Section -->
+      <div class="h-16 flex items-center justify-between px-6 border-b border-surface-800 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-amber-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
+                <span class="text-sm leading-none" role="img" aria-label="helmet">🪖</span>
+            </div>
+            <h1 class="text-lg font-display font-bold text-white tracking-tight">
+                GoldArmy
+            </h1>
+        </div>
+        <!-- Close Mobile Menu -->
+        <button @click="isMobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white">
+            <XMarkIcon class="w-6 h-6" />
+        </button>
       </div>
       
       <!-- Nav Links -->
-      <nav class="flex-1 px-4 py-6 space-y-2">
-        <router-link
-          v-for="item in navigation"
-          :key="item.name"
+      <nav class="flex-1 px-4 py-8 space-y-1 overflow-y-auto">
+        <p class="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Core</p>
+        
+        <router-link 
+          v-for="item in navigation" 
+          :key="item.name" 
           :to="item.href"
-          :class="[
-            item.href === currentRoute
-              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-sm'
-              : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200 border border-transparent',
-            'group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ease-in-out'
-          ]"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
+          :class="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-surface-800'"
         >
-          <component 
-            :is="item.icon" 
-            :class="[
-              item.href === currentRoute ? 'text-amber-500' : 'text-slate-500 group-hover:text-slate-300',
-              'flex-shrink-0 -ml-1 mr-3 h-6 w-6 transition-colors duration-200'
-            ]" 
-            aria-hidden="true" 
-          />
+          <!-- Active Indicator dot -->
+          <div v-if="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href))" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+          
+          <component :is="item.icon" class="w-5 h-5 shrink-0" :class="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'" />
           {{ item.name }}
-          <span v-if="item.name === 'Mentor IA'" class="ml-auto bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">Pro</span>
+          
+          <div v-if="item.name === 'Mentor IA'" class="ml-auto flex items-center justify-center">
+             <span class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[9px] uppercase font-black px-1.5 py-0.5 rounded-full shadow-lg shadow-indigo-500/30">Pro</span>
+          </div>
         </router-link>
       </nav>
 
-      <!-- User Profile mock -->
-      <div class="p-4 border-t border-slate-700">
-        <div class="flex items-center gap-3">
-          <div class="h-10 w-10 rounded-full bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-slate-900 font-bold">
-            YD
-          </div>
-          <div>
-            <p class="text-sm font-medium text-slate-200">Yves D.</p>
-            <p class="text-xs text-slate-500">Étudiant IA</p>
-          </div>
-        </div>
+      <!-- Settings / Footer Nav -->
+      <div class="p-4 border-t border-surface-800 shrink-0">
+         <router-link 
+          to="/settings"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-slate-200 hover:bg-surface-800 transition-all group"
+        >
+          <Cog6ToothIcon class="w-5 h-5 shrink-0 text-slate-500 group-hover:text-slate-300" />
+          Settings
+        </router-link>
       </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <!-- Mobile Header -->
-      <header class="md:hidden bg-slate-800 h-16 border-b border-slate-700 flex items-center px-4 justify-between">
-        <div class="flex items-center">
-            <span class="text-2xl mr-2">🪖</span>
-            <h1 class="font-bold text-amber-500">GoldArmy</h1>
+    <!-- Main Content Col -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+      
+      <!-- Topbar (Header) -->
+      <header class="h-16 bg-surface-950 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4">
+        
+        <!-- Left: Mobile Toggle & Page Title (Optional) -->
+        <div class="flex items-center gap-4">
+            <button @click="isMobileMenuOpen = true" class="md:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-surface-800">
+                <Bars3Icon class="w-6 h-6" />
+            </button>
+            <div class="hidden md:flex items-center gap-3 w-64 lg:w-96">
+                <!-- Search Input Topbar -->
+                <div class="relative w-full group">
+                    <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                    <input type="text" placeholder="Search anything (ex: CV, Job...)" class="w-full bg-surface-900 border border-surface-700/50 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all font-medium" />
+                    <!-- Keyboard shortcut hint -->
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:flex gap-1">
+                        <kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-surface-800 text-slate-400 rounded border border-surface-700">⌘</kbd>
+                        <kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-surface-800 text-slate-400 rounded border border-surface-700">K</kbd>
+                    </div>
+                </div>
+            </div>
         </div>
-        <button class="text-slate-400 hover:text-white">
-          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        </button>
+
+        <!-- Right: Actions & User Profile -->
+        <div class="flex items-center gap-3 sm:gap-5">
+            <!-- Notifications -->
+            <button class="relative p-2 text-slate-400 hover:text-white rounded-full hover:bg-surface-800 transition-colors">
+                <BellIcon class="w-5 h-5" />
+                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-surface-950"></span>
+            </button>
+            
+            <div class="h-6 w-px bg-surface-800 hidden sm:block"></div>
+
+            <!-- Enhanced User Profile Dropdown Trigger -->
+            <button class="flex items-center gap-3 p-1 pr-3 rounded-full hover:bg-surface-800 border border-transparent hover:border-surface-700 transition-all group">
+                <div class="relative">
+                    <div class="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-400 flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-950 group-hover:ring-indigo-500/30 transition-all">
+                        YD
+                    </div>
+                    <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-surface-950 rounded-full"></div>
+                </div>
+                <div class="hidden md:block text-left">
+                    <p class="text-[13px] font-bold text-white leading-none mb-0.5 group-hover:text-indigo-400 transition-colors">Yves D.</p>
+                    <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider leading-none">Pro Plan</p>
+                </div>
+            </button>
+        </div>
       </header>
 
-      <!-- Routing View -->
-      <main class="flex-1 overflow-y-auto w-full relative outline-none pb-12" tabindex="0">
-        <!-- Route transitions -->
-        <router-view v-slot="{ Component }">
-          <transition 
-            enter-active-class="transition duration-200 ease-out"
-            enter-from-class="transform translate-y-4 opacity-0"
-            enter-to-class="transform translate-y-0 opacity-100"
-            leave-active-class="transition duration-150 ease-in"
-            leave-from-class="transform translate-y-0 opacity-100"
-            leave-to-class="transform -translate-y-4 opacity-0"
-            mode="out-in"
-          >
-            <component :is="Component" />
-          </transition>
-        </router-view>
+      <!-- Main Content Routing Area -->
+      <main class="flex-1 overflow-y-auto w-full relative outline-none bg-surface-950" tabindex="0">
+        <!-- Optional: Background ambient glow for the whole app -->
+        <div class="absolute top-0 right-0 w-[800px] h-[600px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none mix-blend-screen"></div>
+        
+        <div class="w-full min-h-full">
+            <router-view v-slot="{ Component }">
+            <transition 
+                name="fade-transform" 
+                mode="out-in"
+                enter-active-class="transition duration-300 ease-out"
+                enter-from-class="opacity-0 translate-y-4"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition duration-200 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-4"
+            >
+                <component :is="Component" />
+            </transition>
+            </router-view>
+        </div>
       </main>
     </div>
   </div>
 </template>
 
 <style>
-/* Custom Scrollbar for the main app */
+/* Global Modern Reset & Scrollbar */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global Scrollbar SaaS Style */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a; 
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: #334155; 

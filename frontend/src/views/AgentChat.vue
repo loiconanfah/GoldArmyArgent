@@ -1,19 +1,30 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { PaperAirplaneIcon, ArrowPathIcon } from '@heroicons/vue/24/solid'
+import { PaperAirplaneIcon, ArrowPathIcon, DocumentTextIcon, CheckIcon } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const inputQuery = ref('')
+const cvText = ref('')
+const isUploading = ref(false)
 const isLoading = ref(false)
 const messages = ref([
   {
     id: 1,
     role: 'assistant',
-    content: "Bonjour Yves ! Je suis GoldArmy, ton Co-Pilote de Carrière. 🪖\n\nJe suis connecté et prêt. Que veux-tu faire aujourd'hui ? Je peux auditer ton CV, chercher des offres de stage, ou te préparer à un entretien technique.",
+    content: "Bonjour Yves ! Je suis GoldArmy, ton Co-Pilote de Carrière. 🪖\n\nJe suis connecté et prêt. Tu peux coller ton CV complet ci-dessous pour que je l'audite ou que je génère ton Web Portfolio personnalisé.",
     timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
   }
 ])
+
+const chatContainer = ref(null)
+
+const scrollToBottom = async () => {
+    await nextTick()
+    if (chatContainer.value) {
+        chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+    }
+}
 
 onMounted(() => {
   if (route.query.prompt) {
@@ -23,39 +34,55 @@ onMounted(() => {
 })
 
 const sendMessage = async () => {
-  if (!inputQuery.value.trim()) return
+  if (!inputQuery.value.trim() && !cvText.value.trim()) return
   
   const userMsg = inputQuery.value
   inputQuery.value = ''
   
-  messages.value.push({
-    id: Date.now(),
-    role: 'user',
-    content: userMsg,
-    timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-  })
+  if (userMsg) {
+      messages.value.push({
+        id: Date.now(),
+        role: 'user',
+        content: userMsg,
+        timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      })
+  }
+
+  if (cvText.value) {
+       messages.value.push({
+          id: Date.now() + 1,
+          role: 'user',
+          content: "[CV Chargé en Contexte]\n" + cvText.value.substring(0, 100) + "...",
+          timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      })
+  }
   
+  scrollToBottom()
   isLoading.value = true
   
   try {
     const res = await fetch('http://localhost:8000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, nb_results: 5 })
+        body: JSON.stringify({ message: userMsg, cv_text: cvText.value, nb_results: 5 })
     })
     const data = await res.json()
     
-    // Simulate real typing feel or just append
+    // Clear CV after sending to avoid re-sending it constantly unless needed
+    // cvText.value = '' 
+    
     messages.value.push({
-      id: Date.now() + 1,
+      id: Date.now() + 2,
       role: 'assistant',
-      content: JSON.stringify(data.data, null, 2), // Temporary raw dump until we format it securely
+      // If it's HTML, we'll mark it
+      is_html: data.data.type === 'portfolio_html',
+      content: data.data.content,
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     })
     
   } catch (e) {
     messages.value.push({
-      id: Date.now() + 1,
+      id: Date.now() + 2,
       role: 'assistant',
       content: "⚠️ Erreur de connexion avec le quartier général (Backend indisponible).",
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
@@ -63,92 +90,157 @@ const sendMessage = async () => {
     })
   } finally {
     isLoading.value = false
+    scrollToBottom()
   }
+}
+
+const downloadHtml = (htmlContent) => {
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'portfolio.html'
+    a.click()
+    URL.revokeObjectURL(url)
 }
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 md:p-6 lg:p-8 max-w-5xl mx-auto w-full animate-fade-in">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-700/50">
+  <div class="h-full flex flex-col p-4 md:p-8 max-w-4xl mx-auto w-full relative animate-fade-in-up">
+    <!-- Header Minimal -->
+    <div class="flex items-center justify-between mb-8">
       <div>
-        <h2 class="text-2xl font-bold flex items-center gap-3">
-          <span class="p-2 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-          </span>
-          Agent Principal
-        </h2>
-        <p class="text-slate-400 mt-1 text-sm">Orchestration, Recherche et Analyse CV</p>
+        <h2 class="text-2xl font-display font-black text-white tracking-tight">Agent GoldArmy</h2>
+        <p class="text-slate-400 mt-1 text-sm font-medium">Orchestration, Analyse CV & Génération Web</p>
       </div>
+      
+      <!-- Context Toggle Button -->
+      <button 
+        @click="isUploading = !isUploading" 
+        :class="cvText ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-surface-800 text-slate-300 hover:text-white border-surface-700 hover:border-surface-600'" 
+        class="px-4 py-2 rounded-xl border flex items-center gap-2 transition-all shadow-sm text-sm font-bold"
+      >
+          <DocumentTextIcon class="w-4 h-4" />
+          <span class="hidden sm:inline">{{ cvText ? 'Contexte Injecté' : 'Ajouter Contexte (CV)' }}</span>
+          <CheckIcon v-if="cvText" class="w-4 h-4 ml-1" />
+      </button>
     </div>
+    
+    <!-- Context Panel (Animated) -->
+    <transition
+        enter-active-class="transition duration-300 ease-out origin-top"
+        enter-from-class="transform scale-y-95 opacity-0 max-h-0"
+        enter-to-class="transform scale-y-100 opacity-100 max-h-[400px]"
+        leave-active-class="transition duration-200 ease-in origin-top"
+        leave-from-class="transform scale-y-100 opacity-100 max-h-[400px]"
+        leave-to-class="transform scale-y-95 opacity-0 max-h-0"
+    >
+        <div v-if="isUploading" class="mb-6 bg-surface-900 border border-surface-800 p-4 rounded-2xl shadow-sm relative z-10">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-white font-bold text-sm tracking-wide flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 
+                    Source d'Information
+                </h3>
+                <button @click="isUploading = false" class="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider">Fermer</button>
+            </div>
+            <textarea 
+                v-model="cvText" 
+                class="w-full h-32 bg-surface-950/50 border border-surface-700 rounded-xl p-4 text-slate-200 focus:ring-1 focus:ring-gold-500/50 focus:border-gold-500/50 text-sm placeholder-slate-600 font-mono transition-colors" 
+                placeholder="Collez ici le texte brut de votre CV..."
+            ></textarea>
+        </div>
+    </transition>
 
-    <!-- Chat Area -->
-    <div class="flex-1 overflow-y-auto space-y-6 pr-4 pb-4 scroll-smooth">
+    <!-- Chat History Area -->
+    <div ref="chatContainer" class="flex-1 overflow-y-auto space-y-8 pr-2 pb-32 scroll-smooth">
       <div 
         v-for="msg in messages" 
         :key="msg.id"
         :class="['flex w-full', msg.role === 'user' ? 'justify-end' : 'justify-start']"
       >
-        <div 
-          :class="[
-            'max-w-[85%] md:max-w-[75%] rounded-2xl p-4 flex flex-col',
-            msg.role === 'user' 
-              ? 'bg-amber-600 text-white rounded-br-none shadow-amber-900/20' 
-              : msg.error 
-                ? 'bg-rose-500/10 border border-rose-500/30 text-rose-200 rounded-bl-none'
-                : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-bl-none shadow-black/20'
-          ]"
-          class="shadow-lg relative group"
-        >
-          <!-- User Profile Icon -->
-          <div v-if="msg.role === 'assistant'" class="absolute -left-12 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-lg shadow-sm">
-            🪖
+        <!-- User Bubble -->
+        <div v-if="msg.role === 'user'" class="max-w-[85%] md:max-w-[70%] bg-surface-800 text-white rounded-2xl p-5 shadow-sm border border-surface-700 font-medium">
+             <div class="whitespace-pre-wrap leading-relaxed">{{ msg.content }}</div>
+             <span class="block text-[10px] mt-2 opacity-40 text-right font-bold">{{ msg.timestamp }}</span>
+        </div>
+        
+        <!-- Assistant Output Rendering -->
+        <div v-if="msg.role === 'assistant'" class="flex gap-4 max-w-[95%] md:max-w-[85%]">
+          <!-- Avatar -->
+          <div class="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-amber-600 flex items-center justify-center shadow-lg shadow-gold-500/20 text-sm mt-1">
+             🪖
           </div>
           
-          <div class="whitespace-pre-wrap font-sans text-[15px] leading-relaxed" v-if="msg.role === 'user' || msg.error">{{ msg.content }}</div>
-          
-          <!-- Mocking formatted agent response for now -->
-          <div v-if="msg.role === 'assistant' && !msg.error" class="prose prose-invert prose-amber max-w-none text-sm">
-            <pre class="bg-slate-900 overflow-x-auto p-4 rounded-xl border border-slate-700 mt-2 font-mono text-xs text-emerald-400">{{ msg.content }}</pre>
+          <div class="flex-1 min-w-0 prose prose-invert prose-p:leading-relaxed prose-a:text-gold-400 hover:prose-a:text-gold-300 prose-strong:text-white prose-headings:text-white prose-pre:bg-surface-900 prose-pre:border prose-pre:border-surface-700 prose-pre:shadow-inner w-full">
+            
+            <div v-if="msg.error" class="bg-rose-500/10 border border-rose-500/30 text-rose-200 p-4 rounded-2xl w-full">
+                {{ msg.content }}
+            </div>
+            
+            <!-- Standard text/markdown rendering -->
+            <div v-else-if="!msg.is_html" class="whitespace-pre-wrap text-slate-300" v-html="msg.content.replace(/\n/g, '<br/>')"></div>
+            
+            <!-- HTML App Rendering (Portfolio generator) -->
+            <div v-else class="space-y-4 w-full">
+                <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h4 class="font-bold text-emerald-400 text-lg m-0 flex items-center gap-2">
+                           <CheckCircleIcon class="w-5 h-5" /> Portfolio Généré
+                        </h4>
+                        <p class="text-sm text-emerald-500/80 m-0 mt-1">Code source complet prêt à être déployé.</p>
+                    </div>
+                    <button @click="downloadHtml(msg.content)" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-surface-950 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 whitespace-nowrap">
+                        Télécharger HTML
+                    </button>
+                </div>
+                
+                <h4 class="text-slate-400 text-sm mt-4 font-bold border-b border-surface-700 pb-2">Aperçu du Code Source</h4>
+                <div class="relative group/code">
+                    <pre class="bg-surface-950/80 overflow-x-auto p-5 rounded-2xl border border-surface-700 mt-2 font-mono text-xs text-slate-300 max-h-96 shadow-inner">{{ msg.content }}</pre>
+                </div>
+            </div>
+            
+            <span class="block text-[10px] mt-4 opacity-40 font-bold" :class="msg.error ? 'text-rose-200' : 'text-slate-500'">{{ msg.timestamp }}</span>
           </div>
-          
-          <span class="text-[10px] mt-2 opacity-50 self-end">{{ msg.timestamp }}</span>
         </div>
       </div>
       
       <!-- Typing Indicator -->
-      <div v-if="isLoading" class="flex w-full justify-start">
-         <div class="max-w-[85%] rounded-2xl p-4 bg-slate-800 border border-slate-700 text-slate-200 rounded-bl-none shadow-lg shadow-black/20 relative">
-            <div class="absolute -left-12 top-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-lg shadow-sm">🪖</div>
-            <div class="flex gap-1.5 items-center py-2 h-6">
-              <div class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0ms"></div>
-              <div class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 150ms"></div>
-              <div class="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 300ms"></div>
-            </div>
+      <div v-if="isLoading" class="flex w-full justify-start gap-4">
+         <div class="shrink-0 w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center border border-surface-700 text-sm mt-1 animate-pulse">
+             🤖
+         </div>
+         <div class="py-2.5 flex items-center gap-1.5 opacity-50">
+            <div class="w-2 h-2 rounded-full bg-gold-500/50 animate-bounce" style="animation-delay: 0ms"></div>
+            <div class="w-2 h-2 rounded-full bg-gold-500/50 animate-bounce" style="animation-delay: 150ms"></div>
+            <div class="w-2 h-2 rounded-full bg-gold-500/50 animate-bounce" style="animation-delay: 300ms"></div>
          </div>
       </div>
     </div>
 
-    <!-- Input Area -->
-    <div class="mt-4 pt-4 border-t border-slate-700/50 relative">
-      <div class="absolute -top-10 left-0 right-0 h-10 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none"></div>
-      <div class="relative flex items-end gap-2 bg-slate-800 rounded-2xl border border-slate-600 focus-within:border-amber-500 p-2 shadow-inner transition-colors">
+    <!-- Floating Input Area -->
+    <div class="absolute bottom-4 left-4 right-4 md:left-8 md:right-8 lg:bottom-8 lg:left-8 lg:right-8 bg-surface-950/80 pt-4 backdrop-blur-md">
+      <div class="bg-surface-900 border border-surface-700 p-2 rounded-2xl shadow-lg flex items-end gap-2 focus-within:ring-1 focus-within:ring-surface-600 focus-within:border-surface-600 transition-all">
          <textarea 
             v-model="inputQuery"
             @keydown.enter.exact.prevent="sendMessage"
-            class="w-full bg-transparent border-none focus:ring-0 text-slate-200 resize-none h-14 max-h-32 p-2 placeholder-slate-500 scrollbar-hide"
-            placeholder="Écris ton message à l'Agent..."
+            class="w-full bg-transparent border-none focus:ring-0 text-white resize-none h-14 max-h-48 p-3 placeholder-slate-500 scrollbar-hide font-medium text-[15px]"
+            placeholder="Posez une question, demandez un audit de CV, ou générez un portfolio..."
          ></textarea>
          <button 
             @click="sendMessage"
-            :disabled="!inputQuery.trim() || isLoading"
-            class="p-3 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 disabled:text-slate-500 text-slate-900 rounded-xl transition-colors shrink-0 mb-1"
+            :disabled="(!inputQuery.trim() && !cvText.trim()) || isLoading"
+            class="p-4 bg-white hover:bg-slate-200 disabled:bg-surface-800 disabled:text-slate-600 text-surface-950 rounded-xl font-bold transition-all shrink-0 shadow-sm"
          >
             <PaperAirplaneIcon v-if="!isLoading" class="w-5 h-5" />
             <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
          </button>
       </div>
-      <p class="text-center text-xs text-slate-500 mt-2">L'IA peut faire des erreurs. Vérifiez les informations importantes.</p>
+      <div class="text-center mt-3">
+          <p class="text-[11px] font-bold text-slate-500 tracking-wide">
+             GoldArmy peut faire des erreurs. Vérifiez les informations importantes.
+          </p>
+      </div>
     </div>
   </div>
 </template>
