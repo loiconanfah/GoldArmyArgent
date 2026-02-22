@@ -30,11 +30,11 @@ class OrchestratorAgent:
         # 2. Delegate to correct Agent
         if intention["action"] == "job_search":
              # Execute the full task pipeline (think -> act -> learn)
-             md_response = await self.job_searcher.execute_task(user_input)
+             search_result = await self.job_searcher.execute_task(user_input)
              return {
                  "status": "success",
                  "type": "job_search_results",
-                 "content": md_response
+                 "content": search_result # Renvoie le dictionnaire complet (success, matched_jobs, etc.)
              }
              
         elif intention["action"] in ["audit_cv", "generate_portfolio"]:

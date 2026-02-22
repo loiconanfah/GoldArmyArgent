@@ -3,6 +3,9 @@ import asyncio
 import sys
 from pathlib import Path
 
+# Force UTF-8 encoding for Windows console
+sys.stdout.reconfigure(encoding='utf-8')
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from core.orchestrator import orchestrator

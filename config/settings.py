@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     openrouter_api_key: Optional[str] = Field(default=None, description="Clé API OpenRouter")
     openrouter_default_model: str = Field(default="mistralai/mistral-7b-instruct:free", description="Modèle par défaut OpenRouter")
 
+    # Gemini Configuration
+    gemini_api_key: Optional[str] = Field(default=None, description="Clé API Gemini")
+
     # Job Search APIs
     jooble_api_key: Optional[str] = Field(default=None, description="Clé API Jooble")
     rapidapi_key: Optional[str] = Field(default=None, description="Clé RapidAPI (JSearch)")

@@ -20,8 +20,13 @@ class UnifiedLLMClient:
     def __init__(self):
         self.ollama_client = OllamaClient()
         self.openrouter_client = None
+        self.gemini_client = None
         
-        if settings.openrouter_api_key:
+        if settings.gemini_api_key:
+            from llm.gemini_client import GeminiClient
+            self.gemini_client = GeminiClient()
+            logger.info("🧠 Client Unifié: Google Gemini activé (Priorité Absolue)")
+        elif settings.openrouter_api_key:
             self.openrouter_client = OpenRouterClient()
             logger.info("🌐 Client Unifié: OpenRouter activé (Prioritaire)")
         else:
@@ -37,6 +42,8 @@ class UnifiedLLMClient:
         await self.ollama_client.close()
         if self.openrouter_client:
             await self.openrouter_client.close()
+        if self.gemini_client:
+            await self.gemini_client.close()
 
     async def generate(self, prompt: str, **kwargs) -> str:
         """
@@ -44,6 +51,14 @@ class UnifiedLLMClient:
         """
         # On extrait le modèle demandé pour éviter les doublons dans kwargs
         requested_model = kwargs.pop("model", None)
+
+        # 0. Essai Gemini
+        if self.gemini_client:
+            try:
+                logger.debug(f"🧠 Tentative Gemini Native...")
+                return await self.gemini_client.generate(prompt, **kwargs)
+            except Exception as e:
+                logger.warning(f"⚠️ Échec Gemini ({e})... Bascule sur OpenRouter.")
 
         # 1. Essai OpenRouter
         if self.openrouter_client:
@@ -72,6 +87,13 @@ class UnifiedLLMClient:
 
     async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
         """Mode Chat unifié."""
+        # 0. Essai Gemini
+        if self.gemini_client:
+            try:
+                return await self.gemini_client.chat(messages, **kwargs)
+            except Exception as e:
+                logger.warning(f"⚠️ Échec Gemini Chat ({e}).")
+
         # 1. Essai OpenRouter
         if self.openrouter_client:
             try:

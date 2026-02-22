@@ -5,13 +5,14 @@ from pathlib import Path
 # Force UTF-8
 sys.stdout.reconfigure(encoding='utf-8')
 
+# Ensure path is correct
 sys.path.insert(0, str(Path(__file__).parent))
 
 from tools.web_searcher import web_searcher
 
-async def test_jobbank():
-    print("🚀 Test Scraping Guichet Emplois (Job Bank)")
-    jobs = await web_searcher._search_jobbank("developpeur logiciel", "Montréal", 5)
+async def test_ddg():
+    print("🚀 Test Scraping DuckDuckGo")
+    jobs = await web_searcher._search_general_web("developpeur mobile", "Montréal", 5)
     
     print(f"\n✅ {len(jobs)} emplois trouvés:")
     for i, job in enumerate(jobs):
@@ -20,7 +21,7 @@ async def test_jobbank():
         print(f"Location: {job.get('location')}")
         print(f"Entreprise: {job.get('company')}")
         print(f"URL: {job.get('url')}")
-        print(f"Description brève: {job.get('description')}")
+        print(f"Description: {job.get('description')}")
 
 if __name__ == "__main__":
-    asyncio.run(test_jobbank())
+    asyncio.run(test_ddg())

@@ -15,6 +15,8 @@ class JobWebSearcher:
     
     async def search_jobs(self, keywords: str, location: str = "Québec", job_type: str = "stage", max_results: int = 20) -> List[Dict[str, Any]]:
         """Recherche des offres d'emploi individuelles."""
+        keywords = str(keywords or "")
+        location = str(location or "Québec")
         import asyncio
         logger.info(f"🌐 Recherche Web Parallèle: '{keywords}' à '{location}'")
         
@@ -395,6 +397,8 @@ class JobWebSearcher:
 
     async def _search_general_web(self, keywords: str, location: str, max_results: int) -> List[Dict[str, Any]]:
         """Recherche via DuckDuckGo Lite (HTML) avec scraping individuel des offres."""
+        keywords = str(keywords or "")
+        location = str(location or "Québec")
         logger.info(f"🔎 Recherche DDG Lite: {keywords} à {location}")
         jobs = []
         
@@ -405,99 +409,16 @@ class JobWebSearcher:
             f'site:jobbank.gc.ca/job "{keywords}" "{location}"'
         ]
         
-        loop = asyncio.get_event_loop()
-        
-        def _scrape_ddg(query_str):
-            found_jobs = []
-            try:
-                url = "https://lite.duckduckgo.com/lite/"
-                data = urllib.parse.urlencode({'q': query_str, 'kl': 'ca-fr'}).encode('utf-8')
-                
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    "Referer": "https://lite.duckduckgo.com/"
-                }
-
-                req = urllib.request.Request(url, data=data, headers=headers, method='POST')
-                with urllib.request.urlopen(req, context=ssl_context, timeout=15) as response:
-                    html = response.read().decode('utf-8')
-                
-                from bs4 import BeautifulSoup
-                soup = BeautifulSoup(html, 'html.parser')
-                
-                # Les liens sont dans des <a> avec class result-link
-                link_tags = soup.find_all('a', class_='result-link')
-                snippet_tags = soup.find_all('td', class_='result-snippet')
-                
-                source_name = "Web"
-                if "indeed" in query_str.lower(): source_name = "Indeed"
-                if "linkedin" in query_str.lower(): source_name = "LinkedIn"
-                if "jobbank" in query_str.lower(): source_name = "JobBank"
-
-                logger.debug(f"  [{source_name}] Raw blocks found: {len(link_tags)}")
-
-                for i, link_tag in enumerate(link_tags):
-                    if len(found_jobs) >= 5: break
-                    
-                    href = link_tag.get('href', '')
-                    title = link_tag.get_text(strip=True)
-                    
-                    snippet = ""
-                    if i < len(snippet_tags):
-                        snippet = snippet_tags[i].get_text(strip=True)
-                    
-                    # Filtres stricts - exclure les pages de recherche
-                    if not href.startswith("http"): continue
-                    
-                    # Nettoyage du titre
-                    clean_title = title
-                    if " - " in title:
-                        parts = title.split(" - ")
-                        clean_title = parts[0]
-                    
-                    # Extraction du nom de l'entreprise
-                    company = source_name
-                    if " chez " in snippet.lower():
-                        parts = snippet.lower().split(" chez ")
-                        if len(parts) > 1:
-                            company_part = parts[1].split()[0] if parts[1].split() else ""
-                            if company_part:
-                                company = company_part.capitalize()
-                    
-                    job = {
-                        "id": f"ddg-{source_name}-{i}",
-                        "title": clean_title,
-                        "company": company,
-                        "location": location,
-                        "description": snippet,
-                        "url": href,
-                        "source": source_name,
-                        "required_skills": [],
-                        "match_score": 0,
-                        "scraped": False
-                    }
-                    found_jobs.append(job)
-                    
-            except Exception as e:
-                logger.error(f"⚠️ Erreur DDG Scraper: {e}")
-            
-            return found_jobs
-
-        # Exécution parallèle
-        tasks = []
-        for q in queries:
-            tasks.append(loop.run_in_executor(None, _scrape_ddg, q))
-            
-        results_list = await asyncio.gather(*tasks)
-        
-        for src_res in results_list:
-            jobs.extend(src_res)
-            
-        return jobs
+        # DuckDuckGo Lite bloque désormais souvent avec un Captcha (anomaly validation)
+        # On passe directement aux liens de fallback pour ne pas bloquer l'agent.
+        logger.warning(f"⚠️ Recherche DDG désactivée (Captcha). Utilisation des liens de fallback.")
+        return []
 
     def _generate_fallback_links(self, keywords: str, location: str) -> List[Dict[str, Any]]:
         """Génère des liens de recherche directs en dernier recours."""
+        keywords = str(keywords or "")
+        location = str(location or "Québec")
+        
         params = urllib.parse.quote_plus(f"{keywords} {location}")
         k_enc = urllib.parse.quote_plus(keywords)
         l_enc = urllib.parse.quote_plus(location)
