@@ -126,19 +126,27 @@ RÉPONSE : JSON uniquement, rien d'autre."""
 
         response = await self.generate_response(prompt)
 
-        # Nettoyer les éventuelles balises markdown
-        response = response.strip()
-        for prefix in ["```json", "```"]:
-            if response.startswith(prefix):
-                response = response[len(prefix):]
-        if response.endswith("```"):
-            response = response[:-3]
-        response = response.strip()
+        # Nettoyage robuste avec Regex pour extraire le JSON même entouré de texte
+        import re
+        match = re.search(r'\{.*\}', response, re.DOTALL)
+        if match:
+            response = match.group(0)
+        else:
+            response = response.strip()
+            
+        # Retirer d'éventuels backticks résiduels
+        response = response.replace("```json", "").replace("```", "").strip()
 
         try:
             parsed = json.loads(response)
             audit_data = parsed.get("audit", {})
             cv_data = parsed.get("cv_data", {})
+            
+            # Ensure cv_data is a dict before dumping (in case the LLM returned a string somehow)
+            if isinstance(cv_data, str):
+                try: cv_data = json.loads(cv_data)
+                except: cv_data = {}
+                
             cv_json = json.dumps(cv_data, ensure_ascii=False)
 
             return {
@@ -218,15 +226,16 @@ IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans ba
 
         response = await self.generate_response(prompt)
         
-        # Nettoyer la réponse si le LLM a ajouté des balises markdown
-        response = response.strip()
-        if response.startswith("```json"):
-            response = response[7:]
-        if response.startswith("```"):
-            response = response[3:]
-        if response.endswith("```"):
-            response = response[:-3]
-        response = response.strip()
+        # Nettoyage robuste avec Regex pour extraire le JSON même entouré de texte
+        import re
+        match = re.search(r'\{.*\}', response, re.DOTALL)
+        if match:
+            response = match.group(0)
+        else:
+            response = response.strip()
+            
+        # Retirer d'éventuels backticks résiduels
+        response = response.replace("```json", "").replace("```", "").strip()
         
         # Valider que c'est du JSON
         try:

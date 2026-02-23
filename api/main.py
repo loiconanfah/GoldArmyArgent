@@ -117,7 +117,26 @@ async def generate_cv_pdf_endpoint(request: CvRewriteRequest):
     """
     try:
         from core.cv_pdf_generator import generate_cv_pdf
-        cv_data = json.loads(request.cv_json)
+        
+        cv_data_input = request.cv_json
+        
+        # Le frontend peut envoyer une string JSON ou un objet direct, on gère les deux
+        if isinstance(cv_data_input, str):
+            try:
+                cv_data = json.loads(cv_data_input)
+            except json.JSONDecodeError as e:
+                # Si le JSON est corrompu par le LLM
+                import re
+                match = re.search(r'\{.*\}', cv_data_input, re.DOTALL)
+                if match:
+                    cv_data = json.loads(match.group(0))
+                else:
+                    raise e
+        elif isinstance(cv_data_input, dict):
+            cv_data = cv_data_input
+        else:
+            cv_data = {}
+            
         pdf_bytes = generate_cv_pdf(cv_data)
 
         filename = (request.filename or "CV_ATS_Optimise").replace(" ", "_").strip()

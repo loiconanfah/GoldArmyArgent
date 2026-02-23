@@ -1,13 +1,26 @@
 import os
 import json
 import asyncio
+from dotenv import load_dotenv
+load_dotenv() # Load from .env file
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 import google.generativeai as genai
 from core.database import get_db_connection
 from api.auth import get_current_user
 
 # Ensure API key is set
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
+api_key = os.environ.get("GEMINI_API_KEY", "")
+if not api_key:
+    # Try alternate name if needed
+    api_key = os.environ.get("GOOGLE_API_KEY", "")
+
+if not api_key:
+    print("WARNING: GEMINI_API_KEY is not set in environment!")
+else:
+    print(f"INFO: Gemini API Key found (starts with {api_key[:5]}...)")
+
+genai.configure(api_key=api_key)
 
 router = APIRouter(prefix="/api/interview", tags=["Interview Simulator"])
 
@@ -81,15 +94,17 @@ async def websocket_interview(websocket: WebSocket, token: str):
     Contexte du CV du candidat : {cv_content}
     
     Règles absolues :
-    1. Sois professionnel, concis et interactif (comme dans un vrai entretien oral).
+    1. Sois extrêmement concis et percutant. Tes phrases doivent être courtes pour faciliter la synthèse vocale.
     2. Pose UNE SEULE question à la fois. N'enchaîne surtout pas plusieurs questions.
-    3. Attends la réponse de l'utilisateur. Rebondis sur ce qu'il dit avant de passer à la suite.
-    4. {tech_rule}
-    5. Parle en français naturel, adapté à la synthèse vocale (pas de tirets, pas de listes à puces complexes, pas de markdown).
+    3. Ta mission est de mener l'entretien de A à Z : présentation, questions sur l'expérience, questions techniques (si applicable), et clôture.
+    4. Attends la réponse de l'utilisateur. Rebondis brièvement sur ce qu'il dit (valide ou demande précision) puis passe à la phase suivante de l'entretien.
+    5. {tech_rule}
+    6. Parle en français naturel et fluide. Évite les listes, les tirets, le markdown ou les parenthèses.
+    7. Agis comme un humain en entretien : sois pro mais encourageant. Ne t'arrête pas avant d'avoir fait le tour du profil.
     """
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=system_instruction)
+        model = genai.GenerativeModel("gemini-3-flash-preview", system_instruction=system_instruction)
         chat = model.start_chat()
         
         # Initial greeting
@@ -130,9 +145,14 @@ async def websocket_interview(websocket: WebSocket, token: str):
     except WebSocketDisconnect:
         print("Interview WebSocket disconnected")
     except Exception as e:
-        print(f"Error in interview WS: {e}")
+        import traceback
+        error_info = traceback.format_exc()
+        print(f"CRITICAL Error in interview WS:\n{error_info}")
+        
         try:
-            await websocket.send_json({"type": "error", "message": "Erreur de connexion au serveur IA."})
+            # Send a more descriptive error if possible
+            msg = f"Erreur de connexion au serveur IA: {str(e)}"
+            await websocket.send_json({"type": "error", "message": msg})
             await websocket.close()
         except:
             pass

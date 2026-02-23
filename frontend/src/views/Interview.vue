@@ -29,6 +29,7 @@ const conversation = ref([])
 const socket = ref(null)
 const chatContainer = ref(null)
 const errorMsg = ref('')
+const isAIThinking = ref(false)
 
 // Visual audio pulse simulation
 const audioLevel = ref(0)
@@ -36,6 +37,8 @@ let audioInterval = null
 
 let recognition = null;
 let currentSynthesis = null;
+let cachedVoices = []; // ✅ Voix mémorisées dès le chargement de la page
+let pendingUtteranceText = null; // Texte en attente si les voix ne sont pas prêtes
 
 const startInterview = () => {
     if (!config.value.jobTitle || !config.value.company) {
@@ -99,13 +102,16 @@ const initSpeechRecognition = () => {
     
     recognition = new SpeechRecognition()
     recognition.lang = 'fr-FR'
-    recognition.continuous = false
+    recognition.continuous = true  // ✅ Empêche le navigateur de couper après une pause
     recognition.interimResults = true
     
     recognition.onstart = () => {
         isListening.value = true
         startAudioPulse()
     }
+    
+    let silenceTimer = null
+    const SILENCE_TIMEOUT = 10000 // 10 secondes de silence demandées par l'utilisateur
     
     recognition.onresult = (event) => {
         let interimTranscript = ''
@@ -120,15 +126,30 @@ const initSpeechRecognition = () => {
         }
         
         transcript.value = finalTranscript || interimTranscript
+        
+        // Timer de silence : on reset à chaque mot capté
+        if (silenceTimer) clearTimeout(silenceTimer)
+        silenceTimer = setTimeout(() => {
+            if (transcript.value.trim() !== '') {
+                console.log("Silence prolongé (10s) détecté, envoi automatique.")
+                recognition.stop() // Déclenchera onend() qui enverra le message
+            }
+        }, SILENCE_TIMEOUT)
     }
     
     recognition.onend = () => {
         isListening.value = false
         stopAudioPulse()
+        if (silenceTimer) clearTimeout(silenceTimer)
         
-        if (transcript.value.trim() !== '') {
+        // On n'envoie que si on a un transcrit et qu'on n'est pas déjà en train de parler
+        if (transcript.value.trim() !== '' && !isSpeaking.value) {
             sendMessageToAI(transcript.value)
             transcript.value = ''
+        } else if (!isSpeaking.value && isInterviewStarted.value) {
+            // Si le micro s'arrête tout seul sans texte (timeout navigateur), on le relance
+            console.log("Micro arrêté sans texte, relance...")
+            // try { recognition.start() } catch(e) {}
         }
     }
     
@@ -165,13 +186,16 @@ const connectWebSocket = () => {
         const data = JSON.parse(event.data)
         
         if (data.type === 'message') {
-            conversation.value.push({
-                role: 'assistant',
-                content: data.content,
-                id: Date.now()
-            })
-            scrollToBottom()
-            speakText(data.content)
+            // ❌ NE PAS appeler speakText ici — le message arrive avant les chunks.
+            // On ajoute juste le message vide qui sera complété par les chunks.
+            if (!conversation.value.find(m => m.role === 'assistant' && m.content === data.content)) {
+                conversation.value.push({
+                    role: 'assistant',
+                    content: data.content,
+                    id: Date.now()
+                })
+                scrollToBottom()
+            }
             
         } else if (data.type === 'chunk') {
             const lastMsg = conversation.value[conversation.value.length - 1]
@@ -182,11 +206,14 @@ const connectWebSocket = () => {
                 conversation.value.push({ role: 'assistant', content: data.content, id: Date.now() })
             }
         } else if (data.type === 'done') {
+            // ✅ C'est ICI l'unique endroit où on parle. Le contenu est maintenant complet.
+            isAIThinking.value = false
             const lastMsg = conversation.value[conversation.value.length - 1]
             if (lastMsg && lastMsg.role === 'assistant') {
-                 speakText(lastMsg.content)
+                speakText(lastMsg.content)
             }
         } else if (data.type === 'error') {
+            isAIThinking.value = false
             errorMsg.value = data.message
         }
     }
@@ -200,6 +227,7 @@ const connectWebSocket = () => {
 const sendMessageToAI = (text) => {
     if (!socket.value || socket.value.readyState !== WebSocket.OPEN) return
     
+    isAIThinking.value = true
     conversation.value.push({ role: 'user', content: text, id: Date.now() })
     scrollToBottom()
     
@@ -207,62 +235,81 @@ const sendMessageToAI = (text) => {
     socket.value.send(JSON.stringify({ text: text }))
 }
 
+// Prend les voix en cache ou les voix disponibles maintenant
+const getVoice = () => {
+    const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices()
+    const frVoices = voices.filter(v => v.lang.startsWith('fr'))
+    
+    // Ordre de priorité : Online/Natural > Google/Thomas/Henri/Microsoft > n'importe quelle voix fr
+    return frVoices.find(v => v.name.includes('Online') || v.name.includes('Natural') || v.name.includes('Premium'))
+        || frVoices.find(v => ['Google', 'Thomas', 'Henri', 'Microsoft'].some(n => v.name.includes(n)))
+        || frVoices[0]
+        || null
+}
+
 const speakText = (text) => {
-    if(!window.speechSynthesis) return
+    if (!window.speechSynthesis || !text?.trim()) return
+    
+    // Si les voix ne sont pas encore chargées, on mémorise le texte et on attend  
+    if (cachedVoices.length === 0 && window.speechSynthesis.getVoices().length === 0) {
+        console.log("Voix pas encore prêtes, texte en attente...")
+        pendingUtteranceText = text
+        return
+    }
+    
+    // Stopper tout ce qui joue
     window.speechSynthesis.cancel()
     
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = 'fr-FR'
-    utterance.rate = 1.05
-    utterance.pitch = 0.9 
+    utterance.rate = 1.0
+    utterance.pitch = 0.95
+    utterance.volume = 1.0
     
-    const voices = window.speechSynthesis.getVoices()
-    const frVoices = voices.filter(v => v.lang.startsWith('fr'))
-    
-    // Essayer de trouver une voix de haute qualité (Microsoft Premium, Google, natural)
-    let bestVoice = frVoices.find(v => v.name.includes('Online') || v.name.includes('Natural') || v.name.includes('Premium'))
-    
-    if (!bestVoice) {
-        bestVoice = frVoices.find(v => v.name.includes('Google') || v.name.includes('Thomas') || v.name.includes('Henri') || v.name.includes('Microsoft'))
+    const voice = getVoice()
+    if (voice) {
+        console.log("Voix utilisée:", voice.name)
+        utterance.voice = voice
+    } else {
+        console.warn("Aucune voix fr-FR trouvée, on utilise la voix par défaut du navigateur.")
     }
-    
-    if (!bestVoice && frVoices.length > 0) {
-        bestVoice = frVoices[0]
-    }
-    
-    if (bestVoice) { utterance.voice = bestVoice }
     
     utterance.onstart = () => {
         isSpeaking.value = true
         startAudioPulse()
-        if(isListening.value && recognition) recognition.abort()
+        // Couper le micro pendant que le recruteur parle
+        if (isListening.value && recognition) {
+            try { recognition.stop() } catch(e) {}
+        }
     }
     
     utterance.onend = () => {
         isSpeaking.value = false
         stopAudioPulse()
         
-        // Relancer le micro 1 sec après la fin de la voix de l'IA
+        // Relancer le micro automatiquement 1s après la fin du recruteur
         setTimeout(() => {
-            if (!isListening.value && recognition) {
+            if (!isListening.value && recognition && isInterviewStarted.value) {
                 try {
                     errorMsg.value = ''
                     recognition.start()
+                    console.log("Micro relancé après l'IA")
                 } catch(e) {
-                    console.log("Microphone déjà actif ou erreur:", e)
+                    console.log("Micro: ", e.message)
                 }
             }
         }, 1000)
     }
     
     utterance.onerror = (e) => {
-        console.error("SpeechSynthesis error:", e)
+        console.error("SpeechSynthesis error:", e.error || e)
         isSpeaking.value = false
         stopAudioPulse()
     }
     
     currentSynthesis = utterance
     window.speechSynthesis.speak(utterance)
+    console.log("speechSynthesis.speak() appelé avec:", text.substring(0, 50))
 }
 
 const triggerListen = () => {
@@ -305,7 +352,23 @@ const stopAudioPulse = () => {
 }
 
 onMounted(() => {
-    if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = () => {}
+    // ✅ Cache les voix dès qu'elles sont prêtes (asynchrone sur Chrome)
+    if (window.speechSynthesis) {
+        const loadVoices = () => {
+            const voices = window.speechSynthesis.getVoices()
+            if (voices.length > 0) {
+                cachedVoices = voices
+                console.log(`✅ ${voices.length} voix chargées. Voix fr:`, voices.filter(v => v.lang.startsWith('fr')).map(v => v.name))
+                // Si un texte était en attente, on le joue maintenant
+                if (pendingUtteranceText) {
+                    speakText(pendingUtteranceText)
+                    pendingUtteranceText = null
+                }
+            }
+        }
+        window.speechSynthesis.onvoiceschanged = loadVoices
+        loadVoices() // Tentative synchrone (marche sur Firefox/Safari)
+    }
 })
 
 onUnmounted(() => {
@@ -416,7 +479,7 @@ onUnmounted(() => {
               <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="isListening ? 'bg-pink-500' : (isSpeaking ? 'bg-indigo-500' : 'bg-slate-500')"></span>
             </span>
             <span class="text-xs font-bold text-white uppercase tracking-widest">
-                {{ isListening ? 'Vous Parlez...' : (isSpeaking ? 'Le Recruteur Parle...' : 'En Attente') }}
+                {{ isAIThinking ? 'Le Recruteur réfléchit...' : (isListening ? 'Vous Parlez...' : (isSpeaking ? 'Le Recruteur Parle...' : 'En Attente')) }}
             </span>
         </div>
     </header>
