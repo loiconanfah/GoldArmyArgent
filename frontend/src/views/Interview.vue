@@ -485,21 +485,33 @@ onUnmounted(() => {
     </header>
 
     <!-- Chat / Transcription History Area -->
-    <main class="flex-1 w-full max-w-2xl px-6 py-4 overflow-y-auto relative z-10 flex flex-col gap-6" ref="chatContainer">
+    <main class="flex-1 w-full max-w-3xl px-6 py-8 overflow-y-auto relative z-10 flex flex-col gap-8 scroll-smooth" ref="chatContainer">
         
-        <div v-for="msg in conversation" :key="msg.id" class="flex w-full" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
-            <div 
-               class="max-w-[85%] rounded-3xl px-6 py-4 backdrop-blur shadow-lg transition-transform duration-300 transform scale-100"
-               :class="msg.role === 'user' ? 'bg-surface-800 text-slate-200 border border-surface-700/50 rounded-br-sm' : 'bg-indigo-600/10 border border-indigo-500/20 text-indigo-50 rounded-bl-sm'"
-            >
-                <p class="text-[15px] leading-relaxed font-medium whitespace-pre-wrap">{{ msg.content }}</p>
+        <div v-for="msg in conversation" :key="msg.id" class="flex w-full animate-fade-in-up" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+            <div class="flex flex-col gap-2 max-w-[85%]">
+                <!-- Message Label -->
+                <div class="flex items-center gap-2 px-3" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+                    <span class="text-[10px] uppercase tracking-widest font-bold font-display" :class="msg.role === 'user' ? 'text-slate-500' : 'text-indigo-400'">
+                        {{ msg.role === 'user' ? 'Vous' : 'Recruteur' }}
+                    </span>
+                    <SparklesIcon v-if="msg.role === 'assistant'" class="w-3 h-3 text-indigo-400 animate-pulse" />
+                </div>
+
+                <div 
+                   class="rounded-3xl px-6 py-5 backdrop-blur-md shadow-2xl transition-all duration-500"
+                   :class="msg.role === 'user' 
+                     ? 'bg-white/5 border border-white/10 text-slate-200 rounded-br-sm shadow-indigo-500/5' 
+                     : 'bg-indigo-600/10 border border-indigo-500/30 text-indigo-50 rounded-bl-sm shadow-indigo-500/10'"
+                >
+                    <p class="text-[16px] leading-relaxed font-medium whitespace-pre-wrap select-text selection:bg-indigo-500/30">{{ msg.content }}</p>
+                </div>
             </div>
         </div>
         
         <!-- Live Transcript -->
-        <div v-if="transcript" class="flex w-full justify-end opacity-60">
-            <div class="max-w-[85%] rounded-3xl px-6 py-4 bg-surface-800 text-slate-300 border border-surface-700/50 border-dashed rounded-br-sm">
-                <p class="text-[15px] leading-relaxed font-medium italic">{{ transcript }}...</p>
+        <div v-if="transcript" class="flex w-full justify-end opacity-60 animate-pulse">
+            <div class="max-w-[80%] rounded-2xl px-5 py-3 bg-surface-800/50 text-slate-300 border border-surface-700/50 border-dashed rounded-br-sm">
+                <p class="text-sm leading-relaxed font-medium italic">{{ transcript }}...</p>
             </div>
         </div>
     </main>
@@ -526,15 +538,29 @@ onUnmounted(() => {
             </div>
         </button>
 
-        <p class="mt-8 text-sm font-semibold text-slate-400 max-w-sm text-center px-4 h-12">
-            <span v-if="isSpeaking" class="animate-pulse text-indigo-300 flex items-center justify-center gap-2">
-                <SparklesIcon class="w-4 h-4" /> Le Recruteur parle...
+        <p class="mt-8 text-sm font-bold tracking-wide max-w-sm text-center px-4 h-16 flex items-center justify-center">
+            <span v-if="isAIThinking" class="text-indigo-400 flex items-center gap-3 animate-pulse bg-indigo-500/5 px-6 py-3 rounded-full border border-indigo-500/20">
+                <span class="flex gap-1">
+                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
+                </span>
+                Analyse de votre réponse...
             </span>
-            <span v-else-if="isListening" class="text-pink-300 text-base">
-                À vous de parler ! (Cliquez pour arrêter)
+            <span v-else-if="isSpeaking" class="text-indigo-300 flex items-center gap-2 bg-indigo-500/10 px-6 py-3 rounded-full border border-indigo-500/10">
+                <SparklesIcon class="w-4 h-4" /> Écoute du recruteur
             </span>
-            <span v-else>
-                Cliquez sur le microphone pour répondre.
+            <span v-else-if="isListening" class="text-pink-400 flex flex-col items-center gap-1 animate-fadeIn">
+                <span class="bg-pink-500/10 px-6 py-3 rounded-full border border-pink-500/20 shadow-lg shadow-pink-500/5">
+                    À vous de parler !
+                </span>
+                <span class="text-[10px] mt-2 opacity-60 uppercase tracking-widest">(Cliquez pour envoyer maintenant)</span>
+            </span>
+            <span v-else class="text-slate-400 flex flex-col items-center gap-2 group-hover:text-slate-300 transition-colors">
+                <span class="bg-surface-900 border border-surface-800 px-8 py-3 rounded-full shadow-inner hover:border-indigo-500/30 transition-all cursor-pointer" @click="triggerListen">
+                    Cliquez sur le microphone pour répondre.
+                </span>
+                <span class="text-[10px] opacity-40 uppercase tracking-tighter">Votre assistant vous écoute puis analyse votre réponse</span>
             </span>
         </p>
 

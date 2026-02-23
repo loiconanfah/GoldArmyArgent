@@ -110,6 +110,7 @@ async def websocket_interview(websocket: WebSocket, token: str):
         # Initial greeting
         initial_greeting = f"Bonjour, je suis ravi de vous recevoir pour ce poste de {job_title} chez {company}. Pourrions-nous commencer par une brève présentation de votre parcours par rapport à votre CV ?"
         await websocket.send_json({"type": "message", "role": "assistant", "content": initial_greeting})
+        await websocket.send_json({"type": "done"})
         
         while True:
             # Receive data from frontend. We expect JSON with user message.
