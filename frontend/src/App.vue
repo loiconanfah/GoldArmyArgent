@@ -1,6 +1,6 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { 
   HomeIcon, 
   MapIcon,
@@ -11,17 +11,41 @@ import {
   Bars3Icon,
   XMarkIcon,
   MagnifyingGlassIcon,
-  BellIcon
+  BellIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MicrophoneIcon
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
+const router = useRouter()
 const currentRoute = computed(() => route.path)
+const isPublicRoute = computed(() => ['/', '/login', '/register'].includes(route.path))
 const isMobileMenuOpen = ref(false)
+const isSidebarCollapsed = ref(false)
+const userEmail = ref('Yves D.')
+
+onMounted(() => {
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr)
+      userEmail.value = user.email.split('@')[0]
+    } catch(e){}
+  }
+})
+
+const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    router.push('/login')
+}
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon, exact: true },
+  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, exact: false },
   { name: 'Sniper', href: '/opportunities', icon: MapIcon },
-  { name: 'Mentor IA', href: '/chat', icon: ChatBubbleBottomCenterTextIcon },
+  { name: 'Mentor IA', href: '/mentor', icon: ChatBubbleBottomCenterTextIcon },
+  { name: 'Entretien (Vocal)', href: '/interview', icon: MicrophoneIcon },
   { name: 'CRM Candidatures', href: '/crm', icon: BriefcaseIcon },
   { name: 'Réseau', href: '/network', icon: UserGroupIcon },
 ]
@@ -30,69 +54,88 @@ const navigation = [
 <template>
   <div class="min-h-screen bg-surface-950 text-slate-200 flex font-sans selection:bg-gold-500/30">
     <!-- Mobile Menu Overlay -->
-    <div v-show="isMobileMenuOpen" class="fixed inset-0 bg-surface-950/80 backdrop-blur-sm z-40 md:hidden" @click="isMobileMenuOpen = false"></div>
+    <div v-show="isMobileMenuOpen && !isPublicRoute" class="fixed inset-0 bg-surface-950/80 backdrop-blur-sm z-40 md:hidden" @click="isMobileMenuOpen = false"></div>
 
     <!-- Sidebar (Left Col) -->
-    <aside :class="[
-      'fixed inset-y-0 left-0 bg-surface-900 border-r border-surface-800 w-64 flex flex-col z-50 transition-transform duration-300 ease-in-out md:translate-x-0 md:static',
-      isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+    <aside v-if="!isPublicRoute" :class="[
+      'fixed inset-y-0 left-0 bg-surface-900 border-r border-surface-800 flex flex-col z-50 transition-all duration-300 ease-in-out md:static',
+      isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+      isSidebarCollapsed ? 'w-20' : 'w-64'
     ]">
       <!-- Logo Section -->
-      <div class="h-16 flex items-center justify-between px-6 border-b border-surface-800 shrink-0">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-amber-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
+      <div class="h-16 flex items-center justify-between px-4 border-b border-surface-800 shrink-0">
+        <div class="flex items-center gap-3 overflow-hidden whitespace-nowrap">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-amber-600 flex shrink-0 items-center justify-center shadow-lg shadow-gold-500/20">
                 <span class="text-sm leading-none" role="img" aria-label="helmet">🪖</span>
             </div>
-            <h1 class="text-lg font-display font-bold text-white tracking-tight">
+            <h1 v-if="!isSidebarCollapsed" class="text-lg font-display font-bold text-white tracking-tight transition-opacity duration-300">
                 GoldArmy
             </h1>
         </div>
-        <!-- Close Mobile Menu -->
-        <button @click="isMobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white">
-            <XMarkIcon class="w-6 h-6" />
-        </button>
+        
+        <div class="flex items-center">
+            <!-- Toggle Sidebar Desktop -->
+            <button @click="isSidebarCollapsed = !isSidebarCollapsed" class="hidden md:flex p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-surface-800 transition-colors">
+                <ChevronRightIcon v-if="isSidebarCollapsed" class="w-5 h-5" />
+                <ChevronLeftIcon v-else class="w-5 h-5" />
+            </button>
+            <!-- Close Mobile Menu -->
+            <button @click="isMobileMenuOpen = false" class="md:hidden text-slate-400 hover:text-white">
+                <XMarkIcon class="w-6 h-6" />
+            </button>
+        </div>
       </div>
       
       <!-- Nav Links -->
-      <nav class="flex-1 px-4 py-8 space-y-1 overflow-y-auto">
-        <p class="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Core</p>
+      <nav class="flex-1 px-3 py-8 space-y-2 overflow-y-auto overflow-x-hidden">
+        <p v-if="!isSidebarCollapsed" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4 transition-opacity duration-300">Core</p>
         
         <router-link 
           v-for="item in navigation" 
           :key="item.name" 
           :to="item.href"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
-          :class="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-surface-800'"
+          class="flex items-center rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
+          :class="[
+             item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-surface-800',
+             isSidebarCollapsed ? 'justify-center py-3 px-0' : 'gap-3 px-3 py-2.5'
+          ]"
+          :title="isSidebarCollapsed ? item.name : ''"
         >
           <!-- Active Indicator dot -->
           <div v-if="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href))" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
           
           <component :is="item.icon" class="w-5 h-5 shrink-0" :class="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'" />
-          {{ item.name }}
           
-          <div v-if="item.name === 'Mentor IA'" class="ml-auto flex items-center justify-center">
+          <span v-if="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-300">{{ item.name }}</span>
+          
+          <div v-if="item.name === 'Mentor IA' && !isSidebarCollapsed" class="ml-auto flex items-center justify-center">
              <span class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[9px] uppercase font-black px-1.5 py-0.5 rounded-full shadow-lg shadow-indigo-500/30">Pro</span>
+          </div>
+          <div v-if="item.name === 'Mentor IA' && isSidebarCollapsed" class="absolute top-1 right-1">
+             <span class="w-2 h-2 rounded-full bg-violet-500 block"></span>
           </div>
         </router-link>
       </nav>
 
       <!-- Settings / Footer Nav -->
-      <div class="p-4 border-t border-surface-800 shrink-0">
+      <div class="p-3 border-t border-surface-800 shrink-0 overflow-hidden">
          <router-link 
           to="/settings"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-slate-200 hover:bg-surface-800 transition-all group"
+          class="flex items-center rounded-xl text-sm font-semibold text-slate-400 hover:text-slate-200 hover:bg-surface-800 transition-all group"
+          :class="isSidebarCollapsed ? 'justify-center py-3 px-0' : 'gap-3 px-3 py-2.5'"
+          :title="isSidebarCollapsed ? 'Settings' : ''"
         >
           <Cog6ToothIcon class="w-5 h-5 shrink-0 text-slate-500 group-hover:text-slate-300" />
-          Settings
+          <span v-if="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-300">Settings</span>
         </router-link>
       </div>
     </aside>
 
     <!-- Main Content Col -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10 w-full">
       
       <!-- Topbar (Header) -->
-      <header class="h-16 bg-surface-950 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4">
+      <header v-if="!isPublicRoute" class="h-16 bg-surface-950 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4">
         
         <!-- Left: Mobile Toggle & Page Title (Optional) -->
         <div class="flex items-center gap-4">
@@ -124,16 +167,16 @@ const navigation = [
             <div class="h-6 w-px bg-surface-800 hidden sm:block"></div>
 
             <!-- Enhanced User Profile Dropdown Trigger -->
-            <button class="flex items-center gap-3 p-1 pr-3 rounded-full hover:bg-surface-800 border border-transparent hover:border-surface-700 transition-all group">
+            <button @click="handleLogout" title="Se déconnecter" class="flex items-center gap-3 p-1 pr-3 rounded-full hover:bg-surface-800 border border-transparent hover:border-surface-700 transition-all group">
                 <div class="relative">
-                    <div class="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-400 flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-950 group-hover:ring-indigo-500/30 transition-all">
-                        YD
+                    <div class="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-400 flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-950 group-hover:ring-indigo-500/30 transition-all uppercase">
+                        {{ userEmail.charAt(0) }}
                     </div>
-                    <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-surface-950 rounded-full"></div>
+                    <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-surface-950 rounded-full group-hover:bg-rose-400"></div>
                 </div>
                 <div class="hidden md:block text-left">
-                    <p class="text-[13px] font-bold text-white leading-none mb-0.5 group-hover:text-indigo-400 transition-colors">Yves D.</p>
-                    <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider leading-none">Pro Plan</p>
+                    <p class="text-[13px] font-bold text-white leading-none mb-0.5 group-hover:text-rose-400 transition-colors">{{ userEmail }}</p>
+                    <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider leading-none">Déconnexion</p>
                 </div>
             </button>
         </div>
@@ -145,20 +188,7 @@ const navigation = [
         <div class="absolute top-0 right-0 w-[800px] h-[600px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none mix-blend-screen"></div>
         
         <div class="w-full min-h-full">
-            <router-view v-slot="{ Component }">
-            <transition 
-                name="fade-transform" 
-                mode="out-in"
-                enter-active-class="transition duration-300 ease-out"
-                enter-from-class="opacity-0 translate-y-4"
-                enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition duration-200 ease-in"
-                leave-from-class="opacity-100 translate-y-0"
-                leave-to-class="opacity-0 -translate-y-4"
-            >
-                <component :is="Component" />
-            </transition>
-            </router-view>
+            <router-view />
         </div>
       </main>
     </div>

@@ -48,8 +48,19 @@ class JobWebSearcher:
             elif not url:
                 unique_jobs.append(job)
                 
-        logger.info(f"📊 Résultats uniques: {len(unique_jobs)} offres")
-        return unique_jobs[:max_results]
+        unique_jobs = unique_jobs[:max_results]
+        
+        logger.info(f"🔍 Enrichissement asynchrone de {len(unique_jobs)} offres pour extraire les e-mails/sites web...")
+        enrich_tasks = [self.enrich_job_details(job) for job in unique_jobs]
+        enriched_jobs = await asyncio.gather(*enrich_tasks, return_exceptions=True)
+        
+        final_jobs = []
+        for job in enriched_jobs:
+            if isinstance(job, dict):
+                final_jobs.append(job)
+                
+        logger.info(f"📊 Résultats finaux enrichis: {len(final_jobs)} offres")
+        return final_jobs
 
     async def enrich_job_details(self, job: Dict[str, Any]) -> Dict[str, Any]:
         """Enrichit les détails d'une offre d'emploi spécifique."""
@@ -66,25 +77,57 @@ class JobWebSearcher:
                 return job
             
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
             }
             
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, context=ssl_context, timeout=15) as response:
-                html = response.read().decode('utf-8')
+            try:
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, context=ssl_context, timeout=15) as response:
+                    html = response.read().decode('utf-8')
+                    
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(html, 'html.parser')
                 
-            from bs4 import BeautifulSoup
-            soup = BeautifulSoup(html, 'html.parser')
-            
-            # Extraction selon la source
-            if 'indeed.com' in url:
-                return self._scrape_indeed_details(soup, job)
-            elif 'linkedin.com' in url:
-                return self._scrape_linkedin_details(soup, job)
-            elif 'jobbank.gc.ca' in url:
-                return self._scrape_jobbank_details(soup, job)
-            else:
-                return self._scrape_generic_details(soup, job)
+                # Extraction selon la source
+                enriched_job = job
+                if 'indeed.com' in url:
+                    enriched_job = self._scrape_indeed_details(soup, job)
+                elif 'linkedin.com' in url:
+                    enriched_job = self._scrape_linkedin_details(soup, job)
+                elif 'jobbank.gc.ca' in url:
+                    enriched_job = self._scrape_jobbank_details(soup, job)
+                else:
+                    enriched_job = self._scrape_generic_details(soup, job)
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ Scraping bloqué pour {url} ({e}). Tentative Regex sur snippet...")
+                import re
+                desc_text = job.get('description', '')
+                emails_found = re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', desc_text)
+                if emails_found:
+                    job['emails'] = list(set([e.lower() for e in emails_found]))
+                    job['apply_email'] = job['emails'][0]
+                enriched_job = job
+                
+            # Phase 5: Sauvegarde automatique du contact réseau
+            try:
+                from core.contacts import contacts_manager
+                company = enriched_job.get('company')
+                website = enriched_job.get('company_website', '')
+                emails = enriched_job.get('emails', [])
+                if company and company.lower() not in ["confidentiel", "entreprise confidentielle"] and (website or emails):
+                    contacts_manager.save_contact(
+                        company_name=company,
+                        site_url=website,
+                        emails=emails,
+                        source_job=enriched_job.get('title', '')
+                    )
+            except Exception as e:
+                logger.error(f"❌ Erreur de sauvegarde du contact: {e}")
+                
+            return enriched_job
                 
         except Exception as e:
             logger.error(f"❌ Erreur enrichissement {job.get('source', 'Unknown')}: {e}")
@@ -244,14 +287,63 @@ class JobWebSearcher:
                 
             # Comment postuler (How to apply - pour les emails)
             howto_elem = soup.find('div', id='howtoapply') or soup.find(id=lambda x: x and 'howtoapply' in x.lower())
+            
+            job['apply_email'] = ""
+            job['apply_url'] = ""
+            
             if howto_elem:
                 desc_text += "\n\nComment postuler:\n" + howto_elem.get_text(separator=' ', strip=True)
+                
+                # Cherche s'il y a des liens mailto:
+                import re
+                mailto_links = howto_elem.find_all('a', href=re.compile(r'^mailto:'))
+                if mailto_links:
+                    job['apply_email'] = mailto_links[0]['href'].replace('mailto:', '').strip()
+                else:
+                    # Cherche le header "Par email"
+                    email_header = howto_elem.find(string=re.compile(r'Par email', re.IGNORECASE))
+                    if email_header:
+                        block = email_header.find_parent('div') or email_header.find_parent('p')
+                        if block:
+                            emails = re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', block.get_text())
+                            if emails: job['apply_email'] = emails[0].lower()
+                                
+                # Cherche s'il y a un lien "En ligne"
+                online_header = howto_elem.find(string=re.compile(r'En ligne', re.IGNORECASE))
+                if online_header:
+                    block = online_header.find_parent('div') or online_header.find_parent('p') or online_header.find_parent('ul')
+                    if block:
+                        link = block.find('a', href=re.compile(r'^http'))
+                        if link:
+                            job['apply_url'] = link['href']
+                        else:
+                            urls = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', block.get_text())
+                            if urls: job['apply_url'] = urls[0]
+
+            # Fallback général Email extraction
+            import re
+            emails_found = set()
+            for email in re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', soup.get_text()):
+                emails_found.add(email.lower())
                 
             # Email links explicitly
             email_links = soup.find_all('a', href=lambda href: href and href.startswith('mailto:'))
             for link in email_links:
                 email = link['href'].replace('mailto:', '').split('?')[0]
-                desc_text += f" Email: {email}"
+                emails_found.add(email.lower())
+                desc_text += f"\nEmail: {email}"
+                
+            if emails_found:
+                job['emails'] = list(emails_found)
+                
+            # Extraction du site Web de l'entreprise
+            website_elem = soup.find('a', {'property': 'url'}) or soup.find(id=lambda x: x and 'website' in str(x).lower())
+            if website_elem and website_elem.has_attr('href'):
+                if not website_elem['href'].startswith('#'):
+                    job['company_website'] = website_elem['href']
+                    
+            # Extraction Description Entreprise par défaut
+            job['company_description'] = company_elem.get_text(strip=True) if company_elem else "Information confidentielle."
                 
             if desc_text:
                 job['description'] = desc_text
@@ -291,6 +383,21 @@ class JobWebSearcher:
             
             if best_desc:
                 job['description'] = best_desc
+                
+            # Extraction Email agressive
+            import re
+            emails_found = set()
+            main_content = soup.find('main') or soup.find('body') or soup
+            for email in re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', main_content.get_text()):
+                emails_found.add(email.lower())
+                
+            email_links = soup.find_all('a', href=lambda href: href and href.startswith('mailto:'))
+            for link in email_links:
+                emails_found.add(link['href'].replace('mailto:', '').split('?')[0].lower())
+                
+            if emails_found:
+                job['emails'] = list(emails_found)
+                job['apply_email'] = list(emails_found)[0]
             
             # Compétences
             desc_text = job.get('description', '').lower()
@@ -413,6 +520,91 @@ class JobWebSearcher:
         # On passe directement aux liens de fallback pour ne pas bloquer l'agent.
         logger.warning(f"⚠️ Recherche DDG désactivée (Captcha). Utilisation des liens de fallback.")
         return []
+
+    async def find_official_website_and_contact(self, company_name: str, location: str = "") -> Dict[str, Any]:
+        """Tente de trouver le site officiel d'une entreprise via DuckDuckGo et d'y extraire un contact."""
+        if not company_name or company_name.lower() in ["confidentiel", "anonyme"]:
+            return {}
+            
+        logger.info(f"🕵️ OSINT: Recherche du site officiel pour '{company_name}'...")
+        import urllib.parse
+        import urllib.request
+        from bs4 import BeautifulSoup
+        import re
+        
+        query = urllib.parse.quote_plus(f"{company_name} {location} official site contact")
+        url = f"https://html.duckduckgo.com/html/?q={query}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        
+        result_contact = {"company_name": company_name, "site_url": "", "emails": [], "phone": ""}
+        
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, context=ssl_context, timeout=10) as response:
+                html = response.read().decode('utf-8')
+                
+            soup = BeautifulSoup(html, 'html.parser')
+            # Chercher le premier lien externe valide (pas DDG/Yelp/LinkedIn)
+            links = soup.find_all('a', class_='result__url')
+            
+            official_url = ""
+            for a in links:
+                href = a.get('href', '')
+                if href.startswith('//'):
+                    href = "https:" + href
+                
+                # Ignorer les agrégateurs connus
+                ignored_domains = ['linkedin.com', 'yelp.', 'yellowpages.', 'indeed.com', 'glassdoor.', 'facebook.', 'instagram.', 'duckduckgo.']
+                if href and not any(d in href.lower() for d in ignored_domains):
+                    official_url = a.get_text(strip=True)
+                    if not official_url.startswith('http'):
+                        official_url = "https://" + official_url
+                    break
+                    
+            if not official_url:
+                logger.warning(f"⚠️ OSINT: Aucun site officiel trouvé pour {company_name}")
+                return result_contact
+                
+            result_contact["site_url"] = official_url
+            logger.info(f"🎯 OSINT: Site trouvé -> {official_url}. Scraping profond...")
+            
+            # Scraper ce site officiel pour emails / numéros de téléphone
+            try:
+                site_req = urllib.request.Request(official_url, headers=headers)
+                with urllib.request.urlopen(site_req, context=ssl_context, timeout=10) as site_response:
+                    site_html = site_response.read().decode('utf-8')
+                    site_soup = BeautifulSoup(site_html, 'html.parser')
+                    text_content = site_soup.get_text()
+                    
+                    # Regex Emails
+                    emails_found = set()
+                    for email in re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', text_content):
+                        # Eviter les faux positifs comme les images .png
+                        if not any(email.lower().endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']):
+                            emails_found.add(email.lower())
+                            
+                    # Regex Numéros de Téléphone (format basique Nord-Américain / Européen)
+                    phones_found = set()
+                    for phone in re.findall(r'(?:\+?(\d{1,3}))?[-. (]*(\d{3})[-. )]*(\d{3})[-. ]*(\d{4})(?: *x(\d+))?', text_content):
+                        # Assemble just the main parts
+                        if phone[1] and phone[2] and phone[3]:
+                            assembled = f"{phone[1]}-{phone[2]}-{phone[3]}"
+                            phones_found.add(assembled)
+                            
+                    result_contact["emails"] = list(emails_found)
+                    if phones_found:
+                        result_contact["phone"] = list(phones_found)[0]
+                        
+                    logger.info(f"✅ OSINT: Données extraites: {len(emails_found)} e-mails, {len(phones_found)} téléphones.")
+            except Exception as se:
+                logger.warning(f"⚠️ OSINT: Impossible de scraper le site trouvé ({official_url}): {se}")
+                
+        except Exception as e:
+            logger.warning(f"⚠️ OSINT DuckDuckGo bloqué ou erreur: {e}")
+            
+        return result_contact
 
     def _generate_fallback_links(self, keywords: str, location: str) -> List[Dict[str, Any]]:
         """Génère des liens de recherche directs en dernier recours."""

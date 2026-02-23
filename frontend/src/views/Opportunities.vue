@@ -1,4 +1,6 @@
 <script setup>
+import { authFetch } from '../utils/auth'
+
 import { ref, computed, onMounted } from 'vue'
 import { 
     BriefcaseIcon, 
@@ -11,17 +13,16 @@ import {
     ArrowPathIcon,
     SparklesIcon
 } from '@heroicons/vue/24/outline'
+import { toRefs } from 'vue'
+import { sniperState } from '../store/sniperState'
 
-const filter = ref('Toutes les pertinentes')
-const searchQuery = ref('')
-const cvText = ref('')
-const isUploading = ref(false)
-const isLoading = ref(false)
-const isParsingPdf = ref(false)
-const jobs = ref([])
-const selectedFileName = ref('')
+const {
+    filter, searchQuery, inputLocation, cvText, isUploading, isLoading, isParsingPdf, 
+    jobs, selectedFileName, resultLimit, showAdaptModal, isAdaptingCV, 
+    adaptingJobId, adaptedData, loadingRadarFor
+} = toRefs(sniperState)
+
 const fileInput = ref(null)
-const resultLimit = ref(10)
 
 const triggerFileInput = () => {
     fileInput.value?.click()
@@ -44,7 +45,7 @@ const handleFileUpload = async (event) => {
     formData.append('file', file)
     
     try {
-        const res = await fetch('http://localhost:8000/api/parse-pdf', {
+        const res = await authFetch('http://localhost:8000/api/parse-pdf', {
             method: 'POST',
             body: formData
         })
@@ -136,14 +137,15 @@ const performSearch = async () => {
     jobs.value = [] // Clear previous results
     
     try {
-        const res = await fetch('http://localhost:8000/api/chat', {
+        const res = await authFetch('http://localhost:8000/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 message: searchQuery.value, 
                 cv_text: cvText.value, 
                 cv_filename: selectedFileName.value,
-                nb_results: resultLimit.value 
+                nb_results: resultLimit.value,
+                location: inputLocation.value
             })
         })
         const json = await res.json()
@@ -181,13 +183,6 @@ const performSearch = async () => {
     }
 }
 
-const loadingRadarFor = ref(null);
-
-const showAdaptModal = ref(false);
-const isAdaptingCV = ref(false);
-const adaptingJobId = ref(null);
-const adaptedData = ref(null);
-
 const adaptCV = async (job) => {
     if (!cvText.value) {
         alert("Veuillez d'abord télécharger/coller votre CV dans la section ci-dessus avant d'adapter.");
@@ -200,7 +195,7 @@ const adaptCV = async (job) => {
     adaptedData.value = null;
     
     try {
-        const res = await fetch('http://localhost:8000/api/adapt-cv', {
+        const res = await authFetch('http://localhost:8000/api/adapt-cv', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -237,7 +232,7 @@ const closeAdaptModal = () => {
 const runRadar = async (job) => {
     loadingRadarFor.value = job.id
     try {
-        const res = await fetch('http://localhost:8000/api/radar', {
+        const res = await authFetch('http://localhost:8000/api/radar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ company_name: job.company, job_title: job.title })
@@ -249,6 +244,34 @@ const runRadar = async (job) => {
         alert("Erreur lors de l'appel au Radar.")
     } finally {
         loadingRadarFor.value = null
+    }
+}
+
+const addToCrmAndApply = async (job) => {
+    try {
+        // 1. Enregistrer dans le CRM
+        await authFetch('http://localhost:8000/api/crm/applications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                job_title: job.title,
+                company_name: job.company,
+                url: job.rawUrl,
+                status: 'TO_APPLY',
+                notes: job.desc && job.desc.length > 200 ? job.desc.substring(0, 200) + '...' : job.desc
+            })
+        });
+        
+        // 2. Ouvrir le lien dans un nouvel onglet
+        if (job.rawUrl) {
+            window.open(job.rawUrl, '_blank', 'noopener,noreferrer');
+        }
+    } catch (e) {
+        console.error("Erreur ajout CRM :", e);
+        // Fallback: ouvrir quand même le lien
+        if (job.rawUrl) {
+            window.open(job.rawUrl, '_blank', 'noopener,noreferrer');
+        }
     }
 }
 </script>
@@ -292,7 +315,7 @@ const runRadar = async (job) => {
            <!-- Limit Container (Solid) -->
            <div class="flex items-center gap-2 bg-surface-900 border border-surface-800 p-1.5 rounded-xl shadow-sm">
               <span class="text-slate-400 ml-3 text-sm font-medium">Résultats max:</span>
-              <select v-model="resultLimit" class="bg-transparent text-white focus:outline-none focus:ring-0 cursor-pointer pr-4 font-bold appearance-none text-sm border-l border-surface-700/50 pl-2">
+              <select v-model="resultLimit" @change="performSearch" class="bg-transparent text-white focus:outline-none focus:ring-0 cursor-pointer pr-4 font-bold appearance-none text-sm border-l border-surface-700/50 pl-2">
                 <option class="text-slate-900" :value="5">5</option>
                 <option class="text-slate-900" :value="10">10</option>
                 <option class="text-slate-900" :value="15">15</option>
@@ -309,17 +332,31 @@ const runRadar = async (job) => {
         
         <div class="bg-surface-950 rounded-2xl p-4 md:p-6 border border-surface-800 relative z-10">
             <div class="flex flex-col lg:flex-row gap-4">
-                <!-- Search Input -->
-                <div class="relative flex-1 group">
-                    <div class="absolute inset-0 bg-gradient-to-r from-gold-500 to-amber-500 rounded-2xl blur opacity-0 group-focus-within:opacity-20 transition-opacity duration-500"></div>
-                    <div class="relative flex items-center bg-surface-900 border border-surface-700 rounded-2xl focus-within:border-gold-500/50 transition-colors h-16 w-full">
+                <!-- Search Inputs: Keyword + Location -->
+                <div class="flex-1 flex flex-col md:flex-row gap-0 group bg-surface-900 border border-surface-700 rounded-2xl focus-within:border-gold-500/50 transition-colors relative">
+                    <div class="absolute inset-0 bg-gradient-to-r from-gold-500 to-amber-500 rounded-2xl blur opacity-0 group-focus-within:opacity-20 transition-opacity duration-500 pointer-events-none"></div>
+                    
+                    <!-- Keyword -->
+                    <div class="relative flex-1 flex items-center h-16 w-full border-b md:border-b-0 md:border-r border-surface-700">
                         <MagnifyingGlassIcon class="absolute left-5 w-6 h-6 text-slate-500 group-focus-within:text-gold-400 transition-colors" />
                         <input 
                             v-model="searchQuery"
                             @keyup.enter="performSearch"
                             type="text" 
-                            placeholder="Ex: Stage Ingénieur Logiciel Montréal..."
-                            class="w-full pl-14 pr-4 py-4 bg-transparent text-white focus:outline-none text-lg placeholder-slate-600 font-medium"
+                            placeholder="Ex: Stage Ingénieur Logiciel..."
+                            class="w-full pl-14 pr-4 py-4 bg-transparent text-white focus:outline-none text-lg placeholder-slate-600 font-medium rounded-l-2xl z-10"
+                        />
+                    </div>
+
+                    <!-- Location -->
+                    <div class="relative flex-[0.7] flex items-center h-16 w-full">
+                        <MapPinIcon class="absolute left-5 w-6 h-6 text-slate-500 group-focus-within:text-gold-400 transition-colors" />
+                        <input 
+                            v-model="inputLocation"
+                            @keyup.enter="performSearch"
+                            type="text" 
+                            placeholder="Localisation (ex: Montréal, QC)"
+                            class="w-full pl-14 pr-4 py-4 bg-transparent text-white focus:outline-none text-lg placeholder-slate-600 font-medium rounded-r-2xl z-10"
                         />
                     </div>
                 </div>
@@ -486,10 +523,12 @@ const runRadar = async (job) => {
           
           <!-- Card Footer Actions -->
           <div class="flex items-center gap-3 pt-4 border-t border-surface-800/50 mt-auto">
-             <a :href="job.rawUrl" target="_blank" rel="noopener noreferrer" v-if="job.rawUrl" 
+             <button 
+                v-if="job.rawUrl" 
+                @click="addToCrmAndApply(job)"
                 class="flex-[0.4] text-center bg-white hover:bg-slate-200 text-surface-950 px-4 py-3 rounded-xl font-bold text-sm transition-colors shadow-sm focus:ring-2 focus:ring-white/50 outline-none">
                 Postuler
-             </a>
+             </button>
              <button disabled class="flex-[0.4] text-center bg-surface-800 text-slate-500 px-4 py-3 rounded-xl font-bold text-sm cursor-not-allowed" v-else>
                  Lien Mort
              </button>

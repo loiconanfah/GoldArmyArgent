@@ -14,8 +14,8 @@ class GeminiClient:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY non configurée")
             
-        # Utilisation de Gemini 3.x (Preview/Pro) sur demande
-        self.default_model = "gemini-3.1-pro-preview"
+        # Utilisation de Gemini 2.0 Flash (rapide et capable)
+        self.default_model = getattr(settings, 'gemini_default_model', 'gemini-2.0-flash')
         
     async def generate(self, prompt: str, system: str = None, **kwargs) -> str:
         """Génère une réponse texte via Google Gemini REST API."""
@@ -34,7 +34,10 @@ class GeminiClient:
                 "parts": [{"text": system}]
             }
             
-        gen_config = {"responseMimeType": "application/json"}
+        if "tools" in kwargs:
+            payload["tools"] = kwargs["tools"]
+            
+        gen_config = {}
         if "temperature" in kwargs:
             gen_config["temperature"] = kwargs["temperature"]
         if "max_tokens" in kwargs:
@@ -45,7 +48,8 @@ class GeminiClient:
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
         
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(url, json=payload) as response:
                 if response.status != 200:
                     text = await response.text()
@@ -86,7 +90,7 @@ class GeminiClient:
             }
             
         # Configuration
-        gen_config = {"responseMimeType": "application/json"}
+        gen_config = {}
         if "temperature" in kwargs:
             gen_config["temperature"] = kwargs["temperature"]
         if "max_tokens" in kwargs:
@@ -96,7 +100,8 @@ class GeminiClient:
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
         
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=60)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(url, json=payload) as response:
                 if response.status != 200:
                     text = await response.text()

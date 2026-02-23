@@ -237,7 +237,7 @@ class BaseAgent(ABC):
         self.stats["messages_received"] += 1
         logger.debug(f"📥 {self.name} reçoit un message de {message.sender_id}")
     
-    async def generate_response(self, prompt: str, system: Optional[str] = None) -> str:
+    async def generate_response(self, prompt: str, system: Optional[str] = None, **kwargs) -> str:
         """
         Génère une réponse avec le LLM.
         
@@ -255,12 +255,17 @@ class BaseAgent(ABC):
         if system is None:
             system = PromptTemplates.get_system_prompt(self.agent_type)
         
+        merged_kwargs = {
+            "model": self.model,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            **kwargs
+        }
+        
         response = await self.llm_client.generate(
             prompt=prompt,
             system=system,
-            model=self.model,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
+            **merged_kwargs
         )
         
         return response

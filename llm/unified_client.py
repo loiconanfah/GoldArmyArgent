@@ -86,46 +86,31 @@ class UnifiedLLMClient:
             raise e
 
     async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """Mode Chat unifié."""
-        # 0. Essai Gemini
+        """Mode Chat unifié avec support de l'historique complet."""
+        # 0. Essai Gemini (a une méthode chat() native qui supporte l'historique)
         if self.gemini_client:
             try:
                 return await self.gemini_client.chat(messages, **kwargs)
             except Exception as e:
-                logger.warning(f"⚠️ Échec Gemini Chat ({e}).")
+                logger.warning(f"⚠️ Échec Gemini Chat ({e}). Bascule sur OpenRouter.")
 
-        # 1. Essai OpenRouter
+        # 1. Essai OpenRouter (via generate, en assemblant l'historique dans le prompt)
         if self.openrouter_client:
             try:
-                # OpenRouter utilise /chat/completions qui est similaire à generate() avec messages
-                # Mais notre client OpenRouter a une méthode generate() qui gère les messages si "system" est passé
-                # Pour le chat complet, on doit adapter.
-                
-                # Note: OpenRouterClient.generate gère déjà l'assemblage messages -> payload
-                # Mais ici on a déjà une liste de messages.
-                # On va appeler directement la méthode client interne si besoin ou adapter openrouter_client.
-                
-                # Simplification: OpenRouterClient n'a pas de méthode chat() explicite dans mon implémentation précédente ?
-                # Vérifions... J'ai codé generate() qui construit le payload chat/completions.
-                # Mais il prend "prompt" et "system".
-                # Je vais tricher: concaténer ou appeler une méthode privée si elle existait.
-                
-                # Mieux: modifier OpenRouterClient pour accepter messages, ou adapter ici.
-                # Pour l'instant, on assume que OpenRouterClient.generate est assez flexible ou on l'améliore.
-                # Hack temporaire: extraire le dernier user message comme prompt.
-                
-                # CORRECTIF: Je vais plutôt appeler _raw_chat sur OpenRouterClient si je l'avais fait, 
-                # mais comme je viens de le créer, je sais que generate() prend prompt/system.
-                
-                # Pour faire propre, je vais utiliser generate() avec le dernier message
-                # et concaténer l'historique dans system ? Non, c'est moche.
-                
-                # Solution rapide: Utiliser Ollama pour le chat complexe pour l'instant
-                # OU (Mieux) utiliser OpenRouter generate en mode "raw" si je l'avais exposé.
-                
-                pass # TODO: Améliorer le support Chat OpenRouter
-            except Exception:
-                pass
+                model = kwargs.get("model") or settings.openrouter_default_model
+                # Assembler l'historique dans un prompt structuré
+                system_msgs = [m["content"] for m in messages if m["role"] == "system"]
+                system = "\n".join(system_msgs) if system_msgs else None
+                conv = ""
+                for msg in messages:
+                    if msg["role"] == "system":
+                        continue
+                    role_label = "Utilisateur" if msg["role"] == "user" else "Assistant"
+                    conv += f"\n{role_label}: {msg['content']}"
+                conv = conv.strip()
+                return await self.openrouter_client.generate(conv, model=model, system=system, **{k: v for k, v in kwargs.items() if k != "model"})
+            except Exception as e:
+                logger.warning(f"⚠️ Échec OpenRouter Chat ({e}). Bascule sur Ollama.")
 
-        # Fallback Ollama (qui a une méthode chat native)
+        # 2. Fallback Ollama (a aussi une méthode chat native)
         return await self.ollama_client.chat(messages, **kwargs)

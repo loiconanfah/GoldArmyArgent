@@ -3,18 +3,25 @@ import re
 from loguru import logger
 from typing import Dict, Any
 
-from core.agent_base import AgentBase
+from core.agent_base import BaseAgent
 
-class CVAdapterAgent(AgentBase):
+class CVAdapterAgent(BaseAgent):
     """
     Agent spécialisé dans l'adaptation de CV et la génération de projets 
     pour combler les lacunes d'expérience via Gemini 3.1 Pro.
     """
     def __init__(self):
         super().__init__(name="CVAdapterAgent")
-        # Ensure we bind to Gemini if available through UnifiedClient
         from llm.unified_client import UnifiedLLMClient
         self.llm = UnifiedLLMClient()
+
+    async def think(self, task: Dict[str, Any]) -> Dict[str, Any]:
+        """Méthode abstraite requise par BaseAgent"""
+        return {}
+        
+    async def act(self, action_plan: Dict[str, Any]) -> Dict[str, Any]:
+        """Méthode abstraite requise par BaseAgent"""
+        return {}
         
     async def adapt(self, job_title: str, job_desc: str, cv_text: str) -> Dict[str, Any]:
         """
@@ -69,7 +76,11 @@ Génère ton analyse JSON maintenant.
                 if match:
                     return json.loads(match.group(0))
                 else:
-                    raise ValueError("JSON Struct introuvable dans la réponse de Gemini.")
+                    logger.warning("Regex n'a pas pu extraire de JSON.")
+                    return {
+                        "markdown": "## Résumé\n\nErreur de formatage de l'IA (JSON invalide).",
+                        "projects": []
+                    }
 
         except Exception as e:
             logger.error(f"❌ Erreur critique CVAdapterAgent: {e}")

@@ -40,29 +40,38 @@ class JobSearchAgent(BaseAgent):
             cv_profile["target_roles"] = [query]
             cv_profile["skills"] = [query]
         
+        explicit_location = task.get("location", "")
+        base_location = explicit_location if explicit_location else "Québec"
+        
+        # Si l'utilisateur a tapé une recherche explicite, on veut la garder au maximum
         # Extraction TRES BASIQUE via LLM des mots clés et location
         prompt = f"""
-        Extrait le titre du poste (keywords) et la ville (location) de cette requête: "{query}"
+        L'utilisateur cherche: "{query}"
+        
+        Consignes:
+        1. Extrais les mots-clés exacts du poste recherché (keywords). Garde les termes techniques exacts (ex: ".NET", "React", "DevOps").
+        2. Extrais la ville/pays s'il y en a un. Sinon retourne "{base_location}".
+        
         Réponds UNIQUEMENT en JSON avec les clés 'keywords' et 'location'.
-        Si tu ne trouves pas de ville, mets "Québec".
         """
         
-        criteria = {"keywords": query, "location": "Québec"} # Valeurs par défaut robustes
+        criteria = {"keywords": query, "location": base_location} # Valeurs par défaut robustes
         
         try:
-            resp = await self.generate_response(prompt)
-            # Nettoyage et tentative de parse
-            import json, re
-            match = re.search(r'\{.*\}', resp.replace('\n', ''), re.S)
-            if match:
-                parsed = json.loads(match.group(0))
-                if "keywords" in parsed and parsed["keywords"]:
-                    criteria["keywords"] = parsed["keywords"]
-                if "location" in parsed and parsed["location"]:
-                    criteria["location"] = parsed["location"]
-                    
-            # Priorité de la recherche au CV si "query" est générique
-            if cv_profile.get("target_roles") and not query:
+            if query:
+                resp = await self.generate_response(prompt)
+                import json, re
+                match = re.search(r'\{.*\}', resp.replace('\n', ''), re.S)
+                if match:
+                    parsed = json.loads(match.group(0))
+                    # On garde les mots clés extraits seulement s'ils sont pertinents, sinon on garde la query brute
+                    if "keywords" in parsed and parsed["keywords"] and len(parsed["keywords"]) > 2:
+                        criteria["keywords"] = parsed["keywords"]
+                    if "location" in parsed and parsed["location"]:
+                        criteria["location"] = parsed["location"]
+                        
+            # Priorité de la recherche au CV SEULEMENT si "query" est 100% vide
+            elif cv_profile.get("target_roles"):
                  criteria["keywords"] = cv_profile["target_roles"][0]
         except Exception as e:
             logger.warning(f"Fallback LLM extraction failed: {e}. Using raw query.")
@@ -127,13 +136,105 @@ class JobSearchAgent(BaseAgent):
         except Exception as e:
             logger.error(f"🔴 Erreur WebSearcher: {e}")
 
-        # Nettoyage basique (anti-doublons par ID ou URL)
+        # Phase 11 & 12 : Enrichissement Parallèle Massif & OSINT Deep Search
+        logger.info("⚡ Lancement de l'enrichissement parallèle complet et OSINT...")
+        try:
+            from tools.web_searcher import web_searcher
+            enrich_tasks = []
+            
+            async def process_and_osint(j):
+                try:
+                    # 1. Enrichissement classique (ouvre le lien d'origine)
+                    enriched = await web_searcher.enrich_job_details(j)
+                    
+                    # 2. Si source = agrégateur et pas d'email direct, on lance l'OSINT DDG
+                    source = enriched.get('source', '')
+                    company = enriched.get('company', '')
+                    has_email = bool(enriched.get('emails') or enriched.get('apply_email'))
+                    
+                    if source in ['Jooble', 'JSearch'] and company and company.lower() not in ["", "confidentiel", "entreprise anonyme", "entreprise confidentielle"]:
+                        if not has_email:
+                            osint_data = await web_searcher.find_official_website_and_contact(company, location)
+                            if osint_data.get('site_url'):
+                                enriched['company_website'] = osint_data['site_url']
+                            if osint_data.get('emails'):
+                                if 'emails' not in enriched: enriched['emails'] = list(set(osint_data['emails']))
+                                else: enriched['emails'] = list(set(enriched['emails'] + osint_data['emails']))
+                                enriched['apply_email'] = enriched['emails'][0]
+                            if osint_data.get('phone'):
+                                enriched['phone'] = osint_data['phone']
+                                
+                    return enriched
+                except Exception:
+                    return j
+            
+            for job in all_jobs:
+                # JobBank enriches natively, focus on raw APIs
+                if job.get('source') != "Guichet Emplois" and not job.get('scraped'):
+                    enrich_tasks.append(process_and_osint(job))
+                    
+            if enrich_tasks:
+                import asyncio
+                logger.info(f"🕸️ Scraping et OSINT en arrière-plan pour {len(enrich_tasks)} entreprises...")
+                
+                async def safe_task(t):
+                    try:
+                        return await asyncio.wait_for(t, timeout=25.0)
+                    except Exception:
+                        return None
+                        
+                enriched_results = await asyncio.gather(*[safe_task(t) for t in enrich_tasks], return_exceptions=True)
+                
+                # Replace raw jobs with enriched forms
+                for res in enriched_results:
+                    if isinstance(res, dict) and 'url' in res:
+                        for j, orig_job in enumerate(all_jobs):
+                            if orig_job.get('url') == res.get('url'):
+                                all_jobs[j] = res
+                                break
+        except Exception as e:
+            logger.error(f"🔴 Erreur de scraping massif: {e}")
+
+        # Nettoyage basique (anti-doublons par ID ou URL) et Sauvegarde Contacts (Phase 8, 10, 12)
         unique_jobs = []
         seen_urls = set()
+        import re
+        
         for idx, job in enumerate(all_jobs):
             url = job.get("url", f"temp-{idx}")
             if url not in seen_urls:
                 seen_urls.add(url)
+                
+                # Phase 8, 10 & 12: Extraction Contact / Categorisation OSINT
+                company = job.get("company", "")
+                
+                best_email = job.get("apply_email", "")
+                fallback_url = job.get("apply_url") or job.get("company_website") or job.get("url", "")
+                phone_ext = job.get("phone", "")
+                
+                if not best_email:
+                    desc_text = job.get("description", job.get("snippet", ""))
+                    emails_found = re.findall(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', desc_text)
+                    if emails_found:
+                        best_email = emails_found[0]
+                
+                if company and company.lower() not in ["", "confidentiel", "entreprise anonyme", "entreprise confidentielle"]:
+                    # On sauvegarde le contact si on a un e-mail OR un téléphone OR une vrai URL OSINT trouvée
+                    is_real_url = (fallback_url and "jooble.org" not in fallback_url.lower())
+                    if best_email or phone_ext or is_real_url:
+                        try:
+                            from core.contacts import contacts_manager
+                            cat_name = f"Réseau {keywords.title()}"
+                            contacts_manager.save_contact(
+                                company_name=company,
+                                site_url=fallback_url,
+                                emails=[best_email] if best_email else [],
+                                source_job=job.get("title", 'Emploi Sniper'),
+                                category=cat_name,
+                                phone=phone_ext
+                            )
+                        except Exception as e:
+                            logger.error(f"Erreur d'enregistrement contact automatique: {e}")
                 
                 # S'assurer que les champs requis pour le front sont là
                 safe_job = {
@@ -151,6 +252,23 @@ class JobSearchAgent(BaseAgent):
                     "match_score": 85, # Score arbitraire élevé pour le front
                     "match_justification": "Trouvé via moteur de recherche externe."
                 }
+                
+                # --- STRICT KEYWORD FILTERING ---
+                # Si l'utilisateur a tapé une recherche explicite, on élimine les offres qui n'ont AUCUN rapport
+                original_q = action_plan.get("original_query", "").lower()
+                if original_q and original_q.strip():
+                    search_terms = original_q.replace(",", " ").split()
+                    text_to_search = (safe_job["title"] + " " + safe_job["description"]).lower()
+                    
+                    # On veut au moins un des termes importants dans le titre ou la description (exclu les mots de liaison)
+                    stop_words = {"et", "le", "la", "les", "de", "des", "un", "une", "pour", "dev", "développeur", "developer", "stage", "internship", "job", "emploi"}
+                    important_terms = [t for t in search_terms if len(t) > 2 and t not in stop_words]
+                    
+                    if important_terms:
+                        matches = sum(1 for term in important_terms if term in text_to_search)
+                        if matches == 0:
+                            continue # Offre hors sujet, on rejette
+                            
                 unique_jobs.append(safe_job)
                 
         # --- BATCH AI EVALUATION ---

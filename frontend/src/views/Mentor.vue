@@ -3,23 +3,24 @@ import { useRouter } from 'vue-router'
 import { 
   AcademicCapIcon, 
   BoltIcon, 
-  CodeBracketIcon 
+  CodeBracketIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 
 const mentorFeatures = [
   {
-    title: 'Audit CV Implacable',
-    desc: 'Uploade ton CV complet. L\'IA va agir comme du Senior Management et déceler tes failles avant même que tu postules.',
-    icon: BoltIcon,
-    color: 'from-purple-500 to-fuchsia-500',
+    title: 'Audit & Correction CV ATS',
+    desc: 'L\'IA audite ton CV, identifie tes failles, puis le réécrit entièrement pour passer les filtres ATS. Télécharge la version corrigée en Word (.docx), prête à envoyer.',
+    icon: DocumentArrowDownIcon,
+    color: 'from-indigo-500 to-purple-500',
     locked: false,
-    actionPrompt: 'Fais un audit de mon CV'
+    actionPrompt: 'Audite et réécris mon CV pour les ATS'
   },
   {
     title: 'Générateur de Portfolio',
-    desc: 'L\'Agent détecte tes compétences et ton expérience et génère sur mesure le code source de ton propre portfolio Web.',
+    desc: 'L\'Agent extrait tes compétences et génère le code source complet d\'un portfolio web ultra-moderne, responsive et personnalisé.',
     icon: CodeBracketIcon,
     color: 'from-emerald-500 to-teal-500',
     locked: false,
@@ -27,16 +28,21 @@ const mentorFeatures = [
   },
   {
     title: 'Simulateur d\'Entretien',
-    desc: 'Passe un examen blanc oral/écrit ultra-réaliste. L\'IA prend le rôle du CTO de la boîte que tu vises et te questionne.',
+    desc: 'L\'IA joue le rôle du CTO de ta cible et te fait passer un entretien oral ultra-réaliste pour tester tes réponses sous pression.',
     icon: AcademicCapIcon,
-    color: 'from-blue-500 to-cyan-500',
-    locked: true
+    color: 'from-blue-500 to-violet-500',
+    locked: false,
+    routeTarget: '/interview'
   }
 ]
 
 const handleFeatureClick = (feature) => {
-    if (!feature.locked && feature.actionPrompt) {
-        router.push({ name: 'AgentChat', query: { prompt: feature.actionPrompt }})
+    if (!feature.locked) {
+        if (feature.routeTarget) {
+            router.push(feature.routeTarget)
+        } else if (feature.actionPrompt) {
+            router.push({ name: 'AgentChat', query: { prompt: feature.actionPrompt }})
+        }
     }
 }
 </script>
