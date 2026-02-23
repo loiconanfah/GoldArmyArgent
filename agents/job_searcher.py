@@ -28,7 +28,7 @@ class JobSearchAgent(BaseAgent):
         
         query = task.get("query", "") or task.get("message", "")
         cv_text = task.get("cv_text", "")
-        limit = int(task.get("nb_results", 10))
+        limit = int(task.get("nb_results") or 10)
         
         # Extraction du profil CV si présent
         cv_profile = {"skills": [], "target_roles": [], "experience_years": 0}
@@ -109,7 +109,8 @@ class JobSearchAgent(BaseAgent):
                 from tools.jsearch_searcher import JSearchSearcher
                 jsearch = JSearchSearcher(api_key=settings.rapidapi_key)
                 search_query = f"{keywords} in {location}"
-                r_jobs = await jsearch.search_jobs(query=search_query, num_pages=1)
+                pages = max(1, (limit // 10) + (1 if limit % 10 > 0 else 0))
+                r_jobs = await jsearch.search_jobs(query=search_query, num_pages=pages)
                 if r_jobs:
                     logger.info(f"🟢 JSearch a trouvé {len(r_jobs)} offres.")
                     all_jobs.extend(r_jobs)
@@ -119,7 +120,7 @@ class JobSearchAgent(BaseAgent):
         # 3. Web Searcher (JobBank fallback)
         try:
             from tools.web_searcher import web_searcher
-            w_jobs = await web_searcher.search_jobs(keywords=keywords, location=location, max_results=5)
+            w_jobs = await web_searcher.search_jobs(keywords=keywords, location=location, max_results=limit)
             if w_jobs:
                 logger.info(f"🟢 Web/JobBank a trouvé {len(w_jobs)} offres.")
                 all_jobs.extend(w_jobs)

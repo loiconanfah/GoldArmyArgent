@@ -31,6 +31,11 @@ class ChatRequest(BaseModel):
     cv_filename: Optional[str] = None
     nb_results: Optional[int] = None
 
+class CVAdaptRequest(BaseModel):
+    job_title: str
+    job_description: str
+    cv_text: str
+
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "GoldArmy Agent V2 API is running"}
@@ -80,6 +85,31 @@ async def chat_endpoint(request: ChatRequest):
         
         return {"status": "success", "data": response}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/adapt-cv")
+async def adapt_cv_endpoint(request: CVAdaptRequest):
+    """
+    Adapter un CV spécifiquement pour une offre d'emploi via Gemini 3.
+    """
+    try:
+        from loguru import logger
+        if not request.cv_text or len(request.cv_text) < 50:
+            raise HTTPException(status_code=400, detail="Le texte du CV est introuvable ou trop court. Veuillez uploader un CV d'abord.")
+            
+        from agents.cv_adapter import CVAdapterAgent
+        adapter = CVAdapterAgent()
+        
+        result = await adapter.adapt(
+            job_title=request.job_title,
+            job_desc=request.job_description,
+            cv_text=request.cv_text
+        )
+        
+        return {"status": "success", "data": result}
+    except Exception as e:
+        from loguru import logger
+        logger.error(f"Error in adapt_cv_endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- CRM Endpoints (Sniper Pillar) ---

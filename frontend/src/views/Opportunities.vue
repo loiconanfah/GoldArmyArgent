@@ -8,7 +8,8 @@ import {
     CheckCircleIcon,
     MagnifyingGlassIcon,
     DocumentTextIcon,
-    ArrowPathIcon
+    ArrowPathIcon,
+    SparklesIcon
 } from '@heroicons/vue/24/outline'
 
 const filter = ref('Toutes les pertinentes')
@@ -182,6 +183,57 @@ const performSearch = async () => {
 
 const loadingRadarFor = ref(null);
 
+const showAdaptModal = ref(false);
+const isAdaptingCV = ref(false);
+const adaptingJobId = ref(null);
+const adaptedData = ref(null);
+
+const adaptCV = async (job) => {
+    if (!cvText.value) {
+        alert("Veuillez d'abord télécharger/coller votre CV dans la section ci-dessus avant d'adapter.");
+        return;
+    }
+
+    adaptingJobId.value = job.id;
+    isAdaptingCV.value = true;
+    showAdaptModal.value = true;
+    adaptedData.value = null;
+    
+    try {
+        const res = await fetch('http://localhost:8000/api/adapt-cv', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                job_title: job.title,
+                job_description: job.desc,
+                cv_text: cvText.value
+            })
+        });
+        
+        const json = await res.json();
+        
+        if (json.status === "success" && json.data) {
+            adaptedData.value = json.data;
+        } else {
+            alert("Erreur lors de l'adaptation du CV.");
+            showAdaptModal.value = false;
+        }
+    } catch(e) {
+        console.error("Adapt CV Error:", e);
+        alert("Impossible de contacter le serveur d'intelligence.");
+        showAdaptModal.value = false;
+    } finally {
+        isAdaptingCV.value = false;
+    }
+}
+
+const closeAdaptModal = () => {
+    showAdaptModal.value = false;
+    adaptedData.value = null;
+    adaptingJobId.value = null;
+    isAdaptingCV.value = false;
+}
+
 const runRadar = async (job) => {
     loadingRadarFor.value = job.id
     try {
@@ -244,7 +296,9 @@ const runRadar = async (job) => {
                 <option class="text-slate-900" :value="5">5</option>
                 <option class="text-slate-900" :value="10">10</option>
                 <option class="text-slate-900" :value="15">15</option>
-                <option class="text-slate-900" :value="20">+20</option>
+                <option class="text-slate-900" :value="20">20</option>
+                <option class="text-slate-900" :value="30">30</option>
+                <option class="text-slate-900" :value="40">40</option>
               </select>
            </div>
        </div>
@@ -433,23 +487,100 @@ const runRadar = async (job) => {
           <!-- Card Footer Actions -->
           <div class="flex items-center gap-3 pt-4 border-t border-surface-800/50 mt-auto">
              <a :href="job.rawUrl" target="_blank" rel="noopener noreferrer" v-if="job.rawUrl" 
-                class="flex-1 text-center bg-white hover:bg-slate-200 text-surface-950 px-4 py-3 rounded-xl font-bold text-sm transition-colors shadow-sm focus:ring-2 focus:ring-white/50 outline-none">
+                class="flex-[0.4] text-center bg-white hover:bg-slate-200 text-surface-950 px-4 py-3 rounded-xl font-bold text-sm transition-colors shadow-sm focus:ring-2 focus:ring-white/50 outline-none">
                 Postuler
              </a>
-             <button disabled class="flex-1 text-center bg-surface-800 text-slate-500 px-4 py-3 rounded-xl font-bold text-sm cursor-not-allowed" v-else>
+             <button disabled class="flex-[0.4] text-center bg-surface-800 text-slate-500 px-4 py-3 rounded-xl font-bold text-sm cursor-not-allowed" v-else>
                  Lien Mort
+             </button>
+             
+             <!-- AI Adapt CV Button -->
+             <button 
+                @click="adaptCV(job)"
+                :disabled="isAdaptingCV && adaptingJobId === job.id"
+                class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-gold-500/10 to-amber-500/10 hover:from-gold-500/20 hover:to-amber-500/20 disabled:opacity-50 text-gold-400 px-4 py-3 rounded-xl font-bold text-sm transition-all border border-gold-500/20 hover:border-gold-500/40 focus:ring-2 focus:ring-gold-500/50 outline-none group/adapt">
+                <ArrowPathIcon v-if="isAdaptingCV && adaptingJobId === job.id" class="w-5 h-5 animate-spin text-gold-400" />
+                <SparklesIcon v-else class="w-5 h-5 text-gold-500 group-hover/adapt:scale-110 transition-transform" />
+                <span class="hidden sm:inline">Adapter CV</span>
              </button>
              
              <button 
                 @click="runRadar(job)"
                 :disabled="loadingRadarFor === job.id"
-                class="flex-[0.5] flex items-center justify-center gap-2 bg-surface-800 hover:bg-surface-700 disabled:opacity-50 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-colors border border-surface-700 focus:ring-2 focus:ring-gold-500/50 outline-none group/radar">
+                class="flex-[0.4] flex items-center justify-center gap-2 bg-surface-800 hover:bg-surface-700 disabled:opacity-50 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-colors border border-surface-700 focus:ring-2 focus:ring-gold-500/50 outline-none group/radar">
                 <ArrowPathIcon v-if="loadingRadarFor === job.id" class="w-5 h-5 animate-spin text-gold-400" />
                 <svg v-else class="w-5 h-5 text-slate-400 group-hover/radar:text-gold-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span class="hidden sm:inline">Radar</span>
              </button>
           </div>
        </div>
+    </div>
+    
+    <!-- AI CV Adaptation Modal -->
+    <div v-if="showAdaptModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div class="absolute inset-0 bg-surface-950/80 backdrop-blur-sm" @click="closeAdaptModal"></div>
+        
+        <div class="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-surface-900 border border-surface-700 rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up">
+            <!-- Modal Header -->
+            <div class="px-6 py-5 border-b border-surface-800 flex items-center justify-between bg-surface-900/50">
+                <div class="flex items-center gap-3 text-gold-400">
+                    <SparklesIcon class="w-6 h-6 animate-pulse" />
+                    <h3 class="text-xl font-display font-bold text-white tracking-tight">Gemini 3 CV Intelligence</h3>
+                </div>
+                <button @click="closeAdaptModal" class="text-slate-400 hover:text-white transition-colors bg-surface-800 hover:bg-surface-700 p-2 rounded-xl">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                
+                <div v-if="isAdaptingCV" class="flex flex-col items-center justify-center py-20 text-center">
+                    <ArrowPathIcon class="w-12 h-12 text-gold-500 animate-spin mb-6" />
+                    <p class="text-lg font-bold text-white mb-2">Analyse du poste et refonte du CV en cours...</p>
+                    <p class="text-slate-400 font-medium">L'agent Gemini 3.1 Pro croise vos compétences avec la description.</p>
+                </div>
+                
+                <div v-else-if="adaptedData" class="space-y-8">
+                    
+                    <!-- Markdown CV Recommendation -->
+                    <div class="bg-surface-950 border border-surface-800 rounded-2xl p-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <DocumentTextIcon class="w-5 h-5 text-emerald-400" />
+                            <h4 class="text-lg font-bold text-white">Résumé & Points Forts Suggérés</h4>
+                        </div>
+                        <div class="prose prose-invert max-w-none text-slate-300 prose-headings:text-white prose-a:text-gold-400 prose-strong:text-emerald-400">
+                            <!-- We use pre-wrap to respect newlines currently -->
+                            <div class="whitespace-pre-wrap">{{ adaptedData.markdown }}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Missing Experience Projects -->
+                    <div v-if="adaptedData.projects && adaptedData.projects.length" class="space-y-4">
+                        <h4 class="text-lg font-bold text-white flex items-center gap-2">
+                            <BriefcaseIcon class="w-5 h-5 text-amber-500" />
+                            Projets Recommandés (pour combler les lacunes)
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div v-for="(proj, idx) in adaptedData.projects" :key="idx" 
+                                 class="bg-gradient-to-br from-surface-800 to-surface-900 border border-amber-500/20 rounded-xl p-5 hover:border-amber-500/50 transition-colors">
+                                <h5 class="font-bold text-emerald-400 mb-2">{{ proj.title }}</h5>
+                                <p class="text-sm text-slate-400 leading-relaxed">{{ proj.desc }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-surface-800 bg-surface-900/50 flex justify-end">
+                <button @click="closeAdaptModal" class="px-6 py-2.5 bg-surface-800 text-white rounded-xl font-bold hover:bg-surface-700 transition-colors border border-surface-700">
+                    Fermer
+                </button>
+            </div>
+        </div>
     </div>
     
   </div>
