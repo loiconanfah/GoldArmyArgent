@@ -57,6 +57,59 @@ async def test_voice_hd(data: dict):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@router.post("/analyze")
+async def analyze_interview(data: dict):
+    """
+    Analyzes the full interview history and returns a structured scorecard.
+    """
+    history = data.get("history", [])
+    job_title = data.get("jobTitle", "le poste")
+    
+    if not history:
+        return {"status": "error", "message": "Aucun historique à analyser"}
+
+    # Format history for Gemini
+    formatted_history = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in history])
+    
+    analysis_prompt = f"""
+    Analyse cet entretien pour le poste de {job_title}. 
+    Donne un score sur 10 pour chaque catégorie et un avis global.
+    Réponds EXCLUSIVEMENT en JSON avec cette structure :
+    {{
+      "scores": {{
+        "technical": 8,
+        "communication": 7,
+        "soft_skills": 9,
+        "overall": 8
+      }},
+      "feedback": {{
+        "points_forts": ["point 1", "point 2"],
+        "points_amelioration": ["point 1", "point 2"],
+        "conseils": "Un paragraphe court de conseils personnalisés."
+      }},
+      "decision": "Favorable / Réservé / Défavorable"
+    }}
+    
+    HISTORIQUE :
+    {formatted_history}
+    """
+    
+    try:
+        model = genai.GenerativeModel("gemini-3-flash-preview")
+        response = await asyncio.to_thread(model.generate_content, analysis_prompt)
+        
+        # Clean JSON
+        clean_json = response.text.replace("```json", "").replace("```", "").strip()
+        analysis_result = json.loads(clean_json)
+        
+        return {
+            "status": "success",
+            "analysis": analysis_result
+        }
+    except Exception as e:
+        print(f"Analysis Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 @router.websocket("/ws")
 async def websocket_interview(websocket: WebSocket, token: str):
     """

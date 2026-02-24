@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon } from '@heroicons/vue/24/outline'
-import { CheckIcon, UserCircleIcon } from '@heroicons/vue/24/solid'
+import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon, ChartBarIcon, AcademicCapIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
+import { CheckIcon, UserCircleIcon, StarIcon } from '@heroicons/vue/24/solid'
 
 const router = useRouter()
 
@@ -43,8 +43,12 @@ const analystNote = ref(null)
 const userVideo = ref(null)
 const stream = ref(null)
 const showChat = ref(false)
+const showScorecard = ref(false)
+const isAnalyzing = ref(false)
+const scorecard = ref(null)
 const ttsStatus = ref('Initialisation...') // Diagnostic status
 const lastTtsError = ref(null)
+const pendingFinish = ref(false)
 
 // Visual audio pulse simulation
 const audioLevel = ref(0)
@@ -242,6 +246,14 @@ const connectWebSocket = () => {
                         conversation.value[conversation.value.length - 1].content += content
                     }
                 }
+                
+                // Détection automatique de fin (Au revoir / Merci)
+                const endKeywords = ['au revoir', 'bonne journée', 'bonne chance', 'merci pour votre temps', 'bientôt', 'clôturer', 'fini cet entretien']
+                if (endKeywords.some(k => content.toLowerCase().includes(k))) {
+                     console.log("Fin d'entretien détectée dans le message de l'IA.")
+                     pendingFinish.value = true
+                }
+
                 scrollToBottom()
             } else if (msg.type === 'analysis') {
                 analystNote.value = msg.payload
@@ -354,6 +366,11 @@ const playHDAudio = (base64Data) => {
             
             // Relancer le micro
             setTimeout(() => {
+                if (pendingFinish.value) {
+                    finishInterview()
+                    pendingFinish.value = false
+                    return
+                }
                 if (!isListening.value && recognition && isInterviewStarted.value) {
                     try { recognition.start() } catch(e) {}
                 }
@@ -483,6 +500,8 @@ const goBackToDashboard = () => router.push('/dashboard')
 
 const stopInterview = () => {
     isInterviewStarted.value = false
+    showScorecard.value = false
+    scorecard.value = null
     if (socket.value) socket.value.close()
     if (recognition) recognition.stop()
     if (window.speechSynthesis) window.speechSynthesis.cancel()
@@ -491,14 +510,58 @@ const stopInterview = () => {
     conversation.value = []
 }
 
+/**
+ * Termine l'entretien proprement et lance l'analyse
+ */
+const finishInterview = async () => {
+    if (isAnalyzing.value) return
+    
+    // Si l'entretien n'est pas commencé ou si on est déjà au score, on quitte juste
+    if (!isInterviewStarted.value) {
+        goBackToDashboard()
+        return
+    }
+
+    isAnalyzing.value = true
+    showScorecard.value = true // On affiche le modal de chargement
+    
+    // Arrêt des flux
+    if (recognition) try { recognition.stop() } catch(e){}
+    if (window.speechSynthesis) window.speechSynthesis.cancel()
+    stopAudioPulse()
+    
+    try {
+        const response = await fetch('http://localhost:8000/api/interview/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                history: conversation.value,
+                jobTitle: config.value.jobTitle
+            })
+        })
+        const result = await response.json()
+        if (result.status === 'success') {
+            scorecard.value = result.analysis
+        } else {
+            errorMsg.value = "L'analyse a échoué."
+        }
+    } catch (e) {
+        console.error("Analysis error:", e)
+        errorMsg.value = "Erreur de connexion pour l'analyse."
+    } finally {
+        isAnalyzing.value = false
+    }
+}
+
 onUnmounted(() => {
     stopInterview()
 })
 </script>
 
 <template>
-  <!-- CONFIGURATION WIZARD -->
-  <div v-if="!isInterviewStarted" class="p-6 md:p-10 max-w-4xl mx-auto animate-fade-in-up space-y-8">
+  <div class="fixed inset-0 z-[60] bg-surface-950 overflow-y-auto custom-scrollbar flex flex-col">
+    <!-- CONFIGURATION WIZARD -->
+    <div v-if="!isInterviewStarted" class="p-6 md:p-10 max-w-4xl mx-auto animate-fade-in-up space-y-8 flex flex-col w-full">
      <div class="flex items-center gap-4 border-b border-surface-800 pb-6 mb-8 mt-6">
         <button @click="goBackToDashboard" class="p-2 bg-surface-800 hover:bg-surface-700 rounded-full text-slate-400 hover:text-white transition-colors">
             <ArrowLeftIcon class="w-5 h-5" />
@@ -590,8 +653,8 @@ onUnmounted(() => {
       </div>
    </div>
 
-   <!-- IMMERSIVE VIDEO CALL UI -->
-   <div v-else class="fixed inset-0 bg-black flex flex-col pointer-events-auto z-[60] overflow-hidden font-sans">
+    <!-- IMMERSIVE VIDEO CALL UI -->
+    <div v-else class="fixed inset-0 bg-black flex flex-col z-[70] overflow-hidden font-sans">
       
       <!-- BACKGROUND / RECRUITER VIDEO AREA -->
       <div class="absolute inset-0 z-0">
@@ -714,11 +777,119 @@ onUnmounted(() => {
               </button>
 
               <!-- End Call Button -->
-              <button @click="stopInterview" class="p-4 rounded-full text-rose-500 hover:bg-rose-500/20 transition-all">
+              <button @click="finishInterview" class="p-4 rounded-full text-rose-500 hover:bg-rose-500/20 transition-all" title="Terminer et voir mon bilan">
                   <div class="bg-rose-600 p-2.5 rounded-full rotate-[135deg] shadow-lg shadow-rose-900/50">
                       <PhoneIcon class="w-6 h-6 text-white" />
                   </div>
               </button>
+          </div>
+      </div>
+
+      <!-- SCORECARD MODAL -->
+      <div v-if="showScorecard" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/80 backdrop-blur-md" @click="!isAnalyzing ? stopInterview() : null"></div>
+          
+          <div class="bg-surface-900 border border-white/10 w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 animate-scale-in">
+              <!-- Header -->
+              <div class="p-8 border-b border-white/5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 flex items-center justify-between">
+                  <div class="flex items-center gap-4">
+                      <div class="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                          <ChartBarIcon class="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                          <h2 class="text-2xl font-display font-bold text-white tracking-tight">Récapitulatif de votre entretien</h2>
+                          <p class="text-sm text-slate-400">Analyse générée par l'IA GoldArmy</p>
+                      </div>
+                  </div>
+                  <button v-if="!isAnalyzing" @click="stopInterview" class="p-2 text-slate-500 hover:text-white transition-colors">
+                      <XMarkIcon class="w-6 h-6" />
+                  </button>
+              </div>
+
+              <!-- Content -->
+              <div class="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                  <!-- Loading State -->
+                  <div v-if="isAnalyzing" class="flex flex-col items-center justify-center py-20 gap-6">
+                      <div class="relative w-20 h-20">
+                          <div class="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
+                          <div class="absolute inset-0 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      <p class="text-lg font-bold text-white animate-pulse">Analyse de vos réponses en cours...</p>
+                      <p class="text-sm text-slate-400 max-w-xs text-center">Le Mentor IA examine votre communication et votre expertise technique.</p>
+                  </div>
+
+                  <!-- Results State -->
+                  <div v-else-if="scorecard" class="space-y-10">
+                      <!-- Hero Score -->
+                      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                          <div v-for="(val, cat) in scorecard.scores" :key="cat" class="bg-white/5 border border-white/10 p-6 rounded-3xl flex flex-col items-center gap-3">
+                              <span class="text-[10px] uppercase font-black tracking-widest text-slate-500">{{ cat === 'technical' ? 'Technique' : cat === 'communication' ? 'Élocution' : cat === 'soft_skills' ? 'Attitude' : 'Global' }}</span>
+                              <div class="relative flex items-center justify-center">
+                                  <svg class="w-20 h-20">
+                                      <circle class="text-white/5" stroke-width="6" stroke="currentColor" fill="transparent" r="34" cx="40" cy="40"/>
+                                      <circle :class="val >= 7 ? 'text-emerald-500' : val >= 5 ? 'text-amber-500' : 'text-rose-500'" stroke-width="6" :stroke-dasharray="213" :stroke-dashoffset="213 - (213 * val / 10)" stroke-linecap="round" stroke="currentColor" fill="transparent" r="34" cx="40" cy="40"/>
+                                  </svg>
+                                  <span class="absolute text-xl font-black text-white">{{ val }}/10</span>
+                              </div>
+                          </div>
+                      </div>
+
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                          <!-- Points Forts -->
+                          <div class="space-y-4">
+                              <h3 class="text-sm font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
+                                  <CheckCircleIcon class="w-5 h-5" />
+                                  Points Forts
+                              </h3>
+                              <ul class="space-y-3">
+                                  <li v-for="p in scorecard.feedback.points_forts" :key="p" class="flex gap-3 text-sm text-slate-300">
+                                      <span class="text-emerald-500 shrink-0">●</span>
+                                      {{ p }}
+                                  </li>
+                              </ul>
+                          </div>
+
+                          <!-- Points à améliorer -->
+                          <div class="space-y-4">
+                              <h3 class="text-sm font-black uppercase tracking-widest text-amber-400 flex items-center gap-2">
+                                  <AcademicCapIcon class="w-5 h-5" />
+                                  Axe d'amélioration
+                              </h3>
+                              <ul class="space-y-3">
+                                  <li v-for="p in scorecard.feedback.points_amelioration" :key="p" class="flex gap-3 text-sm text-slate-300">
+                                      <span class="text-amber-500 shrink-0">●</span>
+                                      {{ p }}
+                                  </li>
+                              </ul>
+                          </div>
+                      </div>
+
+                      <!-- Final Advice Card -->
+                      <div class="bg-indigo-600/10 border border-indigo-500/30 p-8 rounded-[2rem] space-y-4 relative overflow-hidden group">
+                          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                              <SparklesIcon class="w-24 h-24 text-indigo-400" />
+                          </div>
+                          <div class="flex items-center gap-3">
+                              <StarIcon class="w-6 h-6 text-indigo-400" />
+                              <h3 class="text-lg font-bold text-white">L'avis du Recruteur</h3>
+                          </div>
+                          <p class="text-slate-300 text-sm leading-relaxed relative z-10">{{ scorecard.feedback.conseils }}</p>
+                          <div class="pt-4 flex items-center justify-between border-t border-white/5">
+                              <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Décision finale :</span>
+                              <span :class="scorecard.decision.includes('Favorable') ? 'text-emerald-400' : 'text-amber-400'" class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 font-black text-xs">
+                                  {{ scorecard.decision }}
+                              </span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Footer -->
+              <div class="p-8 bg-black/20 flex justify-end gap-4">
+                  <button @click="stopInterview" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:scale-105 active:scale-95 text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-500/20">
+                      Retour au Dashboard
+                  </button>
+              </div>
           </div>
       </div>
 
@@ -727,4 +898,5 @@ onUnmounted(() => {
           Microphone Actif — Parlez Maintenant
       </div>
    </div>
+  </div>
 </template>

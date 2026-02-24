@@ -1,15 +1,80 @@
 <script setup>
 import { authFetch } from '../utils/auth'
-
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { 
   BriefcaseIcon,
   DocumentCheckIcon,
   ChatBubbleLeftRightIcon,
   UserPlusIcon,
   EllipsisVerticalIcon,
-  CalendarIcon
+  CalendarIcon,
+  ArrowTrendingUpIcon
 } from '@heroicons/vue/24/outline'
+
+// --- Chart constants ---
+const W = 600  // SVG viewBox width
+const H = 200  // SVG viewBox height
+const PAD = { top: 16, right: 16, bottom: 32, left: 40 }
+
+const chartData = ref([])
+const recentActivity = ref([])
+
+// Y-axis max value (always at least 10)
+const yMax = computed(() => {
+    const m = Math.max(...chartData.value.map(d => d.count), 0)
+    return Math.max(Math.ceil(m / 10) * 10, 10)
+})
+
+// Y grid lines (from top to bottom)
+const yGridLines = computed(() => {
+    const steps = 4
+    const step = yMax.value / steps
+    return Array.from({ length: steps + 1 }, (_, i) => {
+        const val = yMax.value - i * step
+        const y = PAD.top + (i / steps) * (H - PAD.top - PAD.bottom)
+        return { val: Math.round(val), y }
+    })
+})
+
+// Compute (x, y) for each data point
+const points = computed(() => {
+    if (!chartData.value.length) return []
+    const xRange = W - PAD.left - PAD.right
+    const yRange = H - PAD.top - PAD.bottom
+    return chartData.value.map((d, i) => ({
+        x: PAD.left + (i / (chartData.value.length - 1 || 1)) * xRange,
+        y: PAD.top + (1 - d.count / yMax.value) * yRange,
+        ...d
+    }))
+})
+
+// Smooth line path (Catmull-Rom -> Bezier)
+const linePath = computed(() => {
+    const pts = points.value
+    if (pts.length < 2) return ''
+    let d = `M ${pts[0].x} ${pts[0].y}`
+    for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i - 1] ?? pts[i]
+        const p1 = pts[i]
+        const p2 = pts[i + 1]
+        const p3 = pts[i + 2] ?? p2
+        const t = 0.3
+        const cp1x = p1.x + t * (p2.x - p0.x) / 2
+        const cp1y = p1.y + t * (p2.y - p0.y) / 2
+        const cp2x = p2.x - t * (p3.x - p1.x) / 2
+        const cp2y = p2.y - t * (p3.y - p1.y) / 2
+        d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`
+    }
+    return d
+})
+
+// Filled area path (same curve but closed to bottom)
+const areaPath = computed(() => {
+    if (!linePath.value) return ''
+    const pts = points.value
+    const bottom = H - PAD.bottom
+    return `${linePath.value} L ${pts[pts.length - 1].x} ${bottom} L ${pts[0].x} ${bottom} Z`
+})
 
 const userEmail = ref('Yves')
 
@@ -19,9 +84,6 @@ const kpiStats = ref([
   { label: 'Entretiens Décrochés', value: '0', shortDesc: 'En cours', timeframe: 'dans les 30 derniers jours', color: 'text-amber-400', bg: 'bg-amber-500/10', icon: ChatBubbleLeftRightIcon },
   { label: 'Réseau (Contacts)', value: '0', shortDesc: 'Nouveaux contacts', timeframe: 'dans les 30 derniers jours', color: 'text-rose-400', bg: 'bg-rose-500/10', icon: UserPlusIcon }
 ])
-
-const chartData = ref([])
-const recentActivity = ref([])
 
 const fetchDashboardData = async () => {
     try {
@@ -132,58 +194,55 @@ onMounted(() => {
               <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded shadow-sm bg-indigo-500"></div><span class="text-[11px] font-bold text-slate-400">Total Opportunités</span></div>
           </div>
 
-          <!-- SVG Area Chart -->
-          <div class="h-64 w-full relative z-10">
-                <div class="absolute inset-0 flex flex-col justify-between pointer-events-none z-0 pb-6">
-                    <div class="border-b border-surface-800/60 w-full h-0 relative"><span class="absolute -top-3 left-0 text-[10px] font-bold text-slate-600">60</span></div>
-                    <div class="border-b border-surface-800/60 w-full h-0 relative"><span class="absolute -top-3 left-0 text-[10px] font-bold text-slate-600">40</span></div>
-                    <div class="border-b border-surface-800/60 w-full h-0 relative"><span class="absolute -top-3 left-0 text-[10px] font-bold text-slate-600">20</span></div>
-                    <div class="border-b border-surface-800/60 w-full h-0 relative"><span class="absolute -top-3 left-0 text-[10px] font-bold text-slate-600">0</span></div>
-                </div>
+          <!-- Premium SVG Line Chart -->
+          <div class="mt-2 w-full" style="height:220px;">
+            <svg
+              :viewBox="`0 0 ${W} ${H}`"
+              preserveAspectRatio="xMidYMid meet"
+              class="w-full h-full"
+              style="overflow:visible"
+            >
+              <defs>
+                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+                </linearGradient>
+                <filter id="lineGlow">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
 
-                <svg v-if="chartData && chartData.length > 0" class="w-full h-full overflow-visible pl-6 pb-6" preserveAspectRatio="none" viewBox="0 0 100 100">
-                    <defs>
-                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#818cf8" stop-opacity="0.3" />
-                            <stop offset="100%" stop-color="#818cf8" stop-opacity="0.0" />
-                        </linearGradient>
-                    </defs>
-                    
-                    <polygon 
-                        :points="`0,100 ${chartData.map((d, i) => `${(i / (chartData.length - 1)) * 100},${100 - d.heightPct}`).join(' ')} 100,100`" 
-                        fill="url(#chartGradient)"
-                    />
-                    
-                    <polyline 
-                        :points="chartData.map((d, i) => `${(i / (chartData.length - 1)) * 100},${100 - d.heightPct}`).join(' ')" 
-                        fill="none" 
-                        stroke="#818cf8" 
-                        stroke-width="2.5" 
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
+              <!-- Y grid lines -->
+              <g v-for="g in yGridLines" :key="g.val">
+                <line :x1="PAD.left" :y1="g.y" :x2="W - PAD.right" :y2="g.y" stroke="#1e293b" stroke-width="1" stroke-dasharray="4,4"/>
+                <text :x="PAD.left - 8" :y="g.y + 4" text-anchor="end" font-size="11" fill="#475569" font-family="sans-serif">{{ g.val }}</text>
+              </g>
 
-                    <circle 
-                        v-for="(d, i) in chartData" 
-                        :key="i"
-                        :cx="(i / (chartData.length - 1)) * 100" 
-                        :cy="100 - d.heightPct" 
-                        r="3" 
-                        fill="#1e1e2d" 
-                        stroke="#818cf8" 
-                        stroke-width="2"
-                    >
-                        <title>{{ d.count }} offres</title>
-                    </circle>
-                </svg>
+              <!-- X axis ticks / labels -->
+              <g v-for="(pt, i) in points" :key="'x'+i">
+                <line :x1="pt.x" :y1="H - PAD.bottom" :x2="pt.x" :y2="H - PAD.bottom + 4" stroke="#334155" stroke-width="1"/>
+                <text :x="pt.x" :y="H - PAD.bottom + 16" text-anchor="middle" font-size="10" fill="#64748b" font-family="sans-serif" font-weight="bold">{{ pt.label }}</text>
+              </g>
 
-                <div v-if="chartData && chartData.length > 0" class="absolute bottom-0 inset-x-0 pl-6 flex justify-between">
-                    <span v-for="(d, i) in chartData" :key="i" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{{ d.label }}</span>
-                </div>
-                
-                <div v-if="!chartData || chartData.length === 0" class="absolute inset-0 flex items-center justify-center text-slate-500 font-bold">
-                    Aucune donnée
-                </div>
+              <!-- Area fill -->
+              <path :d="areaPath" fill="url(#areaGrad)"/>
+
+              <!-- Smooth line (with glow) -->
+              <path :d="linePath" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#lineGlow)"/>
+              <!-- Clean line on top -->
+              <path :d="linePath" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+              <!-- Data points -->
+              <g v-for="(pt, i) in points" :key="'pt'+i">
+                <circle :cx="pt.x" :cy="pt.y" r="5" fill="#1e293b" stroke="#6366f1" stroke-width="2.5"/>
+                <circle :cx="pt.x" :cy="pt.y" r="2.5" fill="#818cf8"/>
+                <title>{{ pt.label }}: {{ pt.count }} offres</title>
+              </g>
+
+              <!-- Empty state -->
+              <text v-if="!chartData.length" :x="W/2" :y="H/2" text-anchor="middle" fill="#475569" font-size="14" font-family="sans-serif">Aucune donnée disponible</text>
+            </svg>
           </div>
       </div>
       

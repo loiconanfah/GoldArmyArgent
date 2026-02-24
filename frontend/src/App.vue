@@ -52,7 +52,8 @@ const navigation = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface-950 text-slate-200 flex font-sans selection:bg-gold-500/30">
+  <!-- Global Wrapper: Lock height and prevent window-level scroll -->
+  <div class="h-screen w-screen overflow-hidden bg-surface-950 text-slate-200 flex font-sans selection:bg-gold-500/30">
     <!-- Mobile Menu Overlay -->
     <div v-show="isMobileMenuOpen && !isPublicRoute" class="fixed inset-0 bg-surface-950/80 backdrop-blur-sm z-40 md:hidden" @click="isMobileMenuOpen = false"></div>
 
