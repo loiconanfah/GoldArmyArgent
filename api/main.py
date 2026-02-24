@@ -312,6 +312,66 @@ def update_crm_status(app_id: str, request: CRMStatusUpdateRequest, current_user
         if 'conn' in locals() and conn:
             conn.close()
 
+@app.post("/api/crm/applications/{app_id}/followup")
+async def generate_followup_email(app_id: str, current_user: dict = Depends(get_current_user)):
+    """Génère un email de relance personnalisé et incrémente le compteur."""
+    try:
+        from core.database import get_db_connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Fetch application details
+        cursor.execute("SELECT * FROM applications WHERE id = ? AND user_id = ?", (app_id, current_user["id"]))
+        app = cursor.fetchone()
+        if not app:
+            raise HTTPException(status_code=404, detail="Application not found")
+
+        job_title = app["job_title"] or "le poste"
+        company = app["company_name"] or "l'entreprise"
+        notes = app["notes"] or ""
+
+        # Auto-migrate: add follow_up_count column if it doesn't exist
+        try:
+            cursor.execute("ALTER TABLE applications ADD COLUMN follow_up_count INTEGER DEFAULT 0")
+            conn.commit()
+        except Exception:
+            pass  # Column already exists
+
+        # Increment follow-up counter
+        cursor.execute("UPDATE applications SET follow_up_count = COALESCE(follow_up_count, 0) + 1 WHERE id = ?", (app_id,))
+        cursor.execute("SELECT follow_up_count FROM applications WHERE id = ?", (app_id,))
+        count_row = cursor.fetchone()
+        follow_up_count = count_row["follow_up_count"] if count_row else 1
+        conn.commit()
+
+        # Generate email with Gemini
+        import google.generativeai as genai_module
+        model = genai_module.GenerativeModel("gemini-3-flash-preview")
+        prompt = f"""
+        Rédige un email de relance professionnel, chaleureux et concis (5-7 lignes max) en français.
+        Candidature pour : {job_title} chez {company}.
+        Notes sur le poste : {notes if notes else 'Aucune note particulière.'}
+        C'est la relance numéro {follow_up_count}. Si >1, adapte subtilement le ton (plus direct si relance 2+).
+        Format : Objet: [...]\\n\\nCorps de l'email.
+        Signe avec "Cordialement," suivi d'une ligne vide.
+        Rends le mail personnalisé et non générique. Utilise le prénom du recruteur si tu peux le deviner du nom de l'entreprise.
+        """
+        response = await asyncio.to_thread(model.generate_content, prompt)
+        email_text = response.text.strip()
+
+        return {
+            "status": "success",
+            "email": email_text,
+            "followUpCount": follow_up_count
+        }
+    except Exception as e:
+        import logging
+        logging.error(f"Followup generation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
+
 # ==========================================
 # Dashboard Endpoints
 # ==========================================
