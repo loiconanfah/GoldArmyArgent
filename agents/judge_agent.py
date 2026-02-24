@@ -65,12 +65,15 @@ class JudgeAgent(BaseAgent):
         OFFRES A EVALUER:
         {job_list_text}
         
-        RÈGLES DE SCORING (SOIS TRÈS STRICT):
-        1. Domaine IT/Dév: Si ce n'est PAS du développement logiciel, de la programmation ou de l'ingénierie informatique -> SCORE = 0. 
-           (EXCEPTION: sauf si le CV est spécifiquement un profil de designer, mais ici on cherche un DEVELOPPEUR).
-        2. Rôle Exact: Si l'utilisateur cherche un "développeur" et que l'offre est "Designer" ou "Community Manager" -> SCORE = 0.
-        3. Niveau: Si le candidat est Junior et l'offre est Senior (5+ ans requis) -> SCORE < 15.
-        4. Localisation: L'offre doit être dans la ville demandée ({profile.get('target_location', 'Paris, France')}). Si c'est à l'étranger ou dans une ville très éloignée sans télétravail -> SCORE < 10.
+        RÈGLES DE SCORING (SOIS TRÈS STRICT MAIS NUANCÉ):
+        1. Domaine IT/Technique: Si ce n'est PAS du tout technique (ex: Pur Marketing, Vente sans aspect technique, RH) -> SCORE = 0.
+        2. Rôle matching: 
+           - Si l'utilisateur cherche un "développeur" et que l'offre est "Community Manager" ou "Account Executive" (Vente pure) -> SCORE = 0.
+           - Si l'offre est "Solution Engineer", "R&D Engineer", "Integration Specialist" ou "Technical Support" et que le contenu mentionne de la programmation ou des outils techniques -> SCORE POSSIBLE (entre 40 et 75 selon le contenu).
+           - "Ingénieur" ou "Engineer" dans un domaine autre que l'informatique (Génie Civil, Maintenance mecanique) -> SCORE = 0.
+        3. Alternance/Stage: Si l'utilisateur cherche une "Alternance" et que l'offre est un "CDI" (Full-time) -> SCORE < 10 (Sauf si l'offre mentionne explicitement être ouverte aux alternants).
+        4. Niveau: Si le candidat est Junior et l'offre est Senior (5+ ans requis) -> SCORE < 15.
+        5. Localisation: L'offre doit être dans la ville demandée ({profile.get('target_location', 'Paris, France')}).
         
         FORMAT DE RÉPONSE (JSON UNIQUEMENT, pas de blabla autour):
         [

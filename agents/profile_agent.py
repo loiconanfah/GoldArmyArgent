@@ -26,6 +26,9 @@ class ProfileAgent(BaseAgent):
         cv_text = plan.get("cv_text")
         query = plan.get("query", "")
         
+        # Nettoyage initial de la query (typos)
+        query = query.replace("Iogiciel", "logiciel").replace("developper", "développeur").replace("développer", "développeur")
+        
         cv_profile = {"skills": [], "target_roles": [], "experience_years": 0, "target_level": "junior"}
         
         if cv_text:
@@ -36,19 +39,22 @@ class ProfileAgent(BaseAgent):
             
         # Détection du niveau par la query si non trouvé dans le CV ou l'IA
         query_lower = query.lower()
-        if "stage" in query_lower or "intern" in query_lower:
+        if any(k in query_lower for k in ["alternance", "apprentissage"]):
+            cv_profile["target_level"] = "alternance"
+        elif "stage" in query_lower or "intern" in query_lower:
             cv_profile["target_level"] = "stage"
-        elif any(k in query_lower for k in ["senior", "lead", "principal", "expert"]) and cv_profile.get("target_level") != "stage":
+        elif any(k in query_lower for k in ["senior", "lead", "principal", "expert"]) and cv_profile.get("target_level") not in ["stage", "alternance"]:
             cv_profile["target_level"] = "senior"
 
-        # Génération des variations de mots-clés
-        keywords_list = await self._generate_keywords(query, cv_profile)
+        # Génération des variations de mots-clés et exclusions
+        search_strategy = await self._generate_search_strategy(query, cv_profile)
         
         return {
             "success": True,
             "cv_profile": cv_profile,
-            "keywords_list": keywords_list,
-            "job_type": "stage" if cv_profile["target_level"] == "stage" else "emploi"
+            "keywords_list": search_strategy.get("keywords", [query]),
+            "exclude_list": search_strategy.get("exclude", []),
+            "job_type": cv_profile["target_level"] if cv_profile["target_level"] in ["stage", "alternance"] else "emploi"
         }
 
     async def _analyze_cv(self, text: str) -> Dict[str, Any]:
@@ -72,17 +78,31 @@ class ProfileAgent(BaseAgent):
         except: pass
         return {}
 
-    async def _generate_keywords(self, query: str, profile: Dict[str, Any]) -> list:
-        """Génère des variations de mots-clés (Anglais/Français)."""
+    async def _generate_search_strategy(self, query: str, profile: Dict[str, Any]) -> Dict[str, Any]:
+        """Génère des variations de mots-clés et des termes à exclure."""
         prompt = f"""
-        Génère 3 variations de mots-clés de recherche pour: "{query}"
-        PROFIL: {profile.get('target_roles')}
-        FORMAT: ["var1", "var2", "var3"]
-        JSON UNIQUEMENT.
+        Analyse cette recherche d'emploi et génère une stratégie de recherche optimale.
+        RECHERCHE: "{query}"
+        PROFIL CIBLE: {profile.get('target_roles')}
+        
+        CONSIGNES:
+        1. NE génère PAS de verbes d'action. Génère des TITRES DE POSTE précis (ex: "Développeur Logiciel", "Ingénieur Etudes et Développement").
+        2. Liste 10 termes à EXCLURE pour éviter le bruit (ex: commercial, marketing, hse, dessinateur, projeteur, maintenance, support client, rh, recruteur, comptable).
+        3. Assure-toi d'inclure des termes anglais équivalents.
+        
+        RETOURNE UNIQUEMENT DU JSON:
+        {{
+          "keywords": ["Titre Poste 1", "Titre Poste 2", "Titre Poste 3"],
+          "exclude": ["excl1", "excl2", ...]
+        }}
         """
         try:
             resp = await self.generate_response(prompt)
-            match = re.search(r'\[.*\]', resp.replace('\n', ''), re.S)
-            if match: return json.loads(match.group(0))
-        except: pass
-        return [query]
+            match = re.search(r'\{.*\}', resp.replace('\n', ''), re.S)
+            if match:
+                data = json.loads(match.group(0))
+                return data
+        except Exception as e:
+            logger.error(f"Error generating search strategy: {e}")
+            
+        return {"keywords": [query], "exclude": []}

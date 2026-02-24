@@ -33,6 +33,8 @@ class JobSearchAgent(BaseAgent):
         "ontario": "Ontario, Canada",
         "toronto": "Toronto, ON, Canada",
         "ottawa": "Ottawa, ON, Canada",
+        "vancouver": "Vancouver, BC, Canada",
+        "calgary": "Calgary, AB, Canada",
         # France
         "france": "France",
         "paris": "Paris, France",
@@ -42,22 +44,63 @@ class JobSearchAgent(BaseAgent):
         "bordeaux": "Bordeaux, France",
         "nantes": "Nantes, France",
         "lille": "Lille, France",
-        # Autres
-        "belgique": "Belgique",
-        "suisse": "Suisse",
-        "uk": "United Kingdom",
+        "nice": "Nice, France",
+        "rennes": "Rennes, France",
+        "strasbourg": "Strasbourg, France",
+        "grenoble": "Grenoble, France",
+        "montpellier": "Montpellier, France",
+        # USA  
         "usa": "United States",
+        "us": "United States",
+        "america": "United States",
+        "etats-unis": "United States",
+        "california": "California, USA",
+        "californie": "California, USA",
+        "califormie": "California, USA",  # typo courant
+        "califormia": "California, USA",  # typo courant
+        "new york": "New York, USA",
+        "new-york": "New York, USA",
+        "texas": "Texas, USA",
+        "florida": "Florida, USA",
+        "washington": "Washington, USA",
+        "seattle": "Seattle, WA, USA",
+        "boston": "Boston, MA, USA",
+        "chicago": "Chicago, IL, USA",
+        "los angeles": "Los Angeles, CA, USA",
+        "san francisco": "San Francisco, CA, USA",
+        "silicon valley": "Silicon Valley, CA, USA",
+        # Autres pays
+        "belgique": "Belgique",
+        "bruxelles": "Bruxelles, Belgique",
+        "suisse": "Suisse",
+        "zurich": "Zurich, Suisse",
+        "geneve": "Genève, Suisse",
+        "uk": "United Kingdom",
+        "london": "London, UK",
         "maroc": "Maroc",
         "luxembourg": "Luxembourg",
+        "espagne": "Spain",
+        "madrid": "Madrid, Spain",
+        "barcelona": "Barcelona, Spain",
+        "allemagne": "Germany",
+        "berlin": "Berlin, Germany",
     }
 
     def _normalize_location(self, loc: str) -> str:
-        """Normalise une localisation pour les APIs."""
+        """Normalise une localisation avec correction de fautes courantes."""
         if not loc:
             return "Montreal, QC, Canada"
-        normalized = self.LOCATION_MAP.get(loc.lower().strip())
+        # Nettoyage et correction de fautes
+        clean = loc.lower().strip()
+        clean = clean.replace("califormie", "california").replace("californie", "california")
+        clean = clean.replace("etats-unis", "usa").replace("united-states", "usa")
+        normalized = self.LOCATION_MAP.get(clean)
         if normalized:
             return normalized
+        # Si le terme original (sans corrections) est dans la map
+        original = self.LOCATION_MAP.get(loc.lower().strip())
+        if original:
+            return original
         return loc
 
     async def think(self, task: Dict[str, Any], cv_text: str = None) -> Dict[str, Any]:
@@ -86,6 +129,7 @@ class JobSearchAgent(BaseAgent):
             "task_id": task.get("id", "unknown"),
             "criteria": {
                 "keywords_list": profile_data.get("keywords_list", [task.get("query")]),
+                "exclude_list": profile_data.get("exclude_list", []),
                 "location": base_location,
                 "job_type": profile_data.get("job_type", "emploi")
             },

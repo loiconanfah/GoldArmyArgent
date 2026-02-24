@@ -17,18 +17,30 @@ class HunterAgent(BaseAgent):
         """Prépare la stratégie de recherche (APIs à utiliser, mots-clés)."""
         criteria = task.get("criteria", {})
         keywords_list = criteria.get("keywords_list", [])
+        exclude_list = criteria.get("exclude_list", [])
         location = criteria.get("location", "Paris, France")
+        loc_lower = location.lower()
         
-        # Sélection des APIs basées sur la localisation
+        # Sources de base (disponibles partout)
         apis_to_use = ["jooble", "jsearch"]
-        if "france" in location.lower() or "paris" in location.lower():
-            apis_to_use.append("glassdoor")
+        
+        # Sources spécifiques France / Europe
+        if any(w in loc_lower for w in ["france", "paris", "lyon", "marseille", "bordeaux", "nantes", "lille", "europe", "suisse", "belgique"]):
+            apis_to_use += ["linkedin", "glassdoor", "gov"]
+        # Sources spécifiques Amériques
+        elif any(w in loc_lower for w in ["usa", "united states", "california", "new york", "texas", "canada", "montreal", "toronto", "vancouver"]):
+            apis_to_use += ["linkedin", "indeed", "gov"]
+        # Reste du monde
+        else:
+            apis_to_use += ["linkedin", "gov"]
             
         return {
             "keywords": keywords_list,
+            "exclude": exclude_list,
             "location": location,
             "apis": apis_to_use,
-            "limit": task.get("limit", 10)
+            "limit": task.get("limit", 10),
+            "job_type": criteria.get("job_type", "emploi")
         }
 
     async def act(self, plan: Dict[str, Any]) -> Dict[str, Any]:
@@ -37,24 +49,41 @@ class HunterAgent(BaseAgent):
         location = plan.get("location", "")
         apis = plan.get("apis", [])
         limit = plan.get("limit", 10)
+        job_type = plan.get("job_type", "emploi")
+        # Exclusions appliquées en POST-TRAITEMENT (pas injectées dans les requêtes API)
+        exclude = [e.lower().strip() for e in plan.get("exclude", [])]
         
         all_jobs = []
         tasks = []
         
         logger.info(f"🏹 Hunter lance la traque sur {len(apis)} sources pour {location}")
-        logger.info(f"📝 Mots-clés: {keywords}")
+        logger.info(f"📝 Mots-clés: {keywords} | Exclusions locales: {exclude[:5]}...")
 
-        # On lance une tâche par API et par mot-clé (ou groupe)
         for kw in keywords:
-            if "jooble" in apis and settings.jooble_api_key:
-                logger.debug(f"Calling Jooble for: {kw}")
-                tasks.append(self._search_jooble(kw, location, limit))
-            if "jsearch" in apis and settings.rapidapi_key:
-                logger.debug(f"Calling JSearch for: {kw}")
-                tasks.append(self._search_jsearch(kw, location, limit))
-            if "glassdoor" in apis and settings.rapidapi_key:
-                logger.debug(f"Calling Glassdoor for: {kw}")
-                tasks.append(self._search_glassdoor(kw, location, limit))
+            # On cherche à la fois l'expression exacte et les mots clés larges
+            search_queries = [kw, f'"{kw}"']
+            
+            if job_type in ["alternance", "stage"] and job_type not in kw.lower():
+                search_queries.append(f"{kw} {job_type}")
+                if job_type == "alternance":
+                    search_queries.append(f"{kw} apprentissage")
+                    search_queries.append(f"{kw} contrat de professionnalisation")
+            
+            for sq in search_queries:
+                if "jooble" in apis and settings.jooble_api_key:
+                    tasks.append(self._search_jooble(sq, location, limit))
+                if "jsearch" in apis and settings.rapidapi_key:
+                    tasks.append(self._search_jsearch(sq, location, limit))
+                if "glassdoor" in apis and settings.rapidapi_key:
+                    tasks.append(self._search_glassdoor(sq, location, limit))
+                if "indeed" in apis:
+                    tasks.append(self._search_indeed(sq, location, limit))
+                if "gov" in apis:
+                    tasks.append(self._search_gov(kw, location, limit))
+            
+            # LinkedIn est appelé une seule fois par mot-clé (évite le spam)
+            if "linkedin" in apis:
+                tasks.append(self._search_linkedin(kw, location, limit))
 
         if not tasks:
             logger.warning("⚠️ Aucune tâche de recherche lancée (Clés API manquantes ?)")
@@ -65,22 +94,37 @@ class HunterAgent(BaseAgent):
         
         for res in results:
             if isinstance(res, list):
-                logger.info(f"✅ Lot de {len(res)} jobs reçu.")
                 all_jobs.extend(res)
             elif isinstance(res, Exception):
-                logger.error(f"🔴 Erreur Hunter durant une recherche: {res}")
+                logger.error(f"🔴 Erreur Hunter: {res}")
 
-        # Dédoublonnage sommaire par URL/Titre
+        # 1. Filtrage par exclusions (côté client)
+        if exclude:
+            before = len(all_jobs)
+            all_jobs = self._filter_by_exclusions(all_jobs, exclude)
+            logger.info(f"🧹 Exclusion filtrée: {before} → {len(all_jobs)} offres")
+
+        # 2. Dédoublonnage par titre+company
         unique_jobs = []
         seen = set()
         for job in all_jobs:
-            key = f"{job.get('title')}-{job.get('company')}".lower()
+            key = f"{job.get('title', '')}-{job.get('company', '')}".lower()
             if key not in seen:
                 seen.add(key)
                 unique_jobs.append(job)
 
-        logger.info(f"🎯 Hunter a ramené {len(unique_jobs)} offres brutes.")
+        logger.info(f"🎯 Hunter a ramené {len(unique_jobs)} offres brutes après filtrage.")
         return {"success": True, "jobs": unique_jobs}
+
+    def _filter_by_exclusions(self, jobs: list, exclude: list) -> list:
+        """Filtre les offres dont le titre ou la description contient un terme exclu."""
+        result = []
+        for job in jobs:
+            text = f"{job.get('title', '')} {job.get('description', '')}".lower()
+            # Un job est rejeté si son titre/description contient un terme exclu
+            if not any(ex in text for ex in exclude):
+                result.append(job)
+        return result
 
     async def _search_jooble(self, kw, loc, limit):
         try:
@@ -108,3 +152,87 @@ class HunterAgent(BaseAgent):
         except Exception as e:
             logger.error(f"Glassdoor Error: {e}")
             return []
+
+    async def _search_gov(self, kw, loc, limit):
+        try:
+            from tools.gov_searcher import GovSearcher
+            searcher = GovSearcher()
+            return await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+        except Exception as e:
+            logger.error(f"GovSearcher Error: {e}")
+            return []
+
+    async def _search_linkedin(self, kw, loc, limit):
+        """Recherche LinkedIn Jobs (priorité élevée pour France et Amériques)."""
+        try:
+            from tools.linkedin_jobs_searcher import LinkedInJobsSearcher
+            searcher = LinkedInJobsSearcher()
+            results = await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+            logger.info(f"💼 LinkedIn: {len(results)} offres pour '{kw}'")
+            return results
+        except Exception as e:
+            logger.error(f"LinkedIn Error: {e}")
+            return []
+
+    async def _search_indeed(self, kw, loc, limit):
+        """Recherche Indeed (principalement USA/Canada, liens directs d'offres)."""
+        import aiohttp
+        import urllib.parse
+        import ssl
+        import re
+        try:
+            kw_enc = urllib.parse.quote_plus(kw.replace('"', ''))
+            loc_enc = urllib.parse.quote_plus(loc)
+            url = f"https://www.indeed.com/jobs?q={kw_enc}&l={loc_enc}&sort=date"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
+            ssl_ctx = ssl._create_unverified_context()
+            async with aiohttp.ClientSession(headers=headers) as session:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=12), ssl=ssl_ctx) as resp:
+                    if resp.status != 200:
+                        raise Exception(f"HTTP {resp.status}")
+                    html = await resp.text()
+            
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(html, "html.parser")
+            jobs = []
+            cards = soup.find_all("div", class_=re.compile("job_seen_beacon|resultContent"))
+            for i, card in enumerate(cards[:limit]):
+                title_tag = card.find("h2", class_=re.compile("jobTitle")) or card.find("h2")
+                company_tag = card.find(class_=re.compile("companyName|company"))
+                loc_tag = card.find(class_=re.compile("companyLocation"))
+                link = card.find("a", href=True)
+                href = link.get("href", "") if link else ""
+                if href and not href.startswith("http"):
+                    href = f"https://www.indeed.com{href}"
+                title = title_tag.get_text(strip=True) if title_tag else ""
+                if not title:
+                    continue
+                jobs.append({
+                    "id": f"indeed-{i}",
+                    "title": title,
+                    "company": company_tag.get_text(strip=True) if company_tag else "Confidentiel",
+                    "location": loc_tag.get_text(strip=True) if loc_tag else loc,
+                    "url": href or f"https://www.indeed.com/jobs?q={kw_enc}",
+                    "description": "",
+                    "source": "Indeed",
+                    "match_score": 0,
+                })
+            logger.info(f"🔍 Indeed: {len(jobs)} offres pour '{kw}'")
+            return jobs
+        except Exception as e:
+            logger.debug(f"Indeed Error: {e}")
+            kw_enc = urllib.parse.quote_plus(kw.replace('"', ''))
+            loc_enc = urllib.parse.quote_plus(loc)
+            return [{
+                "id": "indeed-search",
+                "title": f"Offres '{kw}' sur Indeed",
+                "company": "Indeed",
+                "location": loc,
+                "url": f"https://www.indeed.com/jobs?q={kw_enc}&l={loc_enc}",
+                "description": "Voir toutes les offres sur Indeed",
+                "source": "Indeed",
+                "match_score": 0,
+            }]
