@@ -25,17 +25,39 @@ class JobSearchAgent(BaseAgent):
         "qc": "Quebec, QC, Canada",
         "quebec": "Quebec, QC, Canada",
         "montreal": "Montreal, QC, Canada",
+        "laval": "Laval, QC, Canada",
+        "longueuil": "Longueuil, QC, Canada",
+        "gatineau": "Gatineau, QC, Canada",
+        "sherbrooke": "Sherbrooke, QC, Canada",
+        "saguenay": "Saguenay, QC, Canada",
+        "ontario": "Ontario, Canada",
+        "toronto": "Toronto, ON, Canada",
+        "ottawa": "Ottawa, ON, Canada",
+        # France
         "france": "France",
         "paris": "Paris, France",
         "lyon": "Lyon, France",
-        # ... (considéré comme connu par l'orchestrateur pour normaliser)
+        "marseille": "Marseille, France",
+        "toulouse": "Toulouse, France",
+        "bordeaux": "Bordeaux, France",
+        "nantes": "Nantes, France",
+        "lille": "Lille, France",
+        # Autres
+        "belgique": "Belgique",
+        "suisse": "Suisse",
+        "uk": "United Kingdom",
+        "usa": "United States",
+        "maroc": "Maroc",
+        "luxembourg": "Luxembourg",
     }
 
     def _normalize_location(self, loc: str) -> str:
         """Normalise une localisation pour les APIs."""
         if not loc:
             return "Montreal, QC, Canada"
-        # On peut laisser l'IA faire la normalisation fine, mais on garde un fallback
+        normalized = self.LOCATION_MAP.get(loc.lower().strip())
+        if normalized:
+            return normalized
         return loc
 
     async def think(self, task: Dict[str, Any], cv_text: str = None) -> Dict[str, Any]:
@@ -57,7 +79,8 @@ class JobSearchAgent(BaseAgent):
         profile_data = await profiler.act(await profiler.think(analysis_task))
         
         explicit_location = task.get("location", "")
-        base_location = explicit_location if explicit_location else "Montréal, QC, Canada"
+        # Normalisation obligatoire pour éviter les ambiguïtés (ex: Paris, TX)
+        base_location = self._normalize_location(explicit_location)
         
         action_plan = {
             "task_id": task.get("id", "unknown"),
@@ -99,9 +122,14 @@ class JobSearchAgent(BaseAgent):
         from agents.judge_agent import JudgeAgent
         judge = JudgeAgent()
         await judge.initialize()
+        
+        # Passer la localisation cible au Judge pour le scoring
+        cv_profile = action_plan.get("cv_profile", {})
+        cv_profile["target_location"] = action_plan.get("criteria", {}).get("location", "Paris, France")
+        
         judgment_task = {
             "jobs": raw_jobs,
-            "cv_profile": action_plan.get("cv_profile", {})
+            "cv_profile": cv_profile
         }
         judge_results = await judge.act(await judge.think(judgment_task))
         final_jobs = judge_results.get("evaluated_jobs", [])

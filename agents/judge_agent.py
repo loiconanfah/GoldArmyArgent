@@ -65,12 +65,14 @@ class JudgeAgent(BaseAgent):
         OFFRES A EVALUER:
         {job_list_text}
         
-        RÈGLES DE SCORING:
-        1. Domaine IT/Dév: Si ce n'est PAS du développement logiciel ou de l'informatique -> SCORE = 0.
-        2. Niveau: Si le candidat est Junior et l'offre est Senior (5+ ans requis) -> SCORE < 15.
-        3. Localisation: Priorité à l'adéquation géographique si mentionnée.
+        RÈGLES DE SCORING (SOIS TRÈS STRICT):
+        1. Domaine IT/Dév: Si ce n'est PAS du développement logiciel, de la programmation ou de l'ingénierie informatique -> SCORE = 0. 
+           (EXCEPTION: sauf si le CV est spécifiquement un profil de designer, mais ici on cherche un DEVELOPPEUR).
+        2. Rôle Exact: Si l'utilisateur cherche un "développeur" et que l'offre est "Designer" ou "Community Manager" -> SCORE = 0.
+        3. Niveau: Si le candidat est Junior et l'offre est Senior (5+ ans requis) -> SCORE < 15.
+        4. Localisation: L'offre doit être dans la ville demandée ({profile.get('target_location', 'Paris, France')}). Si c'est à l'étranger ou dans une ville très éloignée sans télétravail -> SCORE < 10.
         
-        FORMAT DE RÉPONSE (JSON UNIQUEMENT):
+        FORMAT DE RÉPONSE (JSON UNIQUEMENT, pas de blabla autour):
         [
           {{"id": 0, "score": 85, "reason": "Explication courte"}},
           ...
