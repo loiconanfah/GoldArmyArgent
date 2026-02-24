@@ -1,8 +1,8 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon } from '@heroicons/vue/24/outline'
-import { CheckIcon } from '@heroicons/vue/24/solid'
+import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon } from '@heroicons/vue/24/outline'
+import { CheckIcon, UserCircleIcon } from '@heroicons/vue/24/solid'
 
 const router = useRouter()
 
@@ -15,8 +15,17 @@ const config = ref({
     jobTitle: '',
     company: '',
     jobDetails: '',
-    interviewType: 'general'
+    interviewType: 'general',
+    recruiterId: 'tech' // 'tech', 'hr', 'ceo'
 })
+
+const recruiters = [
+    { id: 'tech', name: 'Sophie - Tech Lead', role: 'Expertise Technique', img: '/avatars/tech.png' },
+    { id: 'hr', name: 'Marc - HR Manager', role: 'Culture & Soft Skills', img: '/avatars/hr.png' },
+    { id: 'ceo', name: 'Alice - CEO', role: 'Vision & Strategie', img: '/avatars/ceo.png' }
+]
+
+const currentRecruiter = computed(() => recruiters.find(r => r.id === config.value.recruiterId))
 
 const fileInput = ref(null)
 const isUploadingCV = ref(false)
@@ -30,6 +39,12 @@ const socket = ref(null)
 const chatContainer = ref(null)
 const errorMsg = ref('')
 const isAIThinking = ref(false)
+const analystNote = ref(null)
+const userVideo = ref(null)
+const stream = ref(null)
+const showChat = ref(false)
+const ttsStatus = ref('Initialisation...') // Diagnostic status
+const lastTtsError = ref(null)
 
 // Visual audio pulse simulation
 const audioLevel = ref(0)
@@ -40,7 +55,7 @@ let currentSynthesis = null;
 let cachedVoices = []; // ✅ Voix mémorisées dès le chargement de la page
 let pendingUtteranceText = null; // Texte en attente si les voix ne sont pas prêtes
 
-const startInterview = () => {
+const startInterview = async () => {
     if (!config.value.jobTitle || !config.value.company) {
         errorMsg.value = "Poste et Entreprise sont requis."
         return
@@ -48,10 +63,40 @@ const startInterview = () => {
     errorMsg.value = ""
     isInterviewStarted.value = true
     
+    // Hack: Débloquer l'audio immédiatement sur le geste utilisateur
+    if (window.speechSynthesis) {
+        const unlock = new SpeechSynthesisUtterance("")
+        unlock.volume = 0
+        window.speechSynthesis.speak(unlock)
+        window.speechSynthesis.resume()
+    }
+    
+    // Start Camera
+    await startWebcam()
+    
     // Initialize Web Speech API
     const hasSpeech = initSpeechRecognition()
     if (hasSpeech) {
         connectWebSocket()
+    }
+}
+
+const startWebcam = async () => {
+    try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        stream.value = mediaStream
+        if (userVideo.value) {
+            userVideo.value.srcObject = mediaStream
+        }
+    } catch (err) {
+        console.warn("Camera access denied or unavailable:", err)
+    }
+}
+
+const stopWebcam = () => {
+    if (stream.value) {
+        stream.value.getTracks().forEach(track => track.stop())
+        stream.value = null
     }
 }
 
@@ -171,65 +216,64 @@ const connectWebSocket = () => {
         return
     }
     
-    socket.value = new WebSocket(`ws://localhost:8000/api/interview/ws?token=${token}`)
-    
-    socket.value.onopen = () => {
-        console.log("Connecté au Mentor IA")
-        // Send the setup config payload
-        socket.value.send(JSON.stringify({
-            type: 'setup',
-            payload: config.value
-        }))
-    }
-    
-    socket.value.onmessage = (event) => {
-        const data = JSON.parse(event.data)
+    try {
+        socket.value = new WebSocket(`ws://localhost:8000/api/interview/ws?token=${token}`)
         
-        if (data.type === 'message') {
-            // ❌ NE PAS appeler speakText ici — le message arrive avant les chunks.
-            // On ajoute juste le message vide qui sera complété par les chunks.
-            if (!conversation.value.find(m => m.role === 'assistant' && m.content === data.content)) {
-                conversation.value.push({
-                    role: 'assistant',
-                    content: data.content,
-                    id: Date.now()
-                })
-                scrollToBottom()
-            }
-            
-        } else if (data.type === 'chunk') {
-            const lastMsg = conversation.value[conversation.value.length - 1]
-            if (lastMsg && lastMsg.role === 'assistant') {
-                lastMsg.content += data.content
-                scrollToBottom()
-            } else {
-                conversation.value.push({ role: 'assistant', content: data.content, id: Date.now() })
-            }
-        } else if (data.type === 'done') {
-            // ✅ C'est ICI l'unique endroit où on parle. Le contenu est maintenant complet.
-            isAIThinking.value = false
-            const lastMsg = conversation.value[conversation.value.length - 1]
-            if (lastMsg && lastMsg.role === 'assistant') {
-                speakText(lastMsg.content)
-            }
-        } else if (data.type === 'error') {
-            isAIThinking.value = false
-            errorMsg.value = data.message
+        socket.value.onopen = () => {
+            console.log("Connecté au Mentor IA")
+            socket.value.send(JSON.stringify({
+                type: 'setup',
+                payload: config.value
+            }))
         }
-    }
-    
-    socket.value.onclose = () => {
-        console.log("WebSocket déconnecté")
-        if (isSpeaking.value && window.speechSynthesis) window.speechSynthesis.cancel()
+        
+        socket.value.onmessage = (event) => {
+            const msg = JSON.parse(event.data)
+            
+            if (msg.type === 'message' || msg.type === 'chunk') {
+                isAIThinking.value = false
+                const content = msg.content
+                if (msg.type === 'message') {
+                    conversation.value.push({ id: Date.now(), role: 'assistant', content: content })
+                } else {
+                    if (conversation.value.length === 0 || conversation.value[conversation.value.length - 1].role !== 'assistant') {
+                        conversation.value.push({ id: Date.now(), role: 'assistant', content: content })
+                    } else {
+                        conversation.value[conversation.value.length - 1].content += content
+                    }
+                }
+                scrollToBottom()
+            } else if (msg.type === 'analysis') {
+                analystNote.value = msg.payload
+                setTimeout(() => { analystNote.value = null }, 8000)
+            } else if (msg.type === 'voice') {
+                // HD Voice from Backend (edge-tts)
+                playHDAudio(msg.audio)
+            } else if (msg.type === 'done') {
+                // Legacy speakText is now handled by the 'voice' message event for better quality
+                // and avoid dual audio. We keep a console log for debugging.
+                console.log("Flux texte terminé, en attente du flux audio HD...")
+            } else if (msg.type === 'error') {
+                isAIThinking.value = false
+                errorMsg.value = msg.message
+            }
+        }
+        
+        socket.value.onclose = () => {
+            console.log("WebSocket Interview fermé")
+        }
+    } catch (e) {
+        errorMsg.value = "Erreur de connexion au serveur d'entretien."
     }
 }
 
 const sendMessageToAI = (text) => {
     if (!socket.value || socket.value.readyState !== WebSocket.OPEN) return
     
+    conversation.value.push({ id: Date.now(), role: 'user', content: text })
     isAIThinking.value = true
-    conversation.value.push({ role: 'user', content: text, id: Date.now() })
-    scrollToBottom()
+    analystNote.value = null // Reset last note
+    nextTick(scrollToBottom)
     
     if (window.speechSynthesis) window.speechSynthesis.cancel()
     socket.value.send(JSON.stringify({ text: text }))
@@ -238,78 +282,153 @@ const sendMessageToAI = (text) => {
 // Prend les voix en cache ou les voix disponibles maintenant
 const getVoice = () => {
     const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices()
+    if (voices.length === 0) {
+        ttsStatus.value = "Aucune voix système"
+        return null
+    }
+    
     const frVoices = voices.filter(v => v.lang.startsWith('fr'))
     
-    // Ordre de priorité : Online/Natural > Google/Thomas/Henri/Microsoft > n'importe quelle voix fr
-    return frVoices.find(v => v.name.includes('Online') || v.name.includes('Natural') || v.name.includes('Premium'))
-        || frVoices.find(v => ['Google', 'Thomas', 'Henri', 'Microsoft'].some(n => v.name.includes(n)))
-        || frVoices[0]
-        || null
+    // NOUVELLE PRIORITÉ : On évite les voix "Online" qui font souvent du "synthesis-failed"
+    // On cherche d'abord les voix Microsoft ou Google locales, puis les voix simples
+    const selected = frVoices.find(v => !v.name.includes('Online') && (v.name.includes('Thomas') || v.name.includes('Henri') || v.name.includes('Hortense') || v.name.includes('Julie')))
+        || frVoices.find(v => !v.name.includes('Online'))
+        || frVoices[0] 
+        || voices[0]
+        
+    if (selected) {
+        ttsStatus.value = `Voix: ${selected.name}`
+        console.log("Voix sélectionnée:", selected.name, "Online:", selected.name.includes('Online'))
+    }
+    return selected
 }
 
+const testAudio = async () => {
+    ttsStatus.value = "Génération du test HD..."
+    try {
+        const response = await fetch('http://localhost:8000/api/interview/test-voice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                text: `Bonjour, je suis ${currentRecruiter.value.name}. Je suis prête à commencer votre entretien en Haute Définition. M'entendez-vous bien ?`,
+                recruiterId: config.value.recruiterId
+            })
+        })
+        const result = await response.json()
+        if (result.status === 'success') {
+            playHDAudio(result.audio)
+        } else {
+            ttsStatus.value = "Erreur Test HD"
+            // Fallback sur TTS local pour diagnostic
+            speakText("Le test Haute Définition a échoué. Voici la voix locale de secours.")
+        }
+    } catch (e) {
+        console.error("Test Voice Error:", e)
+        ttsStatus.value = "Erreur connexion"
+        speakText("Erreur de connexion au serveur audio.")
+    }
+}
+
+/**
+ * Joue l'audio Haute Définition (edge-tts) reçu du backend
+ */
+const playHDAudio = (base64Data) => {
+    if (!base64Data) return
+    
+    ttsStatus.value = "Lecture audio HD..."
+    window.speechSynthesis.cancel() // On coupe le TTS local au cas où
+    
+    try {
+        const audio = new Audio(`data:audio/mp3;base64,${base64Data}`)
+        
+        audio.onplay = () => {
+            isSpeaking.value = true
+            startAudioPulse()
+            if (recognition) { try { recognition.stop() } catch(e) {} }
+        }
+        
+        audio.onended = () => {
+            isSpeaking.value = false
+            stopAudioPulse()
+            ttsStatus.value = "Prêt (HD)"
+            
+            // Relancer le micro
+            setTimeout(() => {
+                if (!isListening.value && recognition && isInterviewStarted.value) {
+                    try { recognition.start() } catch(e) {}
+                }
+            }, 800)
+        }
+        
+        audio.onerror = (e) => {
+            console.error("HD Audio error:", e)
+            ttsStatus.value = "Erreur Audio HD"
+            isSpeaking.value = false
+        }
+        
+        audio.play()
+    } catch (err) {
+        console.error("Failed to play HD Audio:", err)
+        ttsStatus.value = "Erreur lecture HD"
+    }
+}
+
+let retryCount = 0;
 const speakText = (text) => {
     if (!window.speechSynthesis || !text?.trim()) return
     
-    // Si les voix ne sont pas encore chargées, on mémorise le texte et on attend  
-    if (cachedVoices.length === 0 && window.speechSynthesis.getVoices().length === 0) {
-        console.log("Voix pas encore prêtes, texte en attente...")
-        pendingUtteranceText = text
-        return
-    }
+    ttsStatus.value = "Préparation..."
     
-    // Stopper tout ce qui joue
+    // HACK CRITIQUE : On cancel d'abord
     window.speechSynthesis.cancel()
     
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'fr-FR'
-    utterance.rate = 1.0
-    utterance.pitch = 0.95
-    utterance.volume = 1.0
-    
-    const voice = getVoice()
-    if (voice) {
-        console.log("Voix utilisée:", voice.name)
-        utterance.voice = voice
-    } else {
-        console.warn("Aucune voix fr-FR trouvée, on utilise la voix par défaut du navigateur.")
-    }
-    
-    utterance.onstart = () => {
-        isSpeaking.value = true
-        startAudioPulse()
-        // Couper le micro pendant que le recruteur parle
-        if (isListening.value && recognition) {
-            try { recognition.stop() } catch(e) {}
-        }
-    }
-    
-    utterance.onend = () => {
-        isSpeaking.value = false
-        stopAudioPulse()
+    // On attend un tout petit peu que le moteur audio soit "propre" (Fix Chrome)
+    setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text)
+        utterance.lang = 'fr-FR'
+        utterance.rate = 1.0
+        utterance.pitch = 1.0
+        utterance.volume = 1.0
         
-        // Relancer le micro automatiquement 1s après la fin du recruteur
-        setTimeout(() => {
-            if (!isListening.value && recognition && isInterviewStarted.value) {
-                try {
-                    errorMsg.value = ''
-                    recognition.start()
-                    console.log("Micro relancé après l'IA")
-                } catch(e) {
-                    console.log("Micro: ", e.message)
+        const voice = getVoice()
+        if (voice) utterance.voice = voice
+        
+        utterance.onstart = () => {
+            ttsStatus.value = "IA parle..."
+            isSpeaking.value = true
+            startAudioPulse()
+            retryCount = 0
+            if (recognition) { try { recognition.stop() } catch(e) {} }
+        }
+        
+        utterance.onend = () => {
+            ttsStatus.value = "Prêt"
+            isSpeaking.value = false
+            stopAudioPulse()
+            setTimeout(() => {
+                if (!isListening.value && recognition && isInterviewStarted.value) {
+                    try { recognition.start() } catch(e) {}
                 }
+            }, 800)
+        }
+        
+        utterance.onerror = (e) => {
+            console.error("SpeechSynthesis error:", e.error)
+            ttsStatus.value = `Erreur: ${e.error}`
+            isSpeaking.value = false
+            stopAudioPulse()
+            
+            // Tentative de secours : on change de voix et on réessaie une fois
+            if (retryCount < 2) {
+                console.warn("Échec synthèse, tentative de secours...")
+                retryCount++
+                speakText(text)
             }
-        }, 1000)
-    }
-    
-    utterance.onerror = (e) => {
-        console.error("SpeechSynthesis error:", e.error || e)
-        isSpeaking.value = false
-        stopAudioPulse()
-    }
-    
-    currentSynthesis = utterance
-    window.speechSynthesis.speak(utterance)
-    console.log("speechSynthesis.speak() appelé avec:", text.substring(0, 50))
+        }
+        
+        window.speechSynthesis.resume()
+        window.speechSynthesis.speak(utterance)
+    }, 100)
 }
 
 const triggerListen = () => {
@@ -321,17 +440,6 @@ const triggerListen = () => {
         try { recognition.start() } catch(e) {}
     }
 }
-
-const stopInterview = () => {
-    if (isListening.value && recognition) recognition.stop()
-    if (isSpeaking.value && window.speechSynthesis) window.speechSynthesis.cancel()
-    if (socket.value) socket.value.close()
-    
-    isInterviewStarted.value = false
-    conversation.value = []
-}
-
-const goBackToDashboard = () => router.push('/dashboard')
 
 const scrollToBottom = () => {
     nextTick(() => {
@@ -371,11 +479,20 @@ onMounted(() => {
     }
 })
 
-onUnmounted(() => {
+const goBackToDashboard = () => router.push('/dashboard')
+
+const stopInterview = () => {
+    isInterviewStarted.value = false
     if (socket.value) socket.value.close()
     if (recognition) recognition.stop()
     if (window.speechSynthesis) window.speechSynthesis.cancel()
+    stopWebcam()
     stopAudioPulse()
+    conversation.value = []
+}
+
+onUnmounted(() => {
+    stopInterview()
 })
 </script>
 
@@ -422,149 +539,192 @@ onUnmounted(() => {
                 <textarea v-model="config.cv" rows="5" placeholder="Collez le texte brut de votre CV ou importez un PDF pour que le recruteur puisse réagir dessus..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"></textarea>
              </div>
              
-             <div>
-                 <label class="block text-sm font-bold text-slate-300 mb-3">Format de l'Entretien</label>
-                 <div class="grid grid-cols-2 gap-3">
-                     <button @click="config.interviewType = 'general'" :class="config.interviewType === 'general' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-surface-900 border-surface-700 text-slate-400 hover:border-surface-600'" class="p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all">
-                        <span v-if="config.interviewType === 'general'" class="absolute top-2 right-2"><CheckIcon class="w-4 h-4 text-indigo-400" /></span>
-                        <span class="font-bold relative">Général & HR</span>
-                        <span class="text-[10px] text-center opacity-80">Motivation, soft skills, parcours</span>
-                     </button>
-                     <button @click="config.interviewType = 'technical'" :class="config.interviewType === 'technical' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'bg-surface-900 border-surface-700 text-slate-400 hover:border-surface-600'" class="p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all">
-                        <span v-if="config.interviewType === 'technical'" class="absolute top-2 right-2"><CheckIcon class="w-4 h-4 text-rose-400" /></span>
-                        <span class="font-bold relative">Technique (QCM)</span>
-                        <span class="text-[10px] text-center opacity-80">Connaissances dures, questions pièges</span>
-                     </button>
-                 </div>
-             </div>
-         </div>
-     </div>
-     
-     <div v-if="errorMsg" class="mt-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 font-semibold text-sm text-center">
-         {{ errorMsg }}
-     </div>
+              <div>
+                  <label class="block text-sm font-bold text-slate-300 mb-3">Choix du Recruteur</label>
+                  <div class="grid grid-cols-3 gap-3">
+                      <button v-for="r in recruiters" :key="r.id" 
+                         @click="config.recruiterId = r.id" 
+                         :class="config.recruiterId === r.id ? 'bg-indigo-500/20 border-indigo-500 ring-2 ring-indigo-500/10' : 'bg-surface-900 border-surface-700 hover:border-surface-600'"
+                         class="p-3 border rounded-xl flex flex-col items-center gap-2 transition-all relative overflow-hidden group"
+                      >
+                         <img :src="r.img" class="w-14 h-14 rounded-full object-cover border-2 border-surface-800 group-hover:scale-105 transition-transform" />
+                         <span class="text-[11px] font-bold text-white text-center leading-tight">{{ r.name }}</span>
+                         <span class="text-[9px] text-slate-500 uppercase tracking-tighter">{{ r.role }}</span>
+                         <CheckIcon v-if="config.recruiterId === r.id" class="absolute top-1 right-1 w-3 h-3 text-indigo-400" />
+                      </button>
+                  </div>
+              </div>
 
-     <div class="mt-8 pt-8 border-t border-surface-800 flex justify-end">
-         <button @click="startInterview" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 flex items-center gap-3 transition-all hover:scale-[1.02]">
-             Démarrer le Simulateur
-             <SparklesIcon class="w-5 h-5" />
-         </button>
-     </div>
-  </div>
+              <div>
+                  <label class="block text-sm font-bold text-slate-300 mb-3">Format de l'Entretien</label>
+                  <div class="grid grid-cols-2 gap-3">
+                      <button @click="config.interviewType = 'general'" :class="config.interviewType === 'general' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-surface-900 border-surface-700 text-slate-400 hover:border-surface-600'" class="p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all">
+                         <span v-if="config.interviewType === 'general'" class="absolute top-2 right-2"><CheckIcon class="w-4 h-4 text-indigo-400" /></span>
+                         <span class="font-bold relative text-sm">Général & HR</span>
+                      </button>
+                      <button @click="config.interviewType = 'technical'" :class="config.interviewType === 'technical' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'bg-surface-900 border-surface-700 text-slate-400 hover:border-surface-600'" class="p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all">
+                         <span v-if="config.interviewType === 'technical'" class="absolute top-2 right-2"><CheckIcon class="w-4 h-4 text-rose-400" /></span>
+                         <span class="font-bold relative text-sm">Technique</span>
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
+      
+      <div v-if="errorMsg" class="mt-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 font-semibold text-sm text-center animate-shake">
+          {{ errorMsg }}
+      </div>
 
-  <!-- ACTIVE INTERVIEW UI (SIRI-LIKE) -->
-  <div v-else class="fixed inset-0 bg-surface-950 flex flex-col items-center justify-between pointer-events-auto z-[60] overflow-hidden">
-    
-    <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
-       <div 
-          class="w-96 h-96 bg-indigo-500 rounded-full blur-[140px] transition-all duration-300 ease-out"
-          :style="isSpeaking ? `transform: scale(${1 + audioLevel/50}); opacity: 0.6;` : (isListening ? `transform: scale(${1 + audioLevel/40}); background-color: #ec4899; opacity: 0.6;` : 'transform: scale(1)')"
-       ></div>
-       <div 
-          class="absolute w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[160px] transition-all duration-700"
-          :class="isSpeaking || isListening ? 'scale-110 opacity-60' : 'scale-90 opacity-30'"
-       ></div>
-    </div>
+      <div class="mt-8 pt-8 border-t border-surface-800 flex items-center justify-between">
+          <div class="flex items-center gap-4">
+              <button @click="testAudio" class="px-4 py-2 bg-surface-800 hover:bg-surface-700 text-indigo-400 text-xs font-bold rounded-lg border border-indigo-500/20 flex items-center gap-2 transition-all">
+                  <SpeakerWaveIcon class="w-4 h-4" />
+                  Tester le son
+              </button>
+              <span v-if="ttsStatus" class="text-[10px] text-slate-500 uppercase font-medium">{{ ttsStatus }}</span>
+          </div>
+          <button @click="startInterview" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold rounded-xl shadow-xl shadow-indigo-500/20 flex items-center gap-3 transition-all hover:scale-[1.05] active:scale-95">
+              Lancer la Visioconférence
+              <VideoCameraIcon class="w-5 h-5" />
+          </button>
+      </div>
+   </div>
 
-    <!-- Header -->
-    <header class="w-full p-6 flex items-center justify-between relative z-10">
-        <button @click="stopInterview" class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors bg-surface-900/50 hover:bg-surface-800 px-4 py-2 rounded-full backdrop-blur border border-surface-800">
-            <ArrowLeftIcon class="w-4 h-4" />
-            <span class="text-sm font-bold uppercase tracking-wider">Interrompre l'entretien</span>
-        </button>
-        
-        <div class="flex items-center gap-2 bg-surface-900/50 backdrop-blur border border-surface-800 px-4 py-2 rounded-full shadow-lg">
-            <span class="relative flex h-2.5 w-2.5">
-              <span v-if="isSpeaking || isListening" class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="isListening ? 'bg-pink-400' : 'bg-indigo-400'"></span>
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="isListening ? 'bg-pink-500' : (isSpeaking ? 'bg-indigo-500' : 'bg-slate-500')"></span>
-            </span>
-            <span class="text-xs font-bold text-white uppercase tracking-widest">
-                {{ isAIThinking ? 'Le Recruteur réfléchit...' : (isListening ? 'Vous Parlez...' : (isSpeaking ? 'Le Recruteur Parle...' : 'En Attente')) }}
-            </span>
-        </div>
-    </header>
+   <!-- IMMERSIVE VIDEO CALL UI -->
+   <div v-else class="fixed inset-0 bg-black flex flex-col pointer-events-auto z-[60] overflow-hidden font-sans">
+      
+      <!-- BACKGROUND / RECRUITER VIDEO AREA -->
+      <div class="absolute inset-0 z-0">
+          <img 
+            :src="currentRecruiter?.img" 
+            class="w-full h-full object-cover transition-all duration-1000"
+            :class="isAIThinking ? 'blur-sm scale-110' : 'blur-none scale-100'"
+          />
+          <!-- Screen Overlay for dark/meeting vibe -->
+          <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40"></div>
+          
+          <!-- Pulse / Aura effect around the AI face -->
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div 
+                class="w-[500px] h-[500px] rounded-full blur-[120px] transition-all duration-300 pointer-events-none opacity-40 mix-blend-screen"
+                :style="isSpeaking ? `background-color: #6366f1; transform: scale(${1 + audioLevel/50});` : 'background-color: transparent'"
+              ></div>
+          </div>
+      </div>
 
-    <!-- Chat / Transcription History Area -->
-    <main class="flex-1 w-full max-w-3xl px-6 py-8 overflow-y-auto relative z-10 flex flex-col gap-8 scroll-smooth" ref="chatContainer">
-        
-        <div v-for="msg in conversation" :key="msg.id" class="flex w-full animate-fade-in-up" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
-            <div class="flex flex-col gap-2 max-w-[85%]">
-                <!-- Message Label -->
-                <div class="flex items-center gap-2 px-3" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
-                    <span class="text-[10px] uppercase tracking-widest font-bold font-display" :class="msg.role === 'user' ? 'text-slate-500' : 'text-indigo-400'">
-                        {{ msg.role === 'user' ? 'Vous' : 'Recruteur' }}
-                    </span>
-                    <SparklesIcon v-if="msg.role === 'assistant'" class="w-3 h-3 text-indigo-400 animate-pulse" />
-                </div>
+      <!-- TOP BAR -->
+      <header class="absolute top-0 w-full p-6 flex items-center justify-between z-20">
+          <div class="flex items-center gap-4">
+              <div class="bg-black/40 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
+                  <BuildingOfficeIcon class="w-4 h-4 text-indigo-400" />
+                  <span class="text-xs font-bold text-white tracking-widest uppercase">{{ config.company }} — {{ currentRecruiter?.role }}</span>
+              </div>
+          </div>
 
-                <div 
-                   class="rounded-3xl px-6 py-5 backdrop-blur-md shadow-2xl transition-all duration-500"
-                   :class="msg.role === 'user' 
-                     ? 'bg-white/5 border border-white/10 text-slate-200 rounded-br-sm shadow-indigo-500/5' 
-                     : 'bg-indigo-600/10 border border-indigo-500/30 text-indigo-50 rounded-bl-sm shadow-indigo-500/10'"
-                >
-                    <p class="text-[16px] leading-relaxed font-medium whitespace-pre-wrap select-text selection:bg-indigo-500/30">{{ msg.content }}</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Live Transcript -->
-        <div v-if="transcript" class="flex w-full justify-end opacity-60 animate-pulse">
-            <div class="max-w-[80%] rounded-2xl px-5 py-3 bg-surface-800/50 text-slate-300 border border-surface-700/50 border-dashed rounded-br-sm">
-                <p class="text-sm leading-relaxed font-medium italic">{{ transcript }}...</p>
-            </div>
-        </div>
-    </main>
+          <div class="flex items-center gap-3">
+              <div v-if="ttsStatus" class="bg-black/40 backdrop-blur-xl border border-white/5 px-3 py-1.5 rounded-xl hidden md:flex items-center gap-2">
+                  <SpeakerWaveIcon class="w-3 h-3 text-indigo-400" />
+                  <span class="text-[9px] font-bold text-indigo-200 uppercase tracking-widest">{{ ttsStatus.includes('HD') ? 'Son Haute-Fidélité' : ttsStatus }}</span>
+              </div>
+              <div class="bg-indigo-500/20 backdrop-blur-xl border border-indigo-500/30 px-4 py-2 rounded-2xl flex items-center gap-3">
+                  <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+                  <span class="text-xs font-bold text-indigo-100 uppercase tracking-tighter">{{ currentRecruiter?.name }}</span>
+              </div>
+          </div>
+      </header>
 
-    <!-- Main Siri/Orb Interaction Area -->
-    <div class="w-full pb-16 pt-8 flex flex-col items-center justify-center relative z-10 bg-gradient-to-t from-surface-950 via-surface-950/80 to-transparent">
-        
-        <!-- The Orb Button -->
-        <button 
-            @click="triggerListen"
-            class="relative group rounded-full p-1"
-        >
-            <div 
-              class="absolute inset-0 rounded-full blur-xl transition-all duration-300"
-              :class="isListening ? 'bg-pink-500/50 scale-150 shadow-[0_0_30px_#ec4899]' : 'bg-indigo-500/30 scale-100 group-hover:bg-indigo-400/50 group-hover:scale-125'"
-            ></div>
-            
-            <div 
-              class="w-24 h-24 rounded-full flex items-center justify-center relative z-10 shadow-2xl transition-all duration-300 border"
-              :class="isListening ? 'bg-gradient-to-br from-pink-500 to-rose-600 border-pink-400/50 scale-110' : 'bg-surface-800 border-surface-700 hover:border-indigo-500/50 bg-gradient-to-b hover:from-surface-700 hover:to-surface-800'"
-            >
-                <StopIcon v-if="isListening" class="w-10 h-10 text-white" />
-                <MicrophoneIcon v-else class="w-10 h-10 text-indigo-100 group-hover:text-white transition-colors" />
-            </div>
-        </button>
+      <!-- ANALYST TIPS (Nano Banana) -->
+      <div v-if="analystNote" class="absolute left-6 top-24 z-30 max-w-xs animate-fade-in-right">
+          <div class="bg-white/10 backdrop-blur-2xl border border-white/20 p-4 rounded-2xl shadow-2xl">
+              <div class="flex items-center gap-2 mb-2">
+                  <SparklesIcon class="w-4 h-4 text-yellow-400" />
+                  <span class="text-[10px] uppercase font-black tracking-widest text-slate-400">Notes de l'Analyste</span>
+              </div>
+              <p class="text-sm font-medium text-white leading-relaxed">{{ analystNote.tip }}</p>
+              <div class="mt-2 flex items-center gap-2">
+                  <div class="text-[8px] bg-white/5 border border-white/10 px-2 py-0.5 rounded text-slate-400 uppercase">{{ analystNote.sentiment }}</div>
+              </div>
+          </div>
+      </div>
 
-        <p class="mt-8 text-sm font-bold tracking-wide max-w-sm text-center px-4 h-16 flex items-center justify-center">
-            <span v-if="isAIThinking" class="text-indigo-400 flex items-center gap-3 animate-pulse bg-indigo-500/5 px-6 py-3 rounded-full border border-indigo-500/20">
-                <span class="flex gap-1">
-                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
-                </span>
-                Analyse de votre réponse...
-            </span>
-            <span v-else-if="isSpeaking" class="text-indigo-300 flex items-center gap-2 bg-indigo-500/10 px-6 py-3 rounded-full border border-indigo-500/10">
-                <SparklesIcon class="w-4 h-4" /> Écoute du recruteur
-            </span>
-            <span v-else-if="isListening" class="text-pink-400 flex flex-col items-center gap-1 animate-fadeIn">
-                <span class="bg-pink-500/10 px-6 py-3 rounded-full border border-pink-500/20 shadow-lg shadow-pink-500/5">
-                    À vous de parler !
-                </span>
-                <span class="text-[10px] mt-2 opacity-60 uppercase tracking-widest">(Cliquez pour envoyer maintenant)</span>
-            </span>
-            <span v-else class="text-slate-400 flex flex-col items-center gap-2 group-hover:text-slate-300 transition-colors">
-                <span class="bg-surface-900 border border-surface-800 px-8 py-3 rounded-full shadow-inner hover:border-indigo-500/30 transition-all cursor-pointer" @click="triggerListen">
-                    Cliquez sur le microphone pour répondre.
-                </span>
-                <span class="text-[10px] opacity-40 uppercase tracking-tighter">Votre assistant vous écoute puis analyse votre réponse</span>
-            </span>
-        </p>
+      <!-- USER WEBCAM (VIGNETTE) -->
+      <div class="absolute right-6 bottom-32 w-48 md:w-64 aspect-video bg-surface-900 rounded-2xl border-2 border-white/20 shadow-2xl overflow-hidden z-20 group transition-all"
+           :class="isListening ? 'border-pink-500 scale-105 shadow-pink-500/20' : ''">
+          <video ref="userVideo" autoplay playsinline muted class="w-full h-full object-cover grayscale-[0.3]"></video>
+          <div v-if="!stream" class="absolute inset-0 flex items-center justify-center bg-surface-950 flex-col gap-2">
+              <VideoCameraSlashIcon class="w-8 h-8 text-slate-700" />
+              <span class="text-[10px] text-slate-500 uppercase font-bold">Caméra désactivée</span>
+          </div>
+          <div class="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur px-2 py-1 rounded-lg">
+              <UserIcon class="w-3 h-3 text-slate-300" />
+              <span class="text-[9px] font-bold text-white uppercase">Moi</span>
+          </div>
+      </div>
 
-    </div>
+      <!-- TRANSCRIPTION DRAWER (Toggleable) -->
+      <div v-if="showChat" class="absolute left-6 bottom-32 w-80 max-h-[40%] bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl z-40 flex flex-col overflow-hidden animate-fade-in-up">
+          <div class="p-4 border-b border-white/5 flex items-center justify-between">
+              <span class="text-xs font-black uppercase text-slate-400">Transcription</span>
+              <button @click="showChat = false" class="p-1 hover:bg-white/10 rounded-lg text-slate-400"><XMarkIcon class="w-4 h-4" /></button>
+          </div>
+          <div class="flex-1 overflow-y-auto p-4 space-y-4 text-sm scroll-smooth" ref="chatContainer">
+              <div v-for="msg in conversation" :key="msg.id" :class="msg.role === 'user' ? 'text-indigo-200' : 'text-slate-300'">
+                  <span class="font-bold text-[10px] block opacity-50">{{ msg.role === 'user' ? 'VOUS' : 'RECRUTEUR' }}</span>
+                  {{ msg.content }}
+              </div>
+              <div v-if="transcript" class="text-pink-300 italic opacity-60">{{ transcript }}...</div>
+          </div>
+      </div>
 
-  </div>
+      <!-- MEETING TOOLBAR -->
+      <div class="absolute bottom-10 w-full flex items-center justify-center gap-6 z-50">
+          <div class="bg-white/5 backdrop-blur-3xl border border-white/10 p-2 rounded-full flex items-center gap-3 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+              
+              <!-- Toggle Transcription -->
+              <button @click="showChat = !showChat" 
+                :class="showChat ? 'bg-white/20 text-white' : 'text-slate-400 hover:text-white'"
+                class="p-4 rounded-full transition-all" title="Transcription">
+                  <ChatBubbleLeftRightIcon class="w-6 h-6" />
+              </button>
+
+              <!-- Manual Audio Recovery -->
+              <button @click="testAudio" 
+                class="p-4 rounded-full text-slate-400 hover:text-indigo-400 transition-all border border-dashed border-white/5" title="Relancer le son">
+                  <SpeakerWaveIcon class="w-6 h-6" />
+              </button>
+
+              <!-- Main Interaction Button (The Orb) -->
+              <button @click="triggerListen" class="relative group">
+                  <div class="absolute inset-0 rounded-full blur-2xl transition-all duration-500 group-hover:scale-125"
+                    :class="isListening ? 'bg-pink-500/50' : (isAIThinking ? 'bg-indigo-500/50' : 'bg-white/5')"></div>
+                  
+                  <div class="w-20 h-20 rounded-full flex items-center justify-center border-4 relative z-10 transition-all duration-300"
+                    :class="isListening 
+                       ? 'bg-pink-500 border-pink-400 shadow-[0_0_30px_#ec4899] scale-110' 
+                       : (isAIThinking ? 'bg-indigo-600 border-indigo-400 animate-pulse' : 'bg-surface-800 border-white/20 group-hover:border-white/40')">
+                      
+                      <div v-if="isAIThinking" class="flex gap-1">
+                          <span class="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                          <span class="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                          <span class="w-2 h-2 bg-white rounded-full animate-bounce"></span>
+                      </div>
+                      <StopIcon v-else-if="isListening" class="w-10 h-10 text-white" />
+                      <MicrophoneIcon v-else class="w-10 h-10 text-white" />
+                  </div>
+              </button>
+
+              <!-- End Call Button -->
+              <button @click="stopInterview" class="p-4 rounded-full text-rose-500 hover:bg-rose-500/20 transition-all">
+                  <div class="bg-rose-600 p-2.5 rounded-full rotate-[135deg] shadow-lg shadow-rose-900/50">
+                      <PhoneIcon class="w-6 h-6 text-white" />
+                  </div>
+              </button>
+          </div>
+      </div>
+
+      <!-- Live status text -->
+      <div v-if="isListening" class="absolute bottom-32 left-1/2 -translate-x-1/2 text-pink-400 font-black uppercase tracking-[0.3em] text-xs animate-pulse z-10 drop-shadow-lg">
+          Microphone Actif — Parlez Maintenant
+      </div>
+   </div>
 </template>

@@ -1,6 +1,8 @@
 import os
 import json
 import asyncio
+import base64
+import edge_tts
 from dotenv import load_dotenv
 load_dotenv() # Load from .env file
 
@@ -23,6 +25,37 @@ else:
 genai.configure(api_key=api_key)
 
 router = APIRouter(prefix="/api/interview", tags=["Interview Simulator"])
+
+@router.post("/test-voice")
+async def test_voice_hd(data: dict):
+    """
+    Generates a high-quality test audio sample using edge-tts.
+    """
+    text = data.get("text", "Ceci est un test sonore en Haute Définition.")
+    recruiter_id = data.get("recruiterId", "tech")
+    
+    voice_map = {
+        "tech": "fr-FR-DeniseNeural",
+        "hr": "fr-FR-HenriNeural", 
+        "ceo": "fr-FR-EloiseNeural"
+    }
+    voice = voice_map.get(recruiter_id, "fr-FR-DeniseNeural")
+    
+    try:
+        communicate = edge_tts.Communicate(text, voice)
+        audio_data = b""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+        
+        if audio_data:
+            return {
+                "status": "success",
+                "audio": base64.b64encode(audio_data).decode('utf-8')
+            }
+        return {"status": "error", "message": "Failed to generate audio"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @router.websocket("/ws")
 async def websocket_interview(websocket: WebSocket, token: str):
@@ -72,76 +105,120 @@ async def websocket_interview(websocket: WebSocket, token: str):
         company = cfg.get("company", "L'entreprise")
         job_details = cfg.get("jobDetails", "Pas de détails")
         interview_type = cfg.get("interviewType", "general") # "general" or "technical"
+        recruiter_id = cfg.get("recruiterId", "tech") # tech, hr, ceo
+
+        # Map recruiter to edge-tts voice
+        voice_map = {
+            "tech": "fr-FR-DeniseNeural",
+            "hr": "fr-FR-HenriNeural", 
+            "ceo": "fr-FR-EloiseNeural"
+        }
+        selected_voice = voice_map.get(recruiter_id, "fr-FR-DeniseNeural")
         
     except Exception as e:
         print(f"Failed to receive setup: {e}")
         await websocket.close(code=1008)
         return
 
-    # 3. Initialize Gemini configuration
+    # 3. Initialize Gemini Models (Recruiter + Analyst)
     role_desc = "un recruteur expert (DRH ou Manager)"
     tech_rule = ""
     if interview_type == "technical":
         role_desc = "le CTO ou Lead Tech"
-        tech_rule = "Pose des questions techniques sous forme de QCM ou de mise en situation concrète. Attends la réponse, donne ton feedback technique, puis enchaîne."
+        tech_rule = "Pose des questions techniques pointus. Attends la réponse, donne ton feedback technique, puis enchaîne."
 
-    system_instruction = f"""
-    Tu es {role_desc} chez {company}. Tu mènes un entretien d'embauche de vive voix.
+    recruiter_instruction = f"""
+    Tu es {role_desc} chez {company}. Tu mènes un entretien de VISIOCONFÉRENCE.
     Le candidat s'appelle {user_email.split('@')[0] if 'user_email' in locals() else 'le candidat'}.
     Il postule pour le poste de : {job_title}.
     
-    Contexte de l'offre d'emploi : {job_details}
-    Contexte du CV du candidat : {cv_content}
-    
     Règles absolues :
-    1. Sois extrêmement concis et percutant. Tes phrases doivent être courtes pour faciliter la synthèse vocale.
-    2. Pose UNE SEULE question à la fois. N'enchaîne surtout pas plusieurs questions.
-    3. Ta mission est de mener l'entretien de A à Z : présentation, questions sur l'expérience, questions techniques (si applicable), et clôture.
-    4. Attends la réponse de l'utilisateur. Rebondis brièvement sur ce qu'il dit (valide ou demande précision) puis passe à la phase suivante de l'entretien.
-    5. {tech_rule}
-    6. Parle en français naturel et fluide. Évite les listes, les tirets, le markdown ou les parenthèses.
-    7. Agis comme un humain en entretien : sois pro mais encourageant. Ne t'arrête pas avant d'avoir fait le tour du profil.
+    1. Sois extrêmement concis pour la synthèse vocale.
+    2. Pose UNE SEULE question à la fois.
+    3. Mène l'entretien de A à Z (Présentation -> Expérience -> Technique -> Clôture).
+    4. {tech_rule}
+    5. Parle en français naturel. Pas de listes, pas de markdown.
+    """
+
+    analyst_instruction = f"""
+    Tu es un analyste RH "fantôme" qui observe l'entretien pour le poste de {job_title}.
+    Ton rôle est de donner des CONSEILS BREF au candidat en temps réel (metadata).
+    Analyse ce qu'il dit et donne des points sur : Posture, Pertinence technique, ou Soft skills.
+    Réponds TOUJOURS en JSON format court : {{"tip": "ton conseil court", "sentiment": "neutre|positif|stressé"}}
+    Max 10 mots par conseil.
     """
 
     try:
-        model = genai.GenerativeModel("gemini-3-flash-preview", system_instruction=system_instruction)
-        chat = model.start_chat()
+        # Main Recruiter
+        recruiter_model = genai.GenerativeModel("gemini-3-flash-preview", system_instruction=recruiter_instruction)
+        recruiter_chat = recruiter_model.start_chat()
+        
+        # Shadow Analyst
+        analyst_model = genai.GenerativeModel("nano-banana-pro-preview", system_instruction=analyst_instruction)
+        analyst_chat = analyst_model.start_chat()
         
         # Initial greeting
-        initial_greeting = f"Bonjour, je suis ravi de vous recevoir pour ce poste de {job_title} chez {company}. Pourrions-nous commencer par une brève présentation de votre parcours par rapport à votre CV ?"
+        initial_greeting = f"Bonjour, je suis ravi de vous recevoir pour ce poste de {job_title} chez {company}. Nous sommes en visioconférence, je vous vois bien. Pourrions-nous commencer par votre présentation ?"
         await websocket.send_json({"type": "message", "role": "assistant", "content": initial_greeting})
         await websocket.send_json({"type": "done"})
         
         while True:
-            # Receive data from frontend. We expect JSON with user message.
             data = await websocket.receive_text()
             payload = json.loads(data)
-            
             user_msg = payload.get("text", "")
-            if not user_msg:
-                continue
+            if not user_msg: continue
 
-            # Send to Gemini securely in a background thread to prevent blocking the WebSocket loop,
-            # while avoiding pure 'async for' which is unstable in some versions of the SDK.
-            def _get_response():
-                return chat.send_message(user_msg, stream=True)
-                
-            response = await asyncio.to_thread(_get_response)
+            # 1. Recruiter Response (Gemini 3)
+            def _get_recruiter_resp():
+                return recruiter_chat.send_message(user_msg, stream=True)
             
-            # Stream response back
+            recruiter_stream = await asyncio.to_thread(_get_recruiter_resp)
+            
             full_reply = ""
-            for chunk in response:
+            for chunk in recruiter_stream:
                 if chunk.text:
                     full_reply += chunk.text
-                    await websocket.send_json({
-                        "type": "chunk", 
-                        "content": chunk.text
-                    })
+                    await websocket.send_json({"type": "chunk", "content": chunk.text})
+            
+            await websocket.send_json({"type": "done"})
+
+            # 3. Generate HD Voice (edge-tts)
+            async def _generate_voice(text, voice):
+                try:
+                    communicate = edge_tts.Communicate(text, voice)
+                    audio_data = b""
+                    async for chunk in communicate.stream():
+                        if chunk["type"] == "audio":
+                            audio_data += chunk["data"]
                     
-            # Notify frontend that the stream for this message is done so it can trigger TTS
-            await websocket.send_json({
-                "type": "done"
-            })
+                    if audio_data:
+                        # Encode in base64 to send via JSON
+                        b64_audio = base64.b64encode(audio_data).decode('utf-8')
+                        await websocket.send_json({
+                            "type": "voice",
+                            "audio": b64_audio
+                        })
+                except Exception as e:
+                    print(f"TTS Error: {e}")
+
+            # Trigger voice generation after the recruiter finished talking
+            asyncio.create_task(_generate_voice(full_reply, selected_voice))
+
+            # 2. Shadow Analysis (Nano Banana) - Runs after the turn to provide a "tip"
+            async def _run_analysis():
+                try:
+                    analysis_resp = await asyncio.to_thread(analyst_chat.send_message, f"Analyse ce message du candidat: {user_msg}")
+                    # Extract JSON from Nano Banana response
+                    raw_text = analysis_resp.text
+                    # Simple cleanup in case it adds markdown ```json
+                    clean_text = raw_text.replace("```json", "").replace("```", "").strip()
+                    analysis_data = json.loads(clean_text)
+                    await websocket.send_json({"type": "analysis", "payload": analysis_data})
+                except:
+                    pass # Analyst is silent if error
+
+            # Run analyst in background so recruiter stays fast
+            asyncio.create_task(_run_analysis())
 
     except WebSocketDisconnect:
         print("Interview WebSocket disconnected")
