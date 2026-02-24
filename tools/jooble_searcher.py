@@ -14,42 +14,35 @@ class JoobleSearcher:
     
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.url = f"{self.BASE_URL}{self.api_key}"
         
-    async def search_jobs(self, keywords: str, location: str, page: int = 1, limit: int = 20) -> List[Dict[str, Any]]:
+    async def search_jobs(self, keywords: str, location: str, page: int = 1, limit: int = 20, **kwargs) -> List[Dict[str, Any]]:
         """
         Recherche des offres sur Jooble.
-        
-        Args:
-            keywords: Mots-clés de recherche
-            location: Localisation
-            page: Numéro de page (Jooble utilise un offset, mais on simplifie)
-            limit: Nombre de résultats (max 20 souvent)
-            
-        Returns:
-            Liste des offres standardisées
         """
+        url = f"{self.BASE_URL}{self.api_key}"
+        
+        # S'assurer que keywords et location sont des strings non vides
+        kw = str(keywords or "informatique")
+        loc = str(location or "Canada")
+        
         payload = {
-            "keywords": keywords,
-            "location": location,
-            "page": page,
-            "resultonpage": limit
+            "keywords": kw,
+            "location": loc,
+            "page": int(page),
+            "resultonpage": int(limit)
         }
         
         try:
+            logger.info(f"📡 Jooble API Request: {kw} @ {loc}")
             async with aiohttp.ClientSession() as session:
-                async with session.post(self.url, json=payload) as response:
+                async with session.post(url, json=payload) as response:
                     if response.status == 200:
                         data = await response.json()
                         jobs = data.get("jobs", [])
                         return self._normalize_jobs(jobs)
-                    elif response.status == 401:
-                        logger.error("❌ Erreur Jooble: Clé API invalide")
-                        return []
                     else:
                         logger.error(f"❌ Erreur Jooble {response.status}: {await response.text()}")
                         return []
-                        
         except Exception as e:
             logger.error(f"⚠️ Exception Jooble: {str(e)}")
             return []

@@ -17,21 +17,23 @@ class JSearchSearcher:
         self.api_key = api_key
         self.host = os.getenv("RAPIDAPI_HOST", "jsearch.p.rapidapi.com")
         
-    async def search_jobs(self, query: str, location: str = "Canada", page: int = 1, num_pages: int = 1) -> List[Dict[str, Any]]:
+    async def search_jobs(self, query: str, page: int = 1, num_pages: int = 1, **kwargs) -> List[Dict[str, Any]]:
         """
         Recherche des offres sur JSearch.
         
         Args:
-            query: Mots-clés de recherche (ex: "Python developer")
-            location: Localisation (sera concaténée à la query si pertinente)
-            page: Numéro de page
-            num_pages: Nombre de pages à récupérer
+            query: Mots-cles de recherche (ex: "Python developer")
+            location: Localisation (deja concatene a la query normalement)
+            page: Numero de page
+            num_pages: Nombre de pages a recuperer
+            employment_types: Type d'emploi (INTERN, FULLTIME, etc.)
+            country: Code ISO 2 lettres du pays (fr, ca, gb, us, de...)
             
         Returns:
-            Liste des offres standardisées
+            Liste des offres standardisees
         """
-        # Construction de la query composée
-        full_query = f"{query} in {location}"
+        # Construction de la query composee
+        full_query = query  # La localisation est deja dans la query (ex: "dev web in Paris, France")
         
         headers = {
             "X-RapidAPI-Key": self.api_key,
@@ -39,14 +41,17 @@ class JSearchSearcher:
         }
         
         params = {
-            "query": full_query,
+            "query": str(full_query or ""),
             "page": str(page),
             "num_pages": str(num_pages),
-            "country": "ca", # Focus Canada pour ce projet, ou 'us' par défaut
-            "date_posted": "month" # Offres récentes
+            "date_posted": "month"
         }
         
+        # Filtrer et nettoyer les params
+        params = {k: str(v) for k, v in params.items() if v is not None}
+        
         try:
+            logger.info(f"📡 JSearch API Request: {params['query']}")
             async with aiohttp.ClientSession() as session:
                 async with session.get(self.BASE_URL, headers=headers, params=params) as response:
                     if response.status == 200:
