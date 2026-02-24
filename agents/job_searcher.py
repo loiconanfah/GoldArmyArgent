@@ -20,6 +20,47 @@ class JobSearchAgent(BaseAgent):
         kwargs.setdefault("max_tokens", 1024)
         super().__init__(**kwargs)
     
+    # Location map: vague user input → precise API query string
+    LOCATION_MAP = {
+        "qc": "Québec, QC, Canada",
+        "québec": "Québec, QC, Canada",
+        "quebec": "Québec, QC, Canada",
+        "province de québec": "Québec, QC, Canada",
+        "ville de québec": "Québec City, QC, Canada",
+        "québec city": "Québec City, QC, Canada",
+        "quebec city": "Québec City, QC, Canada",
+        "montréal": "Montréal, QC, Canada",
+        "montreal": "Montréal, QC, Canada",
+        "laval": "Laval, QC, Canada",
+        "longueuil": "Longueuil, QC, Canada",
+        "gatineau": "Gatineau, QC, Canada",
+        "sherbrooke": "Sherbrooke, QC, Canada",
+        "trois-rivières": "Trois-Rivières, QC, Canada",
+        "saguenay": "Saguenay, QC, Canada",
+        "ontario": "Ontario, Canada",
+        "toronto": "Toronto, ON, Canada",
+        "ottawa": "Ottawa, ON, Canada",
+        "on": "Ontario, Canada",
+        "bc": "British Columbia, Canada",
+        "vancouver": "Vancouver, BC, Canada",
+        "alberta": "Alberta, Canada",
+        "calgary": "Calgary, AB, Canada",
+        "canada": "Canada",
+    }
+
+    def _normalize_location(self, loc: str) -> str:
+        """Convert a vague location string to a precise, API-ready one."""
+        if not loc:
+            return "Québec, QC, Canada"
+        normalized = self.LOCATION_MAP.get(loc.lower().strip())
+        if normalized:
+            return normalized
+        if "," in loc:
+            return loc
+        if "canada" not in loc.lower():
+            return f"{loc}, Canada"
+        return loc
+
     async def think(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extrait les mots-clés de base à partir de la requête.
@@ -41,21 +82,21 @@ class JobSearchAgent(BaseAgent):
             cv_profile["skills"] = [query]
         
         explicit_location = task.get("location", "")
-        base_location = explicit_location if explicit_location else "Québec"
+        # Normalize the location to be as precise as possible
+        base_location = self._normalize_location(explicit_location) if explicit_location else "Québec, QC, Canada"
         
         # Si l'utilisateur a tapé une recherche explicite, on veut la garder au maximum
-        # Extraction TRES BASIQUE via LLM des mots clés et location
         prompt = f"""
         L'utilisateur cherche: "{query}"
         
         Consignes:
         1. Extrais les mots-clés exacts du poste recherché (keywords). Garde les termes techniques exacts (ex: ".NET", "React", "DevOps").
-        2. Extrais la ville/pays s'il y en a un. Sinon retourne "{base_location}".
+        2. Extrais la ville/région s'il y en a un dans la recherche. Sinon retourne null.
         
-        Réponds UNIQUEMENT en JSON avec les clés 'keywords' et 'location'.
+        Réponds UNIQUEMENT en JSON avec les clés 'keywords' et 'location' (location = null si non mentionné).
         """
         
-        criteria = {"keywords": query, "location": base_location} # Valeurs par défaut robustes
+        criteria = {"keywords": query, "location": base_location}  # Valeurs par défaut robustes
         
         try:
             if query:
@@ -64,13 +105,12 @@ class JobSearchAgent(BaseAgent):
                 match = re.search(r'\{.*\}', resp.replace('\n', ''), re.S)
                 if match:
                     parsed = json.loads(match.group(0))
-                    # On garde les mots clés extraits seulement s'ils sont pertinents, sinon on garde la query brute
                     if "keywords" in parsed and parsed["keywords"] and len(parsed["keywords"]) > 2:
                         criteria["keywords"] = parsed["keywords"]
-                    if "location" in parsed and parsed["location"]:
-                        criteria["location"] = parsed["location"]
+                    # Only use LLM location if user didn't explicitly provide one
+                    if not explicit_location and parsed.get("location") and parsed["location"] != "null":
+                        criteria["location"] = self._normalize_location(parsed["location"])
                         
-            # Priorité de la recherche au CV SEULEMENT si "query" est 100% vide
             elif cv_profile.get("target_roles"):
                  criteria["keywords"] = cv_profile["target_roles"][0]
         except Exception as e:
@@ -209,7 +249,19 @@ class JobSearchAgent(BaseAgent):
                 company = job.get("company", "")
                 
                 best_email = job.get("apply_email", "")
-                fallback_url = job.get("apply_url") or job.get("company_website") or job.get("url", "")
+                # Prioritize the OSINT-discovered company website, then direct apply URL, then job post URL
+                company_website = job.get("company_website", "")   # Set by OSINT in process_and_osint()
+                apply_url = job.get("apply_url", "")
+                job_url = job.get("url", "")
+                
+                # Pick the best URL: prefer actual company site over job board link
+                if company_website and "jooble" not in company_website and "jsearch" not in company_website.lower():
+                    best_site_url = company_website
+                elif apply_url and "jooble" not in apply_url and "jsearch" not in apply_url.lower():
+                    best_site_url = apply_url
+                else:
+                    best_site_url = ""  # Don't save job board links as company site
+                    
                 phone_ext = job.get("phone", "")
                 
                 if not best_email:
@@ -219,15 +271,13 @@ class JobSearchAgent(BaseAgent):
                         best_email = emails_found[0]
                 
                 if company and company.lower() not in ["", "confidentiel", "entreprise anonyme", "entreprise confidentielle"]:
-                    # On sauvegarde le contact si on a un e-mail OR un téléphone OR une vrai URL OSINT trouvée
-                    is_real_url = (fallback_url and "jooble.org" not in fallback_url.lower())
-                    if best_email or phone_ext or is_real_url:
+                    if best_email or phone_ext or best_site_url:
                         try:
                             from core.contacts import contacts_manager
                             cat_name = f"Réseau {keywords.title()}"
                             contacts_manager.save_contact(
                                 company_name=company,
-                                site_url=fallback_url,
+                                site_url=best_site_url,
                                 emails=[best_email] if best_email else [],
                                 source_job=job.get("title", 'Emploi Sniper'),
                                 category=cat_name,

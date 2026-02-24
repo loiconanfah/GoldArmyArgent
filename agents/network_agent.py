@@ -15,6 +15,14 @@ class NetworkAgent(BaseAgent):
         kwargs.setdefault("temperature", 0.7) # Un peu de créativité pour l'écriture
         super().__init__(**kwargs)
 
+    async def think(self, task):
+        """Requis par BaseAgent — NetworkAgent utilise draft_email directement."""
+        return task
+
+    async def act(self, action_plan):
+        """Requis par BaseAgent — NetworkAgent utilise draft_email directement."""
+        return action_plan
+
     async def draft_email(self, params: Dict[str, Any]) -> Dict[str, str]:
         """
         Génère un e-mail d'approche.

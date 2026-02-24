@@ -31,10 +31,13 @@ const hasHunted = ref(false)
 
 // États pour la rédaction d'email
 const requestType = ref('emploi')
+const draftCompanyName = ref('') // Company name specific to draft panel (standalone)
 const targetDomain = ref('')
 const selectedHrName = ref('')
 const isDrafting = ref(false)
 const draftResult = ref(null)
+const draftError = ref('')
+const draftCopied = ref(false)
 
 // Carnet d'adresses
 const savedContacts = ref([])
@@ -62,6 +65,7 @@ onMounted(() => {
 const prefillDraft = (companyNameStr) => {
     activeTab.value = 'osint'
     companyName.value = companyNameStr
+    draftCompanyName.value = companyNameStr  // Also fill the draft form
 }
 
 // Simulation de récupération du CV déposé (Stocké globalement en VRAI VUE, ici simplifié)
@@ -124,40 +128,53 @@ const selectHr = (name) => {
 }
 
 const draftEmail = async () => {
-    if (!companyName.value.trim()) {
-        alert("Veuillez d'abord saisir le nom de l'entreprise.")
+    const company = draftCompanyName.value.trim() || companyName.value.trim()
+    if (!company) {
+        draftError.value = "Veuillez saisir le nom de l'entreprise."
         return
     }
     
     isDrafting.value = true
     draftResult.value = null
+    draftError.value = ''
+    draftCopied.value = false
     
     try {
-        // En vrai prod, on récupère le cv_text du store global Pinia.
-        // Ici on envoie un texte bouchon pour déclencher l'IA (sauf si l'architecture le bloque strict).
         const res = await authFetch('http://localhost:8000/api/network/draft-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                company_name: companyName.value,
-                company_description: "", // Optionnel
+                company_name: company,
+                company_description: '',
                 hr_name: selectedHrName.value,
                 request_type: requestType.value,
                 target_domain: targetDomain.value,
-                cv_text: "Développeur Logiciel avec 2 ans d'expérience. Maitrise Python, VueJS, TailwindCSS." // Fallback mocké
+                // Generic fallback CV so the AI still has context
+                cv_text: 'Professionnel motivé avec expérience solide. Compétences : communication, organisation, résolution de problèmes, travail en équipe. Disponible rapidement.'
             })
         })
         const json = await res.json()
         if (json.status === 'success') {
             draftResult.value = json.data
         } else {
-            alert(json.detail || "Erreur de drafting.")
+            draftError.value = json.detail || 'Erreur lors de la génération du courriel.'
         }
     } catch(e) {
-        console.error("Erreur Drafting:", e)
+        draftError.value = `Erreur de connexion: ${e.message}`
+        console.error('Erreur Drafting:', e)
     } finally {
         isDrafting.value = false
     }
+}
+
+const copyDraftEmail = async () => {
+    if (!draftResult.value) return
+    const text = `Objet: ${draftResult.value.subject}\n\n${draftResult.value.body}`
+    try {
+        await navigator.clipboard.writeText(text)
+        draftCopied.value = true
+        setTimeout(() => draftCopied.value = false, 2500)
+    } catch(e) {}
 }
 </script>
 
@@ -312,7 +329,7 @@ const draftEmail = async () => {
                       </div>
                       <div>
                           <h2 class="text-xl font-bold text-white">Rédaction Auto (Gemini)</h2>
-                          <p class="text-xs text-slate-400">Le courriel s'adapte à votre CV en mémoire.</p>
+                          <p class="text-xs text-slate-400">Courriel personnalisé généré par IA en quelques secondes.</p>
                       </div>
                   </div>
                   
@@ -323,25 +340,47 @@ const draftEmail = async () => {
               </div>
               
               <!-- Zone Configuration & Résultat -->
-              <div class="p-6 flex-1 flex flex-col gap-6">
+              <div class="p-6 flex-1 flex flex-col gap-5">
                   
                   <!-- Form Configuration -->
-                  <div class="bg-surface-900 border border-surface-800 p-5 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="bg-surface-900 border border-surface-800 p-5 rounded-2xl space-y-4">
+                      <!-- Company Name (required, standalone) -->
                       <div>
-                          <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Cible RH (Optionnel)</label>
-                          <input v-model="selectedHrName" placeholder="Mme. Tremblay..." class="w-full bg-surface-950 border border-surface-800 text-white rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 text-sm" />
+                          <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">
+                              Entreprise Cible <span class="text-indigo-400">*</span>
+                          </label>
+                          <input 
+                              v-model="draftCompanyName" 
+                              placeholder="Ex: CGI, Ubisoft, Banque Nationale..." 
+                              class="w-full bg-surface-950 border border-surface-800 text-white rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 text-sm transition-colors"
+                          />
+                          <p v-if="companyName && !draftCompanyName" class="text-xs text-emerald-500 mt-1">
+                              ✓ Pré-rempli depuis la recherche OSINT: <strong>{{ companyName }}</strong>
+                          </p>
                       </div>
-                      <div>
-                          <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Domaine Précis (Optionnel)</label>
-                          <input v-model="targetDomain" placeholder="Ex: Backend Python, Vente UX..." class="w-full bg-surface-950 border border-surface-800 text-white rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 text-sm" />
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                              <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Cible RH (Optionnel)</label>
+                              <input v-model="selectedHrName" placeholder="Mme. Tremblay..." class="w-full bg-surface-950 border border-surface-800 text-white rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 text-sm" />
+                          </div>
+                          <div>
+                              <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Domaine Précis (Optionnel)</label>
+                              <input v-model="targetDomain" placeholder="Ex: Backend Python, Vente UX..." class="w-full bg-surface-950 border border-surface-800 text-white rounded-xl px-4 py-2.5 outline-none focus:border-indigo-500 text-sm" />
+                          </div>
                       </div>
                   </div>
+
+                  <!-- Error Message -->
+                  <div v-if="draftError" class="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl px-4 py-3 text-sm font-medium">
+                      <span>❌</span> {{ draftError }}
+                  </div>
                   
+                  <!-- Generate Button -->
                   <div class="flex justify-end">
                       <button 
                           @click="draftEmail"
-                          :disabled="isDrafting || !companyName"
-                          class="bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 flex items-center gap-2"
+                          :disabled="isDrafting || (!draftCompanyName.trim() && !companyName.trim())"
+                          class="bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                           <ArrowPathIcon v-if="isDrafting" class="w-5 h-5 animate-spin" />
                           <SparklesIcon v-else class="w-5 h-5" />
@@ -350,31 +389,55 @@ const draftEmail = async () => {
                   </div>
                   
                   <!-- Zone Résultat Email -->
-                  <div v-if="draftResult" class="flex-1 bg-surface-950 border border-surface-800 rounded-2xl p-6 flex flex-col animate-fade-in overflow-hidden relative group">
+                  <div v-if="draftResult" class="flex-1 bg-surface-950 border border-emerald-500/20 rounded-2xl flex flex-col animate-fade-in overflow-hidden relative group">
                       <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent pointer-events-none"></div>
                       
-                      <div class="mb-4 pb-4 border-b border-surface-800">
-                          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest block mb-1">Sujet Suggéré</label>
-                          <h3 class="text-white font-bold text-lg select-all cursor-text">{{ draftResult.subject }}</h3>
+                      <!-- Subject -->
+                      <div class="px-6 pt-5 pb-4 border-b border-surface-800">
+                          <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest block mb-1">Objet du Courriel</label>
+                          <h3 class="text-white font-bold text-base select-all cursor-text">{{ draftResult.subject }}</h3>
                       </div>
                       
-                      <div class="flex-1 overflow-y-auto whitespace-pre-wrap text-slate-300 text-sm leading-relaxed custom-scrollbar select-all cursor-text pr-2">
+                      <!-- Body -->
+                      <div class="flex-1 px-6 py-5 overflow-y-auto whitespace-pre-wrap text-slate-300 text-sm leading-relaxed custom-scrollbar select-all cursor-text">
                           {{ draftResult.body }}
                       </div>
                       
-                      <div class="mt-4 pt-4 border-t border-surface-800 flex justify-end">
-                         <span class="text-xs text-slate-500 flex items-center gap-1">
-                             <CheckBadgeIcon class="w-4 h-4 text-emerald-500" />
-                             Généré par Gemini 3.1 Pro
-                         </span>
+                      <!-- Footer Actions -->
+                      <div class="px-6 py-4 border-t border-surface-800 flex items-center justify-between bg-black/20">
+                          <span class="text-xs text-slate-500 flex items-center gap-1.5">
+                              <CheckBadgeIcon class="w-4 h-4 text-emerald-500" />
+                              Généré par Gemini
+                          </span>
+                          <div class="flex items-center gap-2">
+                              <button @click="draftEmail" class="text-xs font-bold text-slate-400 hover:text-white gap-1.5 flex items-center px-3 py-1.5 rounded-lg hover:bg-surface-800 transition-colors">
+                                  <ArrowPathIcon class="w-3.5 h-3.5" />Régénérer
+                              </button>
+                              <button 
+                                  @click="copyDraftEmail"
+                                  class="flex items-center gap-2 px-4 py-1.5 rounded-xl font-bold text-xs transition-all"
+                                  :class="draftCopied ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-indigo-500 hover:bg-indigo-400 text-white'"
+                              >
+                                  <span>{{ draftCopied ? '✓ Copié !' : '⎘ Copier l\'email' }}</span>
+                              </button>
+                          </div>
                       </div>
                   </div>
                   
-                  <!-- Placeholder vide -->
-                  <div v-else-if="!isDrafting" class="flex-1 border-2 border-dashed border-surface-800 rounded-2xl flex flex-col items-center justify-center text-center p-8">
+                  <!-- Loading State -->
+                  <div v-else-if="isDrafting" class="flex-1 flex flex-col items-center justify-center py-12 gap-4">
+                      <div class="relative w-12 h-12">
+                          <div class="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
+                          <div class="absolute inset-0 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                      <p class="text-sm font-bold text-white animate-pulse">Gemini rédige votre chef-d'œuvre...</p>
+                  </div>
+                  
+                  <!-- Placeholder -->
+                  <div v-else class="flex-1 border-2 border-dashed border-surface-800 rounded-2xl flex flex-col items-center justify-center text-center p-8">
                       <DocumentTextIcon class="w-12 h-12 text-surface-700 mb-4" />
                       <h3 class="text-slate-400 font-bold mb-1">La Toile Blanche</h3>
-                      <p class="text-slate-500 text-sm max-w-sm">Remplissez les informations ci-dessus et laissez l'IA rédiger un chef-d'œuvre de persuasion adapté à votre CV.</p>
+                      <p class="text-slate-500 text-sm max-w-sm">Entrez l'entreprise cible ci-dessus et laissez Gemini rédiger un courriel percutant et personnalisé.</p>
                   </div>
                   
               </div>
@@ -456,80 +519,113 @@ const draftEmail = async () => {
 
     <!-- Contenu Carnet d'Adresses -->
     <div v-else-if="activeTab === 'carnet'" class="animate-fade-in">
+        <!-- Header -->
         <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-white">Contacts Scrapés Automatiquement</h2>
-            <button @click="loadContacts" class="p-2 text-slate-400 hover:text-white bg-surface-900 rounded-lg border border-surface-800">
-                <ArrowPathIcon :class="isLoadingContacts ? 'animate-spin' : ''" class="w-5 h-5" />
+            <div>
+                <h2 class="text-xl font-bold text-white">Carnet d'Adresses</h2>
+                <p class="text-slate-500 text-sm mt-0.5">{{ savedContacts.length }} entreprise{{ savedContacts.length !== 1 ? 's' : '' }} scrapée{{ savedContacts.length !== 1 ? 's' : '' }} automatiquement</p>
+            </div>
+            <button @click="loadContacts" class="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-400 hover:text-white bg-surface-900 rounded-xl border border-surface-800 hover:bg-surface-800 transition-colors">
+                <ArrowPathIcon :class="isLoadingContacts ? 'animate-spin' : ''" class="w-4 h-4" />
+                Actualiser
             </button>
         </div>
         
-        <div v-if="savedContacts.length === 0" class="bg-surface-900 border border-surface-800 rounded-3xl p-12 text-center">
-            <BookOpenIcon class="w-16 h-16 text-surface-700 mx-auto mb-4" />
-            <h3 class="text-xl font-bold text-slate-300 mb-2">Carnet Vide</h3>
-            <p class="text-slate-500 max-w-md mx-auto">Lancez des recherches dans le Sniper d'Opportunités. L'Agent extraira automatiquement les sites web et e-mails cachés des offres (ex. Guichet Emplois) et les stockera ici.</p>
+        <!-- Empty State -->
+        <div v-if="savedContacts.length === 0" class="bg-surface-900 border border-surface-800 rounded-3xl p-16 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-surface-800 flex items-center justify-center mx-auto mb-4">
+                <BookOpenIcon class="w-8 h-8 text-surface-600" />
+            </div>
+            <h3 class="text-lg font-bold text-slate-300 mb-2">Carnet Vide</h3>
+            <p class="text-slate-500 max-w-sm mx-auto text-sm leading-relaxed">
+                Lancez des recherches dans le <strong class="text-slate-300">Sniper d'Opportunités</strong>. L'Agent extraira automatiquement les sites web et e-mails des entreprises et les stockera ici.
+            </p>
         </div>
         
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Contact Cards Grid -->
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             <div 
                 v-for="contact in savedContacts" 
                 :key="contact.id"
-                class="bg-surface-900 border border-surface-800 rounded-2xl p-6 hover:border-emerald-500/30 transition-all flex flex-col group relative"
+                class="bg-surface-900 border border-surface-800 rounded-2xl p-5 hover:border-emerald-500/30 transition-all flex flex-col group"
             >
-               <!-- Badge Source -->
-               <div v-if="contact.source_job" class="absolute -top-3 left-4 bg-surface-950 border border-surface-700 text-slate-400 text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-full truncate max-w-[80%] shadow-lg shadow-black/50 overflow-hidden">
-                   Offre: {{ contact.source_job }}
-               </div>
-               
-               <!-- Badge Catégorie -->
-               <div v-if="contact.category && contact.category !== 'Non catégorisée'" class="absolute -top-3 right-4 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                   {{ contact.category }}
-               </div>
-               
-               <div class="flex items-start gap-4 mb-4 mt-2">
-                   <div class="w-12 h-12 rounded-xl bg-surface-800 border border-surface-700 flex items-center justify-center shrink-0">
-                       <BuildingOfficeIcon class="w-6 h-6 text-slate-400 group-hover:text-emerald-400 transition-colors" />
-                   </div>
-                   <div class="flex-1 min-w-0">
-                       <h3 class="text-lg font-bold text-white truncate">{{ contact.company_name }}</h3>
-                       <p class="text-xs text-slate-500 mt-1">
-                           Mis à jour le {{ new Date(contact.last_updated).toLocaleDateString('fr-CA') }}
-                       </p>
-                   </div>
-               </div>
-               
-               <div class="space-y-3 mb-6 flex-1">
-                   <a v-if="contact.site_url" :href="contact.site_url" target="_blank" class="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300">
-                       <GlobeAltIcon class="w-4 h-4 shrink-0" />
-                       <span class="truncate">{{ contact.site_url.replace(/https?:\/\//, '').replace(/\/$/, '') }}</span>
-                   </a>
-                   
-                   <!-- Téléphone -->
-                   <div v-if="contact.phone" class="flex items-center gap-2 text-sm text-slate-300 bg-surface-950 p-2 rounded-lg border border-surface-800">
-                       <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                           <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                       </svg>
-                       <span class="truncate font-medium text-emerald-400 select-all">{{ contact.phone }}</span>
-                   </div>
-                   
-                   <!-- Emails -->
-                   <div v-if="contact.emails && contact.emails.length > 0" class="flex flex-col gap-2">
-                       <div v-for="email in contact.emails" :key="email" class="flex items-center gap-2 text-sm text-slate-300 bg-surface-950 p-2 rounded-lg border border-surface-800">
-                           <EnvelopeIcon class="w-4 h-4 text-slate-500 shrink-0" />
-                           <span class="truncate select-all">{{ email }}</span>
-                       </div>
-                   </div>
-                   <div v-else-if="!contact.site_url" class="text-sm text-slate-500 italic">
-                       Aucune coordonnée directe exploitée.
-                   </div>
-               </div>
-               
-               <button 
-                   @click="prefillDraft(contact.company_name)"
-                   class="w-full bg-surface-800 hover:bg-emerald-500/20 text-emerald-400 border border-surface-700 hover:border-emerald-500/50 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
-               >
-                   <SparklesIcon class="w-4 h-4" />
-                   Rédiger une approache IA
-               </button>
+                <!-- Card Header: Company + Badges -->
+                <div class="flex items-start gap-3 mb-4">
+                    <div class="w-11 h-11 rounded-xl bg-surface-800 border border-surface-700 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-colors">
+                        <BuildingOfficeIcon class="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-bold text-white text-base truncate leading-snug">{{ contact.company_name }}</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">
+                            Mis à jour {{ new Date(contact.last_updated).toLocaleDateString('fr-CA') }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Badge Row -->
+                <div class="flex items-center gap-2 flex-wrap mb-4">
+                    <span v-if="contact.category && contact.category !== 'Non catégorisée'" class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        {{ contact.category }}
+                    </span>
+                    <span v-if="contact.emails && contact.emails.length > 0" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <EnvelopeIcon class="w-3 h-3" />
+                        {{ contact.emails.length }} email{{ contact.emails.length > 1 ? 's' : '' }}
+                    </span>
+                    <span v-if="contact.phone" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        📞 Téléphone
+                    </span>
+                    <span v-if="!contact.emails?.length && !contact.phone && !contact.site_url" class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest bg-surface-800 text-slate-500 border border-surface-700">
+                        Infos limitées
+                    </span>
+                </div>
+
+                <!-- Contact Details -->
+                <div class="space-y-2 flex-1 mb-4">
+                    <!-- Website -->
+                    <a v-if="contact.site_url" :href="contact.site_url" target="_blank"
+                        class="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-950 border border-surface-800 hover:border-blue-500/30 transition-colors group/link">
+                        <GlobeAltIcon class="w-4 h-4 text-blue-400 shrink-0" />
+                        <span class="text-xs font-medium text-blue-400 group-hover/link:text-blue-300 truncate">
+                            {{ contact.site_url.replace(/https?:\/\//, '').replace(/\/$/, '') }}
+                        </span>
+                    </a>
+
+                    <!-- Phone -->
+                    <div v-if="contact.phone" class="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-950 border border-surface-800">
+                        <span class="text-base">📞</span>
+                        <span class="text-xs font-bold text-emerald-400 select-all">{{ contact.phone }}</span>
+                    </div>
+
+                    <!-- Emails -->
+                    <div v-for="email in (contact.emails || [])" :key="email"
+                        @click="navigator.clipboard?.writeText(email)"
+                        class="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-950 border border-surface-800 hover:border-emerald-500/30 cursor-pointer transition-colors group/email"
+                        :title="`Copier: ${email}`">
+                        <EnvelopeIcon class="w-4 h-4 text-slate-500 group-hover/email:text-emerald-400 transition-colors shrink-0" />
+                        <span class="text-xs font-medium text-slate-300 group-hover/email:text-white truncate select-all">{{ email }}</span>
+                        <span class="ml-auto text-[10px] text-slate-600 group-hover/email:text-emerald-400 transition-colors shrink-0">Copier</span>
+                    </div>
+
+                    <!-- Source Job -->
+                    <div v-if="contact.source_job" class="flex items-start gap-2 text-[11px] text-slate-600 pt-1">
+                        <DocumentTextIcon class="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <span class="leading-snug line-clamp-1">{{ contact.source_job }}</span>
+                    </div>
+
+                    <!-- No data -->
+                    <div v-if="!contact.site_url && !contact.phone && (!contact.emails || !contact.emails.length)" class="text-xs text-slate-600 italic py-2">
+                        Aucune coordonnée directe disponible pour l'instant.
+                    </div>
+                </div>
+                
+                <!-- CTA -->
+                <button 
+                    @click="prefillDraft(contact.company_name)"
+                    class="w-full bg-surface-800 hover:bg-emerald-500/20 text-emerald-400 border border-surface-700 hover:border-emerald-500/40 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                    <SparklesIcon class="w-4 h-4" />
+                    Rédiger une approche IA
+                </button>
             </div>
         </div>
     </div>

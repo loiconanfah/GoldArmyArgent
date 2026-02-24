@@ -186,12 +186,8 @@ async def find_decision_makers_api(req: HeadhunterRequest):
 async def draft_network_email(request: EmailDraftRequest):
     """Rédige un courriel d'approche via Gemini."""
     try:
-        if not request.cv_text or len(request.cv_text) < 50:
-            raise HTTPException(status_code=400, detail="Veuillez d'abord télécharger un CV dans l'onglet Opportunités.")
-            
         from agents.network_agent import NetworkAgent
         agent = NetworkAgent()
-        
         email_data = await agent.draft_email(request.dict())
         return {"status": "success", "data": email_data}
     except Exception as e:
