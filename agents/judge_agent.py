@@ -12,6 +12,7 @@ class JudgeAgent(BaseAgent):
     def __init__(self, **kwargs):
         kwargs.setdefault("agent_type", "judge")
         kwargs.setdefault("name", "Judge")
+        kwargs.setdefault("max_tokens", 8192)
         super().__init__(**kwargs)
 
     async def think(self, task: Dict[str, Any]) -> Dict[str, Any]:
@@ -19,7 +20,7 @@ class JudgeAgent(BaseAgent):
         return {
             "jobs": task.get("jobs", []),
             "cv_profile": task.get("cv_profile", {}),
-            "chunk_size": 10
+            "chunk_size": 25
         }
 
     async def act(self, plan: Dict[str, Any]) -> Dict[str, Any]:
@@ -35,12 +36,17 @@ class JudgeAgent(BaseAgent):
         
         # Découpage en lots
         chunks = [jobs[i:i + chunk_size] for i in range(0, len(jobs), chunk_size)]
-        evaluated_jobs = []
         
-        for i, chunk in enumerate(chunks):
-            logger.info(f"🧠 Judge: Traitement lot {i+1}/{len(chunks)}...")
-            batch_results = await self._evaluate_batch(chunk, cv_profile)
-            evaluated_jobs.extend(batch_results)
+        # Exécution parallèle
+        tasks = [self._evaluate_batch(chunk, cv_profile) for chunk in chunks]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        evaluated_jobs = []
+        for i, res in enumerate(results):
+            if isinstance(res, list):
+                evaluated_jobs.extend(res)
+            else:
+                logger.error(f"🔴 Erreur Judge lot {i+1}: {res}")
             
         # Tri par score décroissant
         evaluated_jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
@@ -71,9 +77,10 @@ class JudgeAgent(BaseAgent):
            - Si l'utilisateur cherche un "développeur" et que l'offre est "Community Manager" ou "Account Executive" (Vente pure) -> SCORE = 0.
            - Si l'offre est "Solution Engineer", "R&D Engineer", "Integration Specialist" ou "Technical Support" et que le contenu mentionne de la programmation ou des outils techniques -> SCORE POSSIBLE (entre 40 et 75 selon le contenu).
            - "Ingénieur" ou "Engineer" dans un domaine autre que l'informatique (Génie Civil, Maintenance mecanique) -> SCORE = 0.
-        3. Alternance/Stage: Si l'utilisateur cherche une "Alternance" et que l'offre est un "CDI" (Full-time) -> SCORE < 10 (Sauf si l'offre mentionne explicitement être ouverte aux alternants).
-        4. Niveau: Si le candidat est Junior et l'offre est Senior (5+ ans requis) -> SCORE < 15.
-        5. Localisation: L'offre doit être dans la ville demandée ({profile.get('target_location', 'Paris, France')}).
+        3. Type de Contrat (STRICT) : Si la requête ou le profil de l'utilisateur mentionne "stage", "internship", ou "stagiaire", et que l'offre est un emploi régulier (CDI, Full-time, Permanent) sans aucune mention de stage -> SCORE = 0 OBLIGATOIRE. À l'inverse, s'il cherche un "emploi" (CDI/CDD) et que c'est un "stage" -> SCORE = 0.
+        4. Niveau: Si le candidat est Junior et l'offre exige explicitement un profil Senior (5+ ans requis) -> SCORE < 15.
+        5. Localisation: L'offre doit être dans la ville ou région demandée ({profile.get('target_location', 'Paris, France')}). Sinon -> SCORE < 20.
+        6. Description manquante ou très courte: Si la description (DESC) est "Aucune description fournie", vide, ou contient trop peu de mots pour juger de la technique -> SCORE MAXIMUM = 30. Raison: "Description insuffisante."
         
         FORMAT DE RÉPONSE (JSON UNIQUEMENT, pas de blabla autour):
         [
@@ -86,7 +93,8 @@ class JudgeAgent(BaseAgent):
             resp = await self.generate_response(prompt)
             # Nettoyage JSON
             match = re.search(r'\[.*\]', resp.replace('\n', ''), re.S)
-            if not match: return jobs # Fail safe
+            if not match: 
+                return jobs # Fail safe
 
             scores = json.loads(match.group(0))
             

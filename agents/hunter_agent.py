@@ -49,7 +49,9 @@ class HunterAgent(BaseAgent):
         keywords = plan.get("keywords", [])
         location = plan.get("location", "")
         apis = plan.get("apis", [])
+        # On multiplie par 5 la limite demandée pour que la traque ramène un nombre massif d'offres avant le filtrage
         limit = plan.get("limit", 10)
+        api_limit = max(40, limit * 3) 
         job_type = plan.get("job_type", "emploi")
         # Exclusions appliquées en POST-TRAITEMENT (pas injectées dans les requêtes API)
         exclude = [e.lower().strip() for e in plan.get("exclude", [])]
@@ -57,7 +59,7 @@ class HunterAgent(BaseAgent):
         all_jobs = []
         tasks = []
         
-        logger.info(f"🏹 Hunter lance la traque sur {len(apis)} sources pour {location}")
+        logger.info(f"🏹 Hunter lance la traque MASSIVE sur {len(apis)} sources pour {location} (Max: {api_limit}/source)")
         logger.info(f"📝 Mots-clés: {keywords} | Exclusions locales: {exclude[:5]}...")
 
         for kw in keywords:
@@ -72,23 +74,23 @@ class HunterAgent(BaseAgent):
             
             for sq in search_queries:
                 if "jooble" in apis and settings.jooble_api_key:
-                    tasks.append(self._search_jooble(sq, location, limit))
+                    tasks.append(self._search_jooble(sq, location, api_limit))
                 if "jsearch" in apis and settings.rapidapi_key:
-                    tasks.append(self._search_jsearch(sq, location, limit))
+                    tasks.append(self._search_jsearch(sq, location, api_limit))
                 if "glassdoor" in apis and settings.rapidapi_key:
-                    tasks.append(self._search_glassdoor(sq, location, limit))
+                    tasks.append(self._search_glassdoor(sq, location, api_limit))
                 if "indeed" in apis:
-                    tasks.append(self._search_indeed(sq, location, limit))
+                    tasks.append(self._search_indeed(sq, location, api_limit))
                 if "gov" in apis:
-                    tasks.append(self._search_gov(kw, location, limit))
+                    tasks.append(self._search_gov(kw, location, api_limit))
             
             # Sources appelées une seule fois par mot-clé (évite le spam)
             if "linkedin" in apis:
-                tasks.append(self._search_linkedin(kw, location, limit))
+                tasks.append(self._search_linkedin(kw, location, api_limit))
             if "indeed_fr" in apis:
-                tasks.append(self._search_indeed_fr(kw, location, limit))
+                tasks.append(self._search_indeed_fr(kw, location, api_limit))
             if "google_jobs" in apis:
-                tasks.append(self._search_google_jobs(kw, location, limit))
+                tasks.append(self._search_google_jobs(kw, location, api_limit))
 
         if not tasks:
             logger.warning("⚠️ Aucune tâche de recherche lancée (Clés API manquantes ?)")
