@@ -21,6 +21,7 @@ const route = useRoute()
 const router = useRouter()
 const currentRoute = computed(() => route.path)
 const isPublicRoute = computed(() => ['/', '/login', '/register'].includes(route.path))
+const isImmersive = computed(() => route.path === '/interview')
 const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(false)
 const userEmail = ref('Yves D.')
@@ -58,7 +59,7 @@ const navigation = [
     <div v-show="isMobileMenuOpen && !isPublicRoute" class="fixed inset-0 bg-surface-950/80 backdrop-blur-sm z-40 md:hidden" @click="isMobileMenuOpen = false"></div>
 
     <!-- Sidebar (Left Col) -->
-    <aside v-if="!isPublicRoute" :class="[
+    <aside v-if="!isPublicRoute && !isImmersive" :class="[
       'fixed inset-y-0 left-0 bg-surface-900 border-r border-surface-800 flex flex-col z-50 transition-all duration-300 ease-in-out md:static',
       isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
       isSidebarCollapsed ? 'w-20' : 'w-64'
@@ -133,10 +134,10 @@ const navigation = [
     </aside>
 
     <!-- Main Content Col -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10 w-full">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative w-full" :class="!isImmersive ? 'z-10' : 'z-[100]'">
       
       <!-- Topbar (Header) -->
-      <header v-if="!isPublicRoute" class="h-16 bg-surface-950 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4">
+      <header v-if="!isPublicRoute && !isImmersive" class="h-16 bg-surface-950 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4">
         
         <!-- Left: Mobile Toggle & Page Title (Optional) -->
         <div class="flex items-center gap-4">

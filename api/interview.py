@@ -95,7 +95,7 @@ async def analyze_interview(data: dict):
     """
     
     try:
-        model = genai.GenerativeModel("gemini-3-flash-preview")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = await asyncio.to_thread(model.generate_content, analysis_prompt)
         
         # Clean JSON
@@ -178,7 +178,12 @@ async def websocket_interview(websocket: WebSocket, token: str):
     tech_rule = ""
     if interview_type == "technical":
         role_desc = "le CTO ou Lead Tech"
-        tech_rule = "Pose des questions techniques pointus. Attends la réponse, donne ton feedback technique, puis enchaîne."
+        tech_rule = """
+        Pose des questions techniques extrêmement pointues. 
+        Cherche à piéger poliment le candidat sur la complexité (Big O), les designs patterns, et les choix d'architecture.
+        Si la réponse est vague, demande des précisions techniques concrètes.
+        Donne ton feedback technique brièvement après chaque réponse avant d'enchaîner.
+        """
 
     recruiter_instruction = f"""
     Tu es {role_desc} chez {company}. Tu mènes un entretien de VISIOCONFÉRENCE.
@@ -203,11 +208,11 @@ async def websocket_interview(websocket: WebSocket, token: str):
 
     try:
         # Main Recruiter
-        recruiter_model = genai.GenerativeModel("gemini-3-flash-preview", system_instruction=recruiter_instruction)
+        recruiter_model = genai.GenerativeModel("gemini-2.0-flash", system_instruction=recruiter_instruction)
         recruiter_chat = recruiter_model.start_chat()
         
-        # Shadow Analyst
-        analyst_model = genai.GenerativeModel("nano-banana-pro-preview", system_instruction=analyst_instruction)
+        # Shadow Analyst (Nano is great for fast tips)
+        analyst_model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=analyst_instruction)
         analyst_chat = analyst_model.start_chat()
         
         # Initial greeting

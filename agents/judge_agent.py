@@ -71,16 +71,19 @@ class JudgeAgent(BaseAgent):
         OFFRES A EVALUER:
         {job_list_text}
         
-        RÈGLES DE SCORING (SOIS TRÈS STRICT MAIS NUANCÉ):
-        1. Domaine IT/Technique: Si ce n'est PAS du tout technique (ex: Pur Marketing, Vente sans aspect technique, RH) -> SCORE = 0.
-        2. Rôle matching: 
-           - Si l'utilisateur cherche un "développeur" et que l'offre est "Community Manager" ou "Account Executive" (Vente pure) -> SCORE = 0.
-           - Si l'offre est "Solution Engineer", "R&D Engineer", "Integration Specialist" ou "Technical Support" et que le contenu mentionne de la programmation ou des outils techniques -> SCORE POSSIBLE (entre 40 et 75 selon le contenu).
-           - "Ingénieur" ou "Engineer" dans un domaine autre que l'informatique (Génie Civil, Maintenance mecanique) -> SCORE = 0.
-        3. Type de Contrat (STRICT) : Si la requête ou le profil de l'utilisateur mentionne "stage", "internship", ou "stagiaire", et que l'offre est un emploi régulier (CDI, Full-time, Permanent) sans aucune mention de stage -> SCORE = 0 OBLIGATOIRE. À l'inverse, s'il cherche un "emploi" (CDI/CDD) et que c'est un "stage" -> SCORE = 0.
-        4. Niveau: Si le candidat est Junior et l'offre exige explicitement un profil Senior (5+ ans requis) -> SCORE < 15.
-        5. Localisation: L'offre doit être dans la ville ou région demandée ({profile.get('target_location', 'Paris, France')}). Sinon -> SCORE < 20.
-        6. Description manquante ou très courte: Si la description (DESC) est "Aucune description fournie", vide, ou contient trop peu de mots pour juger de la technique -> SCORE MAXIMUM = 30. Raison: "Description insuffisante."
+        RÈGLES DE SCORING (SOIS INTELLIGENT, PRÉCIS, ET NUANCÉ SUR 100) :
+        Tu dois évaluer si l'offre est une bonne opportunité pour ce candidat précis. Ne mets pas un score de 0 brut si l'offre n'est pas parfaite, mais pénalise intelligemment :
+
+        1. Pertinence globale (Rôle & Compétences) : Évalue dans quelle mesure le titre et le contenu correspondent aux compétences du profil.
+        2. Distinction Stage / Emploi : 
+           - Si l'offre est un "Stage" ou "Internship" et que l'utilisateur cherche un "Emploi" classique (CDI/CDD), baisse fortement la note (ex: 20-40) car ce n'est pas le bon type d'engagement, mais ne mets pas 0 systématiquement si la boîte est top.
+           - Si l'utilisateur cherche un "Stage" et l'offre est un CDI, baisse fortement la note (ex: 10-30).
+           - Cependant, si l'offre correspond PARFAITEMENT au type de contrat recherché, donne un bonus significatif.
+        3. Niveau d'expérience : Un candidat Junior postulant à une offre "Sénior" (5+ ans) doit voir le score de cette offre diminuer (ex: 30-50).
+        4. Localisation : Si c'est hors de la zone voulue ({profile.get('target_location', 'Paris, France')}), déduis des points.
+        5. L'importance du titre vs description vide : Si la description (DESC) dit "Aucune description fournie" ou est très courte, n'écrase pas le score ! Base-toi sur le "TITRE" et "ENTREPRISE" et deduis la pertinence. Si un CV cherche un stage developpeur et le TITRE est "Stagiaire Développeur Logiciel", donne-lui un très bon score (70-90) malgré le manque de texte !
+
+        Raisonnement : Décris toujours ta décision de manière claire et concise.
         
         FORMAT DE RÉPONSE (JSON UNIQUEMENT, pas de blabla autour):
         [

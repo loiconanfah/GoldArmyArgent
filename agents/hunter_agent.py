@@ -51,7 +51,7 @@ class HunterAgent(BaseAgent):
         apis = plan.get("apis", [])
         # On multiplie par 5 la limite demandée pour que la traque ramène un nombre massif d'offres avant le filtrage
         limit = plan.get("limit", 10)
-        api_limit = max(40, limit * 3) 
+        api_limit = max(80, limit * 4) 
         job_type = plan.get("job_type", "emploi")
         # Exclusions appliquées en POST-TRAITEMENT (pas injectées dans les requêtes API)
         exclude = [e.lower().strip() for e in plan.get("exclude", [])]
@@ -110,6 +110,8 @@ class HunterAgent(BaseAgent):
             before = len(all_jobs)
             all_jobs = self._filter_by_exclusions(all_jobs, exclude)
             logger.info(f"🧹 Exclusion filtrée: {before} → {len(all_jobs)} offres")
+
+
 
         # 2. Dédoublonnage par titre+company
         unique_jobs = []

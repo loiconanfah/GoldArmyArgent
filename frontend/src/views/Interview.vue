@@ -58,6 +58,7 @@ let recognition = null;
 let currentSynthesis = null;
 let cachedVoices = []; // ✅ Voix mémorisées dès le chargement de la page
 let pendingUtteranceText = null; // Texte en attente si les voix ne sont pas prêtes
+let accumulatedTranscript = ''; // ✅ Evite que la phrase soit coupée entre deux respirations
 
 const startInterview = async () => {
     if (!config.value.jobTitle || !config.value.company) {
@@ -164,17 +165,16 @@ const initSpeechRecognition = () => {
     
     recognition.onresult = (event) => {
         let interimTranscript = ''
-        let finalTranscript = ''
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript
+                accumulatedTranscript += event.results[i][0].transcript + ' '
             } else {
                 interimTranscript += event.results[i][0].transcript
             }
         }
         
-        transcript.value = finalTranscript || interimTranscript
+        transcript.value = accumulatedTranscript + interimTranscript
         
         // Timer de silence : on reset à chaque mot capté
         if (silenceTimer) clearTimeout(silenceTimer)
@@ -192,13 +192,14 @@ const initSpeechRecognition = () => {
         if (silenceTimer) clearTimeout(silenceTimer)
         
         // On n'envoie que si on a un transcrit et qu'on n'est pas déjà en train de parler
-        if (transcript.value.trim() !== '' && !isSpeaking.value) {
-            sendMessageToAI(transcript.value)
+        if (accumulatedTranscript.trim() !== '' && !isSpeaking.value) {
+            sendMessageToAI(accumulatedTranscript.trim())
+            accumulatedTranscript = ''
             transcript.value = ''
         } else if (!isSpeaking.value && isInterviewStarted.value) {
             // Si le micro s'arrête tout seul sans texte (timeout navigateur), on le relance
             console.log("Micro arrêté sans texte, relance...")
-            // try { recognition.start() } catch(e) {}
+            try { recognition.start() } catch(e) {}
         }
     }
     
@@ -654,7 +655,7 @@ onUnmounted(() => {
    </div>
 
     <!-- IMMERSIVE VIDEO CALL UI -->
-    <div v-else class="fixed inset-0 bg-black flex flex-col z-[70] overflow-hidden font-sans">
+    <div v-else class="fixed inset-0 bg-black flex flex-col z-[210] overflow-hidden font-sans">
       
       <!-- BACKGROUND / RECRUITER VIDEO AREA -->
       <div class="absolute inset-0 z-0">
@@ -666,11 +667,15 @@ onUnmounted(() => {
           <!-- Screen Overlay for dark/meeting vibe -->
           <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40"></div>
           
+          <!-- Futuristic Grid Overlay -->
+          <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none"></div>
+          <div class="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none"></div>
+          
           <!-- Pulse / Aura effect around the AI face -->
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div 
-                class="w-[500px] h-[500px] rounded-full blur-[120px] transition-all duration-300 pointer-events-none opacity-40 mix-blend-screen"
-                :style="isSpeaking ? `background-color: #6366f1; transform: scale(${1 + audioLevel/50});` : 'background-color: transparent'"
+                class="w-[600px] h-[600px] rounded-full blur-[140px] transition-all duration-500 pointer-events-none opacity-50 mix-blend-screen"
+                :style="isSpeaking ? `background: radial-gradient(circle, #6366f1 0%, transparent 70%); transform: scale(${1 + audioLevel/40});` : 'background: transparent'"
               ></div>
           </div>
       </div>
@@ -697,18 +702,29 @@ onUnmounted(() => {
       </header>
 
       <!-- ANALYST TIPS (Nano Banana) -->
-      <div v-if="analystNote" class="absolute left-6 top-24 z-30 max-w-xs animate-fade-in-right">
-          <div class="bg-white/10 backdrop-blur-2xl border border-white/20 p-4 rounded-2xl shadow-2xl">
-              <div class="flex items-center gap-2 mb-2">
-                  <SparklesIcon class="w-4 h-4 text-yellow-400" />
-                  <span class="text-[10px] uppercase font-black tracking-widest text-slate-400">Notes de l'Analyste</span>
-              </div>
-              <p class="text-sm font-medium text-white leading-relaxed">{{ analystNote.tip }}</p>
-              <div class="mt-2 flex items-center gap-2">
-                  <div class="text-[8px] bg-white/5 border border-white/10 px-2 py-0.5 rounded text-slate-400 uppercase">{{ analystNote.sentiment }}</div>
-              </div>
-          </div>
-      </div>
+      <transition 
+        enter-active-class="transition duration-500 ease-out translate-x-10 opacity-0"
+        enter-to-class="translate-x-0 opacity-100"
+        leave-active-class="transition duration-400 ease-in"
+        leave-to-class="-translate-x-full opacity-0"
+      >
+        <div v-if="analystNote" class="absolute left-6 top-24 z-30 max-w-xs">
+            <div class="bg-black/40 backdrop-blur-3xl border border-white/20 p-5 rounded-[2rem] shadow-2xl relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-2 mb-2">
+                        <SparklesIcon class="w-4 h-4 text-gold-400" />
+                        <span class="text-[10px] uppercase font-black tracking-widest text-slate-400">Notes de l'Analyste</span>
+                    </div>
+                    <p class="text-sm font-bold text-white leading-relaxed">{{ analystNote.tip }}</p>
+                    <div class="mt-3 flex items-center justify-between">
+                        <div class="text-[9px] bg-indigo-500/20 border border-indigo-500/30 px-3 py-1 rounded-full text-indigo-300 uppercase font-black tracking-tighter">{{ analystNote.sentiment }}</div>
+                        <div class="w-1.5 h-1.5 rounded-full" :class="analystNote.sentiment === 'positif' ? 'bg-emerald-500' : 'bg-amber-500'"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </transition>
 
       <!-- USER WEBCAM (VIGNETTE) -->
       <div class="absolute right-6 bottom-32 w-48 md:w-64 aspect-video bg-surface-900 rounded-2xl border-2 border-white/20 shadow-2xl overflow-hidden z-20 group transition-all"
@@ -741,14 +757,15 @@ onUnmounted(() => {
 
       <!-- MEETING TOOLBAR -->
       <div class="absolute bottom-10 w-full flex items-center justify-center gap-6 z-50">
-          <div class="bg-white/5 backdrop-blur-3xl border border-white/10 p-2 rounded-full flex items-center gap-3 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+          <div class="bg-black/30 backdrop-blur-3xl border border-white/10 p-2.5 rounded-[2.5rem] flex items-center gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-white/5">
               
               <!-- Toggle Transcription -->
               <button @click="showChat = !showChat" 
-                :class="showChat ? 'bg-white/20 text-white' : 'text-slate-400 hover:text-white'"
-                class="p-4 rounded-full transition-all" title="Transcription">
+                :class="showChat ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+                class="p-4 rounded-2xl transition-all" title="Transcription">
                   <ChatBubbleLeftRightIcon class="w-6 h-6" />
               </button>
+
 
               <!-- Manual Audio Recovery -->
               <button @click="testAudio" 
@@ -757,22 +774,22 @@ onUnmounted(() => {
               </button>
 
               <!-- Main Interaction Button (The Orb) -->
-              <button @click="triggerListen" class="relative group">
-                  <div class="absolute inset-0 rounded-full blur-2xl transition-all duration-500 group-hover:scale-125"
-                    :class="isListening ? 'bg-pink-500/50' : (isAIThinking ? 'bg-indigo-500/50' : 'bg-white/5')"></div>
+              <button @click="triggerListen" class="relative group mx-2">
+                  <div class="absolute inset-0 rounded-full blur-3xl transition-all duration-700 group-hover:scale-125"
+                    :class="isListening ? 'bg-pink-500/60 opacity-80' : (isAIThinking ? 'bg-indigo-500/60 opacity-80' : 'bg-indigo-500/20 opacity-0')"></div>
                   
-                  <div class="w-20 h-20 rounded-full flex items-center justify-center border-4 relative z-10 transition-all duration-300"
+                  <div class="w-24 h-24 rounded-full flex items-center justify-center border-[6px] relative z-10 transition-all duration-300 shadow-2xl"
                     :class="isListening 
-                       ? 'bg-pink-500 border-pink-400 shadow-[0_0_30px_#ec4899] scale-110' 
-                       : (isAIThinking ? 'bg-indigo-600 border-indigo-400 animate-pulse' : 'bg-surface-800 border-white/20 group-hover:border-white/40')">
+                       ? 'bg-pink-500 border-pink-300 shadow-[0_0_40px_#ec4899] scale-105' 
+                       : (isAIThinking ? 'bg-indigo-600 border-indigo-300 animate-pulse' : 'bg-surface-900 border-white/10 group-hover:border-white/30')">
                       
-                      <div v-if="isAIThinking" class="flex gap-1">
-                          <span class="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                          <span class="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                          <span class="w-2 h-2 bg-white rounded-full animate-bounce"></span>
+                      <div v-if="isAIThinking" class="flex gap-1.5">
+                          <span class="w-2.5 h-2.5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                          <span class="w-2.5 h-2.5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                          <span class="w-2.5 h-2.5 bg-white rounded-full animate-bounce"></span>
                       </div>
-                      <StopIcon v-else-if="isListening" class="w-10 h-10 text-white" />
-                      <MicrophoneIcon v-else class="w-10 h-10 text-white" />
+                      <StopIcon v-else-if="isListening" class="w-12 h-12 text-white" />
+                      <MicrophoneIcon v-else class="w-12 h-12 text-white group-hover:scale-110 transition-transform" />
                   </div>
               </button>
 

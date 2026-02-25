@@ -7,7 +7,7 @@ export const sniperState = reactive({
     inputLocation: '',
     cvText: '',
     selectedFileName: '',
-    resultLimit: 10,
+    resultLimit: 20,
     jobs: [],
 
     // UI state

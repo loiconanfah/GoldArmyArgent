@@ -134,7 +134,7 @@ class JobSearchAgent(BaseAgent):
                 "job_type": profile_data.get("job_type", "emploi")
             },
             "cv_profile": profile_data.get("cv_profile", {}),
-            "limit": task.get("limit", 10)
+            "limit": task.get("nb_results") or task.get("limit") or 10
         }
         
         logger.info(f"✅ Orchestration prête: {len(action_plan['criteria']['keywords_list'])} variations pour {base_location}")
@@ -178,9 +178,11 @@ class JobSearchAgent(BaseAgent):
         judge_results = await judge.act(await judge.think(judgment_task))
         final_jobs = judge_results.get("evaluated_jobs", [])
         
-        # 3. Finalisation
+        # 3. Finalisation : On garde toutes les offres qui ne sont pas un rejet absolu (score > 0)
+        valid_final_jobs = [j for j in final_jobs if j.get("match_score", 0) > 0]
+        
         limit = action_plan.get("limit", 10)
-        top_jobs = final_jobs[:limit]
+        top_jobs = valid_final_jobs[:limit]
         
         logger.info(f"📨 Orchestration terminée: {len(top_jobs)} offres pertinentes trouvées.")
         
