@@ -144,18 +144,23 @@ class GovSearcher:
             title_tag = card.find(["h2", "h3", "p"], class_=lambda c: c and "title" in c.lower() if c else False)
             company_tag = card.find(class_=lambda c: c and "company" in c.lower() if c else False)
             loc_tag = card.find(class_=lambda c: c and "location" in c.lower() if c else False)
+            snippet_tag = card.find("p", class_="description") or card.find("p", class_=re.compile("snippet|description|text"))
+            
             link_tag = card.find("a")
             href = link_tag.get("href", "") if link_tag else ""
             if href and not href.startswith("http"):
                 href = f"https://candidat.francetravail.fr{href}"
+            
             title = title_tag.get_text(strip=True) if title_tag else f"Offre {keywords} #{i+1}"
+            description = snippet_tag.get_text(strip=True)[:400] if snippet_tag else ""
+            
             jobs.append({
                 "id": f"ft-{i}",
                 "title": title,
                 "company": company_tag.get_text(strip=True) if company_tag else "Confidentiel",
                 "location": loc_tag.get_text(strip=True) if loc_tag else location,
                 "url": href or f"https://candidat.francetravail.fr/offres/recherche?motsCles={urllib.parse.quote_plus(keywords)}",
-                "description": "",
+                "description": description,
                 "source": "France Travail",
                 "match_score": 0,
             })
