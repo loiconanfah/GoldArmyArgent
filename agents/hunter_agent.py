@@ -20,19 +20,20 @@ class HunterAgent(BaseAgent):
         exclude_list = criteria.get("exclude_list", [])
         location = criteria.get("location", "Paris, France")
         loc_lower = location.lower()
+        loc_lower = loc_lower.replace("califormie", "california").replace("californie", "california")
         
         # Sources de base (disponibles partout)
-        apis_to_use = ["jooble", "jsearch"]
+        apis_to_use = ["jooble", "jsearch", "google_jobs"]
         
         # Sources spécifiques France / Europe
-        if any(w in loc_lower for w in ["france", "paris", "lyon", "marseille", "bordeaux", "nantes", "lille", "europe", "suisse", "belgique"]):
-            apis_to_use += ["linkedin", "glassdoor", "gov"]
+        if any(w in loc_lower for w in ["france", "paris", "lyon", "marseille", "bordeaux", "nantes", "lille", "europe", "suisse", "belgique", "uk", "london", "allemagne", "berlin", "espagne", "madrid", "italie", "rome"]):
+            apis_to_use += ["linkedin", "indeed_fr", "glassdoor", "gov"]
         # Sources spécifiques Amériques
-        elif any(w in loc_lower for w in ["usa", "united states", "california", "new york", "texas", "canada", "montreal", "toronto", "vancouver"]):
+        elif any(w in loc_lower for w in ["usa", "united states", "california", "new york", "texas", "canada", "montreal", "toronto", "vancouver", "chicago", "seattle", "boston", "silicon valley", "florida"]):
             apis_to_use += ["linkedin", "indeed", "gov"]
         # Reste du monde
         else:
-            apis_to_use += ["linkedin", "gov"]
+            apis_to_use += ["linkedin", "indeed_fr", "gov"]
             
         return {
             "keywords": keywords_list,
@@ -81,9 +82,13 @@ class HunterAgent(BaseAgent):
                 if "gov" in apis:
                     tasks.append(self._search_gov(kw, location, limit))
             
-            # LinkedIn est appelé une seule fois par mot-clé (évite le spam)
+            # Sources appelées une seule fois par mot-clé (évite le spam)
             if "linkedin" in apis:
                 tasks.append(self._search_linkedin(kw, location, limit))
+            if "indeed_fr" in apis:
+                tasks.append(self._search_indeed_fr(kw, location, limit))
+            if "google_jobs" in apis:
+                tasks.append(self._search_google_jobs(kw, location, limit))
 
         if not tasks:
             logger.warning("⚠️ Aucune tâche de recherche lancée (Clés API manquantes ?)")
@@ -236,3 +241,27 @@ class HunterAgent(BaseAgent):
                 "source": "Indeed",
                 "match_score": 0,
             }]
+
+    async def _search_indeed_fr(self, kw, loc, limit):
+        """Recherche Indeed France/Europe (fr.indeed.com, be.indeed.com, etc.)."""
+        try:
+            from tools.indeed_searcher import IndeedMultiSearcher
+            searcher = IndeedMultiSearcher()
+            results = await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+            logger.info(f"🔍 Indeed FR/EU: {len(results)} offres pour '{kw}'")
+            return results
+        except Exception as e:
+            logger.error(f"Indeed FR Error: {e}")
+            return []
+
+    async def _search_google_jobs(self, kw, loc, limit):
+        """Recherche Google Jobs (offres structurées avec descriptions)."""
+        try:
+            from tools.google_jobs_searcher import GoogleJobsSearcher
+            searcher = GoogleJobsSearcher()
+            results = await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+            logger.info(f"🌐 Google Jobs: {len(results)} offres pour '{kw}'")
+            return results
+        except Exception as e:
+            logger.error(f"Google Jobs Error: {e}")
+            return []

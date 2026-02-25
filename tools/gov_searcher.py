@@ -201,16 +201,19 @@ class GovSearcher:
                     for i, card in enumerate(cards):
                         title_tag = card.find(["h2", "h3"])
                         link_tag = card.find("a")
+                        desc_tag = card.find(class_=re.compile("descriptif|description|snippet"))
+                        
                         href = link_tag.get("href", "") if link_tag else ""
                         if href and not href.startswith("http"):
                             href = f"https://place-emploi-public.gouv.fr{href}"
+                            
                         jobs.append({
                             "id": f"pep-{i}",
                             "title": title_tag.get_text(strip=True) if title_tag else f"Offre Fonction Publique #{i+1}",
                             "company": "Fonction Publique",
                             "location": location,
                             "url": href or url,
-                            "description": "",
+                            "description": desc_tag.get_text(strip=True)[:400] if desc_tag else "",
                             "source": "Place Emploi Public",
                             "match_score": 0,
                         })
