@@ -14,8 +14,10 @@ import {
   BellIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  MicrophoneIcon
+  MicrophoneIcon,
+  UserIcon
 } from '@heroicons/vue/24/outline'
+import ToastPortal from './components/ToastPortal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,6 +51,7 @@ const navigation = [
   { name: 'Entretien (Vocal)', href: '/interview', icon: MicrophoneIcon },
   { name: 'CRM Candidatures', href: '/crm', icon: BriefcaseIcon },
   { name: 'Réseau', href: '/network', icon: UserGroupIcon },
+  { name: 'Mon Profil', href: '/profile', icon: UserIcon },
 ]
 </script>
 
@@ -193,6 +196,7 @@ const navigation = [
             <router-view />
         </div>
       </main>
+      <ToastPortal />
     </div>
   </div>
 </template>

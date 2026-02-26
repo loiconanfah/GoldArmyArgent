@@ -62,48 +62,58 @@ class NetworkAgent(BaseAgent):
             context_block += f"Domaine visé: {target_domain}\n"
             
         prompt = f"""
-        Tu es un expert en communication professionnelle et recrutement. 
-        Ton but est d'écrire un "cold email" (courriel d'approche à froid) extrêmement convaincant, naturel et percutant.
-        Le candidat écrit au recruteur/RH de l'entreprise ciblée.
-        
+        Tu es un expert en "Cold Approach" et en "Growth Hacking" de carrière, spécialisé dans le marché francophone.
+        Ton but est de rédiger un courriel d'approche à froid si percutant, authentique et personnalisé que le recruteur se sent obligé de répondre.
+
         {context_block}
-        
-        RÈGLES DE RÉDACTION:
-        1. Formule d'appel: Utilise obligatoirement "{greeting}".
-        2. Tonalité: Professionnelle, dynamique, audacieuse mais polie. Ni trop formel, ni familier.
-        3. Structure: 
-           - 1 phrase d'accroche (montrer qu'on connaît l'entreprise).
-           - 2 phrases sur l'offre de valeur du candidat (basé sur le CV).
-           - 1 phrase claire précisant la demande ({request_type}).
-           - Appel à l'action (Call to Action) simple (ex: un appel de 10 min).
-        4. Longueur: MAXIMUM 150 mots. Les RH n'ont pas le temps de lire des romans.
-        5. Spécificité: Le courriel DOIT mentionner des éléments de la description de l'entreprise si pertinent.
-        6. Objet: Tu dois générer un Objet d'email accrocheur (sur la première ligne).
-        
+
+        STRATÉGIE DE RÉDACTION:
+        1. L'ACCROCHE (Le Hook): Ne commence pas par "Je m'appelle...". Commence par un détail sur {company_name} qui montre que tu as fait tes recherches (basé sur la description si disponible, sinon sur la réputation de l'entreprise).
+        2. LA VALEUR (Le Why You): Identifie 2 réalisations spécifiques dans le CV qui résonnent avec {company_name} ou le domaine {target_domain}. Parle de résultats, pas juste de compétences.
+        3. LA DEMANDE (The Ask): Sois direct mais humble. Tu ne demandes pas un job, tu demandes une conversation de 10 minutes pour explorer comment tes compétences peuvent aider {company_name} à [objectif probable de l'entreprise].
+        4. LE TON: "High-Status/High-Value". Tu n'es pas un quémandeur, tu es un expert qui apporte une solution.
+
+        RÈGLES STRICTES:
+        - Langue: Français impeccable, ton moderne (évite le "vouvoiement" excessivement lourd si c'est une startup, reste pro).
+        - Longueur: Moins de 120 mots.
+        - Salutations: Toujours commencer par "{greeting}".
+        - Objet: Créatif, court, et incluant soit le nom de l'entreprise, soit un bénéfice immédiat.
+
         FORMAT DE SORTIE REQUIS:
-        Renvoie SEULEMENT le résultat en format JSON strict (sans balises markdown ```json).
+        Renvoie SEULEMENT le résultat en format JSON strict.
         {{
-            "subject": "Objet accrocheur du courriel",
-            "body": "Le corps du message avec des sauts de ligne \n"
+            "subject": "Sujet percutant",
+            "body": "Corps du message avec \\n pour les sauts de ligne"
         }}
         """
         
         try:
-            resp = await self.generate_response(prompt)
+            # Upgrade to ultra-high reasoning model for max personalization
+            # Using Pro for complex reasoning on CV + Company
+            resp = await self.generate_response(prompt, model="gemini-2.0-pro-exp-02-05")
             import json, re
             
-            clean_resp = resp.replace("```json", "").replace("```", "").strip()
+            # Robust parsing
+            clean_resp = resp.strip()
+            if "```json" in clean_resp:
+                clean_resp = clean_resp.split("```json")[1].split("```")[0].strip()
+            elif "```" in clean_resp:
+                clean_resp = clean_resp.split("```")[1].split("```")[0].strip()
             
             try:
                 parsed = json.loads(clean_resp)
-                return parsed
-            except json.JSONDecodeError:
-                # Fallback Regex
-                match = re.search(r'\{.*\}', clean_resp, re.DOTALL)
-                if match:
-                    return json.loads(match.group(0))
+                # Validation
+                if "subject" in parsed and "body" in parsed:
+                    return parsed
+            except:
+                pass
+
+            # Deep extraction fallback
+            match = re.search(r'\{(?:[^{}]|\{[^{}]*\})*\}', clean_resp, re.DOTALL)
+            if match:
+                return json.loads(match.group(0))
                     
-            raise Exception("Impossible de parser le JSON retourné par l'IA.")
+            raise Exception("Parsing failed")
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de la génération de l'email: {e}")

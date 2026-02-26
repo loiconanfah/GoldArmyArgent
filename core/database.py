@@ -38,6 +38,11 @@ def init_db():
                 id TEXT PRIMARY KEY,
                 email TEXT UNIQUE NOT NULL,
                 hashed_password TEXT NOT NULL,
+                full_name TEXT,
+                bio TEXT,
+                cv_text TEXT,
+                portfolio_url TEXT,
+                avatar_url TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -97,6 +102,20 @@ def init_db():
             logger.warning("Migration: Adding user_id to applications table. Previous data might be orphaned.")
             cursor.execute("ALTER TABLE applications ADD COLUMN user_id TEXT DEFAULT 'system_user'")
             
+        # Migration for users table
+        cursor.execute("PRAGMA table_info(users)")
+        user_columns = [col[1] for col in cursor.fetchall()]
+        if 'full_name' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
+        if 'bio' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN bio TEXT")
+        if 'cv_text' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN cv_text TEXT")
+        if 'portfolio_url' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN portfolio_url TEXT")
+        if 'avatar_url' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
+
         conn.commit()
         logger.info("✅ Schéma DB SQLite vérifié et mis à jour pour SaaS multi-user.")
     except Exception as e:

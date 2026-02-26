@@ -1,5 +1,6 @@
 <script setup>
 import { authFetch } from '../utils/auth'
+import { toastState } from '../store/toastState'
 
 import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
@@ -112,7 +113,7 @@ const uploadCvPdf = async (event) => {
     const file = event.target.files[0]
     if (!file) return
     if (!file.name.toLowerCase().endsWith('.pdf')) {
-        alert('Veuillez sélectionner un fichier PDF.')
+        toastState.addToast('Veuillez sélectionner un fichier PDF.', 'error')
         return
     }
     isUploadingCv.value = true
@@ -132,10 +133,10 @@ const uploadCvPdf = async (event) => {
             cvText.value = data.text
             cvFilename.value = file.name
         } else {
-            alert(data.detail || 'Erreur lors de la lecture du PDF.')
+            toastState.addToast(data.detail || 'Erreur lors de la lecture du PDF.', 'error')
         }
     } catch (e) {
-        alert('Impossible de contacter le serveur pour lire le PDF.')
+        toastState.addToast('Impossible de contacter le serveur pour lire le PDF.', 'error')
     } finally {
         isUploadingCv.value = false
     }
@@ -181,7 +182,7 @@ const downloadCvDocx = async (cvJsonString) => {
 
         if (!res.ok) {
             const err = await res.json()
-            alert(`Erreur: ${err.detail || 'Impossible de générer le DOCX'}`)
+            toastState.addToast(`Erreur: ${err.detail || 'Impossible de générer le DOCX'}`, 'error')
             return
         }
 
@@ -193,7 +194,7 @@ const downloadCvDocx = async (cvJsonString) => {
         a.click()
         URL.revokeObjectURL(url)
     } catch (e) {
-        alert('Erreur lors du téléchargement du CV.')
+        toastState.addToast('Erreur lors du téléchargement du CV.', 'error')
     } finally {
         isDownloadingDocx.value = false
     }

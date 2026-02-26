@@ -74,6 +74,13 @@ class CRMApplicationRequest(BaseModel):
 class CRMStatusUpdateRequest(BaseModel):
     status: str
 
+class ProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    bio: Optional[str] = None
+    cv_text: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    avatar_url: Optional[str] = None
+
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "GoldArmy Agent V2 API is running"}
@@ -188,6 +195,7 @@ async def draft_network_email(request: EmailDraftRequest):
     try:
         from agents.network_agent import NetworkAgent
         agent = NetworkAgent()
+        await agent.initialize()
         email_data = await agent.draft_email(request.dict())
         return {"status": "success", "data": email_data}
     except Exception as e:
@@ -223,6 +231,114 @@ def get_network_contacts(current_user: dict = Depends(get_current_user)):
         return {"status": "success", "data": contacts}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ==========================================
+# Profile Endpoints
+# ==========================================
+
+@app.get("/api/profile")
+def get_profile(current_user: dict = Depends(get_current_user)):
+    """Récupère les informations complètes du profil utilisateur."""
+    from core.database import get_db_connection
+    conn = get_db_connection()
+    try:
+        user = conn.execute("SELECT id, email, full_name, bio, cv_text, portfolio_url, avatar_url FROM users WHERE id = ?", (current_user["id"],)).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        return {"status": "success", "data": dict(user)}
+    finally:
+        conn.close()
+
+@app.post("/api/profile")
+def update_profile(request: ProfileUpdateRequest, current_user: dict = Depends(get_current_user)):
+    """Met à jour les informations du profil utilisateur."""
+    from core.database import get_db_connection
+    conn = get_db_connection()
+    try:
+        fields = request.dict(exclude_unset=True)
+        if not fields:
+            return {"status": "success", "message": "Aucun champ à mettre à jour"}
+        
+        query = "UPDATE users SET "
+        params = []
+        for key, value in fields.items():
+            query += f"{key} = ?, "
+            params.append(value)
+        
+        query = query.rstrip(", ") + " WHERE id = ?"
+        params.append(current_user["id"])
+        
+        conn.execute(query, params)
+        conn.commit()
+        return {"status": "success", "message": "Profil mis à jour avec succès"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.post("/api/profile/upload-cv")
+async def upload_cv_endpoint(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    """Upload un CV PDF, extrait le texte et le sauvegarde dans le profil."""
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Seuls les PDF sont acceptés")
+    
+    try:
+        import fitz
+        content = await file.read()
+        pdf_document = fitz.open(stream=content, filetype="pdf")
+        text = ""
+        for page_num in range(len(pdf_document)):
+            page = pdf_document.load_page(page_num)
+            text += page.get_text()
+        
+        extracted_text = text.strip()
+        
+        from core.database import get_db_connection
+        conn = get_db_connection()
+        conn.execute("UPDATE users SET cv_text = ? WHERE id = ?", (extracted_text, current_user["id"]))
+        conn.commit()
+        conn.close()
+        
+        return {"status": "success", "text": extracted_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/profile/upload-avatar")
+async def upload_avatar_endpoint(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    """Upload une photo de profil et sauvegarde l'URL."""
+    import os
+    import uuid
+    
+    UPLOAD_DIR = "static/uploads/avatars"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{current_user['id']}_{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    
+    try:
+        content = await file.read()
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        avatar_url = f"http://localhost:8000/static/uploads/avatars/{filename}"
+        
+        from core.database import get_db_connection
+        conn = get_db_connection()
+        conn.execute("UPDATE users SET avatar_url = ? WHERE id = ?", (avatar_url, current_user["id"]))
+        conn.commit()
+        conn.close()
+        
+        return {"status": "success", "avatar_url": avatar_url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Servir les fichiers statiques (Uploads)
+from fastapi.staticfiles import StaticFiles
+import os
+os.makedirs("static/uploads/avatars", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ==========================================
 # CRM Endpoints (Kanban)
@@ -342,7 +458,7 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
 
         # Generate email with Gemini
         import google.generativeai as genai_module
-        model = genai_module.GenerativeModel("gemini-3-flash-preview")
+        model = genai_module.GenerativeModel("gemini-1.5-flash")
         prompt = f"""
         Rédige un email de relance professionnel, chaleureux et concis (5-7 lignes max) en français.
         Candidature pour : {job_title} chez {company}.
@@ -493,6 +609,7 @@ async def adapt_cv_endpoint(request: CVAdaptRequest):
             
         from agents.cv_adapter import CVAdapterAgent
         adapter = CVAdapterAgent()
+        await adapter.initialize()
         
         result = await adapter.adapt(
             job_title=request.job_title,

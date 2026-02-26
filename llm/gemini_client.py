@@ -63,6 +63,64 @@ class GeminiClient:
                     logger.error(f"Unexpected response format from Gemini: {data}")
                     raise Exception(f"Format de réponse inattendu: {e}")
 
+    async def generate_with_sources(self, prompt: str, system: str = None, **kwargs) -> tuple:
+        """
+        Identique à generate(), mais retourne également les URLs sources de Google Grounding.
+        Returns: (text: str, sources: List[str])
+        """
+        model = kwargs.get("model", self.default_model)
+        
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}]
+        }
+        if system:
+            payload["systemInstruction"] = {"parts": [{"text": system}]}
+        if "tools" in kwargs:
+            payload["tools"] = kwargs["tools"]
+
+        gen_config = {}
+        if "temperature" in kwargs:
+            gen_config["temperature"] = kwargs["temperature"]
+        if "max_tokens" in kwargs:
+            gen_config["maxOutputTokens"] = kwargs["max_tokens"]
+        if gen_config:
+            payload["generationConfig"] = gen_config
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
+        timeout = aiohttp.ClientTimeout(total=90)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(url, json=payload) as response:
+                if response.status != 200:
+                    text = await response.text()
+                    raise Exception(f"Erreur API Gemini: {response.status} - {text}")
+                data = await response.json()
+                
+                text_out = ""
+                try:
+                    text_out = data["candidates"][0]["content"]["parts"][0]["text"]
+                except Exception:
+                    pass
+
+                # Extract grounding source URLs from metadata
+                source_urls = []
+                try:
+                    grounding = data["candidates"][0].get("groundingMetadata", {})
+                    chunks = grounding.get("groundingChunks", [])
+                    for chunk in chunks:
+                        uri = chunk.get("web", {}).get("uri", "")
+                        if uri:
+                            source_urls.append(uri)
+                    # Also check groundingSupport -> retrievedContext
+                    supports = grounding.get("groundingSupport", [])
+                    for sup in supports:
+                        uri = sup.get("web", {}).get("uri", "") or sup.get("retrievedContext", {}).get("uri", "")
+                        if uri and uri not in source_urls:
+                            source_urls.append(uri)
+                except Exception as ex:
+                    logger.debug(f"Grounding metadata parse: {ex}")
+
+                return text_out, source_urls
+
     async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
         """Simulation simple de mode chat (adapte les messages OpenAI-style -> Gemini)."""
         model = kwargs.get("model", self.default_model)

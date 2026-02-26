@@ -1,5 +1,6 @@
 <script setup>
 import { authFetch } from '../utils/auth'
+import { toastState } from '../store/toastState'
 
 import { ref, computed, onMounted } from 'vue'
 import { 
@@ -33,7 +34,7 @@ const handleFileUpload = async (event) => {
     if (!file) return
     
     if (file.type !== 'application/pdf') {
-        alert("Veuillez sélectionner un fichier PDF.")
+        toastState.addToast("Veuillez sélectionner un fichier PDF.", "error")
         return
     }
     
@@ -59,11 +60,11 @@ const handleFileUpload = async (event) => {
                 performSearch()
             }
         } else {
-             alert(json.detail || "Erreur lors de la lecture du PDF.")
+             toastState.addToast(json.detail || "Erreur lors de la lecture du PDF.", "error")
              selectedFileName.value = ""
         }
     } catch(e) {
-        alert("Erreur réseau lors de l'envoi du CV.")
+        toastState.addToast("Erreur réseau lors de l'envoi du CV.", "error")
         selectedFileName.value = ""
         console.error(e)
     } finally {
@@ -175,7 +176,7 @@ const performSearch = async () => {
         }))
         
     } catch(e) {
-        alert("Erreur de connexion avec le Serveur de Recherche GoldArmy.")
+        toastState.addToast("Erreur de connexion avec le Serveur de Recherche GoldArmy.", "error")
         console.error(e)
     } finally {
         isLoading.value = false
@@ -185,7 +186,7 @@ const performSearch = async () => {
 
 const adaptCV = async (job) => {
     if (!cvText.value) {
-        alert("Veuillez d'abord télécharger/coller votre CV dans la section ci-dessus avant d'adapter.");
+        toastState.addToast("Veuillez d'abord télécharger/coller votre CV dans la section ci-dessus avant d'adapter.", "info");
         return;
     }
 
@@ -210,15 +211,41 @@ const adaptCV = async (job) => {
         if (json.status === "success" && json.data) {
             adaptedData.value = json.data;
         } else {
-            alert("Erreur lors de l'adaptation du CV.");
+            toastState.addToast("Erreur lors de l'adaptation du CV.", "error");
             showAdaptModal.value = false;
         }
     } catch(e) {
         console.error("Adapt CV Error:", e);
-        alert("Impossible de contacter le serveur d'intelligence.");
+        toastState.addToast("Impossible de contacter le serveur d'intelligence.", "error");
         showAdaptModal.value = false;
     } finally {
         isAdaptingCV.value = false;
+    }
+}
+
+const isSavingToProfile = ref(false)
+const saveAdaptedToProfile = async () => {
+    if (!adaptedData.value || !adaptedData.value.markdown) return
+    isSavingToProfile.value = true
+    try {
+        const res = await authFetch('http://localhost:8000/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                cv_text: adaptedData.value.markdown 
+            })
+        })
+        const json = await res.json()
+        if (json.status === 'success') {
+            toastState.addToast("Ce CV a été enregistré comme votre CV principal dans votre profil !")
+        } else {
+            toastState.addToast("Erreur lors de l'enregistrement : " + (json.detail || "Inconnu"), "error")
+        }
+    } catch(e) {
+        console.error("Save Profile Error:", e)
+        toastState.addToast("Erreur de connexion.", "error")
+    } finally {
+        isSavingToProfile.value = false
     }
 }
 
@@ -239,9 +266,9 @@ const runRadar = async (job) => {
         })
         const json = await res.json()
         const data = json.data
-        alert(`RADAR INSIGHTS pour ${job.company}\n\n🕵️ Réputation & Red Flags:\n${data.reputation.substring(0, 300)}...\n\n💰 Salaire Marché:\n${data.salary.substring(0, 200)}...`)
+        toastState.addToast(`RADAR INSIGHTS : ${job.company}\n🎯 Réputation: ${data.reputation.substring(0, 50)}...\n💰 Salaire: ${data.salary.substring(0, 50)}...`, "info")
     } catch(e) {
-        alert("Erreur lors de l'appel au Radar.")
+        toastState.addToast("Erreur lors de l'appel au Radar.", "error")
     } finally {
         loadingRadarFor.value = null
     }
@@ -614,10 +641,29 @@ const addToCrmAndApply = async (job) => {
             </div>
             
             <!-- Modal Footer -->
-            <div class="px-6 py-4 border-t border-surface-800 bg-surface-900/50 flex justify-end">
-                <button @click="closeAdaptModal" class="px-6 py-2.5 bg-surface-800 text-white rounded-xl font-bold hover:bg-surface-700 transition-colors border border-surface-700">
+            <div class="px-6 py-5 border-t border-surface-800 flex items-center justify-between bg-surface-900/50">
+                <button @click="closeAdaptModal" class="px-6 py-3 border border-surface-700 text-slate-400 hover:text-white hover:bg-surface-800 rounded-xl font-bold transition-all">
                     Fermer
                 </button>
+                
+                <div class="flex items-center gap-3">
+                    <button 
+                        v-if="adaptedData"
+                        @click="saveAdaptedToProfile"
+                        :disabled="isSavingToProfile"
+                        class="px-6 py-3 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 rounded-xl font-bold transition-all flex items-center gap-2"
+                    >
+                        <CheckCircleIcon v-if="!isSavingToProfile" class="w-5 h-5" />
+                        <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
+                        {{ isSavingToProfile ? 'Enregistrement...' : 'Enregistrer dans Profil' }}
+                    </button>
+                    
+                    <button 
+                        @click="copyAdaptedCV"
+                        class="px-8 py-3 bg-gradient-to-r from-gold-500 to-amber-600 text-surface-950 font-bold rounded-xl shadow-lg shadow-gold-500/20 hover:scale-105 active:scale-95 transition-all">
+                        Copier le Contenu
+                    </button>
+                </div>
             </div>
         </div>
     </div>

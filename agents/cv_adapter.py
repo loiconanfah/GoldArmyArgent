@@ -11,9 +11,7 @@ class CVAdapterAgent(BaseAgent):
     pour combler les lacunes d'expérience via Gemini 3.1 Pro.
     """
     def __init__(self):
-        super().__init__(name="CVAdapterAgent")
-        from llm.unified_client import UnifiedLLMClient
-        self.llm = UnifiedLLMClient()
+        super().__init__(name="CVAdapterAgent", agent_type="adapter")
 
     async def think(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """Méthode abstraite requise par BaseAgent"""
@@ -58,8 +56,7 @@ Génère ton analyse JSON maintenant.
         
         try:
             # We explicitly use gemini by forcing the model tag or relying on UnifiedClient priority
-            logger.info(f"🧠 Lancement de l'Adaptation CV pour: {job_title}")
-            response = await self.llm.generate(prompt=user_prompt, system=system_prompt)
+            response = await self.generate_response(prompt=user_prompt, system=system_prompt, model="gemini-2.0-flash")
             
             # Nettoyage robuste pour du JSON
             clean_resp = response.replace("```json", "").replace("```", "").strip()
