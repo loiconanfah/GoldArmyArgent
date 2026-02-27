@@ -9,15 +9,16 @@ import {
   CpuChipIcon,
   CheckCircleIcon,
   UserGroupIcon,
-  ArrowTrendingUpIcon
+  ArrowTrendingUpIcon,
+  XMarkIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 
 const features = [
   {
-    name: 'Sniper IA',
-    description: 'Notre IA analyse le marché en temps réel pour dénicher les offres cachées et sur-mesure pour votre profil.',
+    name: 'Sniper IA 7.1',
+    description: 'Détectez les opportunités cachées avec une précision chirurgicale. Notre IA débusque les offres avant tout le monde.',
     icon: RocketLaunchIcon,
   },
   {
@@ -45,8 +46,8 @@ const features = [
     <header class="absolute inset-x-0 top-0 z-50">
       <nav class="flex items-center justify-between p-6 lg:px-12" aria-label="Global">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <SparklesIcon class="w-6 h-6 text-white" />
+             <div class="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center shadow-lg border border-surface-700 overflow-hidden">
+                <img src="/logo.png" alt="GoldArmy Logo" class="w-full h-full object-cover" />
             </div>
             <span class="text-xl font-display font-bold text-white tracking-tight">GoldArmy</span>
         </div>
@@ -70,11 +71,11 @@ const features = [
                 Lancement de la version 2.0. <router-link to="/register" class="font-semibold text-indigo-400"><span class="absolute inset-0" aria-hidden="true"></span>En savoir plus <span aria-hidden="true">&rarr;</span></router-link>
               </div>
             </div>
-            <h1 class="text-4xl font-display font-bold tracking-tight text-white sm:text-6xl mb-6">
-              Votre carrière propulsée par l'Intelligence Artificielle.
+            <h1 class="text-4xl font-display font-bold tracking-tight text-white sm:text-7xl mb-6">
+              Votre carrière propulsée par <span class="text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-amber-500">l'IA Sniper.</span>
             </h1>
-            <p class="mt-6 text-lg leading-8 text-slate-400">
-              Automatisez votre recherche d'emploi. De l'identification des offres cachées à la préparation de vos entretiens, GoldArmy est l'agent IA qui travaille pour vous, 24/7.
+            <p class="mt-6 text-xl leading-8 text-slate-300 max-w-lg">
+              Automatisez votre recherche d'emploi. De l'identification des offres cachées à la préparation de vos entretiens, GoldArmy est l'agent d'élite qui ne dort jamais.
             </p>
             <div class="mt-10 flex items-center gap-x-6">
               <router-link to="/register" class="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:from-indigo-400 hover:to-indigo-500 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400">
@@ -87,8 +88,10 @@ const features = [
           <!-- Mockup graphic -->
           <div class="mx-auto mt-16 flex max-w-2xl sm:mt-24 lg:ml-10 lg:mr-0 lg:mt-0 lg:max-w-none lg:flex-none xl:ml-32">
             <div class="max-w-3xl flex-none sm:max-w-5xl lg:max-w-none">
-              <div class="rounded-xl bg-surface-900/50 p-2 ring-1 ring-white/10 lg:rounded-2xl shadow-2xl backdrop-blur-sm -rotate-2 hover:rotate-0 transition-transform duration-700">
-                <div class="rounded-md bg-surface-950 p-4 ring-1 ring-white/10 aspect-[16/9] w-[800px] flex flex-col relative overflow-hidden">
+              <div class="rounded-3xl bg-surface-900/50 p-3 ring-1 ring-white/10 lg:rounded-3xl shadow-2xl backdrop-blur-sm -rotate-1 hover:rotate-0 transition-all duration-1000 group">
+                <div class="rounded-2xl bg-surface-950 ring-1 ring-white/10 aspect-[16/10] w-[850px] flex flex-col relative overflow-hidden">
+                    <img src="/og-banner.png" alt="GoldArmy Dashboard" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-1000" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-surface-950 via-transparent to-transparent"></div>
                     
                     <!-- Fake SaaS UI inside Mockup -->
                     <div class="w-full h-8 border-b border-surface-800 flex items-center gap-2 px-4 shrink-0">
@@ -397,42 +400,81 @@ const features = [
       </div>
 
       <!-- Pricing -->
-      <div class="py-24 sm:py-32">
+      <div id="pricing" class="py-24 sm:py-32 bg-surface-950">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
-          <div class="mx-auto max-w-2xl sm:text-center">
-            <h2 class="text-3xl font-display font-bold tracking-tight text-white sm:text-4xl">Un investissement rentable dès le premier salaire</h2>
-            <p class="mt-6 text-lg leading-8 text-slate-400">Choisissez le plan adapté à votre niveau d'ambition. Pas d'engagement, annulez quand vous trouvez votre job.</p>
+          <div class="mx-auto max-w-4xl text-center">
+            <h2 class="text-base font-semibold leading-7 text-gold-400">Tarification</h2>
+            <p class="mt-2 text-4xl font-display font-bold tracking-tight text-white sm:text-5xl">Un tarif clair pour chaque étape de votre succès</p>
           </div>
-          <div class="mx-auto mt-16 max-w-2xl rounded-3xl ring-1 ring-surface-800 sm:mt-20 lg:mx-0 lg:flex lg:max-w-none bg-surface-900">
-            <div class="p-8 sm:p-10 lg:flex-auto">
-              <h3 class="text-2xl font-bold tracking-tight text-white">Accès Pro Illimité</h3>
-              <p class="mt-6 text-base leading-7 text-slate-400">Accédez à l'intégralité des agents IA de GoldArmy. La puissance d'un cabinet de recrutement personnel dans votre poche.</p>
-              <div class="mt-10 flex items-center gap-x-4">
-                <h4 class="flex-none text-sm font-semibold leading-6 text-indigo-400">Ce qui est inclus</h4>
-                <div class="h-px flex-auto bg-surface-800"></div>
-              </div>
-              <ul role="list" class="mt-8 grid grid-cols-1 gap-4 text-sm leading-6 text-slate-300 sm:grid-cols-2 sm:gap-6">
-                <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-indigo-400" />Recherche d'offres automatisée (Sniper)</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-indigo-400" />Radar Entreprise (Salaires & Réputation)</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-indigo-400" />Mentorat d'entretien illimité</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-indigo-400" />Génération de lettres & emails sur-mesure</li>
-              </ul>
-            </div>
-            <div class="-mt-2 p-2 lg:mt-0 lg:w-full lg:max-w-md lg:flex-shrink-0">
-              <div class="rounded-2xl bg-surface-950 py-10 text-center ring-1 ring-inset ring-surface-800 lg:flex lg:flex-col lg:justify-center lg:py-16 h-full shadow-inner">
-                <div class="mx-auto max-w-xs px-8">
-                  <p class="text-base font-semibold text-slate-400">Facturé mensuellement</p>
-                  <p class="mt-6 flex items-baseline justify-center gap-x-2">
-                    <span class="text-5xl font-display font-bold tracking-tight text-white">49€</span>
-                    <span class="text-sm font-semibold leading-6 tracking-wide text-slate-500">/mois</span>
-                  </p>
-                  <router-link to="/register" class="mt-10 block w-full rounded-xl bg-indigo-500 px-3 py-3 text-center text-sm font-bold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 transition-colors">
-                    Démarrer mon abonnement
-                  </router-link>
-                  <p class="mt-6 text-xs leading-5 text-slate-500">Mise en pause possible dès l'embauche.</p>
+          <p class="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-slate-400">
+            Commencez gratuitement et passez à la vitesse supérieure quand vous êtes prêt à dominer le marché.
+          </p>
+          <div class="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8">
+            
+            <!-- Plan Gratuit -->
+            <div class="flex flex-col justify-between rounded-3xl bg-surface-900/50 p-8 ring-1 ring-white/10 xl:p-10 border border-surface-800 backdrop-blur-sm transition-all hover:border-surface-700">
+              <div>
+                <div class="flex items-center justify-between gap-x-4">
+                  <h3 id="tier-free" class="text-lg font-semibold leading-8 text-white">Gratuit</h3>
                 </div>
+                <p class="mt-4 text-sm leading-6 text-slate-400">Idéal pour tester la puissance de nos agents.</p>
+                <p class="mt-6 flex items-baseline gap-x-1">
+                  <span class="text-4xl font-display font-bold tracking-tight text-white">0€</span>
+                  <span class="text-sm font-semibold leading-6 text-slate-500">/mois</span>
+                </p>
+                <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-slate-300">
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> 2 recherches Sniper / jour</li>
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Analyse de 1 CV par jour</li>
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Accès limité au CRM</li>
+                  <li class="flex gap-x-3 text-slate-500"><XMarkIcon class="h-6 w-5 flex-none text-surface-700" /> Mentor IA Pro</li>
+                </ul>
               </div>
+              <router-link to="/register" class="mt-8 block rounded-xl bg-surface-800 px-3 py-3 text-center text-sm font-bold leading-6 text-white hover:bg-surface-700 transition-all border border-surface-700">Démarrer gratuitement</router-link>
             </div>
+
+            <!-- Plan Essentiel -->
+            <div class="flex flex-col justify-between rounded-3xl bg-surface-900 p-8 ring-2 ring-gold-500 xl:p-10 relative shadow-2xl shadow-gold-500/10">
+              <div class="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-gold-500 px-4 py-1 text-xs font-black uppercase tracking-widest text-surface-950">Populaire</div>
+              <div>
+                <div class="flex items-center justify-between gap-x-4">
+                  <h3 id="tier-essential" class="text-lg font-semibold leading-8 text-white">Essentiel</h3>
+                </div>
+                <p class="mt-4 text-sm leading-6 text-slate-400">Pour ceux qui veulent passer à l'action sérieusement.</p>
+                <p class="mt-6 flex items-baseline gap-x-1">
+                  <span class="text-4xl font-display font-bold tracking-tight text-white">9.99€</span>
+                  <span class="text-sm font-semibold leading-6 text-slate-500">/mois</span>
+                </p>
+                <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-slate-300">
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> 25 recherches Sniper / jour</li>
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> 10 audits de CV complets</li>
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> 10 simulations d'entretiens</li>
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> CRM Illimité</li>
+                </ul>
+              </div>
+              <router-link to="/register" class="mt-8 block rounded-xl bg-gold-500 px-3 py-3 text-center text-sm font-bold leading-6 text-surface-950 hover:bg-gold-400 transition-all shadow-lg shadow-gold-500/20">Choisir Essentiel</router-link>
+            </div>
+
+            <!-- Plan Pro -->
+            <div class="flex flex-col justify-between rounded-3xl bg-surface-900/50 p-8 ring-1 ring-white/10 xl:p-10 border border-surface-800 backdrop-blur-sm transition-all hover:border-surface-700">
+              <div>
+                <div class="flex items-center justify-between gap-x-4">
+                  <h3 id="tier-pro" class="text-lg font-semibold leading-8 text-white">Pro</h3>
+                </div>
+                <p class="mt-4 text-sm leading-6 text-slate-400">La puissance totale brute de l'IA Sniper.</p>
+                <p class="mt-6 flex items-baseline gap-x-1">
+                  <span class="text-4xl font-display font-bold tracking-tight text-white">19.99€</span>
+                  <span class="text-sm font-semibold leading-6 text-slate-500">/mois</span>
+                </p>
+                <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-slate-300">
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Sniper IA Illimité</li>
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Audits CV Illimités</li>
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Mentor IA Vocal & Illimité</li>
+                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Headhunter IA Pro</li>
+                </ul>
+              </div>
+              <router-link to="/register" class="mt-8 block rounded-xl bg-surface-800 px-3 py-3 text-center text-sm font-bold leading-6 text-white hover:bg-surface-700 transition-all border border-surface-700">Passer Pro</router-link>
+            </div>
+
           </div>
         </div>
       </div>
