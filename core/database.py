@@ -121,6 +121,11 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN stripe_customer_id TEXT")
         if 'stripe_subscription_id' not in user_columns:
             cursor.execute("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT")
+        # Google OAuth migration
+        if 'google_id' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN google_id TEXT")
+        # Make hashed_password nullable for Google OAuth users (SQLite doesn't allow ALTER COLUMN,
+        # so the CREATE TABLE already uses NOT NULL; new rows from Google OAuth will use a placeholder)
             
         # Table Usage Logs (Pour l'enforcedement des limites SaaS)
         cursor.execute('''

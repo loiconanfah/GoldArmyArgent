@@ -1,12 +1,24 @@
 from fastapi import APIRouter, HTTPException, Depends, status
+from loguru import logger
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timedelta
 import jwt
 import bcrypt
+import os
 from core.database import get_db_connection
+from config.settings import settings
 import uuid
+
+try:
+    from google.oauth2 import id_token
+    from google.auth.transport import requests as g_requests
+    GOOGLE_AUTH_AVAILABLE = True
+except ImportError:
+    GOOGLE_AUTH_AVAILABLE = False
+
+# Removed direct os.getenv calls, using settings instead
 
 # Configuration (In production, load this from env variables)
 SECRET_KEY = "goldarmy-super-secret-key-change-in-production"
@@ -34,7 +46,11 @@ class Token(BaseModel):
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     # bcrypt limits passwords to 72 bytes. Truncate to avoid errors.
     truncated_password = plain_password.encode('utf-8')[:72]
-    return bcrypt.checkpw(truncated_password, hashed_password.encode('utf-8'))
+    try:
+        return bcrypt.checkpw(truncated_password, hashed_password.encode('utf-8'))
+    except ValueError:
+        # Happens if hashed_password is a placeholder (like Google OAuth users)
+        return False
 
 def get_password_hash(password: str) -> str:
     # bcrypt limits passwords to 72 bytes. Truncate to avoid errors.
@@ -151,3 +167,79 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @router.get("/me")
 def read_users_me(current_user: dict = Depends(get_current_user)):
     return current_user
+
+
+# ─── Google OAuth ───────────────────────────────────────────────────────────
+class GoogleTokenRequest(BaseModel):
+    credential: str  # Google ID token from the frontend
+
+@router.post("/google", response_model=Token)
+def google_login(payload: GoogleTokenRequest):
+    """Verify a Google ID token and return our own JWT."""
+    if not GOOGLE_AUTH_AVAILABLE:
+        raise HTTPException(status_code=501, detail="google-auth library not installed. Run: pip install google-auth")
+    if not settings.google_client_id:
+        raise HTTPException(status_code=500, detail="GOOGLE_CLIENT_ID not set in environment variables.")
+    
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            payload.credential,
+            g_requests.Request(),
+            settings.google_client_id,
+            clock_skew_in_seconds=10
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Google token: {e}")
+
+    google_id   = idinfo["sub"]
+    email       = idinfo.get("email", "")
+    full_name   = idinfo.get("name", "")
+    avatar_url  = idinfo.get("picture", "")
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+
+        # Try to find by google_id first, then by email
+        cursor.execute("SELECT * FROM users WHERE google_id = ?", (google_id,))
+        user = cursor.fetchone()
+
+        if user is None:
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
+
+        if user is None:
+            # Create new user (no password for Google OAuth users)
+            user_id = str(uuid.uuid4())
+            cursor.execute(
+                """INSERT INTO users (id, email, hashed_password, full_name, avatar_url, google_id, subscription_tier)
+                   VALUES (?, ?, ?, ?, ?, ?, 'FREE')""",
+                (user_id, email, "GOOGLE_OAUTH_NO_PASSWORD", full_name, avatar_url, google_id)
+            )
+            conn.commit()
+            tier = "FREE"
+        else:
+            user_id = user["id"]
+            tier = user["subscription_tier"]
+            # Link google_id if not yet set
+            if not user["google_id"]:
+                cursor.execute(
+                    "UPDATE users SET google_id = ?, avatar_url = ? WHERE id = ?",
+                    (google_id, avatar_url, user_id)
+                )
+                conn.commit()
+
+        access_token = create_access_token(
+            data={"sub": user_id, "email": email},
+            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        )
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {"id": user_id, "email": email, "subscription_tier": tier}
+        }
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()

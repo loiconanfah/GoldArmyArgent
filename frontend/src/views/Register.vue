@@ -1,13 +1,17 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
+import { useGoogleAuth } from '@/composables/useGoogleAuth'
 
 const router = useRouter()
 const email = ref('')
 const password = ref('')
 const errorMsg = ref('')
 const isLoading = ref(false)
+
+const { googleLoading, googleError, initGoogle, googleSignIn } = useGoogleAuth()
+onMounted(() => initGoogle('google-btn-register'))
 
 const handleRegister = async () => {
   errorMsg.value = ''
@@ -28,7 +32,6 @@ const handleRegister = async () => {
     } else {
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('user', JSON.stringify(data.user))
-      // Redirect to dashboard
       router.push('/')
     }
   } catch (err) {
@@ -142,16 +145,22 @@ const handleRegister = async () => {
             <div class="relative flex justify-center text-[10px] uppercase tracking-[0.2em]"><span class="bg-[#25252f] px-4 font-black text-slate-600">Or register with</span></div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 bg-transparent border border-[#32323f] rounded-2xl hover:bg-white/5 transition-all font-bold text-white text-[10px] uppercase tracking-widest">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-4 h-4" />
-                Google
-            </button>
-            <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 bg-transparent border border-[#32323f] rounded-2xl hover:bg-white/5 transition-all font-bold text-white text-[10px] uppercase tracking-widest">
-                <img src="https://www.svgrepo.com/show/442887/apple-black.svg" class="w-4 h-4 invert" />
-                Apple
-            </button>
+          <div class="grid grid-cols-1 gap-4">
+            <!-- Offical Google Button Container -->
+            <div id="google-btn-register" class="flex justify-center"></div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 bg-transparent border border-[#32323f] rounded-2xl hover:bg-white/5 transition-all font-bold text-white text-[10px] uppercase tracking-widest opacity-50 cursor-not-allowed" title="Arrive bientôt">
+                  <img src="https://www.svgrepo.com/show/442887/apple-black.svg" class="w-4 h-4 invert" />
+                  Apple
+              </button>
+              <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 bg-transparent border border-[#32323f] rounded-2xl hover:bg-white/5 transition-all font-bold text-white text-[10px] uppercase tracking-widest opacity-50 cursor-not-allowed" title="Arrive bientôt">
+                  <img src="https://www.svgrepo.com/show/442938/facebook-color.svg" class="w-4 h-4" />
+                  Meta
+              </button>
+            </div>
           </div>
+          <p v-if="googleError" class="text-rose-400 text-xs font-bold text-center mt-2">{{ googleError }}</p>
         </form>
       </div>
 

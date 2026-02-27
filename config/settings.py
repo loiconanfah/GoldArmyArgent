@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     stripe_api_key: Optional[str] = Field(default=None, description="Clé API Stripe Live")
     stripe_webhook_secret: Optional[str] = Field(default=None, description="Secret Webhook Stripe")
 
+    # Google OAuth Configuration
+    google_client_id: Optional[str] = Field(default=None, description="Client ID Google OAuth")
+    google_client_secret: Optional[str] = Field(default=None, description="Client Secret Google OAuth")
+
     # Job Search APIs
     jooble_api_key: Optional[str] = Field(default="ee1009c8-7eb3-4e21-a7f6-4422bc8913ca", description="Clé API Jooble")
     rapidapi_key: Optional[str] = Field(default=None, description="Clé RapidAPI (JSearch/Glassdoor)")
