@@ -59,7 +59,20 @@ class JSearchSearcher:
                         jobs = data.get("data", [])
                         return self._normalize_jobs(jobs)
                     elif response.status == 429:
-                        logger.warning("⚠️ Limite API JSearch atteinte (429)")
+                        from config.settings import settings
+                        backup_key = getattr(settings, "rapidapi_key_2", None)
+                        if backup_key and self.api_key != backup_key:
+                            logger.warning("⚠️ Limite API JSearch atteinte (429) - Bascule sur la clé secondaire !")
+                            self.api_key = backup_key
+                            headers["X-RapidAPI-Key"] = self.api_key
+                            async with session.get(self.BASE_URL, headers=headers, params=params) as response_retry:
+                                if response_retry.status == 200:
+                                    data_retry = await response_retry.json()
+                                    jobs_retry = data_retry.get("data", [])
+                                    logger.success("✅ Succès du Fallback avec la clé JSearch secondaire")
+                                    return self._normalize_jobs(jobs_retry)
+                                    
+                        logger.warning("⚠️ Limite API JSearch atteinte (429) pour toutes les clés.")
                         return []
                     elif response.status == 403: # Clé invalide souvent
                         logger.error("❌ Erreur JSearch: Clé API invalide ou non autorisée")

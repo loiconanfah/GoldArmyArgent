@@ -49,7 +49,7 @@ class JoobleClient:
 
         payload: Dict[str, Any] = {
             "keywords": keywords,
-            "location": location,
+            "location": "Non spécifié",
             "page": page,
             "limit": limit,
         }
@@ -117,7 +117,7 @@ class JoobleClient:
                     "id": j.get("id") or f"jooble-{idx}",
                     "title": title,
                     "company": company,
-                    "location": location,
+                    "location": "Non spécifié",
                     "url": url,
                     "description": snippet,
                     "source": "Jooble",

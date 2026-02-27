@@ -30,10 +30,10 @@ class HunterAgent(BaseAgent):
             apis_to_use += ["linkedin", "indeed_fr", "glassdoor", "gov"]
         # Sources spécifiques Amériques
         elif any(w in loc_lower for w in ["usa", "united states", "california", "new york", "texas", "canada", "montreal", "toronto", "vancouver", "chicago", "seattle", "boston", "silicon valley", "florida"]):
-            apis_to_use += ["linkedin", "indeed", "gov"]
+            apis_to_use += ["linkedin", "indeed"]
         # Reste du monde
         else:
-            apis_to_use += ["linkedin", "indeed_fr", "gov"]
+            apis_to_use += ["linkedin", "indeed_fr"]
             
         return {
             "keywords": keywords_list,
@@ -177,21 +177,29 @@ class HunterAgent(BaseAgent):
             text = f"{job.get('title', '')} {job.get('description', '')} {job.get('raw_contract_type', '')}".lower()
             job_loc = job.get('location', '').lower()
             
-            # --- 1. Filtre Géographique Strict (tolérance aux fautes de base) ---
-            # Si le lieu du job n'est pas le lieu mondial/remote, on check
-            loc_is_valid = False
-            # On cherche le mot clé de la ville dans la loc de l'offre
-            search_terms = loc_lower.replace(",", " ").split()
-            for term in search_terms:
-                if len(term) > 3 and (term in job_loc or job_loc == "remote" or job_loc == "télétravail" or not job_loc or job_loc == "confidentiel"):
-                    loc_is_valid = True
-                    break
-            
-            if not loc_is_valid and len(job_loc) > 3 and "remote" not in job_loc:
-                # La localisation de l'offre est identifiée mais ne correspond pas
-                continue
+            import unicodedata
+            def remove_accents(s):
+                return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
                 
-            # --- 2. Filtre Type de Contrat Strict ---
+            loc_lower_clean = remove_accents(loc_lower)
+            job_loc_clean = remove_accents(job_loc)
+            
+            # --- 1. Filtre Géographique Strict (tolérance aux fautes de base) ---
+            loc_is_valid = False
+            
+            # Si le lieu du job est un fallback volontaire, remote, ou vide, on le garde
+            if not job_loc or any(w in job_loc_clean for w in ["remote", "teletravail", "confidentiel", "non specifie", "none"]):
+                loc_is_valid = True
+            else:
+                # On cherche le mot clé de la ville dans la loc de l'offre
+                search_terms = loc_lower_clean.replace(",", " ").split()
+                for term in search_terms:
+                    if len(term) > 3 and term in job_loc_clean:
+                        loc_is_valid = True
+                        break
+            
+            if not loc_is_valid:
+                continue
             if is_internship_search:
                 # S'il cherche un stage, l'offre DOIT contenir un mot clé de stage.
                 if not any(k in text for k in internship_keywords):
@@ -284,7 +292,7 @@ class HunterAgent(BaseAgent):
                     "id": f"indeed-{i}",
                     "title": title,
                     "company": company_tag.get_text(strip=True) if company_tag else "Confidentiel",
-                    "location": loc_tag.get_text(strip=True) if loc_tag else loc,
+                    "location": loc_tag.get_text(strip=True) if loc_tag else "Non spécifié",
                     "url": href or f"https://www.indeed.com/jobs?q={kw_enc}",
                     "description": "",
                     "source": "Indeed",
@@ -294,18 +302,7 @@ class HunterAgent(BaseAgent):
             return jobs
         except Exception as e:
             logger.debug(f"Indeed Error: {e}")
-            kw_enc = urllib.parse.quote_plus(kw.replace('"', ''))
-            loc_enc = urllib.parse.quote_plus(loc)
-            return [{
-                "id": "indeed-search",
-                "title": f"Offres '{kw}' sur Indeed",
-                "company": "Indeed",
-                "location": loc,
-                "url": f"https://www.indeed.com/jobs?q={kw_enc}&l={loc_enc}",
-                "description": "Voir toutes les offres sur Indeed",
-                "source": "Indeed",
-                "match_score": 0,
-            }]
+            return []
 
     async def _search_indeed_fr(self, kw, loc, limit):
         """Recherche Indeed France/Europe (fr.indeed.com, be.indeed.com, etc.)."""

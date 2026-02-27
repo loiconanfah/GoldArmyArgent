@@ -1,0 +1,381 @@
+{
+    "stats": {
+        "loc": 62,
+        "type_intern": 0,
+        "type_emploi": 0
+    },
+    "log": [
+        {
+            "reason": "loc",
+            "loc": "none, none",
+            "expected": "quebec",
+            "title": "Développeur(euse )logiciel"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Developpeur / developpeuse logiciel"
+        },
+        {
+            "reason": "loc",
+            "loc": "none, none",
+            "expected": "quebec",
+            "title": "Développeur(euse) Logiciel – Système d'Acquisition en Vol"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur Applicatif Full-Stack (Kotlin-Java/React)"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Concepteur logiciels - sénior"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur ou développeuse Full Stack (Gestion de la documentation)"
+        },
+        {
+            "reason": "loc",
+            "loc": "none, none",
+            "expected": "quebec",
+            "title": "Développeur Full Stack Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Software Designer / Concepteur(trice) logiciel"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur C++"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur de Gruès"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Concepteur logiciels - sénior"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur des Surfaces"
+        },
+        {
+            "reason": "loc",
+            "loc": "levis, ca",
+            "expected": "quebec",
+            "title": "Développeur logiciel sénior / Senior Software Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur Logiciel De Tests Python"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur·euse logiciel (Fullstack)"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Étudiant/Stagiaire universitaire - Développement logiciel"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur Logiciel - IAM & Plateforme Cloud Distribuée"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur logiciel pour le SDK CA; Android​/Software Developer CA SDK; Android"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Ingénieur Développement Logiciel de Gestion (H/F)"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Développeur Logiciel Storage – Cloud"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Full Stack Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Candidature spontanée - Développeur / Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Jobs - Backend Software Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Junior Software Engineer"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Développeur.se logiciel Backend"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Développeur Java"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Backend Software Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Junior Software Developer [m/f/d]"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Candidature spontanée"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Software Engineer, Full Stack"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Voir 'développeur logiciel' sur Google Jobs"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Intern Software Engineering"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Senior Software Engineer, DBX"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Staff Software Engineer, Query (Optimization)"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Software Engineer (C++ and C#)"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Software Engineer, Front End Developer, Java Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Software Engineer 3 (SE3), Developer Productivity (Backstage)"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Principal Software Engineer, Frontend Architecture"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Senior Software Engineer — Full-Stack, Cloud & Architecture"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "programming software engineer"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Senior Full Stack Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Intern Software Engineering"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Senior Software Engineer, DBX"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Infrastructure Developer (Cloud), Cyber"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Bilingual Senior Software Developer I"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Software Engineer (C++ and C#)"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Software Engineer, Front End Developer, Java Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Staff Software Engineer, Query (Optimization)"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Software Engineer I"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Senior Frontend Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "québec city, ca",
+            "expected": "quebec",
+            "title": "Principal Software Engineer, Frontend Architecture"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Software Engineer I"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Jobs - Frontend - Web Application Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Junior Software Developer [m/f/d]"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Full Stack Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "PROGRAMMING SOFTWARE ENGINEER"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Software Engineer I"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Full Stack Developer"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Junior Software Engineer"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Software Developer, Tools & Automation"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Junior Software Engineer (Python) - Montreal - Up to $130,000 CAD + Exceptional Bonuses/Benefits"
+        },
+        {
+            "reason": "loc",
+            "loc": "non spécifié",
+            "expected": "quebec",
+            "title": "Voir 'software engineer' sur Google Jobs"
+        }
+    ]
+}

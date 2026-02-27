@@ -150,7 +150,7 @@ class IndeedMultiSearcher:
             "id": f"indeed-{domain}-link",
             "title": f"Voir toutes les offres '{keywords}' sur Indeed",
             "company": f"Indeed ({domain})",
-            "location": location,
+            "location": "Non spécifié",
             "url": f"https://{domain}/{path}?q={kw_enc}&l={loc_enc}",
             "description": "Cliquez pour voir toutes les offres correspondantes.",
             "source": f"Indeed ({domain})",

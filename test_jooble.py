@@ -1,38 +1,21 @@
-
 import asyncio
-import os
-from dotenv import load_dotenv
 from tools.jooble_searcher import JoobleSearcher
+from config.settings import settings
 
-# Charger les variables d'environnement
-load_dotenv()
-
-async def test_jooble():
-    api_key = os.getenv("JOOBLE_API_KEY")
-    if not api_key:
-        print("❌ JOOBLE_API_KEY non trouvée dans .env")
+async def main():
+    print(f"Testing Jooble API...")
+    print(f"API Key configured: {'Yes' if settings.jooble_api_key else 'No'}")
+    
+    if not settings.jooble_api_key:
+        print("Cannot test: No Jooble API key in settings (.env)")
         return
-
-    print(f"API Key found: {api_key[:5]}...")
-    
-    searcher = JoobleSearcher(api_key=api_key)
-    
-    print("Test search: 'Python' in 'Quebec'...")
-    try:
-        jobs = await searcher.search_jobs(keywords="Python", location="Quebec")
         
-        if jobs:
-            print(f"Success! {len(jobs)} jobs found.")
-            for job in jobs[:3]:
-                print(f"  - {job['title']} at {job['company']}")
-                print(f"    Source: {job['source']}")
-                print(f"    URL: {job['url']}")
-                print("---")
-        else:
-            print("No jobs found (but no execution error).")
-            
-    except Exception as e:
-        print(f"Error during test: {e}")
+    searcher = JoobleSearcher(api_key=settings.jooble_api_key)
+    jobs = await searcher.search_jobs(keywords="développeur logiciel", location="Toronto", limit=5)
+    
+    print(f"\nResults found: {len(jobs)}")
+    for j in jobs:
+        print(f"- {j.get('title')} @ {j.get('company')} ({j.get('location')})")
 
 if __name__ == "__main__":
-    asyncio.run(test_jooble())
+    asyncio.run(main())

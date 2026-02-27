@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # Job Search APIs
     jooble_api_key: Optional[str] = Field(default=None, description="Clé API Jooble")
     rapidapi_key: Optional[str] = Field(default=None, description="Clé RapidAPI (JSearch/Glassdoor)")
+    rapidapi_key_2: Optional[str] = Field(default="7e5b3739f9mshf676fb3b9e1dac4p1db4e8jsne93476e3132a", description="Clé RapidAPI Secondaire (JSearch)")
     findwork_api_key: Optional[str] = Field(default="b3daabb0d2e934cdc7c2c8c8d37ba85dd3a5bb6c", description="Clé API FindWork")
     rapidapi_host: str = Field(default="jsearch.p.rapidapi.com", description="RapidAPI Host JSearch")
     glassdoor_api_host: str = Field(default="glassdoor-real-time.p.rapidapi.com", description="RapidAPI Host Glassdoor")

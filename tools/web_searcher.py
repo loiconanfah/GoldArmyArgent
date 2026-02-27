@@ -132,7 +132,7 @@ class JobWebSearcher:
                 "id": "search-guichet",
                 "title": f"Guichet Emplois: {keywords}",
                 "company": "Gouvernement du Canada",
-                "location": location,
+                "location": "Non spécifié",
                 "url": f"https://www.guichetemplois.gc.ca/jobsearch/jobsearch?searchstring={k_enc}&locationstring={l_enc}",
                 "source": "Search Link",
                 "match_score": 50

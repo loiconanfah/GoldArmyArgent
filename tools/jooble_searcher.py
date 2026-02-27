@@ -27,7 +27,7 @@ class JoobleSearcher:
         
         payload = {
             "keywords": kw,
-            "location": loc,
+            "location": "Non spécifié",
             "page": int(page),
             "resultonpage": int(limit)
         }

@@ -122,7 +122,7 @@ class GovSearcher:
                 "id": "ft-search-link",
                 "title": f"Voir toutes les offres '{keywords}' sur France Travail",
                 "company": "France Travail (Pôle Emploi)",
-                "location": location,
+                "location": "Non spécifié",
                 "url": f"https://candidat.francetravail.fr/offres/recherche?motsCles={kw_enc}",
                 "description": "Cliquez pour accéder aux offres sur France Travail",
                 "source": "France Travail",
@@ -216,7 +216,7 @@ class GovSearcher:
                             "id": f"pep-{i}",
                             "title": title_tag.get_text(strip=True) if title_tag else f"Offre Fonction Publique #{i+1}",
                             "company": "Fonction Publique",
-                            "location": location,
+                            "location": "Non spécifié",
                             "url": href or url,
                             "description": desc_tag.get_text(strip=True)[:400] if desc_tag else "",
                             "source": "Place Emploi Public",
@@ -230,7 +230,7 @@ class GovSearcher:
                 "id": "pep-search-link",
                 "title": f"Voir les offres fonctionnaires '{keywords}'",
                 "company": "Fonction Publique France",
-                "location": location,
+                "location": "Non spécifié",
                 "url": f"https://place-emploi-public.gouv.fr/offre-emploi/?motCle={kw_enc}",
                 "description": "Portail officiel de la Fonction Publique",
                 "source": "Place Emploi Public",
@@ -373,7 +373,7 @@ class GovSearcher:
         url = "https://eures.ec.europa.eu/api/jv-search/jvs"
         payload = {
             "keywords": keywords,
-            "location": location,
+            "location": "Non spécifié",
             "page": 0,
             "pageSize": limit,
         }
@@ -414,7 +414,7 @@ class GovSearcher:
         API REST: https://www.leforem.be/api
         """
         url = "https://www.leforem.be/api/offres_emploi"
-        params = {"keywords": keywords, "location": location, "limit": limit}
+        params = {"keywords": keywords, "location": "Non spécifié", "limit": limit}
         try:
             async with aiohttp.ClientSession(headers=self.headers) as session:
                 async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10), ssl=False) as resp:
