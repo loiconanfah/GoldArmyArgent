@@ -21,7 +21,7 @@ class GeminiClient:
         
     async def generate(self, prompt: str, system: str = None, **kwargs) -> str:
         """Génère une réponse texte via Google Gemini REST API."""
-        model = kwargs.get("model", self.default_model)
+        model = kwargs.get("model") or self.default_model
         
         payload = {
             "contents": [{"parts": [{"text": prompt}]}]

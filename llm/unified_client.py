@@ -42,11 +42,16 @@ class UnifiedLLMClient:
     async def generate(self, prompt: str, **kwargs) -> str:
         """Génère une réponse. Priorité exclusive à Gemini si configuré."""
         requested_model = kwargs.pop("model", None)
+        # Remove None values so concrete clients use their defaults
+        clean_kwargs = {k: v for k, v in kwargs.items() if v is not None}
 
         # SI GEMINI EST ACTIVÉ -> AUCUN AUTRE MODÈLE NE DOIT ÊTRE UTILISÉ
         if self.gemini_client:
             try:
-                return await self.gemini_client.generate(prompt, model=requested_model, **kwargs)
+                # Si requested_model est None, on ne le passe pas
+                if requested_model:
+                    clean_kwargs["model"] = requested_model
+                return await self.gemini_client.generate(prompt, **clean_kwargs)
             except Exception as e:
                 logger.error(f"❌ échec Critique Gemini (Fallback Impossible): {e}")
                 raise Exception(f"Désolé, une erreur technique sur Gemini empêche de garantir la précision à 100%. Fallback Ollama désactivé. Erreur: {e}")

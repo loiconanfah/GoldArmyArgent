@@ -1,29 +1,5 @@
-Exception Type: <class 'TimeoutError'>
+Exception Type: <class 'Exception'>
 Traceback (most recent call last):
-  File "C:\Users\yayzo\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\aiohttp\client_reqrep.py", line 539, in start
-    message, payload = await protocol.read()  # type: ignore[union-attr]
-                       ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\yayzo\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\aiohttp\streams.py", line 703, in read
-    await self._waiter
-asyncio.exceptions.CancelledError
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "D:\GoldArmyArgent\llm\gemini_client.py", line 56, in generate
-    async with session.post(url, json=payload, ssl=False) as response:
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\yayzo\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\aiohttp\client.py", line 1510, in __aenter__
-    self._resp: _RetType = await self._coro
-                           ^^^^^^^^^^^^^^^^
-  File "C:\Users\yayzo\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\aiohttp\client.py", line 779, in _request
-    resp = await handler(req)
-           ^^^^^^^^^^^^^^^^^^
-  File "C:\Users\yayzo\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\aiohttp\client.py", line 757, in _connect_and_send_request
-    await resp.start(conn)
-  File "C:\Users\yayzo\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\aiohttp\client_reqrep.py", line 534, in start
-    with self._timer:
-         ^^^^^^^^^^^
-  File "C:\Users\yayzo\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\aiohttp\helpers.py", line 713, in __exit__
-    raise asyncio.TimeoutError from exc_val
-TimeoutError
+  File "D:\GoldArmyArgent\llm\gemini_client.py", line 60, in generate
+    raise Exception(f"Erreur API Gemini: {response.status}")
+Exception: Erreur API Gemini: 400

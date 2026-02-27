@@ -23,7 +23,7 @@ class HunterAgent(BaseAgent):
         loc_lower = loc_lower.replace("califormie", "california").replace("californie", "california")
         
         # Sources de base (disponibles partout)
-        apis_to_use = ["jooble", "jsearch", "google_jobs"]
+        apis_to_use = ["jooble", "jsearch", "google_jobs", "findwork"]
         
         # Sources spécifiques France / Europe
         if any(w in loc_lower for w in ["france", "paris", "lyon", "marseille", "bordeaux", "nantes", "lille", "europe", "suisse", "belgique", "uk", "london", "allemagne", "berlin", "espagne", "madrid", "italie", "rome"]):
@@ -83,6 +83,8 @@ class HunterAgent(BaseAgent):
                     tasks.append(self._search_indeed(sq, location, api_limit))
                 if "gov" in apis:
                     tasks.append(self._search_gov(kw, location, api_limit))
+                if "findwork" in apis:
+                    tasks.append(self._search_findwork(sq, location, api_limit))
             
             # Sources appelées une seule fois par mot-clé (évite le spam)
             if "linkedin" in apis:
@@ -111,7 +113,10 @@ class HunterAgent(BaseAgent):
             all_jobs = self._filter_by_exclusions(all_jobs, exclude)
             logger.info(f"🧹 Exclusion filtrée: {before} → {len(all_jobs)} offres")
 
-
+        # 1.b Filtrage DÉFINITIF par type et localisation (Tolérance Zéro)
+        before_strict = len(all_jobs)
+        all_jobs = self._filter_strict_precision(all_jobs, location, job_type)
+        logger.info(f"🛡️ Filtre Strict Precision (Localité/Contrat): {before_strict} → {len(all_jobs)} offres conservées.")
 
         # 2. Dédoublonnage par titre+company
         unique_jobs = []
@@ -143,6 +148,62 @@ class HunterAgent(BaseAgent):
         except Exception as e:
             logger.error(f"Jooble Error: {e}")
             return []
+
+    async def _search_findwork(self, kw, loc, limit):
+        """Recherche via FindWork.dev API."""
+        try:
+            from tools.findwork_searcher import FindWorkSearcher
+            searcher = FindWorkSearcher(api_key=settings.findwork_api_key)
+            return await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+        except Exception as e:
+            logger.error(f"FindWork Error: {e}")
+            return []
+            
+    def _filter_strict_precision(self, jobs: list, expected_location: str, expected_job_type: str) -> list:
+        """
+        Filtre impitoyable garanti sans hallucination.
+        Si l'user demande un "stage", on supprime tout ce qui ressemble de loin à un CDI.
+        Si l'user demande "toronto", on supprime ce qui est en France ou UK.
+        """
+        result = []
+        loc_lower = expected_location.lower()
+        type_lower = expected_job_type.lower()
+        
+        # Mots-clés qui caractérisent formellement un stage/internship
+        internship_keywords = ["stage", "intern", "internship", "apprenti", "alternance", "student", "étudiant"]
+        is_internship_search = any(w in type_lower for w in internship_keywords)
+
+        for job in jobs:
+            text = f"{job.get('title', '')} {job.get('description', '')} {job.get('raw_contract_type', '')}".lower()
+            job_loc = job.get('location', '').lower()
+            
+            # --- 1. Filtre Géographique Strict (tolérance aux fautes de base) ---
+            # Si le lieu du job n'est pas le lieu mondial/remote, on check
+            loc_is_valid = False
+            # On cherche le mot clé de la ville dans la loc de l'offre
+            search_terms = loc_lower.replace(",", " ").split()
+            for term in search_terms:
+                if len(term) > 3 and (term in job_loc or job_loc == "remote" or job_loc == "télétravail" or not job_loc or job_loc == "confidentiel"):
+                    loc_is_valid = True
+                    break
+            
+            if not loc_is_valid and len(job_loc) > 3 and "remote" not in job_loc:
+                # La localisation de l'offre est identifiée mais ne correspond pas
+                continue
+                
+            # --- 2. Filtre Type de Contrat Strict ---
+            if is_internship_search:
+                # S'il cherche un stage, l'offre DOIT contenir un mot clé de stage.
+                if not any(k in text for k in internship_keywords):
+                    continue
+            else:
+                # S'il cherche un emploi classique, on vire les stages (sauf s'il est très junior)
+                if any(k in text for k in ["internship", "stage étudiant"]):
+                    continue
+                    
+            result.append(job)
+            
+        return result
 
     async def _search_jsearch(self, kw, loc, limit):
         try:
