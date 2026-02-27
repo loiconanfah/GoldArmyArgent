@@ -1,525 +1,549 @@
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   RocketLaunchIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
   ChartBarIcon,
   BriefcaseIcon,
   CpuChipIcon,
   CheckCircleIcon,
+  XMarkIcon,
+  ArrowRightIcon,
+  SparklesIcon,
+  ShieldCheckIcon,
+  BoltIcon,
   UserGroupIcon,
-  ArrowTrendingUpIcon,
-  XMarkIcon
+  DocumentTextIcon,
+  MagnifyingGlassIcon,
+  ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
 
-const features = [
+// Parallax mouse effect
+const mouseX = ref(0)
+const mouseY = ref(0)
+const handleMouseMove = (e) => {
+  mouseX.value = (e.clientX / window.innerWidth - 0.5) * 30
+  mouseY.value = (e.clientY / window.innerHeight - 0.5) * 30
+}
+
+const testimonials = [
   {
-    name: 'Sniper IA 7.1',
-    description: 'Détectez les opportunités cachées avec une précision chirurgicale. Notre IA débusque les offres avant tout le monde.',
-    icon: RocketLaunchIcon,
+    quote: 'GoldArmy a trouvé une offre cachée sur un petit site carrière. J\'ai postulé avec la lettre générée et eu l\'entretien le lendemain.',
+    name: 'Marc R.',
+    role: 'Développeur Fullstack',
+    color: 'from-violet-500 to-purple-500',
+    initials: 'MR'
   },
   {
-    name: 'CRM Intelligent',
-    description: 'Suivez vos candidatures avec un Kanban automatisé qui qualifie et score vos chances de succès.',
-    icon: ChartBarIcon,
+    quote: 'Le Mentor IA m\'a préparé à 80% des questions que j\'ai eues chez le GAFAM. C\'est une arme redoutable.',
+    name: 'Sophie L.',
+    role: 'Data Scientist',
+    color: 'from-emerald-500 to-teal-500',
+    initials: 'SL'
   },
   {
-    name: 'Générateur de Réseau',
-    description: 'Identifiez les décideurs clés et générez des messages d\'accroche hyper-personnalisés en un clic.',
-    icon: BriefcaseIcon,
-  },
-  {
-    name: 'Mentor IA Pro',
-    description: 'Préparez vos entretiens avec un coach virtuel expert qui s\'adapte à l\'entreprise ciblée.',
-    icon: CpuChipIcon,
-  },
+    quote: 'Mon taux de réponse a explosé grâce au Générateur de Réseau. Je contacte directement les CTOs maintenant.',
+    name: 'Julien D.',
+    role: 'Product Manager',
+    color: 'from-orange-500 to-amber-500',
+    initials: 'JD'
+  }
 ]
+onMounted(() => window.addEventListener('mousemove', handleMouseMove))
+onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface-950 text-slate-200 selection:bg-indigo-500/30 font-sans overflow-x-hidden">
-    
-    <!-- Navbar (Public) -->
-    <header class="absolute inset-x-0 top-0 z-50">
-      <nav class="flex items-center justify-between p-6 lg:px-12" aria-label="Global">
+  <div class="min-h-screen bg-[#0a0a12] text-white font-sans overflow-x-hidden selection:bg-violet-500/30">
+
+    <!-- ─── NAVBAR ─── -->
+    <nav class="fixed top-6 inset-x-0 z-[100] px-6">
+      <div class="max-w-7xl mx-auto flex items-center justify-between
+                  bg-white/5 backdrop-blur-2xl border border-white/10
+                  rounded-2xl px-6 py-4 shadow-2xl shadow-black/40">
+        <!-- Logo -->
         <div class="flex items-center gap-3">
-             <div class="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center shadow-lg border border-surface-700 overflow-hidden">
-                <img src="/logo.png" alt="GoldArmy Logo" class="w-full h-full object-cover" />
-            </div>
-            <span class="text-xl font-display font-bold text-white tracking-tight">GoldArmy</span>
-        </div>
-        <div class="flex flex-1 justify-end gap-4 items-center">
-          <router-link to="/login" class="text-sm font-semibold leading-6 text-slate-300 hover:text-white transition-colors">Connexion</router-link>
-          <router-link to="/register" class="rounded-lg bg-indigo-500 hover:bg-indigo-400 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-500/20 transition-all border border-indigo-400/20">Créer un compte</router-link>
-        </div>
-      </nav>
-    </header>
-
-    <main>
-      <!-- Hero section -->
-      <div class="relative isolate pt-14">
-        <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-surface-950 to-surface-950"></div>
-        <div class="absolute inset-y-0 right-1/2 -z-10 -mr-96 w-[200%] origin-top-right skew-x-[-30deg] bg-surface-950 shadow-xl shadow-indigo-900/10 ring-1 ring-surface-800 sm:-mr-80 lg:-mr-96" aria-hidden="true"></div>
-        
-        <div class="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
-          <div class="mx-auto max-w-2xl lg:mx-0 lg:max-w-xl">
-            <div class="mb-8 flex">
-              <div class="relative rounded-full px-3 py-1 text-sm leading-6 text-indigo-300 ring-1 ring-white/10 hover:ring-white/20">
-                Lancement de la version 2.0. <router-link to="/register" class="font-semibold text-indigo-400"><span class="absolute inset-0" aria-hidden="true"></span>En savoir plus <span aria-hidden="true">&rarr;</span></router-link>
-              </div>
-            </div>
-            <h1 class="text-4xl font-display font-bold tracking-tight text-white sm:text-7xl mb-6">
-              Votre carrière propulsée par <span class="text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-amber-500">l'IA Sniper.</span>
-            </h1>
-            <p class="mt-6 text-xl leading-8 text-slate-300 max-w-lg">
-              Automatisez votre recherche d'emploi. De l'identification des offres cachées à la préparation de vos entretiens, GoldArmy est l'agent d'élite qui ne dort jamais.
-            </p>
-            <div class="mt-10 flex items-center gap-x-6">
-              <router-link to="/register" class="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:from-indigo-400 hover:to-indigo-500 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400">
-                Commencer gratuitement
-              </router-link>
-              <a href="#features" class="text-sm font-semibold leading-6 text-slate-300 hover:text-white transition-colors">Découvrir les workflows <span aria-hidden="true">↓</span></a>
-            </div>
+          <div class="w-9 h-9 rounded-xl overflow-hidden border border-violet-500/30 shadow-[0_0_20px_rgba(124,58,237,0.4)]">
+            <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
           </div>
-          
-          <!-- Mockup graphic -->
-          <div class="mx-auto mt-16 flex max-w-2xl sm:mt-24 lg:ml-10 lg:mr-0 lg:mt-0 lg:max-w-none lg:flex-none xl:ml-32">
-            <div class="max-w-3xl flex-none sm:max-w-5xl lg:max-w-none">
-              <div class="rounded-3xl bg-surface-900/50 p-3 ring-1 ring-white/10 lg:rounded-3xl shadow-2xl backdrop-blur-sm -rotate-1 hover:rotate-0 transition-all duration-1000 group">
-                <div class="rounded-2xl bg-surface-950 ring-1 ring-white/10 aspect-[16/10] w-[850px] flex flex-col relative overflow-hidden">
-                    <img src="/og-banner.png" alt="GoldArmy Dashboard" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-1000" />
-                    <div class="absolute inset-0 bg-gradient-to-t from-surface-950 via-transparent to-transparent"></div>
-                    
-                    <!-- Fake SaaS UI inside Mockup -->
-                    <div class="w-full h-8 border-b border-surface-800 flex items-center gap-2 px-4 shrink-0">
-                        <div class="w-3 h-3 rounded-full bg-rose-500"></div><div class="w-3 h-3 rounded-full bg-amber-500"></div><div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-                    </div>
-                    <div class="flex-1 p-6 grid grid-cols-3 gap-6 relative z-10">
-                        <div class="col-span-2 space-y-4">
-                            <div class="w-1/3 h-6 bg-surface-800 rounded-md"></div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="h-24 bg-surface-800/50 border border-surface-700 rounded-lg p-3">
-                                    <div class="w-8 h-8 rounded-md bg-indigo-500/20 mb-2"></div>
-                                    <div class="w-1/2 h-3 bg-surface-700 rounded mb-1"></div><div class="w-1/4 h-5 bg-indigo-500 rounded"></div>
-                                </div>
-                                <div class="h-24 bg-surface-800/50 border border-surface-700 rounded-lg p-3">
-                                    <div class="w-8 h-8 rounded-md bg-rose-500/20 mb-2"></div>
-                                    <div class="w-1/2 h-3 bg-surface-700 rounded mb-1"></div><div class="w-1/4 h-5 bg-rose-500 rounded"></div>
-                                </div>
-                            </div>
-                            <div class="h-32 bg-surface-800/30 border border-surface-700 rounded-lg relative overflow-hidden">
-                                <div class="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-indigo-500/20 to-transparent"></div>
-                                <div class="absolute bottom-0 left-0 w-1/4 h-full bg-indigo-500/40 border-t border-r border-indigo-400/50" style="border-radius: 0 4px 0 0;"></div>
-                                <div class="absolute bottom-0 left-1/4 w-1/4 h-2/3 bg-indigo-500/60 border-t border-r border-indigo-400/50" style="border-radius: 0 4px 0 0;"></div>
-                                <div class="absolute bottom-0 left-2/4 w-1/4 h-1/3 bg-indigo-500/80 border-t border-r border-indigo-400/50" style="border-radius: 0 4px 0 0;"></div>
-                                <div class="absolute bottom-0 left-3/4 w-1/4 h-[80%] bg-indigo-500 border-t border-r border-indigo-400/50" style="border-radius: 0 4px 0 0;"></div>
-                            </div>
-                        </div>
-                        <div class="col-span-1 space-y-4">
-                            <div class="h-full bg-surface-800/50 border border-surface-700 rounded-lg p-4 space-y-3">
-                                <div class="w-1/2 h-4 bg-surface-700 rounded"></div>
-                                <div class="flex gap-2 items-center"><div class="w-6 h-6 rounded-full bg-surface-600"></div><div class="w-3/4 h-3 bg-surface-700 rounded"></div></div>
-                                <div class="flex gap-2 items-center"><div class="w-6 h-6 rounded-full bg-surface-600"></div><div class="w-3/4 h-3 bg-surface-700 rounded"></div></div>
-                                <div class="flex gap-2 items-center"><div class="w-6 h-6 rounded-full bg-surface-600"></div><div class="w-3/4 h-3 bg-surface-700 rounded"></div></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <span class="text-lg font-black tracking-tight uppercase text-white">GoldArmy</span>
+        </div>
+        <!-- Links -->
+        <div class="hidden md:flex items-center gap-8">
+          <a v-for="link in ['Agents','Fonctions','Tarifs','Avis']" :key="link"
+             :href="`#${link.toLowerCase()}`"
+             class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">
+            {{ link }}
+          </a>
+        </div>
+        <!-- CTA -->
+        <div class="flex items-center gap-3">
+          <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
+            Connexion
+          </router-link>
+          <router-link to="/register"
+            class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
+                   px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
+                   transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
+            Démarrer →
+          </router-link>
         </div>
       </div>
+    </nav>
 
-      <!-- Workflows / Agents Detailed Sections -->
-      <div id="workflows" class="py-24 sm:py-32 overflow-hidden">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-          
-          <!-- Sniper IA -->
-          <div class="mx-auto grid max-w-2xl grid-cols-1 gap-x-12 gap-y-16 lg:mx-0 lg:max-w-none lg:grid-cols-2 items-center mb-32">
-            <div class="lg:pr-8">
-              <div class="flex items-center gap-3 mb-6">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                    <RocketLaunchIcon class="h-6 w-6 text-indigo-400" />
-                </div>
-                <h2 class="text-base font-semibold leading-7 text-indigo-400">Agent Sourcing</h2>
-              </div>
-              <p class="mt-2 text-3xl font-display font-bold tracking-tight text-white sm:text-4xl">Sniper IA</p>
-              <p class="mt-6 text-lg leading-8 text-slate-400">Le marché de l'emploi est asymétrique. Notre agent IA parcourt le web profond, déjoue les algorithmes classiques et vous rapporte les opportunités en or avant même qu'elles ne soient publiques.</p>
-              <ul role="list" class="mt-8 space-y-4 text-sm leading-6 text-slate-300">
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-indigo-400" /> Scraping multi-sources intelligent</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-indigo-400" /> Contournement anti-bot automatisé</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-indigo-400" /> Scoring d'affinité avec votre profil CV</li>
-              </ul>
-            </div>
-            <div class="rounded-2xl bg-surface-900 border border-surface-800 p-8 shadow-2xl relative">
-              <div class="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-transparent rounded-2xl pointer-events-none"></div>
-              <div class="space-y-4 relative z-10 w-full mb-4">
-                <div class="h-10 w-3/4 bg-surface-800 rounded-lg flex items-center px-4"><div class="w-1/2 h-3 bg-surface-600 rounded"></div></div>
-                <div class="h-16 w-full bg-surface-800 border-l-2 border-indigo-500 rounded-r-lg p-3 flex flex-col justify-center"><div class="w-3/4 h-3 bg-surface-600 rounded mb-2"></div><div class="flex gap-2"><div class="w-16 h-4 bg-emerald-500/20 text-emerald-500 text-[10px] font-bold flex items-center justify-center rounded">98% Match</div></div></div>
-                <div class="h-16 w-full bg-surface-800 border-l-2 border-amber-500 rounded-r-lg p-3 flex flex-col justify-center"><div class="w-2/3 h-3 bg-surface-600 rounded mb-2"></div><div class="flex gap-2"><div class="w-16 h-4 bg-amber-500/20 text-amber-500 text-[10px] font-bold flex items-center justify-center rounded">64% Match</div></div></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- CRM -->
-          <div class="mx-auto grid max-w-2xl grid-cols-1 gap-x-12 gap-y-16 lg:mx-0 lg:max-w-none lg:grid-cols-2 items-center mb-32">
-             <div class="lg:col-start-2 lg:pl-8">
-              <div class="flex items-center gap-3 mb-6">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10 border border-purple-500/20">
-                    <ChartBarIcon class="h-6 w-6 text-purple-400" />
-                </div>
-                <h2 class="text-base font-semibold leading-7 text-purple-400">Tableau de Bord</h2>
-              </div>
-              <p class="mt-2 text-3xl font-display font-bold tracking-tight text-white sm:text-4xl">CRM Intelligent</p>
-              <p class="mt-6 text-lg leading-8 text-slate-400">Transformez votre recherche d'emploi en une machine de guerre. Suivez visuellement chaque étape, sachez précisément quand relancer et gardez une trace de toutes vos interactions.</p>
-               <ul role="list" class="mt-8 space-y-4 text-sm leading-6 text-slate-300">
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-purple-400" /> Kanban drag & drop fluide</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-purple-400" /> Rappels automatiques de relance</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-purple-400" /> Historisation des échanges</li>
-              </ul>
-            </div>
-            <div class="lg:col-start-1 lg:row-start-1 rounded-2xl bg-surface-900 border border-surface-800 p-8 shadow-2xl relative flex gap-4">
-                <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent rounded-2xl pointer-events-none"></div>
-                <div class="flex-1 space-y-3 relative z-10 w-full mb-4">
-                    <div class="h-4 w-1/2 bg-surface-700 rounded mb-4"></div>
-                    <div class="h-12 w-full bg-surface-800 rounded-lg"></div>
-                    <div class="h-12 w-full bg-surface-800 rounded-lg"></div>
-                     <div class="h-12 w-full bg-surface-800 rounded-lg opacity-50"></div>
-                </div>
-                 <div class="flex-1 space-y-3 relative z-10 w-full mb-4">
-                    <div class="h-4 w-2/3 bg-surface-700 rounded mb-4"></div>
-                    <div class="h-20 w-full bg-surface-800 rounded-lg border border-purple-500/30"></div>
-                    <div class="h-12 w-full bg-surface-800 rounded-lg"></div>
-                </div>
-            </div>
-          </div>
-
-          <!-- Network -->
-          <div class="mx-auto grid max-w-2xl grid-cols-1 gap-x-12 gap-y-16 lg:mx-0 lg:max-w-none lg:grid-cols-2 items-center mb-32">
-            <div class="lg:pr-8">
-              <div class="flex items-center gap-3 mb-6">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                    <BriefcaseIcon class="h-6 w-6 text-emerald-400" />
-                </div>
-                <h2 class="text-base font-semibold leading-7 text-emerald-400">Agent Social</h2>
-              </div>
-              <p class="mt-2 text-3xl font-display font-bold tracking-tight text-white sm:text-4xl">Générateur de Réseau</p>
-              <p class="mt-6 text-lg leading-8 text-slate-400">Postuler ne suffit plus. L'IA scanne l'organigramme cible et rédige des emails d'accroche ultra-personnalisés aux CTOs et recruteurs pour court-circuiter le processus classique.</p>
-              <ul role="list" class="mt-8 space-y-4 text-sm leading-6 text-slate-300">
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-emerald-400" /> Analyse des décideurs cibles</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-emerald-400" /> Création de messages sur-mesure</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-emerald-400" /> Gestion du carnet d'adresses réseau</li>
-              </ul>
-            </div>
-            <div class="rounded-2xl bg-surface-900 border border-surface-800 p-8 shadow-2xl relative">
-                <div class="absolute inset-0 bg-gradient-to-tr from-emerald-500/10 to-transparent rounded-2xl pointer-events-none"></div>
-                <div class="bg-surface-800 rounded-lg p-4 relative z-10 space-y-3 border border-surface-700 w-full mb-4">
-                    <div class="flex items-center gap-3 border-b border-surface-700 pb-3">
-                        <div class="w-8 h-8 rounded-full bg-surface-600"></div>
-                        <div><div class="h-3 w-24 bg-surface-600 rounded mb-1"></div><div class="h-2 w-32 bg-surface-700 rounded"></div></div>
-                    </div>
-                    <div class="space-y-2 pt-2">
-                        <div class="h-2 w-3/4 bg-emerald-500/40 rounded"></div>
-                        <div class="h-2 w-full bg-surface-600 rounded"></div>
-                        <div class="h-2 w-5/6 bg-surface-600 rounded"></div>
-                        <div class="h-2 w-1/2 bg-surface-600 rounded"></div>
-                    </div>
-                </div>
-            </div>
-          </div>
-
-          <!-- Mentor -->
-           <div class="mx-auto grid max-w-2xl grid-cols-1 gap-x-12 gap-y-16 lg:mx-0 lg:max-w-none lg:grid-cols-2 items-center">
-             <div class="lg:col-start-2 lg:pl-8">
-              <div class="flex items-center gap-3 mb-6">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10 border border-orange-500/20">
-                    <CpuChipIcon class="h-6 w-6 text-orange-400" />
-                </div>
-                <h2 class="text-base font-semibold leading-7 text-orange-400">Agent Formateur</h2>
-              </div>
-              <p class="mt-2 text-3xl font-display font-bold tracking-tight text-white sm:text-4xl">Mentor IA Pro</p>
-              <p class="mt-6 text-lg leading-8 text-slate-400">Ne soyez jamais pris au dépourvu. Effectuez des simulations d'entretiens techniques ou RH. L'IA joue le rôle du recruteur intransigeant puis débriefe vos réponses en détail.</p>
-              <ul role="list" class="mt-8 space-y-4 text-sm leading-6 text-slate-300">
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-orange-400" /> Simulations d'entretien textuelles réalistes</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-orange-400" /> Débriefing et axes d'amélioration identifiés</li>
-                <li class="flex gap-x-3"><CheckCircleIcon class="mt-1 h-5 w-5 flex-none text-orange-400" /> Historique de la progression</li>
-              </ul>
-            </div>
-            <div class="lg:col-start-1 lg:row-start-1 rounded-2xl bg-surface-900 border border-surface-800 p-8 shadow-2xl relative">
-               <div class="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent rounded-2xl pointer-events-none"></div>
-               <div class="space-y-4 relative z-10 w-full mb-4">
-                   <div class="flex gap-3">
-                       <div class="w-8 h-8 rounded-lg bg-orange-500/20 shrink-0"></div>
-                       <div class="bg-surface-800 rounded-2xl rounded-tl-none p-4 w-3/4"><div class="h-2 w-full bg-surface-600 rounded mb-2"></div><div class="h-2 w-2/3 bg-surface-600 rounded"></div></div>
-                   </div>
-                   <div class="flex gap-3 justify-end mt-4">
-                       <div class="bg-indigo-500/20 rounded-2xl border border-indigo-500/30 rounded-tr-none p-4 w-3/4"><div class="h-2 w-full bg-indigo-400/50 rounded mb-2"></div><div class="h-2 w-1/2 bg-indigo-400/50 rounded"></div></div>
-                       <div class="w-8 h-8 rounded-full bg-indigo-500 shrink-0"></div>
-                   </div>
-               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Stats Section -->
-      <div class="relative bg-surface-900 border-y border-surface-800 py-16 sm:py-24 overflow-hidden">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500/5 via-transparent to-transparent"></div>
-        <div class="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
-          <dl class="grid grid-cols-1 gap-x-8 gap-y-16 text-center lg:grid-cols-3">
-            <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-              <dt class="text-base leading-7 text-slate-400">Heures de recherche économisées</dt>
-              <dd class="order-first text-3xl font-display font-semibold tracking-tight text-white sm:text-5xl">40h / mois</dd>
-            </div>
-            <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-              <dt class="text-base leading-7 text-slate-400">Taux de réponse aux candidatures</dt>
-              <dd class="order-first text-3xl font-display font-semibold tracking-tight text-white sm:text-5xl"><span class="text-indigo-400">+</span>300%</dd>
-            </div>
-            <div class="mx-auto flex max-w-xs flex-col gap-y-4">
-              <dt class="text-base leading-7 text-slate-400">Entretiens décrochés en moyenne</dt>
-              <dd class="order-first text-3xl font-display font-semibold tracking-tight text-white sm:text-5xl">5 / semaine</dd>
-            </div>
-          </dl>
-        </div>
+    <!-- ─── HERO ─── -->
+    <section class="relative min-h-screen flex items-center overflow-hidden">
+      <!-- Grid overlay -->
+      <div class="absolute inset-0 opacity-10"
+           style="background-image: linear-gradient(rgba(124,58,237,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.3) 1px, transparent 1px); background-size: 60px 60px;">
       </div>
 
-      <!-- How it works -->
-      <div class="py-24 sm:py-32">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-          <div class="mx-auto max-w-2xl lg:text-center">
-            <h2 class="text-base font-semibold leading-7 text-indigo-400">La méthode GoldArmy</h2>
-            <p class="mt-2 text-3xl font-display font-bold tracking-tight text-white sm:text-4xl">Comment l'IA trouve votre prochain job</p>
-          </div>
-          <div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-            <div class="grid grid-cols-1 gap-y-16 lg:grid-cols-3 lg:gap-x-12">
-                <div class="relative pl-12">
-                    <div class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/20">1</div>
-                    <h3 class="text-xl font-bold text-white mb-2">Configurez votre profil IA</h3>
-                    <p class="text-slate-400 leading-relaxed">Importez votre CV et définissez vos critères (salaire, remote, secteur). L'agent apprend à connaître votre parcours dans les moindres détails.</p>
-                </div>
-                <div class="relative pl-12 lg:-mt-8">
-                    <div class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/20">2</div>
-                    <h3 class="text-xl font-bold text-white mb-2">GoldArmy scanne le marché</h3>
-                    <p class="text-slate-400 leading-relaxed">Pendant que vous dormez, nos crawlers parcourent des milliers de sources (LinkedIn, Jooble, sites carrières) pour dénicher les offres parfaites.</p>
-                </div>
-                <div class="relative pl-12">
-                    <div class="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/20">3</div>
-                    <h3 class="text-xl font-bold text-white mb-2">Passez à l'action</h3>
-                    <p class="text-slate-400 leading-relaxed">Recevez une shortlist qualifiée. L'IA rédige vos lettres de motivation sur-mesure et vous prépare aux questions d'entretien spécifiques à l'entreprise.</p>
-                </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Glow blobs -->
+      <div class="absolute top-0 right-[20%] w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+      <div class="absolute bottom-0 left-[10%] w-[400px] h-[400px] bg-indigo-600/15 rounded-full blur-[100px] pointer-events-none"></div>
 
-      <!-- Testimonials & Form Combined -->
-      <div class="bg-surface-900 border-y border-surface-800 py-24 sm:py-32 relative">
-        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
-        <div class="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
-          
-          <div class="mx-auto max-w-2xl lg:text-center mb-16">
-            <h2 class="text-base font-semibold leading-7 text-indigo-400">Ce qu'ils en pensent</h2>
-            <p class="mt-2 text-3xl font-display font-bold tracking-tight text-white sm:text-4xl">Adopté par les meilleurs talents</p>
+      <div class="relative max-w-7xl mx-auto px-6 pt-40 pb-20 grid lg:grid-cols-2 gap-16 items-center">
+        <!-- Left text -->
+        <div class="relative z-10">
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2.5 mb-8 px-4 py-2 rounded-full
+                      bg-violet-500/10 border border-violet-500/20 text-violet-300 text-[10px] font-black uppercase tracking-[0.3em]">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+              <span class="relative block h-2 w-2 rounded-full bg-violet-400"></span>
+            </span>
+            { Sniper IA 7.1 — Maintenant disponible }
           </div>
 
-          <div class="mx-auto grid max-w-2xl grid-cols-1 gap-x-12 gap-y-16 lg:mx-0 lg:max-w-none lg:grid-cols-2 lg:items-start">
-            
-            <!-- Left Column: Testimonials -->
-            <div class="flex flex-col gap-8">
-              <!-- Testimonial 1 -->
-              <figure class="rounded-2xl bg-surface-950 p-8 text-sm leading-6 border border-surface-800 shadow-xl shadow-surface-950/50">
-                <blockquote class="text-slate-300">
-                  <p>“Grâce à GoldArmy, j'ai arrêté d'envoyer des CV dans le vide. L'IA a trouvé une offre cachée sur un petit site carrière, j'ai postulé avec la lettre générée, et j'ai eu l'entretien le lendemain.”</p>
-                </blockquote>
-                <figcaption class="mt-6 flex items-center gap-x-4">
-                  <div class="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-900">MR</div>
-                  <div>
-                    <div class="font-semibold text-white">Marc R.</div>
-                    <div class="text-slate-500 text-xs">Développeur Fullstack</div>
-                  </div>
-                </figcaption>
-              </figure>
+          <h1 class="text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter mb-8">
+            <span class="text-white">Trouvez votre<br/></span>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400">
+              job de rêve
+            </span>
+            <br/>
+            <span class="text-white/30">avec l'IA.</span>
+          </h1>
 
-              <!-- Testimonial 2 -->
-              <figure class="rounded-2xl bg-surface-950 p-8 text-sm leading-6 border border-surface-800 shadow-xl shadow-surface-950/50">
-                <blockquote class="text-slate-300">
-                  <p>“Le module Mentor IA m'a littéralement sauvé la vie pour mon entretien technique chez un GAFAM. Les questions d'anticipation étaient à 80% celles que j'ai eues le jour J.”</p>
-                </blockquote>
-                <figcaption class="mt-6 flex items-center gap-x-4">
-                  <div class="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-900">SL</div>
-                  <div>
-                    <div class="font-semibold text-white">Sophie L.</div>
-                    <div class="text-slate-500 text-xs">Data Scientist</div>
-                  </div>
-                </figcaption>
-              </figure>
-              
-               <!-- Testimonial 3 -->
-              <figure class="rounded-2xl bg-surface-950 p-8 text-sm leading-6 border border-surface-800 shadow-xl shadow-surface-950/50">
-                <blockquote class="text-slate-300">
-                  <p>“Je n'ai jamais été doué pour le networking. Le Générateur de Réseau m'a permis d'identifier les CTO directement et de leur envoyer des messages pertinents. Mon taux de réponse a explosé.”</p>
-                </blockquote>
-                <figcaption class="mt-6 flex items-center gap-x-4">
-                  <div class="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-900">JD</div>
-                  <div>
-                    <div class="font-semibold text-white">Julien D.</div>
-                    <div class="text-slate-500 text-xs">Product Manager</div>
-                  </div>
-                </figcaption>
-              </figure>
-            </div>
-
-            <!-- Right Column: Comment Form -->
-            <div class="lg:sticky lg:top-32">
-              <div class="bg-surface-950 border border-surface-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-t from-indigo-500/5 to-transparent pointer-events-none"></div>
-                <div class="relative z-10">
-                    <h3 class="text-xl font-bold text-white mb-2">Partagez votre expérience</h3>
-                    <p class="text-sm text-slate-400 mb-6">Avez-vous trouvé votre job de rêve avec GoldArmy ? Racontez-nous !</p>
-                    <form class="space-y-4" @submit.prevent>
-                        <div class="grid grid-cols-1 gap-4">
-                            <input type="text" placeholder="Votre Prénom" class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium" />
-                            <input type="text" placeholder="Votre Rôle (ex: Dev SecOps)" class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium" />
-                        </div>
-                        <textarea rows="4" placeholder="Votre message..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none font-medium"></textarea>
-                        <button type="submit" class="bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm px-6 py-3 rounded-xl transition-colors w-full shadow-lg shadow-indigo-500/20">
-                            Soumettre mon témoignage
-                        </button>
-                        <p class="text-xs text-slate-500 mt-2 text-center">Votre avis sera modéré avant d'être publié publiquement.</p>
-                    </form>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- Pricing -->
-      <div id="pricing" class="py-24 sm:py-32 bg-surface-950">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-          <div class="mx-auto max-w-4xl text-center">
-            <h2 class="text-base font-semibold leading-7 text-gold-400">Tarification</h2>
-            <p class="mt-2 text-4xl font-display font-bold tracking-tight text-white sm:text-5xl">Un tarif clair pour chaque étape de votre succès</p>
-          </div>
-          <p class="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-slate-400">
-            Commencez gratuitement et passez à la vitesse supérieure quand vous êtes prêt à dominer le marché.
+          <p class="text-lg text-white/50 leading-relaxed max-w-md mb-10">
+            GoldArmy automatise chaque étape de votre recherche d'emploi — du sourcing des offres cachées
+            à la préparation d'entretiens — propulsé par une IA de précision militaire.
           </p>
-          <div class="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8">
-            
-            <!-- Plan Gratuit -->
-            <div class="flex flex-col justify-between rounded-3xl bg-surface-900/50 p-8 ring-1 ring-white/10 xl:p-10 border border-surface-800 backdrop-blur-sm transition-all hover:border-surface-700">
-              <div>
-                <div class="flex items-center justify-between gap-x-4">
-                  <h3 id="tier-free" class="text-lg font-semibold leading-8 text-white">Gratuit</h3>
-                </div>
-                <p class="mt-4 text-sm leading-6 text-slate-400">Idéal pour tester la puissance de nos agents.</p>
-                <p class="mt-6 flex items-baseline gap-x-1">
-                  <span class="text-4xl font-display font-bold tracking-tight text-white">0€</span>
-                  <span class="text-sm font-semibold leading-6 text-slate-500">/mois</span>
-                </p>
-                <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-slate-300">
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> 2 recherches Sniper / jour</li>
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Analyse de 1 CV par jour</li>
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Accès limité au CRM</li>
-                  <li class="flex gap-x-3 text-slate-500"><XMarkIcon class="h-6 w-5 flex-none text-surface-700" /> Mentor IA Pro</li>
-                </ul>
-              </div>
-              <router-link to="/register" class="mt-8 block rounded-xl bg-surface-800 px-3 py-3 text-center text-sm font-bold leading-6 text-white hover:bg-surface-700 transition-all border border-surface-700">Démarrer gratuitement</router-link>
+
+          <div class="flex flex-wrap items-center gap-4">
+            <router-link to="/register"
+              class="flex items-center gap-3 bg-violet-600 hover:bg-violet-500 text-white font-black text-sm uppercase tracking-[0.2em]
+                     px-8 py-4 rounded-2xl shadow-xl shadow-violet-600/30 transition-all hover:scale-[1.02] active:scale-95">
+              Commencer gratuitement <ArrowRightIcon class="w-4 h-4" />
+            </router-link>
+            <a href="#fonctions"
+               class="flex items-center gap-2 text-sm font-bold text-white/40 hover:text-white/70 transition-colors uppercase tracking-widest">
+              Voir les agents ↓
+            </a>
+          </div>
+
+          <!-- Trust bar -->
+          <div class="mt-12 flex flex-wrap gap-6">
+            <div v-for="t in [
+              { n: '20 000+', l: 'utilisateurs actifs' },
+              { n: '98.5%', l: 'précision IA' },
+              { n: '40h', l: 'économisées/mois' }
+            ]" :key="t.n" class="flex flex-col">
+              <span class="text-2xl font-black text-white">{{ t.n }}</span>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-white/30">{{ t.l }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 3D visual -->
+        <div class="relative hidden lg:flex items-center justify-center">
+          <!-- Floating cube clusters (CSS only) -->
+          <div class="relative w-[460px] h-[460px]"
+               :style="`transform: perspective(1000px) rotateX(${mouseY * -0.3}deg) rotateY(${mouseX * 0.3}deg)`">
+
+            <!-- Main glowing orb -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-64 h-64 rounded-full bg-violet-600/20 blur-3xl animate-pulse"></div>
             </div>
 
-            <!-- Plan Essentiel -->
-            <div class="flex flex-col justify-between rounded-3xl bg-surface-900 p-8 ring-2 ring-gold-500 xl:p-10 relative shadow-2xl shadow-gold-500/10">
-              <div class="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-gold-500 px-4 py-1 text-xs font-black uppercase tracking-widest text-surface-950">Populaire</div>
-              <div>
-                <div class="flex items-center justify-between gap-x-4">
-                  <h3 id="tier-essential" class="text-lg font-semibold leading-8 text-white">Essentiel</h3>
-                </div>
-                <p class="mt-4 text-sm leading-6 text-slate-400">Pour ceux qui veulent passer à l'action sérieusement.</p>
-                <p class="mt-6 flex items-baseline gap-x-1">
-                  <span class="text-4xl font-display font-bold tracking-tight text-white">9.99€</span>
-                  <span class="text-sm font-semibold leading-6 text-slate-500">/mois</span>
-                </p>
-                <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-slate-300">
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> 25 recherches Sniper / jour</li>
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> 10 audits de CV complets</li>
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> 10 simulations d'entretiens</li>
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> CRM Illimité</li>
-                </ul>
+            <!-- Floating cube 1 -->
+            <div class="absolute top-[5%] right-[15%] w-20 h-20 rounded-2xl border border-violet-400/30
+                        bg-violet-600/10 backdrop-blur-xl shadow-[0_0_40px_rgba(124,58,237,0.3)]
+                        animate-float-slow flex items-center justify-center">
+              <RocketLaunchIcon class="w-8 h-8 text-violet-400" />
+            </div>
+            <!-- Floating cube 2 -->
+            <div class="absolute top-[30%] right-[5%] w-14 h-14 rounded-xl border border-indigo-400/30
+                        bg-indigo-600/10 backdrop-blur-xl shadow-[0_0_30px_rgba(99,102,241,0.3)]
+                        animate-float-medium flex items-center justify-center">
+              <BoltIcon class="w-6 h-6 text-indigo-400" />
+            </div>
+            <!-- Floating cube 3 -->
+            <div class="absolute bottom-[20%] right-[10%] w-16 h-16 rounded-2xl border border-purple-400/30
+                        bg-purple-600/10 backdrop-blur-xl shadow-[0_0_30px_rgba(168,85,247,0.3)]
+                        animate-float-fast flex items-center justify-center">
+              <SparklesIcon class="w-7 h-7 text-purple-400" />
+            </div>
+            <!-- Floating cube 4 -->
+            <div class="absolute top-[10%] left-[10%] w-12 h-12 rounded-xl border border-violet-400/20
+                        bg-white/5 backdrop-blur-xl animate-float-medium"></div>
+            <!-- Floating cube 5 -->
+            <div class="absolute bottom-[10%] left-[15%] w-10 h-10 rounded-lg border border-indigo-400/20
+                        bg-white/5 backdrop-blur-xl animate-float-slow"></div>
+            <!-- Floating cube 6 - Large central -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                        w-48 h-48 rounded-3xl border border-violet-400/20
+                        bg-gradient-to-br from-violet-600/20 to-indigo-600/10
+                        backdrop-blur-xl shadow-[0_0_80px_rgba(124,58,237,0.2)]
+                        flex items-center justify-center">
+              <div class="text-center">
+                <div class="text-4xl font-black text-white tracking-tighter">IA</div>
+                <div class="text-[10px] font-black text-violet-400 uppercase tracking-[0.4em] mt-1">SNIPER</div>
               </div>
-              <router-link to="/register" class="mt-8 block rounded-xl bg-gold-500 px-3 py-3 text-center text-sm font-bold leading-6 text-surface-950 hover:bg-gold-400 transition-all shadow-lg shadow-gold-500/20">Choisir Essentiel</router-link>
             </div>
 
-            <!-- Plan Pro -->
-            <div class="flex flex-col justify-between rounded-3xl bg-surface-900/50 p-8 ring-1 ring-white/10 xl:p-10 border border-surface-800 backdrop-blur-sm transition-all hover:border-surface-700">
-              <div>
-                <div class="flex items-center justify-between gap-x-4">
-                  <h3 id="tier-pro" class="text-lg font-semibold leading-8 text-white">Pro</h3>
-                </div>
-                <p class="mt-4 text-sm leading-6 text-slate-400">La puissance totale brute de l'IA Sniper.</p>
-                <p class="mt-6 flex items-baseline gap-x-1">
-                  <span class="text-4xl font-display font-bold tracking-tight text-white">19.99€</span>
-                  <span class="text-sm font-semibold leading-6 text-slate-500">/mois</span>
-                </p>
-                <ul role="list" class="mt-8 space-y-3 text-sm leading-6 text-slate-300">
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Sniper IA Illimité</li>
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Audits CV Illimités</li>
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Mentor IA Vocal & Illimité</li>
-                  <li class="flex gap-x-3"><CheckCircleIcon class="h-6 w-5 flex-none text-gold-400" /> Headhunter IA Pro</li>
-                </ul>
-              </div>
-              <router-link to="/register" class="mt-8 block rounded-xl bg-surface-800 px-3 py-3 text-center text-sm font-bold leading-6 text-white hover:bg-surface-700 transition-all border border-surface-700">Passer Pro</router-link>
-            </div>
-
+            <!-- Scatter mini cubes -->
+            <div class="absolute top-[60%] left-[5%] w-8 h-8 rounded-lg border border-violet-500/20 bg-violet-600/10 animate-float-fast"></div>
+            <div class="absolute top-[20%] left-[30%] w-6 h-6 rounded-md border border-indigo-500/20 bg-indigo-600/10 animate-float-slow"></div>
+            <div class="absolute bottom-[5%] right-[30%] w-10 h-10 rounded-xl border border-purple-500/20 bg-purple-600/10 animate-float-medium"></div>
           </div>
         </div>
       </div>
-      
-      <!-- CTA Section -->
-      <div class="relative isolate -z-10 mt-10">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-            <div class="mx-auto flex max-w-2xl flex-col gap-16 bg-surface-900 px-6 py-16 ring-1 ring-white/10 sm:rounded-3xl sm:p-8 lg:mx-0 lg:max-w-none lg:flex-row lg:items-center lg:py-20 xl:gap-x-20 xl:px-20 relative overflow-hidden">
-                <div class="absolute -top-24 -right-24 w-96 h-96 bg-indigo-500/20 blur-[100px] rounded-full pointer-events-none"></div>
-                
-                <h2 class="text-3xl font-display font-bold tracking-tight text-white sm:text-4xl">
-                    Prêt à décrocher le job de vos rêves ?
-                </h2>
-                <div class="w-full lg:w-auto lg:flex-auto">
-                    <p class="mb-8 text-lg leading-8 text-slate-400">
-                        Rejoignez les professionnels qui utilisent l'IA pour prendre l'avantage sur le marché du travail.
-                    </p>
-                    <div class="flex gap-4">
-                        <router-link to="/register" class="rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-surface-950 shadow-sm hover:bg-slate-100 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-                            Créer mon compte
-                        </router-link>
-                        <router-link to="/login" class="rounded-xl border border-surface-700 bg-transparent px-6 py-3.5 text-sm font-bold text-white shadow-sm hover:bg-surface-800 transition-colors">
-                            Se connecter
-                        </router-link>
-                    </div>
-                </div>
+
+      <!-- Bottom mini features bar -->
+      <div class="absolute bottom-0 inset-x-0 border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div v-for="f in [
+            { icon: MagnifyingGlassIcon, title: 'Sourcing IA Sniper', desc: 'Offres cachées détectées avant tout le monde' },
+            { icon: DocumentTextIcon, title: 'CV & Lettre Automatique', desc: 'Candidatures hyper-personnalisées en 1 clic' },
+            { icon: ChatBubbleLeftEllipsisIcon, title: 'Coach Entretien IA', desc: 'Simulations réalistes et débriefings précis' },
+          ]" :key="f.title" class="flex items-center gap-4 p-4 rounded-xl bg-white/3 hover:bg-white/5 transition-colors border border-white/5">
+            <div class="w-10 h-10 rounded-xl bg-violet-600/20 border border-violet-500/20 flex items-center justify-center shrink-0">
+              <component :is="f.icon" class="w-5 h-5 text-violet-400" />
             </div>
+            <div>
+              <div class="text-sm font-black text-white">{{ f.title }}</div>
+              <div class="text-[11px] text-white/40 font-medium mt-0.5">{{ f.desc }}</div>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <!-- Footer -->
-      <footer class="mt-32 border-t border-surface-800 bg-surface-950 sm:mt-40">
-        <div class="mx-auto max-w-7xl px-6 py-12 md:flex md:items-center md:justify-between lg:px-8">
-          <div class="flex justify-center space-x-6 md:order-2">
-            <div class="flex items-center gap-2">
-                <ShieldCheckIcon class="w-5 h-5 text-slate-500" />
-                <span class="text-xs text-slate-500">Sécurisé & Privé</span>
+    </section>
+
+    <!-- ─── AGENTS SECTION ─── -->
+    <section id="agents" class="relative py-40 overflow-hidden">
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(124,58,237,0.05)_0%,transparent_70%)]"></div>
+
+      <div class="relative max-w-7xl mx-auto px-6">
+        <div class="text-center mb-20">
+          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">Notre Arsenal IA</p>
+          <h2 class="text-5xl md:text-6xl font-black tracking-tighter leading-none">
+            Quatre agents.<br/><span class="text-white/30">Un seul objectif :</span><br/>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">votre succès.</span>
+          </h2>
+        </div>
+
+        <!-- Agent 1 – Sniper IA -->
+        <div class="grid lg:grid-cols-2 gap-8 items-center mb-16">
+          <div class="bg-white/3 border border-white/8 rounded-3xl p-10 hover:border-violet-500/30 transition-all group">
+            <div class="flex items-center gap-4 mb-8">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-600/30">
+                <RocketLaunchIcon class="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div class="text-[10px] font-black uppercase tracking-widest text-violet-400 mb-0.5">Agent Sourcing</div>
+                <div class="text-2xl font-black text-white">Sniper IA 7.1</div>
+              </div>
+            </div>
+            <p class="text-white/50 leading-relaxed mb-8">Notre IA parcourt le web profond, LinkedIn, Jooble, Indeed et des centaines de sites carrières pour détecter les offres cachées <span class="text-violet-400 font-bold">avant même leur publication officielle</span>. Zéro résultats génériques, 100% précision.</p>
+            <ul class="space-y-3">
+              <li v-for="item in ['Scraping multi-sources intelligent (15+ plateformes)', 'Scoring d\'affinité avec votre profil CV', 'Alertes en temps réel sur nouvelles offres', 'Contournement anti-bot automatisé']" :key="item"
+                  class="flex items-center gap-3 text-sm text-white/60">
+                <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" />
+                {{ item }}
+              </li>
+            </ul>
+          </div>
+          <!-- Visual card -->
+          <div class="bg-white/2 border border-white/5 rounded-3xl p-8 space-y-4">
+            <div class="h-8 w-1/2 bg-white/5 rounded-lg"></div>
+            <div v-for="m in [{ p: '98%', c: 'violet', t: 'Senior Dev React @ Criteo' }, { p: '76%', c: 'indigo', t: 'Fullstack Engineer @ Qonto' }, { p: '61%', c: 'purple', t: 'Lead Frontend @ BlaBlaCar' }]" :key="m.t"
+                 class="flex items-center gap-4 p-4 bg-white/3 border border-white/5 rounded-2xl hover:bg-white/5 transition-all">
+              <div :class="`text-${m.c}-400 font-black text-lg w-14 shrink-0`">{{ m.p }}</div>
+              <div class="text-sm font-bold text-white/70">{{ m.t }}</div>
+              <div :class="`ml-auto text-[10px] font-black uppercase tracking-widest text-${m.c}-400 bg-${m.c}-500/10 px-2 py-1 rounded-full`">Match</div>
             </div>
           </div>
-          <div class="mt-8 md:order-1 md:mt-0">
-            <p class="text-center text-xs leading-5 text-slate-500">&copy; 2026 GoldArmy Agent AI. All rights reserved.</p>
+        </div>
+
+        <!-- Agent 2 – CRM -->
+        <div class="grid lg:grid-cols-2 gap-8 items-center mb-16">
+          <!-- Visual card first on desktop -->
+          <div class="lg:order-1 bg-white/2 border border-white/5 rounded-3xl p-8 space-y-4">
+            <div class="grid grid-cols-3 gap-3">
+              <div v-for="col in [
+                { label: 'Envoyées', count: 12, color: 'indigo' },
+                { label: 'En cours', count: 5, color: 'amber' },
+                { label: 'Entretiens', count: 3, color: 'emerald' }
+              ]" :key="col.label" class="bg-white/5 border border-white/5 rounded-2xl p-4 text-center">
+                <div :class="`text-3xl font-black text-${col.color}-400 mb-1`">{{ col.count }}</div>
+                <div class="text-[10px] text-white/40 font-bold uppercase tracking-widest">{{ col.label }}</div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div v-for="i in 4" :key="i" class="h-12 bg-white/3 border border-white/5 rounded-xl"></div>
+            </div>
+          </div>
+          <div class="lg:order-2 bg-white/3 border border-white/8 rounded-3xl p-10 hover:border-purple-500/30 transition-all">
+            <div class="flex items-center gap-4 mb-8">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-600/30">
+                <ChartBarIcon class="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div class="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-0.5">Agent Organisation</div>
+                <div class="text-2xl font-black text-white">CRM Intelligent</div>
+              </div>
+            </div>
+            <p class="text-white/50 leading-relaxed mb-8">Transformez votre recherche en <span class="text-purple-400 font-bold">machine de guerre organisée</span>. Chaque candidature est suivie, scorée et planifiée. L'IA vous rappelle quand relancer et détecte les signaux d'intérêt.</p>
+            <ul class="space-y-3">
+              <li v-for="item in ['Kanban drag & drop automatisé', 'Rappels intelligents de relance', 'Scoring de probabilité de succès', 'Historisation complète des échanges']" :key="item"
+                  class="flex items-center gap-3 text-sm text-white/60">
+                <CheckCircleIcon class="w-4 h-4 text-purple-500 shrink-0" />
+                {{ item }}
+              </li>
+            </ul>
           </div>
         </div>
-      </footer>
 
-    </main>
+        <!-- Agent 3 & 4 grid -->
+        <div class="grid md:grid-cols-2 gap-8">
+          <div class="bg-white/3 border border-white/8 rounded-3xl p-10 hover:border-emerald-500/30 transition-all">
+            <div class="flex items-center gap-4 mb-8">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-600/30">
+                <UserGroupIcon class="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div class="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-0.5">Agent Social</div>
+                <div class="text-2xl font-black text-white">Générateur de Réseau</div>
+              </div>
+            </div>
+            <p class="text-white/50 leading-relaxed mb-8">L'IA scanne l'organigramme des entreprises cibles et rédige des <span class="text-emerald-400 font-bold">messages d'accroche ultra-personnalisés</span> pour court-circuiter le processus classique.</p>
+            <ul class="space-y-3">
+              <li v-for="item in ['Analyse des décideurs clés (CTOs, RH)', 'Génération de messages sur-mesure', 'Carnet d\'adresses réseau unifié']" :key="item"
+                  class="flex items-center gap-3 text-sm text-white/60">
+                <CheckCircleIcon class="w-4 h-4 text-emerald-500 shrink-0" />
+                {{ item }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="bg-white/3 border border-white/8 rounded-3xl p-10 hover:border-orange-500/30 transition-all">
+            <div class="flex items-center gap-4 mb-8">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-600/30">
+                <CpuChipIcon class="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div class="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-0.5">Agent Formation</div>
+                <div class="text-2xl font-black text-white">Mentor IA Pro</div>
+              </div>
+            </div>
+            <p class="text-white/50 leading-relaxed mb-8">Simulez des entretiens techniques ou RH face à un recruteur intransigeant. L'IA débriefe chaque réponse et vous donne un plan d'amélioration <span class="text-orange-400 font-bold">précis et actionnable</span>.</p>
+            <ul class="space-y-3">
+              <li v-for="item in ['Entretiens techniques & RH simulés', 'Débriefing détaillé post-simulation', 'Suivi de progression personnalisé']" :key="item"
+                  class="flex items-center gap-3 text-sm text-white/60">
+                <CheckCircleIcon class="w-4 h-4 text-orange-500 shrink-0" />
+                {{ item }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── HOW IT WORKS ─── -->
+    <section id="fonctions" class="py-32 border-y border-white/5 bg-white/[0.01]">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-20">
+          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">La Méthode GoldArmy</p>
+          <h2 class="text-5xl font-black tracking-tighter">Opérationnel en 3 étapes.</h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div v-for="(step, idx) in [
+            { n: '01', title: 'Configurez votre profil IA', desc: 'Importez votre CV (PDF). L\'IA analyse vos compétences, votre secteur cible et vos critères (salaire, remote, localisation) pour créer votre empreinte digitale unique.', icon: DocumentTextIcon },
+            { n: '02', title: 'Activez les agents', desc: 'Le Sniper IA scanne 15+ sources en continu. Le CRM centralise automatiquement toutes les opportunités. Vous recevez une shortlist qualifiée directement sur votre tableau de bord.', icon: BoltIcon },
+            { n: '03', title: 'Passez à l\'action', desc: 'Générez une lettre de motivation sur-mesure en 1 clic, contactez les décideurs via le Générateur de Réseau, et préparez votre entretien avec le Mentor IA.', icon: RocketLaunchIcon },
+          ]" :key="step.n"
+          class="relative p-8 rounded-3xl bg-white/3 border border-white/8 hover:border-violet-500/20 transition-all group overflow-hidden">
+            <div class="absolute top-6 right-6 text-7xl font-black text-white/3 group-hover:text-white/5 transition-colors leading-none">{{ step.n }}</div>
+            <div class="w-12 h-12 rounded-2xl bg-violet-600/20 border border-violet-500/20 flex items-center justify-center mb-8">
+              <component :is="step.icon" class="w-6 h-6 text-violet-400" />
+            </div>
+            <h3 class="text-xl font-black text-white mb-4">{{ step.title }}</h3>
+            <p class="text-sm text-white/50 leading-relaxed">{{ step.desc }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── STATS ─── -->
+    <section class="py-32">
+      <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div v-for="s in [
+          { val: '40h', label: 'Économisées par mois', color: 'violet' },
+          { val: '+300%', label: 'Taux de réponse', color: 'indigo' },
+          { val: '5/sem', label: 'Entretiens décrochés', color: 'purple' },
+          { val: '98.5%', label: 'Précision IA', color: 'pink' }
+        ]" :key="s.label"
+        class="p-8 rounded-3xl bg-white/3 border border-white/8 text-center hover:bg-white/5 transition-all">
+          <div :class="`text-4xl font-black text-${s.color}-400 mb-2`">{{ s.val }}</div>
+          <div class="text-[10px] font-black uppercase tracking-widest text-white/30">{{ s.label }}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── TESTIMONIALS ─── -->
+    <section id="avis" class="py-32 border-y border-white/5 bg-white/[0.01]">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-20">
+          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">Ils ont décroché le poste</p>
+          <h2 class="text-5xl font-black tracking-tighter">Ce qu'ils en pensent.</h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div v-for="t in testimonials" :key="t.name"
+               class="p-8 rounded-3xl bg-white/3 border border-white/8 hover:border-violet-500/20 transition-all flex flex-col gap-6 group">
+            <div class="flex gap-1">
+              <span v-for="i in 5" :key="i" class="text-violet-400 text-sm group-hover:scale-110 transition-transform inline-block">★</span>
+            </div>
+            <p class="text-sm text-white/60 italic leading-relaxed flex-1">"{{ t.quote }}"</p>
+            <div class="flex items-center gap-3 border-t border-white/5 pt-6">
+              <div :class="`w-10 h-10 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-black text-xs shadow-lg`">{{ t.initials }}</div>
+              <div>
+                <div class="text-sm font-black text-white">{{ t.name }}</div>
+                <div class="text-[10px] text-white/30 font-bold uppercase tracking-widest">{{ t.role }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PRICING ─── -->
+    <section id="tarifs" class="py-32">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-20">
+          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">Tarification</p>
+          <h2 class="text-5xl font-black tracking-tighter">Choisissez votre armure.</h2>
+        </div>
+        <div class="grid lg:grid-cols-3 gap-6 items-stretch">
+          <!-- FREE -->
+          <div class="p-10 rounded-3xl bg-white/3 border border-white/8 flex flex-col">
+            <div class="text-sm font-black uppercase tracking-[0.3em] text-white/40 mb-8">Gratuit</div>
+            <div class="mb-8">
+              <span class="text-6xl font-black text-white">0€</span>
+              <span class="text-sm text-white/30 font-bold"> /mois</span>
+            </div>
+            <ul class="space-y-4 mb-10 flex-1">
+              <li v-for="item in ['2 recherches Sniper / jour', 'Analyse de 1 CV par jour', 'Accès limité au CRM']" :key="item" class="flex items-center gap-3 text-sm text-white/50">
+                <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" /> {{ item }}
+              </li>
+              <li v-for="item in ['Mentor IA Pro', 'Générateur de Réseau']" :key="item" class="flex items-center gap-3 text-sm text-white/20 line-through">
+                <XMarkIcon class="w-4 h-4 shrink-0" /> {{ item }}
+              </li>
+            </ul>
+            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl border border-white/10 font-black text-sm uppercase tracking-widest text-white/50 hover:bg-white/5 hover:text-white transition-all">Démarrer</router-link>
+          </div>
+          <!-- ESSENTIAL — popular -->
+          <div class="relative p-10 rounded-3xl border-2 border-violet-500 bg-gradient-to-b from-violet-600/10 to-transparent shadow-2xl shadow-violet-600/20 flex flex-col">
+            <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest px-5 py-1.5 rounded-full shadow-lg shadow-violet-600/30">Populaire</div>
+            <div class="text-sm font-black uppercase tracking-[0.3em] text-violet-400 mb-8">Essentiel</div>
+            <div class="mb-8">
+              <span class="text-6xl font-black text-white">9.99€</span>
+              <span class="text-sm text-white/30 font-bold"> /mois</span>
+            </div>
+            <ul class="space-y-4 mb-10 flex-1">
+              <li v-for="item in ['25 recherches Sniper / jour', '10 audits de CV complets', '10 simulations d\'entretien', 'CRM Illimité', 'Générateur de Réseau']" :key="item" class="flex items-center gap-3 text-sm text-white/70">
+                <CheckCircleIcon class="w-4 h-4 text-violet-400 shrink-0" /> {{ item }}
+              </li>
+            </ul>
+            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl bg-violet-600 hover:bg-violet-500 font-black text-sm uppercase tracking-widest text-white shadow-xl shadow-violet-600/30 hover:scale-[1.01] active:scale-95 transition-all">Choisir Essentiel</router-link>
+          </div>
+          <!-- PRO -->
+          <div class="p-10 rounded-3xl bg-white/3 border border-white/8 flex flex-col">
+            <div class="text-sm font-black uppercase tracking-[0.3em] text-white/40 mb-8">Pro</div>
+            <div class="mb-8">
+              <span class="text-6xl font-black text-white">19.99€</span>
+              <span class="text-sm text-white/30 font-bold"> /mois</span>
+            </div>
+            <ul class="space-y-4 mb-10 flex-1">
+              <li v-for="item in ['Sniper IA Illimité', 'Audits CV Illimités', 'Mentor IA Vocal & Illimité', 'Headhunter IA Pro', 'Support prioritaire 24/7']" :key="item" class="flex items-center gap-3 text-sm text-white/70">
+                <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" /> {{ item }}
+              </li>
+            </ul>
+            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl border border-white/10 font-black text-sm uppercase tracking-widest text-white/50 hover:bg-white/5 hover:text-white transition-all">Passer Pro</router-link>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── CTA FINAL ─── -->
+    <section class="py-32">
+      <div class="max-w-4xl mx-auto px-6 text-center">
+        <div class="relative rounded-[3rem] border border-violet-500/20 bg-gradient-to-b from-violet-600/10 to-transparent p-20 overflow-hidden">
+          <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-80 bg-violet-600/20 blur-[100px] rounded-full pointer-events-none"></div>
+          <div class="relative z-10">
+            <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-6">Rejoignez l'élite</p>
+            <h2 class="text-5xl md:text-6xl font-black tracking-tighter leading-none mb-8">
+              Prêt à décrocher<br/>le job de vos rêves ?
+            </h2>
+            <p class="text-lg text-white/40 mb-12 max-w-lg mx-auto">Rejoignez les professionnels qui utilisent l'IA pour prendre l'avantage définitif sur le marché du travail.</p>
+            <router-link to="/register"
+              class="inline-flex items-center gap-3 bg-violet-600 hover:bg-violet-500 text-white font-black text-sm uppercase tracking-[0.2em]
+                     px-12 py-5 rounded-2xl shadow-2xl shadow-violet-600/30 transition-all hover:scale-[1.02] active:scale-95">
+              Créer mon compte gratuitement <ArrowRightIcon class="w-5 h-5" />
+            </router-link>
+            <div class="mt-8 flex items-center justify-center gap-2 text-xs text-white/20 font-bold">
+              <ShieldCheckIcon class="w-4 h-4" /> Sans carte de crédit · Résiliation à tout moment
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── FOOTER ─── -->
+    <footer class="border-t border-white/5 py-10">
+      <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg overflow-hidden border border-violet-500/30">
+            <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
+          </div>
+          <span class="text-sm font-black uppercase tracking-widest text-white/40">GoldArmy</span>
+        </div>
+        <p class="text-xs text-white/20 font-bold">© 2026 GoldArmy Agent IA. Tous droits réservés.</p>
+        <div class="flex items-center gap-2 text-xs text-white/20 font-bold">
+          <ShieldCheckIcon class="w-4 h-4" /> Sécurisé & Privé
+        </div>
+      </div>
+    </footer>
+
   </div>
 </template>
+
+<style scoped>
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-16px) rotate(3deg); }
+}
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(-3deg); }
+}
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float-slow  { animation: float-slow  6s ease-in-out infinite; }
+.animate-float-medium{ animation: float-medium 4s ease-in-out infinite; }
+.animate-float-fast  { animation: float-fast  3s ease-in-out infinite; }
+</style>

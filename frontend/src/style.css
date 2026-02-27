@@ -3,23 +3,79 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-primary: #7c3aed;
+    --accent-secondary: #6d28d9;
+    --border-color: rgba(0, 0, 0, 0.05);
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --shadow-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .dark {
+    --bg-primary: #0f172a;
+    --bg-secondary: #020617;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-primary: #8b5cf6;
+    --accent-secondary: #7c3aed;
+    --border-color: rgba(255, 255, 255, 0.05);
+    --glass-bg: rgba(15, 23, 42, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.5);
+  }
 
   html,
   body {
-    @apply h-full overflow-hidden m-0 p-0;
+    @apply h-full m-0 p-0 transition-colors duration-500 overflow-x-hidden;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    scroll-behavior: smooth;
   }
 
   #app {
-    @apply h-full overflow-hidden;
-  }
-
-  body {
-    @apply bg-surface-950 text-slate-100 font-sans antialiased;
+    @apply min-h-full;
   }
 }
 
 @layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
   .glass-panel {
-    @apply bg-surface-900/60 backdrop-blur-xl border border-surface-700/50 shadow-2xl;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 25px 50px -12px var(--shadow-color);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+  }
+
+  .bg-mesh {
+    background-image: radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.05) 0, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.05) 0, transparent 50%);
+  }
+
+  .hover-rotate-3d {
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-rotate-3d:hover {
+    transform: rotateX(5deg) rotateY(10deg) scale(1.02);
   }
 }
