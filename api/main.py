@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
 from loguru import logger
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -17,9 +17,11 @@ from agents.orchestrator import OrchestratorAgent
 
 app = FastAPI(title="GoldArmy Agent V2 API", version="2.0.0")
 
-from api.auth import router as auth_router, get_current_user
+from api.auth import get_current_user, router as auth_router
 from api.interview import router as interview_router
 from api.subscription import check_subscription_limit, log_usage
+from api.stripe_service import create_checkout_session, handle_webhook_payload
+from core.database import get_db_connection
 
 app.include_router(auth_router)
 app.include_router(interview_router)
@@ -808,6 +810,38 @@ async def fetch_market_radar(req: RadarRequest):
             "salary": sal_result.get("content", "Aucune donnée salariale chiffrée trouvée.")
         }
     }
+
+# ─── STRIPE ENDPOINTS ───
+
+class CheckoutRequest(BaseModel):
+    tier: str
+
+@app.post("/api/stripe/create-checkout-session")
+async def stripe_checkout(req: CheckoutRequest, current_user: dict = Depends(get_current_user)):
+    """Crée une session de paiement Stripe."""
+    from api.stripe_service import create_checkout_session
+    url = create_checkout_session(
+        user_id=current_user["id"],
+        email=current_user["email"],
+        tier=req.tier
+    )
+    if not url:
+        raise HTTPException(status_code=500, detail="Impossible de créer la session Stripe")
+    
+    return {"status": "success", "url": url}
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """Handler pour les webhooks Stripe."""
+    from api.stripe_service import handle_webhook_payload
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
+    success, message = handle_webhook_payload(payload, sig_header)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {"status": "success"}
 
 if __name__ == "__main__":
     import uvicorn

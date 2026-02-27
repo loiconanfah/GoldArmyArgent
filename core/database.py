@@ -117,6 +117,10 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
         if 'subscription_tier' not in user_columns:
             cursor.execute("ALTER TABLE users ADD COLUMN subscription_tier TEXT DEFAULT 'FREE'")
+        if 'stripe_customer_id' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN stripe_customer_id TEXT")
+        if 'stripe_subscription_id' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT")
             
         # Table Usage Logs (Pour l'enforcedement des limites SaaS)
         cursor.execute('''

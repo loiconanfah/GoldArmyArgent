@@ -98,6 +98,49 @@ const fetchProfile = async () => {
 
 onMounted(fetchProfile)
 
+const isSubscribing = ref(false)
+
+const handleSubscribe = async (tierId) => {
+  if (isSubscribing.value) return
+  
+  // Mapping frontend IDs to backend tier names
+  const tierMap = {
+    'tier-free': 'FREE',
+    'tier-essential': 'ESSENTIAL',
+    'tier-pro': 'PRO'
+  }
+  
+  const tier = tierMap[tierId]
+  if (tier === 'FREE') {
+    // Already handled or just redirect to dashboard
+    router.push('/dashboard')
+    return
+  }
+  
+  if (tier === userTier.value) {
+    toastState.addToast("Vous êtes déjà sur ce forfait.", "info")
+    return
+  }
+
+  isSubscribing.value = true
+  try {
+    const res = await authFetch('http://localhost:8000/api/stripe/create-checkout-session', {
+      method: 'POST',
+      body: JSON.stringify({ tier })
+    })
+    const json = await res.json()
+    if (json.status === 'success' && json.url) {
+      window.location.href = json.url
+    } else {
+      toastState.addToast("Erreur lors de la création de la session Stripe.", "error")
+    }
+  } catch (e) {
+    toastState.addToast("Erreur de connexion au service de paiement.", "error")
+  } finally {
+    isSubscribing.value = false
+  }
+}
+
 const displayTiers = computed(() => {
   return tiers.map(t => {
     const isActive = (t.id === 'tier-free' && userTier.value === 'FREE') || 
@@ -185,14 +228,22 @@ const displayTiers = computed(() => {
         </div>
 
         <button 
-            class="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 active:scale-95"
+            @click="handleSubscribe(tier.id)"
+            :disabled="isSubscribing"
+            class="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 active:scale-95 disabled:opacity-50"
             :class="[
                 tier.highlighted
                     ? 'bg-gradient-to-r from-gold-500 to-amber-600 text-surface-950 shadow-lg shadow-gold-500/20 hover:shadow-gold-500/40'
                     : 'bg-surface-800 border border-surface-700 text-white hover:bg-surface-700 hover:border-slate-500'
             ]"
         >
-            {{ tier.buttonText }}
+            <span v-if="isSubscribing && !((tier.id === 'tier-free' && userTier === 'FREE') || 
+                   (tier.id === 'tier-essential' && userTier === 'ESSENTIAL') ||
+                   (tier.id === 'tier-pro' && userTier === 'PRO'))" class="flex items-center justify-center gap-2">
+                <svg class="animate-spin h-4 w-4 text-current" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Chargement...
+            </span>
+            <span v-else>{{ tier.buttonText }}</span>
         </button>
       </div>
     </div>

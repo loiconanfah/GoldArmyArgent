@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     # Gemini Configuration
     gemini_api_key: Optional[str] = Field(default=None, description="Clé API Gemini")
 
+    # Stripe Configuration
+    stripe_api_key: Optional[str] = Field(default=None, description="Clé API Stripe Live")
+    stripe_webhook_secret: Optional[str] = Field(default=None, description="Secret Webhook Stripe")
+
     # Job Search APIs
     jooble_api_key: Optional[str] = Field(default="ee1009c8-7eb3-4e21-a7f6-4422bc8913ca", description="Clé API Jooble")
     rapidapi_key: Optional[str] = Field(default=None, description="Clé RapidAPI (JSearch/Glassdoor)")
