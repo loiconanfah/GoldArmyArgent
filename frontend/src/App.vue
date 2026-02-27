@@ -57,7 +57,7 @@ const navigation = [
 
 <template>
   <!-- Global Wrapper: Lock height and prevent window-level scroll -->
-  <div class="h-screen w-screen overflow-hidden bg-surface-950 text-slate-200 flex font-sans selection:bg-gold-500/30">
+  <div class="h-screen w-screen overflow-hidden bg-surface-950 text-slate-200 flex font-sans selection:bg-gold-500/30 fixed inset-0">
     <!-- Mobile Menu Overlay -->
     <div v-show="isMobileMenuOpen && !isPublicRoute" class="fixed inset-0 bg-surface-950/80 backdrop-blur-sm z-40 md:hidden" @click="isMobileMenuOpen = false"></div>
 
@@ -137,7 +137,7 @@ const navigation = [
     </aside>
 
     <!-- Main Content Col -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden relative w-full" :class="!isImmersive ? 'z-10' : 'z-[100]'">
+    <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden relative w-full" :class="!isImmersive ? 'z-10' : 'z-[100]'">
       
       <!-- Topbar (Header) -->
       <header v-if="!isPublicRoute && !isImmersive" class="h-16 bg-surface-950 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4">

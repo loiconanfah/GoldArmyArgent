@@ -100,7 +100,7 @@ class OrchestratorAgent:
             Exemple: "recruteurs chez Google" -> "Google"
             Réponds UNIQUEMENT avec le nom.
             """
-            company_name = await self.mentor.generate_response(params_prompt, model="gemini-2.0-flash", temperature=0.0)
+            company_name = await self.mentor.generate_response(params_prompt, temperature=0.0)
             
             results = await self.headhunter.find_decision_makers({"company_name": company_name.strip()})
             return {

@@ -500,20 +500,26 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         follow_up_count = count_row["follow_up_count"] if count_row else 1
         conn.commit()
 
-        # Generate email with Gemini
-        import google.generativeai as genai_module
-        model = genai_module.GenerativeModel("gemini-1.5-flash")
+        # Generate email with GoldArmy unified LLM client
+        from llm.unified_client import LLMClient
+        llm = LLMClient()
+        
         prompt = f"""
+        Tu es l'assistant de recrutement GoldArmy.
         Rédige un email de relance professionnel, chaleureux et concis (5-7 lignes max) en français.
         Candidature pour : {job_title} chez {company}.
         Notes sur le poste : {notes if notes else 'Aucune note particulière.'}
-        C'est la relance numéro {follow_up_count}. Si >1, adapte subtilement le ton (plus direct si relance 2+).
-        Format : Objet: [...]\\n\\nCorps de l'email.
-        Signe avec "Cordialement," suivi d'une ligne vide.
-        Rends le mail personnalisé et non générique. Utilise le prénom du recruteur si tu peux le deviner du nom de l'entreprise.
+        C'est la relance numéro {follow_up_count}. Si >1, rends le ton plus direct.
+        Format attendu : 
+        Objet: [Sujet du mail]
+        
+        Corps de l'email...
+        Cordialement,
+        [Prénom de l'utilisateur]
         """
-        response = await asyncio.to_thread(model.generate_content, prompt)
-        email_text = response.text.strip()
+        
+        messages = [{"role": "user", "content": prompt}]
+        email_text = await llm.chat(messages)
 
         return {
             "status": "success",
@@ -668,32 +674,76 @@ async def adapt_cv_endpoint(request: CVAdaptRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- CRM Endpoints (Sniper Pillar) ---
-from api.crm_db import get_crm_data, add_crm_item, update_crm_item, delete_crm_item, CRMItem
+# Note: Consolidé pour utiliser core.database au lieu de api.crm_db (JSON)
+from core.database import get_db_connection
 
 @app.get("/api/crm")
 def fetch_crm(current_user: dict = Depends(get_current_user)):
-    return {"status": "success", "data": get_crm_data(current_user["id"])}
+    """Alias pour les candidatures existantes."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM applications WHERE user_id = ? ORDER BY created_at DESC", (current_user["id"],))
+        rows = cursor.fetchall()
+        return {"status": "success", "data": [dict(r) for r in rows]}
+    finally:
+        conn.close()
 
 @app.post("/api/crm")
-def create_crm_entry(item: CRMItem, current_user: dict = Depends(get_current_user)):
-    new_item = add_crm_item(current_user["id"], item)
-    return {"status": "success", "data": new_item}
-
-class CRMUpdate(BaseModel):
-    status: Optional[str] = None
-    notes: Optional[str] = None
+def create_crm_entry(request: CRMApplicationRequest, current_user: dict = Depends(get_current_user)):
+    """Crée une entrée dans le CRM SQLite."""
+    import uuid
+    from datetime import datetime
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        app_id = str(uuid.uuid4())
+        cursor.execute('''
+            INSERT INTO applications (id, user_id, job_title, company_name, url, reference, status, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            app_id, current_user["id"], request.job_title, request.company_name, request.url, 
+            request.reference, request.status, request.notes, datetime.now().isoformat()
+        ))
+        conn.commit()
+        return {"status": "success", "data": {"id": app_id}}
+    finally:
+        conn.close()
 
 @app.put("/api/crm/{item_id}")
-def update_crm_entry(item_id: str, updates: CRMUpdate, current_user: dict = Depends(get_current_user)):
-    updated = update_crm_item(current_user["id"], item_id, updates.model_dump(exclude_unset=True))
-    if not updated:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"status": "success", "data": updated}
+def update_crm_entry(item_id: str, updates: Dict[str, Any], current_user: dict = Depends(get_current_user)):
+    """Met à jour une entrée CRM SQLite."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Filtre les champs modifiables
+        allowed_fields = ["status", "notes", "job_title", "company_name"]
+        update_fields = {k: v for k, v in updates.items() if k in allowed_fields}
+        
+        if not update_fields:
+            return {"status": "success", "message": "No changes"}
+            
+        sql = "UPDATE applications SET " + ", ".join([f"{k} = ?" for k in update_fields.keys()]) + " WHERE id = ? AND user_id = ?"
+        params = list(update_fields.values()) + [item_id, current_user["id"]]
+        
+        cursor.execute(sql, params)
+        conn.commit()
+        return {"status": "success"}
+    finally:
+        conn.close()
 
 @app.delete("/api/crm/{item_id}")
 def delete_crm_entry(item_id: str, current_user: dict = Depends(get_current_user)):
-    delete_crm_item(current_user["id"], item_id)
-    return {"status": "success", "message": "Deleted"}
+    """Supprime une entrée CRM SQLite."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM applications WHERE id = ? AND user_id = ?", (item_id, current_user["id"]))
+        conn.commit()
+        return {"status": "success", "message": "Deleted"}
+    finally:
+        conn.close()
 
 # --- Radar Endpoints (Market Insights) ---
 class RadarRequest(BaseModel):

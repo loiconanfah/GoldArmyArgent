@@ -3,8 +3,18 @@
 @tailwind utilities;
 
 @layer base {
+
+  html,
   body {
-    @apply bg-slate-900 text-slate-100 min-h-screen font-sans antialiased;
+    @apply h-full overflow-hidden m-0 p-0;
+  }
+
+  #app {
+    @apply h-full overflow-hidden;
+  }
+
+  body {
+    @apply bg-surface-950 text-slate-100 font-sans antialiased;
   }
 }
 
