@@ -169,49 +169,9 @@ class HunterAgent(BaseAgent):
         loc_lower = expected_location.lower()
         type_lower = expected_job_type.lower()
         
-        # Mots-clés qui caractérisent formellement un stage/internship
-        internship_keywords = ["stage", "intern", "internship", "apprenti", "alternance", "student", "étudiant"]
-        is_internship_search = any(w in type_lower for w in internship_keywords)
-
-        for job in jobs:
-            text = f"{job.get('title', '')} {job.get('description', '')} {job.get('raw_contract_type', '')}".lower()
-            job_loc = job.get('location', '').lower()
-            
-            import unicodedata
-            def remove_accents(s):
-                return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
-                
-            loc_lower_clean = remove_accents(loc_lower)
-            job_loc_clean = remove_accents(job_loc)
-            
-            # --- 1. Filtre Géographique Strict (tolérance aux fautes de base) ---
-            loc_is_valid = False
-            
-            # Si le lieu du job est un fallback volontaire, remote, ou vide, on le garde
-            if not job_loc or any(w in job_loc_clean for w in ["remote", "teletravail", "confidentiel", "non specifie", "none"]):
-                loc_is_valid = True
-            else:
-                # On cherche le mot clé de la ville dans la loc de l'offre
-                search_terms = loc_lower_clean.replace(",", " ").split()
-                for term in search_terms:
-                    if len(term) > 3 and term in job_loc_clean:
-                        loc_is_valid = True
-                        break
-            
-            if not loc_is_valid:
-                continue
-            if is_internship_search:
-                # S'il cherche un stage, l'offre DOIT contenir un mot clé de stage.
-                if not any(k in text for k in internship_keywords):
-                    continue
-            else:
-                # S'il cherche un emploi classique, on vire les stages (sauf s'il est très junior)
-                if any(k in text for k in ["internship", "stage étudiant"]):
-                    continue
-                    
-            result.append(job)
-            
-        return result
+        # Désormais, la lourde responsabilité du filtrage strict est déléguée au JudgeAgent (Gemini 3.1 Pro)
+        # pour éviter les faux-positifs algorithmiques qui suppriment de vraies offres.
+        return jobs
 
     async def _search_jsearch(self, kw, loc, limit):
         try:

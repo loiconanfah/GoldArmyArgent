@@ -51,7 +51,12 @@ class JudgeAgent(BaseAgent):
         # Tri par score décroissant
         evaluated_jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
         
-        return {"success": True, "evaluated_jobs": evaluated_jobs}
+        # Suppression stricte des offres non-pertinentes (Score < 40)
+        filtered_jobs = [j for j in evaluated_jobs if j.get("match_score", 0) >= 40]
+        
+        logger.info(f"⚖️ Judge a validé {len(filtered_jobs)} offres pertinentes (sur {len(evaluated_jobs)} analysées).")
+        
+        return {"success": True, "evaluated_jobs": filtered_jobs}
 
     async def _evaluate_batch(self, jobs: List[Dict[str, Any]], profile: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Appelle le LLM pour noter un lot d'offres."""
@@ -71,21 +76,23 @@ class JudgeAgent(BaseAgent):
         OFFRES A EVALUER:
         {job_list_text}
         
-        RÈGLES DE SCORING (SOIS INTELLIGENT, PRÉCIS, ET NUANCÉ SUR 100) :
-        Tu dois évaluer si l'offre est une bonne opportunité pour ce candidat précis. Ne mets pas un score de 0 brut si l'offre n'est pas parfaite, mais pénalise intelligemment :
+        RÈGLES DE SCORING STRICTES (SUR 100) :
+        Tu es le dernier rempart avant l'affichage à l'utilisateur. Ton but est d'éliminer le "bruit".
 
-        1. Pertinence globale (Rôle & Compétences) : Évalue dans quelle mesure le titre et le contenu correspondent aux compétences du profil.
-        2. Distinction Stage / Emploi : 
-           - Si l'offre est un "Stage" ou "Internship" et que l'utilisateur cherche un "Emploi" classique (CDI/CDD), baisse fortement la note (ex: 20-40) car ce n'est pas le bon type d'engagement, mais ne mets pas 0 systématiquement si la boîte est top.
-           - Si l'utilisateur cherche un "Stage" et l'offre est un CDI, baisse fortement la note (ex: 10-30).
-           - Cependant, si l'offre correspond PARFAITEMENT au type de contrat recherché, donne un bonus significatif.
-        3. Niveau d'expérience : Un candidat Junior postulant à une offre "Sénior" (5+ ans) doit voir le score de cette offre diminuer (ex: 30-50).
-        4. Localisation : Si c'est hors de la zone voulue ({profile.get('target_location', 'Paris, France')}), déduis des points.
-        5. L'importance du titre vs description vide : Si la description (DESC) dit "Aucune description fournie" ou est très courte, n'écrase pas le score ! Base-toi sur le "TITRE" et "ENTREPRISE" et deduis la pertinence. Si un CV cherche un stage developpeur et le TITRE est "Stagiaire Développeur Logiciel", donne-lui un très bon score (70-90) malgré le manque de texte !
+        1. TYPE DE CONTRAT (CRITÈRE ÉLIMINATOIRE) : 
+           - Si l'utilisateur cherche explicitement un "Stage" (Intern) ou une "Alternance" et que l'offre est un emploi permanent (CDI, Permanent, Senior, Staff, etc.), la note DOIT ÊTRE 0. Aucune exception.
+           - Si l'utilisateur cherche un emploi et que l'offre est un "Stage étudiant", la note DOIT ÊTRE 0.
+        2. PERTINENCE DU RÔLE (CRITÈRE ÉLIMINATOIRE) :
+           - L'offre DOIT correspondre au métier visé. Si l'utilisateur cherche "Software Developer" ou "Développeur", et que l'offre concerne la "Stratégie d'affaires", la "Vente", le "Management" ou la "Finance" (même si c'est un stage), la note DOIT ÊTRE 0. L'initiative, l'analyse et l'intransigeance sont requises.
+        3. NIVEAU D'EXPÉRIENCE (CRITÈRE ÉLIMINATOIRE) :
+           - Un candidat Junior/Stagiaire postulant à une offre "Senior", "Staff", "Principal" ou demandant 5+ ans d'expérience DOIT recevoir une note de 0.
+        4. PERTINENCE GLOBALE ET LOCALISATION :
+           - Ajuste le score (de 40 à 100) selon la proximité des compétences et de la localisation visées. Sanctionne fortement (score < 40) si l'offre s'éloigne techniquement des compétences du profil.
+        5. Descriptions Courtes : Si la description est vide, base-toi sur le "TITRE" et "L'ENTREPRISE". Ne donne pas 0 pour manque de texte si le titre correspond parfaitement au rôle recherché.
 
-        Raisonnement : Décris toujours ta décision de manière claire et concise.
+        Raisonnement : Décris ta décision de manière claire et concise.
         
-        FORMAT DE RÉPONSE (JSON UNIQUEMENT, pas de blabla autour):
+        FORMAT DE RÉPONSE (JSON UNIQUEMENT) :
         [
           {{"id": 0, "score": 85, "reason": "Explication courte"}},
           ...
@@ -96,6 +103,7 @@ class JudgeAgent(BaseAgent):
             resp = await self.generate_response(prompt, json_mode=True)
             # Nettoyage JSON
             match = re.search(r'\[.*\]', resp.replace('\n', ''), re.S)
+
             if not match: 
                 return jobs # Fail safe
 
