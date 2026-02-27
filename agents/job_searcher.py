@@ -182,7 +182,9 @@ class JobSearchAgent(BaseAgent):
         valid_final_jobs = [j for j in final_jobs if j.get("match_score", 0) > 0]
         
         limit = action_plan.get("limit", 10)
-        top_jobs = valid_final_jobs[:limit]
+        # Si l'utilisateur veut "pousser au max", on renvoie jusqu'à 3x sa limite ou un plafond de 100
+        display_limit = max(limit, min(100, limit * 3))
+        top_jobs = valid_final_jobs[:display_limit]
         
         logger.info(f"📨 Orchestration terminée: {len(top_jobs)} offres pertinentes trouvées.")
         

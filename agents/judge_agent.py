@@ -83,7 +83,7 @@ class JudgeAgent(BaseAgent):
            - Si l'utilisateur cherche explicitement un "Stage" (Intern) ou une "Alternance" et que l'offre est un emploi permanent (CDI, Permanent, Senior, Staff, etc.), la note DOIT ÊTRE 0. Aucune exception.
            - Si l'utilisateur cherche un emploi et que l'offre est un "Stage étudiant", la note DOIT ÊTRE 0.
         2. PERTINENCE DU RÔLE (CRITÈRE ÉLIMINATOIRE) :
-           - L'offre DOIT correspondre au métier visé. Si l'utilisateur cherche "Software Developer" ou "Développeur", et que l'offre concerne la "Stratégie d'affaires", la "Vente", le "Management" ou la "Finance" (même si c'est un stage), la note DOIT ÊTRE 0. L'initiative, l'analyse et l'intransigeance sont requises.
+           - L'offre DOIT correspondre au domaine et au métier exact visé par le candidat. Analyse les "Rôles visés" et les "Compétences". Si l'offre concerne un tout autre domaine d'expertise (ex: l'offre est en Vente alors que le profil cible la Finance, ou l'offre est en Ressources Humaines alors que le profil cible l'Informatique), la note DOIT ÊTRE 0. Fais preuve d'analyse et sois intransigeant sur les hors-sujets.
         3. NIVEAU D'EXPÉRIENCE (CRITÈRE ÉLIMINATOIRE) :
            - Un candidat Junior/Stagiaire postulant à une offre "Senior", "Staff", "Principal" ou demandant 5+ ans d'expérience DOIT recevoir une note de 0.
         4. PERTINENCE GLOBALE ET LOCALISATION :

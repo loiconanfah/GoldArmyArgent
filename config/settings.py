@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = Field(default=None, description="Clé API Gemini")
 
     # Job Search APIs
-    jooble_api_key: Optional[str] = Field(default=None, description="Clé API Jooble")
+    jooble_api_key: Optional[str] = Field(default="ee1009c8-7eb3-4e21-a7f6-4422bc8913ca", description="Clé API Jooble")
     rapidapi_key: Optional[str] = Field(default=None, description="Clé RapidAPI (JSearch/Glassdoor)")
     rapidapi_key_2: Optional[str] = Field(default="7e5b3739f9mshf676fb3b9e1dac4p1db4e8jsne93476e3132a", description="Clé RapidAPI Secondaire (JSearch)")
     findwork_api_key: Optional[str] = Field(default="b3daabb0d2e934cdc7c2c8c8d37ba85dd3a5bb6c", description="Clé API FindWork")

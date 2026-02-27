@@ -49,9 +49,10 @@ class HunterAgent(BaseAgent):
         keywords = plan.get("keywords", [])
         location = plan.get("location", "")
         apis = plan.get("apis", [])
-        # On multiplie par 5 la limite demandée pour que la traque ramène un nombre massif d'offres avant le filtrage
+        # On pousse la recherche au maximum : on multiplie par 10 la limite demandée
+        # pour s'assurer que Gemini a un pool massif d'offres à trier.
         limit = plan.get("limit", 10)
-        api_limit = max(80, limit * 4) 
+        api_limit = max(100, limit * 10) 
         job_type = plan.get("job_type", "emploi")
         # Exclusions appliquées en POST-TRAITEMENT (pas injectées dans les requêtes API)
         exclude = [e.lower().strip() for e in plan.get("exclude", [])]
