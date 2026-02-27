@@ -31,7 +31,8 @@ const profile = ref({
     bio: '',
     cv_text: '',
     portfolio_url: '',
-    avatar_url: ''
+    avatar_url: '',
+    subscription_tier: 'FREE'
 })
 
 const fetchProfile = async () => {
@@ -196,7 +197,14 @@ const goBack = () => router.push('/dashboard')
                     </div>
                     
                     <h2 class="text-xl font-bold text-white mb-1 tracking-tight">{{ profile.full_name || 'Candidat GoldArmy' }}</h2>
-                    <p class="text-slate-500 text-sm mb-6 font-medium">{{ profile.email }}</p>
+                    <p class="text-slate-500 text-sm mb-3 font-medium">{{ profile.email }}</p>
+
+                    <!-- Profile Badge Forfait -->
+                    <div class="mb-6">
+                        <span v-if="profile.subscription_tier === 'PRO'" class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-indigo-500/20">Membre GoldArmy Pro</span>
+                        <span v-else-if="profile.subscription_tier === 'ESSENTIAL'" class="bg-gradient-to-r from-amber-400 to-gold-500 text-surface-950 text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-gold-500/20">Membre GoldArmy Essentiel</span>
+                        <span v-else class="bg-surface-800 text-slate-400 text-[10px] uppercase font-black px-3 py-1 rounded-full border border-surface-700">Forfait Gratuit</span>
+                    </div>
                     
                     <div class="w-full space-y-3 pt-6 border-t border-surface-800">
                         <div class="flex items-center gap-3 text-slate-400 font-medium text-[13px]">

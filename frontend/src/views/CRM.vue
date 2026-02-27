@@ -98,6 +98,13 @@ const generateFollowup = async (card) => {
     copied.value = false
     try {
         const res = await authFetch(`http://localhost:8000/api/crm/applications/${card.id}/followup`, { method: 'POST' })
+        
+        if (res.status === 403) {
+            const data = await res.json()
+            followupEmail.value = `⚠️ Limite atteinte : ${data.detail || 'Veuillez passer au forfait Pro pour plus de relances.'}`
+            return
+        }
+
         const data = await res.json()
         if (data.status === 'success') {
             followupEmail.value = data.email

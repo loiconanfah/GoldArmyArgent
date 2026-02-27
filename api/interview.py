@@ -130,13 +130,26 @@ async def websocket_interview(websocket: WebSocket, token: str):
             await websocket.close(code=1008)
             return
             
-        # Get user ID
+        # Get user
         conn = get_db_connection()
         user = conn.execute("SELECT * FROM users WHERE email = ?", (user_email,)).fetchone()
-        
+        if not user:
+            await websocket.close(code=1008)
+            return
+
+        # 1b. Check Subscription Limit
+        from api.subscription import check_subscription_limit, log_usage
+        check = await check_subscription_limit(user["id"], "hr_interview")
+        if not check["allowed"]:
+            await websocket.send_json({"type": "error", "message": check["message"]})
+            await websocket.close(code=1008)
+            return
+
         # Get user's latest CV text context if any
-        # For MVP, we'll just check applications notes or a dedicated CV field if it exists
-        cv_text = "Candidat avec une expérience en développement logiciel."
+        cv_text = user.get("cv_text") or "Candidat avec une expérience en développement logiciel."
+        
+        # Log usage
+        await log_usage(user["id"], "hr_interview")
         
     except Exception as e:
         await websocket.close(code=1008)

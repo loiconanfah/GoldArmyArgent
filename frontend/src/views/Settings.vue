@@ -11,6 +11,8 @@ import {
   MicrophoneIcon,
   MapIcon
 } from '@heroicons/vue/24/outline'
+import { authFetch } from '../utils/auth'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -43,7 +45,7 @@ const tiers = [
   {
     name: 'Essentiel',
     id: 'tier-essential',
-    price: '29€',
+    price: '9.99€',
     description: 'Le choix des vainqueurs (Conseillé).',
     features: [
       '25 recherches Sniper / mois',
@@ -62,7 +64,7 @@ const tiers = [
   {
     name: 'Pro',
     id: 'tier-pro',
-    price: '49€',
+    price: '19.99€',
     description: 'Puissance de feu maximale pour l\'élite.',
     features: [
       'Recherches Sniper illimitées',
@@ -79,6 +81,37 @@ const tiers = [
     icon: RocketLaunchIcon
   }
 ]
+
+const userTier = ref('FREE')
+
+const fetchProfile = async () => {
+  try {
+    const res = await authFetch('http://localhost:8000/api/profile')
+    const json = await res.json()
+    if (json.status === 'success') {
+      userTier.value = json.data.subscription_tier || 'FREE'
+    }
+  } catch (e) {
+    console.error("Failed to fetch profile", e)
+  }
+}
+
+onMounted(fetchProfile)
+
+const displayTiers = computed(() => {
+  return tiers.map(t => {
+    const isActive = (t.id === 'tier-free' && userTier.value === 'FREE') || 
+                   (t.id === 'tier-essential' && userTier.value === 'ESSENTIAL') ||
+                   (t.id === 'tier-pro' && userTier.value === 'PRO')
+    
+    return {
+      ...t,
+      buttonText: isActive ? 'Plan Actuel' : t.buttonText,
+      highlighted: t.id === 'tier-essential' || isActive // Keep essential highlighted as popular unless other is active? Or just highlight active.
+      // Let's highlight active and keep essential as "popular" if it's not active.
+    }
+  })
+})
 </script>
 
 <template>
@@ -107,7 +140,7 @@ const tiers = [
       <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-gold-500/5 blur-[100px] pointer-events-none"></div>
 
       <div 
-        v-for="tier in tiers" 
+        v-for="tier in displayTiers" 
         :key="tier.id"
         class="relative flex flex-col p-8 rounded-[2.5rem] border transition-all duration-500 group"
         :class="[

@@ -269,6 +269,11 @@ const connectWebSocket = () => {
             } else if (msg.type === 'error') {
                 isAIThinking.value = false
                 errorMsg.value = msg.message
+                // Si l'erreur arrive au début, on reset pour afficher l'erreur sur le wizard
+                if (conversation.value.length === 0) {
+                    isInterviewStarted.value = false
+                    stopWebcam()
+                }
             }
         }
         

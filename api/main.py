@@ -19,6 +19,7 @@ app = FastAPI(title="GoldArmy Agent V2 API", version="2.0.0")
 
 from api.auth import router as auth_router, get_current_user
 from api.interview import router as interview_router
+from api.subscription import check_subscription_limit, log_usage
 
 app.include_router(auth_router)
 app.include_router(interview_router)
@@ -217,8 +218,13 @@ async def enrich_company(request: CompanyEnrichRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/network/headhunter")
-async def find_decision_makers_api(req: HeadhunterRequest):
+async def find_decision_makers_api(req: HeadhunterRequest, current_user: dict = Depends(get_current_user)):
     """Trouve les décideurs clés via l'Agent Headhunter."""
+    # Check limit
+    check = await check_subscription_limit(current_user["id"], "headhunter")
+    if not check["allowed"]:
+        raise HTTPException(status_code=403, detail=check["message"])
+
     try:
         from agents.headhunter import headhunter_agent
         await headhunter_agent.initialize()
@@ -227,6 +233,8 @@ async def find_decision_makers_api(req: HeadhunterRequest):
             "company_name": req.company_name,
             "target_roles": req.target_roles
         })
+        
+        await log_usage(current_user["id"], "headhunter")
         return {"status": "success", "data": profiles}
     except Exception as e:
         import logging
@@ -493,6 +501,11 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         except Exception:
             pass  # Column already exists
 
+        # Check limit
+        check = await check_subscription_limit(current_user["id"], "follow_up")
+        if not check["allowed"]:
+            raise HTTPException(status_code=403, detail=check["message"])
+
         # Increment follow-up counter
         cursor.execute("UPDATE applications SET follow_up_count = COALESCE(follow_up_count, 0) + 1 WHERE id = ?", (app_id,))
         cursor.execute("SELECT follow_up_count FROM applications WHERE id = ?", (app_id,))
@@ -520,6 +533,8 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         
         messages = [{"role": "user", "content": prompt}]
         email_text = await llm.chat(messages)
+
+        await log_usage(current_user["id"], "follow_up")
 
         return {
             "status": "success",
@@ -622,14 +637,23 @@ def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         if 'conn' in locals() and conn:
             conn.close()
 
-# CRM Mock Data endpoint
 @app.post("/api/chat")
-async def chat_endpoint(request: ChatRequest):
+async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_current_user)):
     """
     Main endpoint for interacting with the Orchestrator.
     Handles general chat, search requests, and CV context.
     """
     try:
+        # Intercept search for limit check
+        if request.nb_results or any(k in request.message.lower() for k in ["cherche", "trouve", "stage", "emploi", "job"]):
+            check = await check_subscription_limit(current_user["id"], "sniper_search")
+            if not check["allowed"]:
+                return {
+                    "status": "error",
+                    "type": "limit_reached",
+                    "content": check["message"]
+                }
+        
         task = {
             "query": request.message,
             "cv_text": request.cv_text,
@@ -640,6 +664,10 @@ async def chat_endpoint(request: ChatRequest):
         }
         
         response = await orchestrator.think(task)
+        
+        # Log usage if it was a search
+        if response.get("type") == "job_search_results":
+             await log_usage(current_user["id"], "sniper_search")
         
         return {"status": "success", "data": response}
     except Exception as e:
@@ -657,6 +685,11 @@ async def adapt_cv_endpoint(request: CVAdaptRequest):
         if not request.cv_text or len(request.cv_text) < 50:
             raise HTTPException(status_code=400, detail="Le texte du CV est introuvable ou trop court. Veuillez uploader un CV d'abord.")
             
+        # Check limit
+        check = await check_subscription_limit(current_user["id"], "cv_adaptation")
+        if not check["allowed"]:
+            raise HTTPException(status_code=403, detail=check["message"])
+            
         from agents.cv_adapter import CVAdapterAgent
         adapter = CVAdapterAgent()
         await adapter.initialize()
@@ -667,6 +700,7 @@ async def adapt_cv_endpoint(request: CVAdaptRequest):
             cv_text=request.cv_text
         )
         
+        await log_usage(current_user["id"], "cv_adaptation")
         return {"status": "success", "data": result}
     except Exception as e:
         from loguru import logger

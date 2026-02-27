@@ -28,14 +28,28 @@ const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(false)
 const userEmail = ref('Yves D.')
 
-onMounted(() => {
+const userTier = ref('FREE')
+
+onMounted(async () => {
   const userStr = localStorage.getItem('user')
   if (userStr) {
     try {
       const user = JSON.parse(userStr)
       userEmail.value = user.email.split('@')[0]
+      userTier.value = user.subscription_tier || 'FREE'
     } catch(e){}
   }
+
+  // Refresh tier from API to be sure
+  try {
+    const res = await fetch('http://localhost:8000/api/profile', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    const json = await res.json()
+    if (json.status === 'success') {
+      userTier.value = json.data.subscription_tier || 'FREE'
+    }
+  } catch(e){}
 })
 
 const handleLogout = () => {
@@ -180,7 +194,13 @@ const navigation = [
                     <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-surface-950 rounded-full group-hover:bg-rose-400"></div>
                 </div>
                 <div class="hidden md:block text-left">
-                    <p class="text-[13px] font-bold text-white leading-none mb-0.5 group-hover:text-rose-400 transition-colors">{{ userEmail }}</p>
+                    <div class="flex items-center gap-2 mb-0.5">
+                        <p class="text-[13px] font-bold text-white leading-none group-hover:text-gold-400 transition-colors">{{ userEmail }}</p>
+                        <!-- Badge Forfait -->
+                        <span v-if="userTier === 'PRO'" class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-indigo-500/20">PRO</span>
+                        <span v-else-if="userTier === 'ESSENTIAL'" class="bg-gradient-to-r from-amber-400 to-gold-500 text-surface-950 text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-gold-500/20">ESSENTIEL</span>
+                        <span v-else class="bg-surface-700 text-slate-300 text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md">GRATUIT</span>
+                    </div>
                     <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider leading-none">Déconnexion</p>
                 </div>
             </button>

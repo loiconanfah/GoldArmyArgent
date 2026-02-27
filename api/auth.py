@@ -24,6 +24,7 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     id: str
     email: str
+    subscription_tier: str
     
 class Token(BaseModel):
     access_token: str
@@ -69,7 +70,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, email FROM users WHERE id = ?", (user_id,))
+        cursor.execute("SELECT id, email, subscription_tier FROM users WHERE id = ?", (user_id,))
         user = cursor.fetchone()
         if user is None:
             raise credentials_exception
@@ -107,7 +108,7 @@ def register(user_data: UserCreate):
         return {
             "access_token": access_token, 
             "token_type": "bearer",
-            "user": {"id": user_id, "email": user_data.email}
+            "user": {"id": user_id, "email": user_data.email, "subscription_tier": "FREE"}
         }
     except Exception as e:
         conn.rollback()
@@ -138,7 +139,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         return {
             "access_token": access_token, 
             "token_type": "bearer",
-            "user": {"id": user["id"], "email": user["email"]}
+            "user": {
+                "id": user["id"], 
+                "email": user["email"],
+                "subscription_tier": user["subscription_tier"]
+            }
         }
     finally:
         conn.close()

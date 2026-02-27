@@ -151,6 +151,12 @@ const performSearch = async () => {
         })
         const json = await res.json()
         
+        if (json.status === 'error' && json.type === 'limit_reached') {
+            toastState.addToast(json.content, "warning")
+            isLoading.value = false
+            return
+        }
+
         // The orchestrator returns { status: "success", type: "job_search_results", content: { matched_jobs: [] } }
         let rawJobs = []
         if (json.data && json.data.content && json.data.content.matched_jobs) {

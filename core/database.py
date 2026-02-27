@@ -115,6 +115,22 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN portfolio_url TEXT")
         if 'avatar_url' not in user_columns:
             cursor.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
+        if 'subscription_tier' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN subscription_tier TEXT DEFAULT 'FREE'")
+            
+        # Table Usage Logs (Pour l'enforcedement des limites SaaS)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS usage_logs (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                feature TEXT NOT NULL, -- 'sniper_search', 'cv_audit', 'hr_interview', 'headhunter', 'cv_adaptation'
+                used_at DATE DEFAULT CURRENT_DATE,
+                count INTEGER DEFAULT 1,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+        # Index pour recherche rapide par utilisateur et date
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_usage_user_feature_date ON usage_logs(user_id, feature, used_at)')
 
         conn.commit()
         logger.info("✅ Schéma DB SQLite vérifié et mis à jour pour SaaS multi-user.")
