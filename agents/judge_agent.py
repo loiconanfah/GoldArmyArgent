@@ -93,7 +93,7 @@ class JudgeAgent(BaseAgent):
         """
         
         try:
-            resp = await self.generate_response(prompt)
+            resp = await self.generate_response(prompt, json_mode=True)
             # Nettoyage JSON
             match = re.search(r'\[.*\]', resp.replace('\n', ''), re.S)
             if not match: 

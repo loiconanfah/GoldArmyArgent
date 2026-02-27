@@ -124,7 +124,7 @@ CV à analyser :
 
 RÉPONSE : JSON uniquement, rien d'autre."""
 
-        response = await self.generate_response(prompt)
+        response = await self.generate_response(prompt, json_mode=True)
 
         # Nettoyage robuste avec Regex pour extraire le JSON même entouré de texte
         import re
@@ -224,7 +224,7 @@ CV original à réécrire :
 
 IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans balises markdown."""
 
-        response = await self.generate_response(prompt)
+        response = await self.generate_response(prompt, json_mode=True)
         
         # Nettoyage robuste avec Regex pour extraire le JSON même entouré de texte
         import re

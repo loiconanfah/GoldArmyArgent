@@ -1,5 +1,4 @@
-
-"""Client Unifié pour la gestion des modèles LLM (OpenRouter + Fallback Local)."""
+"""Client Unifié pour la gestion des modèles LLM (Priorité Strict Gemini)."""
 import asyncio
 from typing import Optional, Dict, List, Any
 from loguru import logger
@@ -12,9 +11,7 @@ from config.settings import settings
 class UnifiedLLMClient:
     """
     Client centralisé qui gère la stratégie de sélection de modèle.
-    Stratégie:
-    1. Tenter OpenRouter (si clé API présente).
-    2. Si échec ou pas de clé -> Fallback sur Ollama Local.
+    FORCE SNIPER 6.0 : Si Gemini est configuré, AUCUN FALLBACK n'est autorisé.
     """
     
     def __init__(self):
@@ -25,20 +22,17 @@ class UnifiedLLMClient:
         if settings.gemini_api_key:
             from llm.gemini_client import GeminiClient
             self.gemini_client = GeminiClient()
-            logger.info("🧠 Client Unifié: Google Gemini activé (Priorité Absolue)")
+            logger.info("🧠 Client Unifié: Google Gemini activé (MODE EXCLUSIF SNIPER 6.0)")
         elif settings.openrouter_api_key:
             self.openrouter_client = OpenRouterClient()
-            logger.info("🌐 Client Unifié: OpenRouter activé (Prioritaire)")
+            logger.info("🌐 Client Unifié: OpenRouter activé")
         else:
             logger.info("🏠 Client Unifié: Mode Local uniquement (Ollama)")
             
     async def initialize(self):
-        """Initialisation des sous-clients si nécessaire."""
-        # Rien de spécial à faire pour l'instant, mais gardé pour compatibilité
         pass
 
     async def close(self):
-        """Ferme les connexions."""
         await self.ollama_client.close()
         if self.openrouter_client:
             await self.openrouter_client.close()
@@ -46,71 +40,60 @@ class UnifiedLLMClient:
             await self.gemini_client.close()
 
     async def generate(self, prompt: str, **kwargs) -> str:
-        """
-        Génère une réponse en utilisant la meilleure stratégie disponible.
-        """
-        # On extrait le modèle demandé pour éviter les doublons dans kwargs
+        """Génère une réponse. Priorité exclusive à Gemini si configuré."""
         requested_model = kwargs.pop("model", None)
 
-        # 0. Essai Gemini
+        # SI GEMINI EST ACTIVÉ -> AUCUN AUTRE MODÈLE NE DOIT ÊTRE UTILISÉ
         if self.gemini_client:
             try:
-                logger.debug(f"🧠 Tentative Gemini Native...")
-                return await self.gemini_client.generate(prompt, **kwargs)
+                return await self.gemini_client.generate(prompt, model=requested_model, **kwargs)
             except Exception as e:
-                logger.warning(f"⚠️ Échec Gemini ({e})... Bascule sur OpenRouter.")
+                logger.error(f"❌ échec Critique Gemini (Fallback Impossible): {e}")
+                raise Exception(f"Désolé, une erreur technique sur Gemini empêche de garantir la précision à 100%. Fallback Ollama désactivé. Erreur: {e}")
 
-        # 1. Essai OpenRouter
+        # Sinon, pour les autres modes sans Gemini
         if self.openrouter_client:
             try:
-                # On utilise le modèle demandé ou celui par défaut pour OpenRouter
                 model = requested_model or settings.openrouter_default_model
-                
-                logger.debug(f"🌐 Tentative OpenRouter avec {model}...")
                 return await self.openrouter_client.generate(prompt, model=model, **kwargs)
-                
             except Exception as e:
                 logger.warning(f"⚠️ Échec OpenRouter ({e})... Bascule sur Ollama Local.")
         
-        # 2. Fallback Ollama
         try:
-            # Pour le fallback local, on force le modèle local par défaut
-            # car le modèle OpenRouter (ex: gpt-4) n'existe probablement pas en local
             model = settings.ollama_default_model
-            logger.debug(f"🏠 Utilisation Ollama Local avec {model}...")
-            
             return await self.ollama_client.generate(prompt, model=model, **kwargs)
-            
         except Exception as e:
-            logger.error(f"❌ Échec Critique (OpenRouter et Ollama): {e}")
+            logger.error(f"❌ Échec Critique LLM: {e}")
             raise e
 
+    async def generate_with_sources(self, prompt: str, **kwargs) -> tuple:
+        """Génère une réponse avec grounding sources (Gemini EXCLUSIF)."""
+        if self.gemini_client:
+            try:
+                return await self.gemini_client.generate_with_sources(prompt, **kwargs)
+            except Exception as e:
+                logger.error(f"❌ Échec Grounding Gemini: {e}")
+                raise Exception(f"Erreur Grounding Gemini : {e}")
+        
+        # Impossible de faire du grounding sans Gemini 2.0
+        raise Exception("Le mode Grounding (Sniper) requiert Gemini API.")
+
     async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """Mode Chat unifié avec support de l'historique complet."""
-        # 0. Essai Gemini (a une méthode chat() native qui supporte l'historique)
+        """Mode Chat unifié."""
         if self.gemini_client:
             try:
                 return await self.gemini_client.chat(messages, **kwargs)
             except Exception as e:
-                logger.warning(f"⚠️ Échec Gemini Chat ({e}). Bascule sur OpenRouter.")
+                logger.error(f"❌ Échec Gemini Chat: {e}")
+                raise e
 
-        # 1. Essai OpenRouter (via generate, en assemblant l'historique dans le prompt)
         if self.openrouter_client:
             try:
                 model = kwargs.get("model") or settings.openrouter_default_model
-                # Assembler l'historique dans un prompt structuré
-                system_msgs = [m["content"] for m in messages if m["role"] == "system"]
-                system = "\n".join(system_msgs) if system_msgs else None
-                conv = ""
-                for msg in messages:
-                    if msg["role"] == "system":
-                        continue
-                    role_label = "Utilisateur" if msg["role"] == "user" else "Assistant"
-                    conv += f"\n{role_label}: {msg['content']}"
-                conv = conv.strip()
-                return await self.openrouter_client.generate(conv, model=model, system=system, **{k: v for k, v in kwargs.items() if k != "model"})
+                # Simplification logic
+                conv = "\n".join([f"{m['role']}: {m['content']}" for m in messages])
+                return await self.openrouter_client.generate(conv, model=model)
             except Exception as e:
-                logger.warning(f"⚠️ Échec OpenRouter Chat ({e}). Bascule sur Ollama.")
+                pass
 
-        # 2. Fallback Ollama (a aussi une méthode chat native)
         return await self.ollama_client.chat(messages, **kwargs)

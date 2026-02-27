@@ -28,9 +28,10 @@ class LinkedInScraper:
         logger.info(f"🔎 Dorking LinkedIn RH pour: {company_name}")
         
         # Requête ciblée (dorking)
-        query = f'site:ca.linkedin.com/in OR site:linkedin.com/in "Recrutement" OR "Recrutement tech" OR "RH" OR "Recruteur" OR "Recruiter" OR "Talent Acquisition" "{company_name}"'
+        query = f'site:linkedin.com/in/ "{company_name}" "Recrutement" OR "RH" OR "Recruteur" OR "Talent Acquisition"'
         encoded_query = urllib.parse.quote_plus(query)
-        url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
+        # Use Lite version
+        url = f"https://lite.duckduckgo.com/lite/?q={encoded_query}"
         
         profiles = []
         
@@ -46,42 +47,50 @@ class LinkedInScraper:
             html = await loop.run_in_executor(None, fetch_url)
             soup = BeautifulSoup(html, 'html.parser')
             
-            results = soup.find_all('a', class_='result__url')
-            titles = soup.find_all('h2', class_='result__title')
-            snippets = soup.find_all('a', class_='result__snippet')
+            # Lite DDG result links
+            results = soup.find_all('a', class_='result-link')
             
-            for i, res in enumerate(results):
+            for res in results:
                 if len(profiles) >= limit:
                     break
                     
                 href = res.get('href', '')
+                if not href: continue
+
+                # Unwrap DDG redirect
+                if 'uddg=' in href:
+                    try:
+                        href = urllib.parse.unquote(href.split('uddg=')[-1].split('&')[0])
+                    except:
+                        pass
+                
                 if 'linkedin.com/in/' in href:
-                    # Nettoyage de l'URL duckduckgo
-                    if href.startswith('//'): href = 'https:' + href
+                    # Clean URL
+                    href = href.split('?')[0].rstrip('/')
                     
-                    title = titles[i].get_text(strip=True) if i < len(titles) else "Profil LinkedIn"
-                    snippet = snippets[i].get_text(strip=True) if i < len(snippets) else ""
-                    
-                    # Nettoyage du titre (Enlever " - LinkedIn" etc)
-                    name = title.replace(" | LinkedIn", "").replace(" - LinkedIn", "").split("-")[0].strip()
+                    title = res.get_text(strip=True)
+                    # Nettoyage pro du nom et rôle
+                    clean_title = title.replace(" | LinkedIn", "").replace(" - LinkedIn", "")
+                    name_parts = re.split(r' - | \| |: ', clean_title)
+                    name = name_parts[0].strip()
                     
                     profiles.append({
                         "name": name,
                         "url": href,
-                        "snippet": snippet
+                        "snippet": f"Profil identifié: {clean_title}"
                     })
                     
         except Exception as e:
-            logger.warning(f"⚠️ Erreur Scraping LinkedIn (Captchas probables): {e}")
+            logger.warning(f"⚠️ Scraping LinkedIn: {e}")
             
-        # Fallback Links if nothing found or captcha blocked
+        # Fallback Links if nothing found
         if not profiles:
-            logger.info("ℹ️ Création de liens de recherche LinkedIn manuelle (Fallback).")
-            direct_search_url = f"https://www.linkedin.com/search/results/people/?keywords={urllib.parse.quote_plus('RH OR Recrutement OR Talent OR Recruiter ' + company_name)}"
+            logger.info("ℹ️ Fallback LinkedIn Search Link.")
+            direct_search_url = f"https://www.linkedin.com/search/results/people/?keywords={urllib.parse.quote_plus('recruteur ' + company_name)}"
             profiles.append({
-                "name": "Recherche Manuelle (Nécessite connexion)",
+                "name": f"Chercher '{company_name}' sur LinkedIn",
                 "url": direct_search_url,
-                "snippet": f"Cliquez pour rechercher les recruteurs de {company_name} directement sur LinkedIn."
+                "snippet": "Profils non extraits automatiquement. Cliquez pour voir sur LinkedIn."
             })
             
         return profiles

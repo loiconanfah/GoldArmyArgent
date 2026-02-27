@@ -203,6 +203,8 @@ def interactive():
                     agent_type = "planner"
                 elif any(word in task_desc.lower() for word in ["emploi", "job", "stage", "travail", "recrutement", "carrière", "poste", "work", "offre", "trouve", "cherche"]):
                     agent_type = "job_searcher"
+                elif any(word in task_desc.lower() for word in ["linkedin", "profil", "recruteur", "décideur", "headhunter"]):
+                    agent_type = "headhunter"
                 
                 console.print(f"[yellow]→ Utilisation d'un agent {agent_type}...[/yellow]")
                 

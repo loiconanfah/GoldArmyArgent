@@ -269,6 +269,27 @@ class BaseAgent(ABC):
         )
         
         return response
+
+    async def generate_with_sources(self, prompt: str, system: Optional[str] = None, **kwargs) -> tuple:
+        """Génère une réponse et retourne les sources de grounding."""
+        if not self.llm_client:
+            raise RuntimeError(f"Agent {self.name} n'est pas initialisé")
+            
+        if system is None:
+            system = PromptTemplates.get_system_prompt(self.agent_type)
+            
+        merged_kwargs = {
+            "model": self.model,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            **kwargs
+        }
+        
+        return await self.llm_client.generate_with_sources(
+            prompt=prompt,
+            system=system,
+            **merged_kwargs
+        )
     
     def get_status(self) -> Dict[str, Any]:
         """Retourne l'état actuel de l'agent."""

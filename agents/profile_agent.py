@@ -72,7 +72,7 @@ class ProfileAgent(BaseAgent):
         }}
         """
         try:
-            resp = await self.generate_response(prompt)
+            resp = await self.generate_response(prompt, json_mode=True)
             match = re.search(r'\{.*\}', resp.replace('\n', ''), re.S)
             if match: return json.loads(match.group(0))
         except: pass
@@ -97,7 +97,7 @@ class ProfileAgent(BaseAgent):
         }}
         """
         try:
-            resp = await self.generate_response(prompt)
+            resp = await self.generate_response(prompt, json_mode=True)
             match = re.search(r'\{.*\}', resp.replace('\n', ''), re.S)
             if match:
                 data = json.loads(match.group(0))

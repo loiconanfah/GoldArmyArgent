@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
+from loguru import logger
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -6,6 +7,11 @@ from typing import Dict, Any, List, Optional
 import asyncio
 import io
 import json
+import subprocess
+import os
+import sys
+import socket
+import time
 
 from agents.orchestrator import OrchestratorAgent
 
@@ -34,6 +40,44 @@ async def startup_event():
     from core.database import init_db
     init_db()
     await orchestrator.initialize()
+    
+    # --- Démarrage Automatique du Frontend ---
+    def is_port_in_use(port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(('localhost', port)) == 0
+
+    frontend_port = 5173 # Port par défaut de Vite
+    
+    if not is_port_in_use(frontend_port):
+        logger.info(f"🚀 Tentative de démarrage du frontend sur le port {frontend_port}...")
+        frontend_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+        
+        if os.path.exists(frontend_path):
+            try:
+                # Commande simplifiée pour Windows/Unix avec shell=True
+                cmd = "npm run dev"
+                log_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend_startup.log")
+                
+                with open(log_file, "w") as f:
+                    f.write(f"--- Démarrage du frontend le {time.ctime()} ---\n")
+                    f.flush()
+                    
+                    # On lance en arrière-plan
+                    subprocess.Popen(
+                        cmd,
+                        shell=True,
+                        cwd=frontend_path,
+                        stdout=f,
+                        stderr=f,
+                        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+                    )
+                logger.success(f"✅ Commande de démarrage lancée. Log: {log_file}")
+            except Exception as e:
+                logger.error(f"❌ Erreur lors du lancement du frontend: {e}")
+        else:
+            logger.warning(f"⚠️ Dossier frontend introuvable à: {frontend_path}")
+    else:
+        logger.info(f"ℹ️ Le frontend est déjà actif sur le port {frontend_port}")
 
 class ChatRequest(BaseModel):
     message: str

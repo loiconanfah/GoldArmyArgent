@@ -1,43 +1,43 @@
-"""Client pour l'API Google Gemini native."""
+"""Client pour l'API Google Gemini native - Version Sniper 6.0 Hardened."""
 import aiohttp
 import json
+import traceback
 from typing import Dict, List, Any, Optional
 from loguru import logger
 
 from config.settings import settings
 
 class GeminiClient:
-    """Client pour interagir avec l'API Google Gemini nativement."""
+    """Client robuste pour interagir avec l'API Google Gemini nativement."""
     
     def __init__(self, api_key: str = None):
         self.api_key = api_key or settings.gemini_api_key
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY non configurée")
             
-        # Utilisation de Gemini 2.0 Flash (rapide et capable)
-        self.default_model = getattr(settings, 'gemini_default_model', 'gemini-2.0-flash')
+        # SNIPER 7.1 : Gemini 3.1 Pro Preview par défaut pour une précision maximale
+        self.default_model = "gemini-3.1-pro-preview"
+        logger.debug(f"GeminiClient Sniper 7.1 initialized ({self.default_model})")
         
     async def generate(self, prompt: str, system: str = None, **kwargs) -> str:
         """Génère une réponse texte via Google Gemini REST API."""
         model = kwargs.get("model", self.default_model)
         
         payload = {
-            "contents": [
-                {
-                    "parts": [{"text": prompt}]
-                }
-            ]
+            "contents": [{"parts": [{"text": prompt}]}]
         }
         
         if system:
-            payload["systemInstruction"] = {
-                "parts": [{"text": system}]
-            }
+            payload["systemInstruction"] = {"parts": [{"text": system}]}
             
+        # Nettoyage des tools pour éviter les conflits d'API
         if "tools" in kwargs:
             payload["tools"] = kwargs["tools"]
             
         gen_config = {}
+        if kwargs.get("json_mode"):
+            gen_config["responseMimeType"] = "application/json"
+            
         if "temperature" in kwargs:
             gen_config["temperature"] = kwargs["temperature"]
         if "max_tokens" in kwargs:
@@ -47,27 +47,29 @@ class GeminiClient:
             payload["generationConfig"] = gen_config
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
+        logger.debug(f"DEBUG GEMINI URL: {url.replace(self.api_key, 'REDACTED')}")
+        timeout = aiohttp.ClientTimeout(total=120) # Timeout à 120s pour les recherches Deep Pro
         
-        timeout = aiohttp.ClientTimeout(total=60)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(url, json=payload) as response:
-                if response.status != 200:
+        try:
+            # SSL=False est requis car certains environnements (Windows) ont des problèmes de certs
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(url, json=payload, ssl=False) as response:
                     text = await response.text()
-                    logger.error(f"❌ Erreur Gemini {response.status}: {text}")
-                    raise Exception(f"Erreur API Gemini: {response.status} - {text}")
-                    
-                data = await response.json()
-                try:
+                    if response.status != 200:
+                        logger.error(f"❌ Gemini Error {response.status}: {text}")
+                        raise Exception(f"Erreur API Gemini: {response.status}")
+                    data = json.loads(text)
                     return data["candidates"][0]["content"]["parts"][0]["text"]
-                except (KeyError, IndexError) as e:
-                    logger.error(f"Unexpected response format from Gemini: {data}")
-                    raise Exception(f"Format de réponse inattendu: {e}")
+        except Exception as e:
+            import traceback
+            with open("gemini_crash.txt", "w", encoding="utf-8") as f:
+                f.write(f"Exception Type: {type(e)}\n")
+                f.write(traceback.format_exc())
+            logger.error(f"Gemini generate error: {e}")
+            raise e
 
     async def generate_with_sources(self, prompt: str, system: str = None, **kwargs) -> tuple:
-        """
-        Identique à generate(), mais retourne également les URLs sources de Google Grounding.
-        Returns: (text: str, sources: List[str])
-        """
+        """Génère une réponse et retourne les sources de grounding (Gemini 2.0)."""
         model = kwargs.get("model", self.default_model)
         
         payload = {
@@ -75,103 +77,78 @@ class GeminiClient:
         }
         if system:
             payload["systemInstruction"] = {"parts": [{"text": system}]}
-        if "tools" in kwargs:
-            payload["tools"] = kwargs["tools"]
+        
+        # SNIPER ENFORCEMENT : Toujours utiliser google_search en mode grounding
+        payload["tools"] = [{"google_search": {}}]
 
         gen_config = {}
-        if "temperature" in kwargs:
-            gen_config["temperature"] = kwargs["temperature"]
+        # Gemini 3.1 Pro supporte le json_mode avec grounding !
+        if kwargs.get("json_mode"):
+            gen_config["responseMimeType"] = "application/json"
+            
         if "max_tokens" in kwargs:
             gen_config["maxOutputTokens"] = kwargs["max_tokens"]
+        if "temperature" in kwargs:
+            gen_config["temperature"] = kwargs["temperature"]
+
         if gen_config:
             payload["generationConfig"] = gen_config
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
-        timeout = aiohttp.ClientTimeout(total=90)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(url, json=payload) as response:
-                if response.status != 200:
+        timeout = aiohttp.ClientTimeout(total=120) # 120s pour la fusion Search + JSON
+        
+        try:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(url, json=payload, ssl=False) as response:
                     text = await response.text()
-                    raise Exception(f"Erreur API Gemini: {response.status} - {text}")
-                data = await response.json()
-                
-                text_out = ""
-                try:
-                    text_out = data["candidates"][0]["content"]["parts"][0]["text"]
-                except Exception:
-                    pass
+                    try:
+                        data = json.loads(text)
+                    except Exception as je:
+                        logger.error(f"❌ JSON Parse Error (len={len(text)}): {str(je)[:100]}")
+                        # Tentative de récupération partielle si possible ou log pour debug
+                        with open("gemini_error_dump.json", "w", encoding="utf-8") as f:
+                            f.write(text)
+                        raise je
+                    
+                    # Extraction du texte
+                    text_out = ""
+                    try: 
+                        text_out = data["candidates"][0]["content"]["parts"][0]["text"]
+                    except: pass
 
-                # Extract grounding source URLs from metadata
-                source_urls = []
-                try:
-                    grounding = data["candidates"][0].get("groundingMetadata", {})
-                    chunks = grounding.get("groundingChunks", [])
-                    for chunk in chunks:
-                        uri = chunk.get("web", {}).get("uri", "")
-                        if uri:
-                            source_urls.append(uri)
-                    # Also check groundingSupport -> retrievedContext
-                    supports = grounding.get("groundingSupport", [])
-                    for sup in supports:
-                        uri = sup.get("web", {}).get("uri", "") or sup.get("retrievedContext", {}).get("uri", "")
-                        if uri and uri not in source_urls:
-                            source_urls.append(uri)
-                except Exception as ex:
-                    logger.debug(f"Grounding metadata parse: {ex}")
+                    # Extraction OSINT des sources
+                    source_urls = []
+                    try:
+                        grounding = data["candidates"][0].get("groundingMetadata", {})
+                        # On ratisse large pour ne rater aucune URL LinkedIn
+                        for chunk in grounding.get("groundingChunks", []):
+                            uri = chunk.get("web", {}).get("uri")
+                            if uri and uri not in source_urls: source_urls.append(uri)
+                        
+                        for sup in grounding.get("groundingSupport", []):
+                            u = sup.get("segment", {}).get("uri") or sup.get("web", {}).get("uri")
+                            if u and u not in source_urls: source_urls.append(u)
+                    except: pass
 
-                return text_out, source_urls
+                    return text_out, source_urls
+        except Exception as e:
+            logger.error(f"Gemini Grounding error: {e}")
+            raise e
 
     async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """Simulation simple de mode chat (adapte les messages OpenAI-style -> Gemini)."""
+        """Simulation mode chat."""
         model = kwargs.get("model", self.default_model)
-        contents = []
-        system_text = None
+        contents = [{"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]} for m in messages if m["role"] != "system"]
+        system_text = next((m["content"] for m in messages if m["role"] == "system"), None)
         
-        for msg in messages:
-            role = msg["role"]
-            content = msg["content"]
-            if role == "system":
-                system_text = content
-                continue
-                
-            gemini_role = "user" if role == "user" else "model"
-            contents.append({
-                "role": gemini_role,
-                "parts": [{"text": content}]
-            })
-            
         payload = {"contents": contents}
-        
         if system_text:
-            payload["systemInstruction"] = {
-                "parts": [{"text": system_text}]
-            }
+            payload["systemInstruction"] = {"parts": [{"text": system_text}]}
             
-        # Configuration
-        gen_config = {}
-        if "temperature" in kwargs:
-            gen_config["temperature"] = kwargs["temperature"]
-        if "max_tokens" in kwargs:
-            gen_config["maxOutputTokens"] = kwargs["max_tokens"]
-        if gen_config:
-            payload["generationConfig"] = gen_config
-
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
-        
-        timeout = aiohttp.ClientTimeout(total=60)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(url, json=payload) as response:
-                if response.status != 200:
-                    text = await response.text()
-                    logger.error(f"❌ Erreur Gemini Chat {response.status}: {text}")
-                    raise Exception(f"Erreur API Gemini: {response.status} - {text}")
-                    
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, ssl=False) as response:
                 data = await response.json()
-                try:
-                    return data["candidates"][0]["content"]["parts"][0]["text"]
-                except (KeyError, IndexError):
-                    raise Exception("Format de réponse inattendu (Chat)")
+                return data["candidates"][0]["content"]["parts"][0]["text"]
 
-    async def close(self):
-        """Clean up."""
-        pass
+    async def close(self): pass

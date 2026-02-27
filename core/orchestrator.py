@@ -10,7 +10,7 @@ from pathlib import Path
 from core.agent_base import BaseAgent, AgentStatus
 from core.memory import memory_system
 from core.communication import communication_bus
-from agents import ResearcherAgent, CoderAgent, PlannerAgent, JobSearchAgent
+from agents import ResearcherAgent, CoderAgent, PlannerAgent, JobSearchAgent, HeadhunterAgent
 from config.settings import settings
 
 
@@ -25,6 +25,7 @@ class Orchestrator:
             "coder": CoderAgent,
             "planner": PlannerAgent,
             "job_searcher": JobSearchAgent,
+            "headhunter": HeadhunterAgent,
         }
         self.task_queue: asyncio.Queue = asyncio.Queue()
         self.running = False

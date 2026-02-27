@@ -10,6 +10,7 @@ import time
 
 from agents.job_searcher import JobSearchAgent
 from agents.mentor import MentorAgent
+from agents.headhunter import HeadhunterAgent
 
 
 # Mémoire de conversation (par session_id), max 20 échanges, TTL 30 minutes
@@ -54,9 +55,11 @@ class OrchestratorAgent:
     the request to the specialized agents (Searcher, Mentor, etc.).
     """
     def __init__(self):
-        self.agent_name = "Orchestrator"
+        self.agent_name = "Sniper 2.0 Reloaded"
         self.job_searcher = JobSearchAgent()
         self.mentor = MentorAgent()
+        from agents.headhunter import headhunter_agent
+        self.headhunter = headhunter_agent
 
         # System prompt for general conversation mode
         self.system_prompt = (
@@ -71,6 +74,7 @@ class OrchestratorAgent:
         """Initialise tous les sous-agents d'orchestration."""
         await self.job_searcher.initialize()
         await self.mentor.initialize()
+        await self.headhunter.initialize()
 
     async def think(self, user_input: Dict[str, Any]) -> Dict[str, Any]:
         """Analyzes intention and orchestrates work."""
@@ -87,6 +91,24 @@ class OrchestratorAgent:
         intention = await self._route_request(user_input)
 
         # 2. Delegate to correct Agent
+        if intention["action"] == "headhunter":
+            logger.info(f"[Sniper 2.0 Reloaded] Routing to Headhunter for {query}")
+            # Extraction des paramètres via IA
+            params_prompt = f"""
+            Extrait UNIQUEMENT le nom de l'entreprise de cette recherche : '{query}'.
+            Si l'utilisateur cherche des gens chez une boite, donne juste le nom de la boite.
+            Exemple: "recruteurs chez Google" -> "Google"
+            Réponds UNIQUEMENT avec le nom.
+            """
+            company_name = await self.mentor.generate_response(params_prompt, model="gemini-2.0-flash", temperature=0.0)
+            
+            results = await self.headhunter.find_decision_makers({"company_name": company_name.strip()})
+            return {
+                "status": "success",
+                "type": "headhunter_results",
+                "content": results
+            }
+
         if intention["action"] == "job_search":
             search_result = await self.job_searcher.execute_task(user_input)
             response = {
@@ -98,6 +120,19 @@ class OrchestratorAgent:
             if query:
                 _add_to_history(session_id, "user", query)
             _add_to_history(session_id, "assistant", f"[Recherche d'emploi executée pour: {query}]")
+            return response
+
+        elif intention["action"] == "headhunter":
+            logger.info(f"[Orchestrator] Routing to HeadhunterAgent")
+            result = await self.headhunter.execute_task(user_input)
+            response = {
+                "status": "success",
+                "type": "headhunter_results",
+                "content": result
+            }
+            if query:
+                _add_to_history(session_id, "user", query)
+            _add_to_history(session_id, "assistant", f"[Recherche de décideurs LinkedIn executée pour: {query}]")
             return response
 
         elif intention["action"] in ["audit_cv", "generate_portfolio", "rewrite_cv"]:
@@ -199,6 +234,9 @@ class OrchestratorAgent:
 
         if any(k in query for k in ["cherche", "trouve", "stage", "emploi", "job", "offre", "poste"]):
             return {"action": "job_search"}
+
+        if any(k in query for k in ["linkedin", "profil", "recruteur", "décideur", "headhunter", "contact"]):
+            return {"action": "headhunter"}
 
         if user_input.get("nb_results"):
             return {"action": "job_search"}
