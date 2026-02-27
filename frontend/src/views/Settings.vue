@@ -126,6 +126,7 @@ const handleSubscribe = async (tierId) => {
   try {
     const res = await authFetch('http://localhost:8000/api/stripe/create-checkout-session', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tier })
     })
     const json = await res.json()

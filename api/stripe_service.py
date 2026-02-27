@@ -11,8 +11,8 @@ def create_checkout_session(user_id: str, email: str, tier: str):
     """Crée une session Stripe Checkout pour un forfait spécifique."""
     
     price_ids = {
-        "ESSENTIAL": "price_essential_id", # Remplacez par vos vrais IDs Stripe
-        "PRO": "price_pro_id"
+        "ESSENTIAL": "price_1T5Xf6PvxExBNm38EHU1rkhq",
+        "PRO": "price_1T5Xf7PvxExBNm38iixC2ipQ"
     }
     
     if tier not in price_ids:

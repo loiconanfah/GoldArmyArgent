@@ -84,8 +84,8 @@ const navigation = [
       <!-- Logo Section -->
       <div class="h-16 flex items-center justify-between px-4 border-b border-surface-800 shrink-0">
         <div class="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-amber-600 flex shrink-0 items-center justify-center shadow-lg shadow-gold-500/20">
-                <span class="text-sm leading-none" role="img" aria-label="helmet">🪖</span>
+            <div class="w-10 h-10 rounded-xl bg-surface-800 flex shrink-0 items-center justify-center shadow-lg border border-surface-700 overflow-hidden">
+                <img src="/logo.png" alt="GoldArmy Logo" class="w-full h-full object-cover" />
             </div>
             <h1 v-if="!isSidebarCollapsed" class="text-lg font-display font-bold text-white tracking-tight transition-opacity duration-300">
                 GoldArmy

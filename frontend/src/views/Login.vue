@@ -49,8 +49,8 @@ const handleLogin = async () => {
 
     <div class="w-full max-w-md p-8 relative z-10">
       <div class="text-center mb-10">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-gold-400 to-amber-600 shadow-lg shadow-gold-500/20 mb-6">
-          <span class="text-3xl leading-none" role="img" aria-label="helmet">🪖</span>
+        <div class="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-surface-900 shadow-2xl border border-surface-800 mb-8 overflow-hidden">
+          <img src="/logo.png" alt="GoldArmy Logo" class="w-full h-full object-cover" />
         </div>
         <h1 class="text-3xl font-display font-bold text-white tracking-tight">Bienvenue sur GoldArmy</h1>
         <p class="text-slate-400 mt-2">Connectez-vous à votre espace personnel.</p>
