@@ -146,7 +146,6 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
           <!-- Trust bar -->
           <div class="mt-12 flex flex-wrap gap-6">
             <div v-for="t in [
-              { n: '20 000+', l: 'utilisateurs actifs' },
               { n: '98.5%', l: 'précision IA' },
               { n: '40h', l: 'économisées/mois' }
             ]" :key="t.n" class="flex flex-col">
