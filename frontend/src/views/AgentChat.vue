@@ -58,42 +58,13 @@ const activeFileTab = ref('html') // 'html', 'css', 'js'
 // Session unique par onglet pour que le backend maintienne l'historique
 const sessionId = ref((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `session_${Date.now()}`)
 
-const computedSrcdoc = computed(() => {
-    return `
-        <html style="scroll-behavior: smooth;">
-            <head>
-                <base target="_self">
-                <style>${workspaceProject.value.css || ''}</style>
-            </head>
-            <body>
-                ${workspaceProject.value.html || ''}
-                <script>
-                    // Sécurité anti-récursion & Smooth Scroll isolé
-                    document.addEventListener('click', (e) => {
-                        const link = e.target.closest('a');
-                        if (link) {
-                            const href = link.getAttribute('href');
-                            if (href && href.startsWith('#')) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const id = href.substring(1);
-                                const target = document.getElementById(id);
-                                if (target) {
-                                    target.scrollIntoView({ behavior: 'smooth' });
-                                }
-                            } else if (href && !href.startsWith('javascript:')) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.warn('Navigation bloquée:', href);
-                            }
-                        }
-                    }, true);
-                    ${workspaceProject.value.js || ''}
-                <\/script>
-            </body>
-        </html>
-    `
+const iframeKey = ref(0) // Utilisé pour forcer le rafraîchissement de l'iframe
+
+const portfolioRenderUrl = computed(() => {
+    if (!currentUser.value?.id) return ''
+    return `http://localhost:8000/api/portfolio/render/${currentUser.value.id}?t=${iframeKey.value}`
 })
+
 const messages = ref([
   {
     id: 1,
@@ -322,6 +293,7 @@ const saveWorkspaceProject = async () => {
         if (json.status === 'success') {
             toastState.addToast("Portfolio sauvegardé avec succès !")
             mockTerminalLogs.value.push({ type: 'success', text: '[System] Modifications sauvegardées en base de données.' })
+            iframeKey.value++ // Rafraîchir l'iframe pour voir les changements
         }
     } catch (e) {
         toastState.addToast("Erreur lors de la sauvegarde.", "error")
@@ -786,8 +758,9 @@ const openInWorkspace = (msg) => {
 
             <!-- APP PREVIEW (Injected with CSS/JS) -->
             <iframe 
-                v-if="activeWorkspaceTab === 'app'" 
-                :srcdoc="computedSrcdoc" 
+                v-if="activeWorkspaceTab === 'app' && portfolioRenderUrl" 
+                :src="portfolioRenderUrl" 
+                :key="iframeKey"
                 class="w-full h-full border-none bg-white" 
                 sandbox="allow-scripts"
             ></iframe>

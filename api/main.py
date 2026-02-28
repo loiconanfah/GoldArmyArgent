@@ -871,6 +871,64 @@ async def admin_promote_user(req: PromoteUserRequest, current_user: dict = Depen
     logger.info(f"👑 Admin {current_user['email']} a promu {req.email} au tier {req.tier}")
     return {"status": "success", "message": f"Utilisateur {req.email} promu au tier {req.tier} avec succès."}
 
+@app.get("/api/portfolio/render/{user_id}")
+async def render_portfolio(user_id: str):
+    """Sert le contenu HTML du portfolio pour une iframe."""
+    from core.database import get_db
+    from fastapi.responses import HTMLResponse
+    
+    db = get_db()
+    user = await db.users.find_one({"id": user_id})
+    if not user or "last_portfolio" not in user:
+        return HTMLResponse(content="<html><body><h1>Portfolio non trouvé.</h1></body></html>", status_code=404)
+    
+    portfolio = user["last_portfolio"]
+    html_content = portfolio.get("html", "")
+    css_content = portfolio.get("css", "")
+    js_content = portfolio.get("js", "")
+    
+    # Injection sécurisée et isolée
+    full_html = f"""
+    <!DOCTYPE html>
+    <html style="scroll-behavior: smooth;">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Portfolio - GoldArmy</title>
+            <style>{css_content}</style>
+        </head>
+        <body>
+            {html_content}
+            <script>
+                // Isolation Radicale & Sécurité
+                (function() {{
+                    const self = window;
+                    Object.defineProperty(window, 'top', {{ get: () => self }});
+                    Object.defineProperty(window, 'parent', {{ get: () => self }});
+                    
+                    // Intercepteur de navigation interne (Smooth Scroll)
+                    document.addEventListener('click', (e) => {{
+                        const link = e.target.closest('a');
+                        if (link) {{
+                            const href = link.getAttribute('href');
+                            if (href && href.startsWith('#')) {{
+                                e.preventDefault();
+                                const target = document.querySelector(href);
+                                if (target) {{
+                                    target.scrollIntoView({{ behavior: 'smooth' }});
+                                }}
+                            }}
+                        }}
+                    }}, true);
+                }})();
+                {js_content}
+            </script>
+        </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=full_html)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
