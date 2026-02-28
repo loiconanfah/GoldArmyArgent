@@ -2,7 +2,7 @@
 import { authFetch } from '../utils/auth'
 import { toastState } from '../store/toastState'
 
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { 
   PaperAirplaneIcon, 
@@ -39,8 +39,6 @@ const isUploadingCv = ref(false)
 const isUploading = ref(false)
 const isLoading = ref(false)
 const isWorkspaceFullScreen = ref(false)
-const adminEmailToPromote = ref('')
-const isPromoting = ref(false)
 const selectedImage = ref(null) // Base64 of the design image
 const currentUser = ref(null)
 
@@ -59,6 +57,43 @@ const mockTerminalLogs = ref([
 const activeFileTab = ref('html') // 'html', 'css', 'js'
 // Session unique par onglet pour que le backend maintienne l'historique
 const sessionId = ref((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `session_${Date.now()}`)
+
+const computedSrcdoc = computed(() => {
+    return `
+        <html style="scroll-behavior: smooth;">
+            <head>
+                <base target="_self">
+                <style>${workspaceProject.value.css || ''}</style>
+            </head>
+            <body>
+                ${workspaceProject.value.html || ''}
+                <script>
+                    // Sécurité anti-récursion & Smooth Scroll isolé
+                    document.addEventListener('click', (e) => {
+                        const link = e.target.closest('a');
+                        if (link) {
+                            const href = link.getAttribute('href');
+                            if (href && href.startsWith('#')) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const id = href.substring(1);
+                                const target = document.getElementById(id);
+                                if (target) {
+                                    target.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            } else if (href && !href.startsWith('javascript:')) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.warn('Navigation bloquée:', href);
+                            }
+                        }
+                    }, true);
+                    ${workspaceProject.value.js || ''}
+                <\/script>
+            </body>
+        </html>
+    `
+})
 const messages = ref([
   {
     id: 1,
@@ -295,28 +330,6 @@ const saveWorkspaceProject = async () => {
     }
 }
 
-const promoteUser = async () => {
-    if (!adminEmailToPromote.value) return
-    isPromoting.value = true
-    try {
-        const res = await authFetch('http://localhost:8000/api/admin/promote-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: adminEmailToPromote.value, tier: 'PRO' })
-        })
-        const data = await res.json()
-        if (res.ok) {
-            toastState.addToast(`L'utilisateur ${adminEmailToPromote.value} est maintenant Premium !`, 'success')
-            adminEmailToPromote.value = ''
-        } else {
-            toastState.addToast(data.detail || 'Erreur promotion', 'error')
-        }
-    } catch (e) {
-        toastState.addToast('Erreur connexion admin', 'error')
-    } finally {
-        isPromoting.value = false
-    }
-}
 const downloadZip = async () => {
     try {
         const token = localStorage.getItem('token')
@@ -460,20 +473,6 @@ const openInWorkspace = (msg) => {
             </label>
         </div>
     </transition>
-
-    <!-- Admin Section -->
-    <div v-if="currentUser?.subscription_tier === 'ADMIN'" class="mb-6 bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-2xl shadow-lg animate-fade-in">
-        <div class="flex items-center gap-2 mb-3">
-            <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-            <h3 class="text-xs font-black text-indigo-400 uppercase tracking-widest">Console Admin GoldArmy</h3>
-        </div>
-        <div class="flex gap-2">
-            <input v-model="adminEmailToPromote" type="email" placeholder="E-mail de l'utilisateur..." class="flex-1 bg-surface-950 border-surface-700 rounded-xl text-xs text-white focus:ring-indigo-500 py-2.5" />
-            <button @click="promoteUser" :disabled="isPromoting" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/20 whitespace-nowrap">
-                {{ isPromoting ? '...' : 'DONNER PREMIUM' }}
-            </button>
-        </div>
-    </div>
 
     <!-- Chat History Area -->
     <div ref="chatContainer" class="flex-1 overflow-y-auto space-y-8 pr-2 pb-32 scroll-smooth">
@@ -788,19 +787,9 @@ const openInWorkspace = (msg) => {
             <!-- APP PREVIEW (Injected with CSS/JS) -->
             <iframe 
                 v-if="activeWorkspaceTab === 'app'" 
-                :srcdoc="`
-                    <html>
-                        <head>
-                            <style>${workspaceProject.css}</style>
-                        </head>
-                        <body>
-                            ${workspaceProject.html}
-                            <script>${workspaceProject.js}<\/script>
-                        </body>
-                    </html>
-                `" 
+                :srcdoc="computedSrcdoc" 
                 class="w-full h-full border-none bg-white" 
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts"
             ></iframe>
             
             <!-- CODE EDITOR (Pre) -->

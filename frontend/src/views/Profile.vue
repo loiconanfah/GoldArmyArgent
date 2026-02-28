@@ -35,6 +35,9 @@ const profile = ref({
     subscription_tier: 'FREE'
 })
 
+const adminEmailToPromote = ref('')
+const isPromoting = ref(false)
+
 const fetchProfile = async () => {
     isLoading.value = true
     try {
@@ -153,6 +156,29 @@ const downloadZip = async () => {
         toastState.addToast('Erreur lors du téléchargement du ZIP.', 'error')
     }
 }
+
+const promoteUser = async () => {
+    if (!adminEmailToPromote.value) return
+    isPromoting.value = true
+    try {
+        const res = await authFetch('http://localhost:8000/api/admin/promote-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: adminEmailToPromote.value, tier: 'PRO' })
+        })
+        const data = await res.json()
+        if (res.ok) {
+            toastState.addToast(`L'utilisateur ${adminEmailToPromote.value} est maintenant Premium !`, 'success')
+            adminEmailToPromote.value = ''
+        } else {
+            toastState.addToast(data.detail || 'Erreur promotion', 'error')
+        }
+    } catch (e) {
+        toastState.addToast('Erreur connexion admin', 'error')
+    } finally {
+        isPromoting.value = false
+    }
+}
 </script>
 
 <template>
@@ -222,7 +248,8 @@ const downloadZip = async () => {
 
                     <!-- Profile Badge Forfait -->
                     <div class="mb-6">
-                        <span v-if="profile.subscription_tier === 'PRO'" class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-indigo-500/20">Membre GoldArmy Pro</span>
+                        <span v-if="profile.subscription_tier === 'ADMIN'" class="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-rose-500/20">Admin GoldArmy</span>
+                        <span v-else-if="profile.subscription_tier === 'PRO'" class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-indigo-500/20">Membre GoldArmy Pro</span>
                         <span v-else-if="profile.subscription_tier === 'ESSENTIAL'" class="bg-gradient-to-r from-amber-400 to-gold-500 text-surface-950 text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-gold-500/20">Membre GoldArmy Essentiel</span>
                         <span v-else class="bg-surface-800 text-slate-400 text-[10px] uppercase font-black px-3 py-1 rounded-full border border-surface-700">Forfait Gratuit</span>
                     </div>
@@ -253,6 +280,34 @@ const downloadZip = async () => {
                     </div>
                     <div class="h-1.5 w-full bg-surface-800 rounded-full overflow-hidden p-[1px]">
                         <div class="h-full bg-gradient-to-r from-indigo-600 to-purple-500 rounded-full" style="width: 88%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Console (Move from Chat) -->
+            <div v-if="profile.subscription_tier === 'ADMIN'" class="bg-surface-900 border border-indigo-500/30 rounded-[2.5rem] p-8 shadow-lg shadow-indigo-500/5 animate-fade-in-up">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-indigo-500/10 rounded-xl">
+                        <ShieldCheckIcon class="w-5 h-5 text-indigo-400" />
+                    </div>
+                    <h3 class="text-xl font-bold text-white tracking-tight">Console Admin</h3>
+                </div>
+                <div class="space-y-4">
+                    <p class="text-xs text-slate-400 font-medium leading-relaxed">Promouvoir un utilisateur au rang Premium (PRO) via son e-mail.</p>
+                    <div class="flex gap-2">
+                        <input 
+                            v-model="adminEmailToPromote" 
+                            type="email" 
+                            placeholder="email@exemple.com"
+                            class="flex-1 bg-surface-950 border border-surface-800 rounded-2xl px-5 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all text-xs"
+                        />
+                        <button 
+                            @click="promoteUser"
+                            :disabled="isPromoting"
+                            class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-2xl transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+                        >
+                            {{ isPromoting ? '...' : 'PROMOUVOIR' }}
+                        </button>
                     </div>
                 </div>
             </div>

@@ -144,15 +144,25 @@ const handleSubscribe = async (tierId) => {
 
 const displayTiers = computed(() => {
   return tiers.map(t => {
-    const isActive = (t.id === 'tier-free' && userTier.value === 'FREE') || 
+    let isActive = (t.id === 'tier-free' && userTier.value === 'FREE') || 
                    (t.id === 'tier-essential' && userTier.value === 'ESSENTIAL') ||
                    (t.id === 'tier-pro' && userTier.value === 'PRO')
     
+    // Branding Admin for Pro tier if user is Admin
+    let buttonText = isActive ? 'Plan Actuel' : t.buttonText
+    let tierName = t.name
+    
+    if (t.id === 'tier-pro' && userTier.value === 'ADMIN') {
+        isActive = true
+        buttonText = 'Plan Admin GoldArmy'
+        tierName = 'Admin'
+    }
+
     return {
       ...t,
-      buttonText: isActive ? 'Plan Actuel' : t.buttonText,
-      highlighted: t.id === 'tier-essential' || isActive // Keep essential highlighted as popular unless other is active? Or just highlight active.
-      // Let's highlight active and keep essential as "popular" if it's not active.
+      name: tierName,
+      buttonText: buttonText,
+      highlighted: t.id === 'tier-essential' || isActive
     }
   })
 })

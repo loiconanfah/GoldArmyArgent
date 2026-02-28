@@ -294,8 +294,8 @@ Ta mission : Créer un Portfolio "GOD MODE" (Ultra-Premium, Moderne, Futuriste) 
 - Réponds UNIQUEMENT avec les balises [SECTION]. Aucun texte en dehors.
 - N'utilise PAS de blocs de code markdown (pas de ```) à l'intérieur des balises, mets le code BRUT.
 - Images : Utilise des images Unsplash (ex: https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426) pour un rendu pro.
-- JavaScript : Le code DOIT être complet, commenté et fonctionnel dès l'ouverture.
-- Navigation : Pour les liens de la navbar, utilise des ancres (ex: #about, #projects) et assure-toi que le JS gère le smooth scroll. NE JAMAIS utiliser href="#" seul ou des liens externes qui pourraient vider l'iframe.
+- JavaScript : Le code DOIT être complet, commenté et fonctionnel. INTERDICTION de cloner des éléments DOM lors du clic ou du scroll (risque de duplication).
+- Navigation : Chaque lien de la navbar (ex: href="#about") DOIT correspondre à un ID unique sur une section (ex: <section id="about">). Le JS doit gérer le smooth scroll via `element.scrollIntoView({behavior: 'smooth'})` sans modifier la structure du document. NE JAMAIS laisser href="#" vide.
 
 [PERSONALITY_ANALYSIS]
 (Analyse pro ultra-courte + Choix de la direction artistique)
