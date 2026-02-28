@@ -1,6 +1,6 @@
 """Module core pour GoldArmyArgent."""
 from core.agent_base import BaseAgent, AgentStatus, AgentMessage, AgentMemory
-from core.memory import memory_system, MemorySystem
+from core.memory import get_memory_system, MemorySystem
 from core.communication import communication_bus, CommunicationBus
 
 __all__ = [
@@ -8,7 +8,7 @@ __all__ = [
     "AgentStatus",
     "AgentMessage",
     "AgentMemory",
-    "memory_system",
+    "get_memory_system",
     "MemorySystem",
     "communication_bus",
     "CommunicationBus",

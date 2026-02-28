@@ -260,5 +260,12 @@ class MemorySystem:
         }
 
 
-# Instance globale
-memory_system = MemorySystem()
+# Instance globale paresseuse
+_memory_system_instance = None
+
+def get_memory_system() -> MemorySystem:
+    """Retourne l'instance unique du système de mémoire (lazy loading)."""
+    global _memory_system_instance
+    if _memory_system_instance is None:
+        _memory_system_instance = MemorySystem()
+    return _memory_system_instance

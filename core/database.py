@@ -18,10 +18,11 @@ def get_db_client():
             _client = AsyncIOMotorClient(
                 settings.mongodb_uri,
                 serverSelectionTimeoutMS=5000,
-                tz_aware=True
+                tz_aware=True,
+                tlsAllowInvalidCertificates=True
             )
             # Test connection
-            _client.admin.command('ping')
+            await _client.admin.command('ping')
             logger.info("✅ Connecté avec succès à MongoDB Atlas!")
         except Exception as e:
             logger.error(f"❌ Erreur de connexion MongoDB: {e}")

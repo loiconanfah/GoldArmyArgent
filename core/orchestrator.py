@@ -8,7 +8,7 @@ from loguru import logger
 from pathlib import Path
 
 from core.agent_base import BaseAgent, AgentStatus
-from core.memory import memory_system
+from core.memory import get_memory_system
 from core.communication import communication_bus
 from agents import ResearcherAgent, CoderAgent, PlannerAgent, JobSearchAgent, HeadhunterAgent
 from config.settings import settings
@@ -150,7 +150,7 @@ class Orchestrator:
         result = await agent.execute_task(task)
         
         # Stocker en mémoire
-        await memory_system.store(
+        await get_memory_system().store(
             agent_id=agent.agent_id,
             content=f"Tâche: {task.get('description', '')} | Résultat: {result.get('success', False)}",
             metadata={"task_id": task["id"], "type": "task_result"}
@@ -227,7 +227,7 @@ class Orchestrator:
             "queue_size": self.task_queue.qsize(),
             "running": self.running,
             "agents": agent_stats,
-            "memory_stats": memory_system.get_stats(),
+            "memory_stats": get_memory_system().get_stats(),
             "communication_stats": communication_bus.get_stats(),
         }
     

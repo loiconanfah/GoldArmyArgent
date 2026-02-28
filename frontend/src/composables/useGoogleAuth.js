@@ -19,7 +19,10 @@ export function useGoogleAuth() {
 
     /** Initialize Google GIS */
     function initGoogle(elementId = null) {
-        if (!GOOGLE_CLIENT_ID) return
+        if (!GOOGLE_CLIENT_ID) {
+            console.warn("Google Client ID is missing. Check VITE_GOOGLE_CLIENT_ID in your environment variables.")
+            return
+        }
 
         const renderInterval = setInterval(() => {
             if (window.google) {
