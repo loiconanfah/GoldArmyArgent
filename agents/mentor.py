@@ -1,5 +1,6 @@
 from typing import Dict, Any, List
 import json
+import re
 from loguru import logger
 from core.agent_base import BaseAgent
 
@@ -265,58 +266,74 @@ IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans ba
             }
 
     async def _generate_portfolio(self, cv_text: str, theme: str = "GoldArmy Premium") -> Dict[str, Any]:
-        """Generates a fully functional responsive HTML/CSS/JS portfolio based on the CV."""
-        import random
+        """Generates a structured portfolio project (HTML/CSS/JS) in JSON format."""
+        logger.info(f"[Mentor] Generating multi-file Portfolio project with theme: {theme}...")
         
-        # Variabilité de design pour éviter la répétition
-        design_variants = [
-            "Use a layout with a sticky side navigation bar on desktop.",
-            "Use a centered bento-box grid for the projects section.",
-            "Use large, bold typography (Serif for headings) with a minimalist aesthetic.",
-            "Implement a split-screen hero section: Image/Graphic on one side, text on the other.",
-            "Use floating glassmorphism cards with subtle parallax effects."
-        ]
-        chosen_variant = random.choice(design_variants)
-        
-        logger.info(f"[Mentor] Generating Web Portfolio with theme: {theme}...")
-        
-        prompt = f"""Tu es un Tech Lead & Designer UX Expert réputé pour tes créations 'GoldArmy Premium'.
-Ta mission est de générer le code source pur (HTML/CSS/JS) d'un portfolio ultra-premium.
-
-CONTENU : Utilise les infos de ce CV :
+        prompt = f"""Tu es un Senior Web Architect & UX Designer.
+Ta mission est de concevoir un projet web Portfolio COMPLET et LUXUEUX basé sur ce CV :
 {cv_text[:4000]}
 
-DIRECTIVES DE DESIGN :
-- Thème demandé : {theme}
-- Framework : Tailwind CSS (via CDN) + CSS Custom pour les effets.
-- Bibliothèques recommandées : AOS (Animate On Scroll) et FontAwesome.
-- Variabilité imposée : {chosen_variant}
-- Assure une navigation fluide, un menu mobile burger, et un design 'Pixel Perfect'.
+STRUCTURE DU PROJET :
+- Thème : {theme}
+- Framework : Tailwind CSS (CDN requis dans le HTML).
+- Séparation : HTML, CSS (pour animations complexes) et JS (interactivité avancée) distincts.
 
-IMPORTANT - FORMAT DE RÉPONSE :
-Renvoie UNIQUEMENT le code HTML complet (<!DOCTYPE html> ... </html>).
-NE FAIS PAS de préambule, pas de commentaires de discussion, pas de résumé de tes choix.
-L'utilisateur injecte ta réponse directement dans un moteur de rendu, donc tout texte en dehors des balises HTML cassera le site.
+[INSTRUCTIONS_CRUCIALES]
+- Réponds UNIQUEMENT avec les balises ci-dessous. Pas de blabla.
+- Code complet, prêt à l'emploi. Pas de placeholders.
+- Design Premium : Profite de Tailwind pour des dégradés et une UI moderne.
+
+[PERSONALITY_ANALYSIS]
+(Analyse du profil en 3-4 lignes max)
+
+[HTML_CODE]
+(Code HTML complet)
+
+[CSS_CODE]
+(Styles personnalisés)
+
+[JS_CODE]
+(Scripts interactifs)
 """
-        response = await self.generate_response(prompt)
+        response = await self.generate_response(prompt, max_tokens=8192)
         
-        # Nettoyage HTML Robuste par Regex
-        import re
-        html_match = re.search(r'<!DOCTYPE html>.*</html>', response, re.DOTALL | re.IGNORECASE)
-        if html_match:
-            clean_html = html_match.group(0)
-        else:
-            # Fallback si DOCTYPE manquant mais <html> présent
-            html_tag_match = re.search(r'<html.*</html>', response, re.DOTALL | re.IGNORECASE)
-            if html_tag_match:
-                clean_html = "<!DOCTYPE html>\n" + html_tag_match.group(0)
-            else:
-                # Si vraiment pas de balise html, on nettoie les backticks et on espère le mieux
-                clean_html = response.replace("```html", "").replace("```", "").strip()
-        
-        return {
-            "status": "success", 
-            "type": "portfolio_html", 
-            "content": clean_html,
-            "message": f"Voici ton Portfolio généré avec le thème {theme}. Vérifie l'aperçu dans ton Workspace !"
-        }
+        # Extraction par Regex unifiée et insensible à la casse
+        def extract_section(tag, text):
+            pattern = rf"\[{tag}\](.*?)(\[\w+_CODE\]|\[\w+_ANALYSIS\]|\[\w+_CRUCIALES\]|$)"
+            match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+            if not match: return ""
+            # Nettoyage profond (Markdown blocks)
+            content = match.group(1).strip()
+            content = re.sub(r'```[a-z]*\n?', '', content, flags=re.IGNORECASE)
+            content = re.sub(r'```$', '', content)
+            return content.strip()
+
+        try:
+            analysis = extract_section("PERSONALITY_ANALYSIS", response)
+            html = extract_section("HTML_CODE", response)
+            css = extract_section("CSS_CODE", response)
+            js = extract_section("JS_CODE", response)
+            
+            project = {
+                "personality_analysis": analysis or "Profil innovant et professionnel.",
+                "html": html or "<h1>Erreur : Flux de données interrompu. Réessaie.</h1>",
+                "css": css or "/* Standard Style */",
+                "js": js or "// Standard Interactivity",
+                "theme_applied": theme
+            }
+            
+            return {
+                "status": "success", 
+                "type": "portfolio_project", 
+                "project": project,
+                "content": project["html"],
+                "message": f"Analyse : {project['personality_analysis']}"
+            }
+        except Exception as e:
+            logger.error(f"[Mentor] Erreur extraction projet portfolio: {e}")
+            logger.debug(f"[Mentor] Réponse brute : {response[:200]}...")
+            return {
+                "status": "error",
+                "type": "chat",
+                "content": "⚠️ Une erreur est survenue lors de la structuration de ton projet. Réessaie avec une demande plus courte ou contacte le support."
+            }

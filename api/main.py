@@ -12,6 +12,7 @@ import os
 import sys
 import socket
 import time
+import zipfile
 
 from agents.orchestrator import OrchestratorAgent
 
@@ -127,6 +128,7 @@ class ProfileUpdateRequest(BaseModel):
     cv_text: Optional[str] = None
     portfolio_url: Optional[str] = None
     avatar_url: Optional[str] = None
+    last_portfolio: Optional[dict] = None
 
 @app.get("/")
 def read_root():
@@ -485,6 +487,30 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
 # ==========================================
 # Dashboard Endpoints
 # ==========================================
+@app.get("/api/portfolio/download-zip")
+async def download_portfolio_zip(current_user: dict = Depends(get_current_user)):
+    """Convertit le portfolio stocké en base de données en archive ZIP."""
+    db = get_db()
+    user = await db.users.find_one({"id": current_user["id"]}, {"last_portfolio": 1, "_id": 0})
+    
+    if not user or "last_portfolio" not in user:
+        raise HTTPException(status_code=404, detail="Aucun portfolio trouvé. Générez-en un d'abord !")
+    
+    project = user["last_portfolio"]
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr("index.html", project.get("html", ""))
+        zip_file.writestr("style.css", project.get("css", "/* Extra CSS */"))
+        zip_file.writestr("script.js", project.get("js", "// Extra JS"))
+        
+    zip_buffer.seek(0)
+    
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/x-zip-compressed",
+        headers={"Content-Disposition": "attachment; filename=goldarmy_portfolio.zip"}
+    )
 
 @app.get("/api/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
@@ -623,6 +649,18 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
         if response.get("type") == "job_search_results":
              await log_usage(current_user["id"], "sniper_search")
         
+        # Persistance du Portfolio en MongoDB si généré
+        if response.get("type") == "portfolio_project":
+            try:
+                db = get_db()
+                await db.users.update_one(
+                    {"id": current_user["id"]},
+                    {"$set": {"last_portfolio": response.get("project")}}
+                )
+                logger.info(f"💾 Portfolio sauvegardé pour l'utilisateur {current_user['id']}")
+            except Exception as e:
+                logger.error(f"❌ Erreur sauvegarde portfolio: {e}")
+
         return {"status": "success", "data": response}
     except Exception as e:
         import logging

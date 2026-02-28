@@ -132,6 +132,27 @@ const onAvatarFileChange = async (event) => {
 onMounted(fetchProfile)
 
 const goBack = () => router.push('/dashboard')
+const editPortfolio = () => {
+    router.push({ path: '/chat', query: { action: 'edit_last_portfolio' } })
+}
+
+const downloadZip = async () => {
+    try {
+        const token = localStorage.getItem('token')
+        const res = await fetch('http://localhost:8000/api/portfolio/download-zip', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
+        if (!res.ok) throw new Error("Erreur de téléchargement")
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'goldarmy_portfolio.zip'
+        a.click()
+    } catch (e) {
+        toastState.addToast('Erreur lors du téléchargement du ZIP.', 'error')
+    }
+}
 </script>
 
 <template>
@@ -313,6 +334,48 @@ const goBack = () => router.push('/dashboard')
                     <div class="absolute bottom-4 right-6 text-[10px] font-mono text-slate-700 tracking-tighter pointer-events-none">
                         RAW_DATA_V2 // CV_STORAGE
                     </div>
+                </div>
+            </div>
+            
+            <!-- Portfolio IA Section -->
+            <div class="bg-surface-900 border border-surface-800 rounded-[2.5rem] p-8 md:p-10 shadow-sm relative overflow-hidden group mb-8">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-indigo-500/10 rounded-xl">
+                            <SparklesIcon class="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <h3 class="text-xl font-bold text-white tracking-tight">Mon Portfolio IA</h3>
+                    </div>
+                </div>
+
+                <div v-if="profile.last_portfolio" class="space-y-6">
+                    <div class="p-6 bg-surface-950 border border-surface-800 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center">
+                                <DocumentTextIcon class="w-6 h-6 text-emerald-400" />
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">Projet Web Complet</h4>
+                                <p class="text-xs text-slate-500">Prêt pour l'édition ou l'export.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button @click="editPortfolio" class="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20">
+                                Éditer dans l'IDE
+                            </button>
+                            <button @click="downloadZip" class="px-5 py-2.5 bg-surface-800 border border-surface-700 hover:border-emerald-500/50 text-emerald-400 text-xs font-bold rounded-xl transition-all">
+                                ZIP
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 italic px-2 bg-surface-950/50 p-3 rounded-xl border border-surface-800">Analyse IA : {{ profile.last_portfolio.personality_analysis }}</p>
+                </div>
+
+                <div v-else class="text-center py-12 border-2 border-dashed border-surface-800 rounded-[2rem] bg-surface-950/30">
+                    <p class="text-slate-500 text-sm mb-4">Vous n'avez pas encore généré de portfolio IA.</p>
+                    <button @click="router.push('/chat')" class="px-6 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-bold rounded-xl border border-indigo-500/20 transition-all">
+                        Générer avec GoldArmy →
+                    </button>
                 </div>
             </div>
 

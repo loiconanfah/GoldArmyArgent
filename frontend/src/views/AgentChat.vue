@@ -20,12 +20,18 @@ import {
   ChevronRightIcon,
   ArrowDownTrayIcon
 } from '@heroicons/vue/24/solid'
+import {
+    SparklesIcon,
+    CloudArrowDownIcon
+} from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const inputQuery = ref('')
 const inputLocation = ref('')
 const cvText = ref('')
 const cvFilename = ref('')
+const isSaving = ref(false)
+const isGeneratingPortfolio = ref(false)
 const isUploadingCv = ref(false)
 const isUploading = ref(false)
 const isLoading = ref(false)
@@ -42,6 +48,7 @@ const mockTerminalLogs = ref([
     { type: 'success', text: '[Buid] Compilation du code source terminée.' },
     { type: 'info', text: '[DevServer] Écoute sur http://localhost:3000' }
 ])
+const activeFileTab = ref('html') // 'html', 'css', 'js'
 // Session unique par onglet pour que le backend maintienne l'historique
 const sessionId = ref((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `session_${Date.now()}`)
 const messages = ref([
@@ -62,10 +69,32 @@ const scrollToBottom = async () => {
     }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (route.query.prompt) {
     inputQuery.value = route.query.prompt
     sendMessage()
+  }
+  
+  // Si on vient du profil pour éditer le portfolio
+  if (route.query.action === 'edit_last_portfolio') {
+      try {
+          mockTerminalLogs.value.push({ type: 'info', text: '[System] Récupération du portfolio sauvegardé...' })
+          const res = await authFetch('http://localhost:8000/api/profile')
+          const json = await res.json()
+          if (json.status === 'success' && json.data.last_portfolio) {
+              workspaceProject.value = {
+                  title: 'Projet Portfolio (Restauré)',
+                  ...json.data.last_portfolio
+              }
+              isWorkspaceOpen.value = true
+              activeWorkspaceTab.value = 'app'
+              mockTerminalLogs.value.push({ type: 'success', text: '[System] Portfolio restauré avec succès.' })
+          } else {
+              mockTerminalLogs.value.push({ type: 'error', text: '[Error] Aucun portfolio sauvegardé trouvé.' })
+          }
+      } catch (e) {
+          console.error("Erreur restauration portfolio:", e)
+      }
   }
 })
 
@@ -95,6 +124,13 @@ const sendMessage = async () => {
   
   scrollToBottom()
   isLoading.value = true
+  // Si on détecte une demande de portfolio, on prépare le workspace
+  if (userMsg.toLowerCase().includes('portfolio')) {
+      isGeneratingPortfolio.value = true
+      isWorkspaceOpen.value = true
+      activeWorkspaceTab.value = 'app'
+      mockTerminalLogs.value.push({ type: 'info', text: '[IA] Début de la conception du portfolio sur mesure...' })
+  }
   
   try {
     const res = await authFetch('http://localhost:8000/api/chat', {
@@ -126,15 +162,31 @@ const sendMessage = async () => {
     
     messages.value.push(assistantMsg)
 
-    // Si c'est un portfolio, on l'ouvre dans le Workspace (IDE style)
-    if (assistantMsg.is_html) {
+    // Si c'est un portfolio (Projet structuré), on l'ouvre dans le Workspace
+    if (assistantMsg.type === 'portfolio_project' && data.data.project) {
         workspaceProject.value = {
-            title: 'Portfolio Généré',
-            content: assistantMsg.content
+            title: 'Projet Portfolio',
+            ...data.data.project
         }
         isWorkspaceOpen.value = true
         activeWorkspaceTab.value = 'app'
-        mockTerminalLogs.value.push({ type: 'success', text: `[Action] Portfolio rendu avec succès à ${assistantMsg.timestamp}` })
+        
+        // Push personality analysis to terminal
+        if (data.data.project.personality_analysis) {
+             mockTerminalLogs.value.push({ type: 'info', text: `[IA] Analyse : ${data.data.project.personality_analysis}` })
+        }
+        mockTerminalLogs.value.push({ type: 'success', text: `[Action] Projet structuré généré avec succès à ${assistantMsg.timestamp}` })
+    }
+    // Cas fallback pour l'ancien format HTML unique
+    else if (assistantMsg.is_html) {
+        workspaceProject.value = {
+            title: 'Portfolio Généré',
+            html: assistantMsg.content,
+            css: '',
+            js: ''
+        }
+        isWorkspaceOpen.value = true
+        activeWorkspaceTab.value = 'app'
     }
     
   } catch (e) {
@@ -147,6 +199,7 @@ const sendMessage = async () => {
     })
   } finally {
     isLoading.value = false
+    isGeneratingPortfolio.value = false
     scrollToBottom()
   }
 }
@@ -189,14 +242,48 @@ const removeCv = () => {
     cvFilename.value = ''
 }
 
-const downloadHtml = (htmlContent) => {
-    const blob = new Blob([htmlContent], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'portfolio.html'
-    a.click()
-    URL.revokeObjectURL(url)
+const saveWorkspaceProject = async () => {
+    try {
+        isSaving.value = true
+        const res = await authFetch('http://localhost:8000/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                last_portfolio: {
+                    html: workspaceProject.value.html,
+                    css: workspaceProject.value.css,
+                    js: workspaceProject.value.js,
+                    personality_analysis: workspaceProject.value.personality_analysis
+                }
+            })
+        })
+        const json = await res.json()
+        if (json.status === 'success') {
+            toastState.addToast("Portfolio sauvegardé avec succès !")
+            mockTerminalLogs.value.push({ type: 'success', text: '[System] Modifications sauvegardées en base de données.' })
+        }
+    } catch (e) {
+        toastState.addToast("Erreur lors de la sauvegarde.", "error")
+    } finally {
+        isSaving.value = false
+    }
+}
+const downloadZip = async () => {
+    try {
+        const token = localStorage.getItem('token')
+        const res = await fetch('http://localhost:8000/api/portfolio/download-zip', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
+        if (!res.ok) throw new Error("Erreur de téléchargement")
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'goldarmy_portfolio.zip'
+        a.click()
+    } catch (e) {
+        toastState.addToast('Erreur lors de la génération du ZIP.', 'error')
+    }
 }
 
 const isDownloadingDocx = ref(false)
@@ -242,11 +329,21 @@ const downloadCvDocx = async (cvJsonString) => {
     }
 }
 const openInWorkspace = (msg) => {
-    workspaceProject.value = {
-        title: msg.is_html ? 'Portfolio' : 'Projet',
-        content: msg.content
+    if (msg.type === 'portfolio_project' && msg.project) {
+        workspaceProject.value = {
+            title: 'Projet Portfolio',
+            ...msg.project
+        }
+    } else {
+        workspaceProject.value = {
+            title: 'Portfolio',
+            html: msg.content,
+            css: '',
+            js: ''
+        }
     }
     isWorkspaceOpen.value = true
+    activeWorkspaceTab.value = 'app'
 }
 </script>
 
@@ -494,15 +591,15 @@ const openInWorkspace = (msg) => {
             <div v-else-if="!msg.is_html && !msg.is_cv_rewrite && !msg.is_audit_rewrite" class="whitespace-pre-wrap text-slate-300" v-html="msg.content.replace(/\n/g, '<br/>')"></div>
             
             <!-- Workspace Integrated Rendering (Portfolio) -->
-            <div v-else class="space-y-4 w-full">
+            <div v-else-if="msg.is_html || msg.type === 'portfolio_project'" class="space-y-4 w-full">
                 <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col gap-4">
                     <div class="flex items-center justify-between gap-2">
                         <div>
                             <h4 class="font-bold text-emerald-400 text-sm m-0">✅ Portfolio Prêt</h4>
-                            <p class="text-[10px] text-emerald-500/80 m-0 leading-tight">Le code a été injecté dans ton espace de travail.</p>
+                            <p class="text-[10px] text-emerald-500/80 m-0 leading-tight">Le projet structuré (HTML/CSS/JS) est prêt.</p>
                         </div>
-                        <button @click="openInWorkspace(msg)" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-surface-950 rounded-lg font-bold transition-all text-[10px] whitespace-nowrap">
-                            Voir le Site
+                        <button @click="openInWorkspace(msg)" class="px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-surface-950 rounded-lg font-bold transition-all text-[10px] whitespace-nowrap">
+                            Ouvrir l'IDE
                         </button>
                     </div>
                 </div>
@@ -568,8 +665,11 @@ const openInWorkspace = (msg) => {
             </div>
 
             <div class="flex items-center gap-2">
-                <button @click="downloadHtml(workspaceProject.content)" class="p-2 text-slate-400 hover:text-white transition-colors" title="Download">
-                    <ArrowDownTrayIcon class="w-4 h-4" />
+                <button @click="saveWorkspaceProject" :disabled="isSaving" class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50">
+                    <CloudArrowDownIcon class="w-3.5 h-3.5" /> Save
+                </button>
+                <button @click="downloadZip" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
+                    <ArrowDownTrayIcon class="w-3.5 h-3.5" /> ZIP
                 </button>
                 <button class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/20">
                     <CloudArrowUpIcon class="w-3.5 h-3.5" /> Deploy
@@ -595,17 +695,73 @@ const openInWorkspace = (msg) => {
 
         <!-- Workspace Content Area -->
         <div class="flex-1 w-full overflow-hidden relative bg-white">
-            <!-- APP PREVIEW -->
-            <iframe v-if="activeWorkspaceTab === 'app'" :srcdoc="workspaceProject.content" class="w-full h-full border-none" sandbox="allow-scripts"></iframe>
+            <!-- LOADING STATE -->
+            <div v-if="isGeneratingPortfolio" class="absolute inset-0 z-50 bg-surface-950 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+                <div class="relative mb-8">
+                    <div class="w-24 h-24 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                    <SparklesIcon class="w-8 h-8 text-indigo-400 absolute inset-0 m-auto animate-pulse" />
+                </div>
+                <h3 class="text-2xl font-display font-black text-white mb-3 tracking-tight">Génération de ton <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">Portfolio</span></h3>
+                <p class="text-slate-400 text-sm max-w-sm leading-relaxed">
+                    Gemini 3.1 analyse ton profil, définit une direction artistique sur mesure et structure ton code source. Cette étape prend quelques secondes...
+                </p>
+                <div class="mt-10 flex gap-2">
+                    <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0s"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.2s"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0.4s"></div>
+                </div>
+            </div>
+
+            <!-- APP PREVIEW (Injected with CSS/JS) -->
+            <iframe 
+                v-if="activeWorkspaceTab === 'app'" 
+                :srcdoc="`
+                    <html>
+                        <head>
+                            <style>${workspaceProject.css}</style>
+                        </head>
+                        <body>
+                            ${workspaceProject.html}
+                            <script>${workspaceProject.js}<\/script>
+                        </body>
+                    </html>
+                `" 
+                class="w-full h-full border-none" 
+                sandbox="allow-scripts"
+            ></iframe>
             
             <!-- CODE EDITOR (Pre) -->
-            <div v-else-if="activeWorkspaceTab === 'code'" class="h-full bg-[#0d1117] overflow-auto p-6 font-mono text-sm text-slate-300">
-                <div class="flex items-center gap-2 mb-4 pb-2 border-b border-surface-800 text-xs text-slate-500">
-                    <span class="text-indigo-400">index.html</span>
-                    <span class="opacity-30">|</span>
-                    <span>GoldArmy V2 Editor</span>
+            <div v-else-if="activeWorkspaceTab === 'code'" class="h-full bg-[#0d1117] flex flex-col">
+                <!-- File Selector Tabs -->
+                <div class="flex items-center gap-1 p-2 bg-surface-950 border-b border-surface-800">
+                    <button @click="activeFileTab = 'html'" :class="activeFileTab === 'html' ? 'bg-surface-800 text-orange-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> index.html
+                    </button>
+                    <button @click="activeFileTab = 'css'" :class="activeFileTab === 'css' ? 'bg-surface-800 text-blue-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> style.css
+                    </button>
+                    <button @click="activeFileTab = 'js'" :class="activeFileTab === 'js' ? 'bg-surface-800 text-yellow-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> script.js
+                    </button>
                 </div>
-                <pre class="leading-relaxed">{{ workspaceProject.content }}</pre>
+                <!-- Editor -->
+                <div class="flex-1 overflow-hidden p-0 font-mono text-xs text-slate-300">
+                    <textarea 
+                        v-if="activeFileTab === 'html'" 
+                        v-model="workspaceProject.html"
+                        class="w-full h-full bg-transparent p-4 resize-none focus:outline-none custom-scrollbar leading-relaxed"
+                    ></textarea>
+                    <textarea 
+                        v-else-if="activeFileTab === 'css'" 
+                        v-model="workspaceProject.css"
+                        class="w-full h-full bg-transparent p-4 resize-none focus:outline-none custom-scrollbar leading-relaxed"
+                    ></textarea>
+                    <textarea 
+                        v-else-if="activeFileTab === 'js'" 
+                        v-model="workspaceProject.js"
+                        class="w-full h-full bg-transparent p-4 resize-none focus:outline-none custom-scrollbar leading-relaxed"
+                    ></textarea>
+                </div>
             </div>
 
             <!-- TERMINAL -->
