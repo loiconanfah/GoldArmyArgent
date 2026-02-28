@@ -109,7 +109,7 @@ const fetchDashboardData = async () => {
     } catch(e) { console.error("Stats fetch error:", e) }
     
     try {
-        const res2 = await authFetch('http://localhost:8000/api/crm/applications')
+        const res2 = await authFetch('http://localhost:8000/api/crm')
         const json2 = await res2.json()
         if (json2.data) {
             recentActivity.value = json2.data.slice(0, 5).map(app => {

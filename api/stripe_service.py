@@ -2,7 +2,7 @@ import stripe
 import os
 from loguru import logger
 from config.settings import settings
-from core.database import get_db_connection
+from core.database import get_db
 
 stripe.api_key = settings.stripe_api_key
 STRIPE_WEBHOOK_SECRET = settings.stripe_webhook_secret
@@ -39,7 +39,7 @@ def create_checkout_session(user_id: str, email: str, tier: str):
         logger.error(f"Erreur Stripe Session: {e}")
         return None
 
-def handle_webhook_payload(payload, sig_header):
+async def handle_webhook_payload(payload, sig_header):
     """Gère les événements envoyés par Stripe (Webhooks)."""
     try:
         event = stripe.Webhook.construct_event(
@@ -55,14 +55,16 @@ def handle_webhook_payload(payload, sig_header):
     # Handle the event
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        update_user_subscription(session)
+        await update_user_subscription(session)
     elif event['type'] == 'customer.subscription.deleted':
         subscription = event['data']['object']
-        cancel_user_subscription(subscription)
+        await cancel_user_subscription(subscription)
+
+
         
     return True, "Event processed"
 
-def update_user_subscription(session):
+async def update_user_subscription(session):
     """Met à jour l'utilisateur après un paiement réussi."""
     user_id = session.get('metadata', {}).get('user_id')
     tier = session.get('metadata', {}).get('tier')
@@ -72,39 +74,38 @@ def update_user_subscription(session):
     if not user_id or not tier:
         return
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    db = get_db()
     try:
-        cursor.execute('''
-            UPDATE users 
-            SET subscription_tier = ?, 
-                stripe_customer_id = ?, 
-                stripe_subscription_id = ? 
-            WHERE id = ?
-        ''', (tier, stripe_cust_id, stripe_sub_id, user_id))
-        conn.commit()
+        await db.users.update_one(
+            {"id": user_id},
+            {
+                "$set": {
+                    "subscription_tier": tier,
+                    "stripe_customer_id": stripe_cust_id,
+                    "stripe_subscription_id": stripe_sub_id
+                }
+            }
+        )
         logger.info(f"✅ Abonnement mis à jour (Stripe) pour {user_id}: {tier}")
     except Exception as e:
         logger.error(f"❌ Erreur DB Webhook: {e}")
-    finally:
-        conn.close()
 
-def cancel_user_subscription(subscription):
+async def cancel_user_subscription(subscription):
     """Réinitialise l'utilisateur au forfait GRATUIT si l'abonnement est annulé."""
     stripe_cust_id = subscription.get('customer')
     
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    db = get_db()
     try:
-        cursor.execute('''
-            UPDATE users 
-            SET subscription_tier = 'FREE', 
-                stripe_subscription_id = NULL 
-            WHERE stripe_customer_id = ?
-        ''', (stripe_cust_id,))
-        conn.commit()
+        await db.users.update_one(
+            {"stripe_customer_id": stripe_cust_id},
+            {
+                "$set": {
+                    "subscription_tier": "FREE",
+                    "stripe_subscription_id": None
+                }
+            }
+        )
         logger.info(f"⚠️ Abonnement résilié (Stripe) pour client {stripe_cust_id}")
     except Exception as e:
         logger.error(f"❌ Erreur DB Webhook Cancel: {e}")
-    finally:
-        conn.close()
+

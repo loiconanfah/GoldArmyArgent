@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     google_client_id: Optional[str] = Field(default=None, description="Client ID Google OAuth")
     google_client_secret: Optional[str] = Field(default=None, description="Client Secret Google OAuth")
 
+    # MongoDB Configuration
+    mongodb_uri: str = Field(..., description="MongoDB Atlas Connection URI")
+    mongodb_db_name: str = Field(default="goldarmy", description="Nom de la base MongoDB")
+
     # Job Search APIs
     jooble_api_key: Optional[str] = Field(default="ee1009c8-7eb3-4e21-a7f6-4422bc8913ca", description="Clé API Jooble")
     rapidapi_key: Optional[str] = Field(default=None, description="Clé RapidAPI (JSearch/Glassdoor)")

@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from typing import Dict, Any, Optional
-from core.database import get_db_connection
+from core.database import get_db
 import uuid
 
 # Configuration des limites
@@ -40,13 +40,11 @@ async def check_subscription_limit(user_id: str, feature: str) -> Dict[str, Any]
     Vérifie si un utilisateur a atteint sa limite pour une fonctionnalité donnée.
     Retourne {'allowed': bool, 'current': int, 'limit': int, 'message': str}
     """
-    conn = get_db_connection()
+    db = get_db()
     try:
-        cursor = conn.cursor()
         # 1. Récupérer le tier de l'utilisateur
-        cursor.execute("SELECT subscription_tier FROM users WHERE id = ?", (user_id,))
-        row = cursor.fetchone()
-        tier = row['subscription_tier'] if row else 'FREE'
+        user = await db.users.find_one({"id": user_id})
+        tier = user.get('subscription_tier', 'FREE') if user else 'FREE'
         
         limits = SUBSCRIPTION_LIMITS.get(tier, SUBSCRIPTION_LIMITS['FREE'])
         config = limits.get(feature)
@@ -59,34 +57,40 @@ async def check_subscription_limit(user_id: str, feature: str) -> Dict[str, Any]
         
         # 2. Compter l'usage actuel
         count = 0
+        
         if period == 'day':
-            cursor.execute(
-                "SELECT SUM(count) FROM usage_logs WHERE user_id = ? AND feature = ? AND used_at = CURRENT_DATE",
-                (user_id, feature)
-            )
-            res = cursor.fetchone()
-            count = res[0] or 0
+            today_str = date.today().isoformat()
+            pipeline = [
+                {"$match": {"user_id": user_id, "feature": feature, "used_at": today_str}},
+                {"$group": {"_id": None, "total": {"$sum": "$count"}}}
+            ]
+            result = await db.usage_logs.aggregate(pipeline).to_list(length=1)
+            count = result[0]["total"] if result else 0
+
         elif period == 'month':
-            # Format YYYY-MM
-            month_str = date.today().strftime("%Y-%m") + "%"
-            cursor.execute(
-                "SELECT SUM(count) FROM usage_logs WHERE user_id = ? AND feature = ? AND used_at LIKE ?",
-                (user_id, feature, month_str)
-            )
-            res = cursor.fetchone()
-            count = res[0] or 0
+            month_str = date.today().strftime("%Y-%m")
+            pipeline = [
+                {"$match": {
+                    "user_id": user_id, 
+                    "feature": feature, 
+                    "used_at": {"$regex": f"^{month_str}"}
+                }},
+                {"$group": {"_id": None, "total": {"$sum": "$count"}}}
+            ]
+            result = await db.usage_logs.aggregate(pipeline).to_list(length=1)
+            count = result[0]["total"] if result else 0
+
         elif period == 'total':
              # Cas spécial pour address_book qui compte les lignes réelles
             if feature == 'address_book':
-                cursor.execute("SELECT COUNT(*) FROM contacts WHERE user_id = ?", (user_id,))
-                count = cursor.fetchone()[0]
+                count = await db.contacts.count_documents({"user_id": user_id})
             else:
-                cursor.execute(
-                    "SELECT SUM(count) FROM usage_logs WHERE user_id = ? AND feature = ?",
-                    (user_id, feature)
-                )
-                res = cursor.fetchone()
-                count = res[0] or 0
+                pipeline = [
+                    {"$match": {"user_id": user_id, "feature": feature}},
+                    {"$group": {"_id": None, "total": {"$sum": "$count"}}}
+                ]
+                result = await db.usage_logs.aggregate(pipeline).to_list(length=1)
+                count = result[0]["total"] if result else 0
 
         if count >= limit:
             return {
@@ -97,31 +101,26 @@ async def check_subscription_limit(user_id: str, feature: str) -> Dict[str, Any]
             }
             
         return {'allowed': True, 'current': count, 'limit': limit}
-    finally:
-        conn.close()
+    except Exception as e:
+        from loguru import logger
+        logger.error(f"Erreur vérification limite: {e}")
+        return {'allowed': False, 'message': 'Erreur interne de vérification des limites.'}
 
 async def log_usage(user_id: str, feature: str, count: int = 1):
     """Enregistre une utilisation de fonctionnalité."""
-    conn = get_db_connection()
+    db = get_db()
     try:
-        cursor = conn.cursor()
-        log_id = str(uuid.uuid4())
-        # On vérifie s'il existe déjà une ligne pour aujourd'hui pour ce user/feature
-        cursor.execute(
-            "SELECT id, count FROM usage_logs WHERE user_id = ? AND feature = ? AND used_at = CURRENT_DATE",
-            (user_id, feature)
+        today_str = date.today().isoformat()
+        
+        # Upsert: if a log for today exists, increment it. Otherwise, create it.
+        await db.usage_logs.update_one(
+            {"user_id": user_id, "feature": feature, "used_at": today_str},
+            {
+                "$inc": {"count": count},
+                "$setOnInsert": {"id": str(uuid.uuid4())}
+            },
+            upsert=True
         )
-        row = cursor.fetchone()
-        if row:
-            cursor.execute(
-                "UPDATE usage_logs SET count = count + ? WHERE id = ?",
-                (count, row['id'])
-            )
-        else:
-            cursor.execute(
-                "INSERT INTO usage_logs (id, user_id, feature, count, used_at) VALUES (?, ?, ?, ?, CURRENT_DATE)",
-                (log_id, user_id, feature, count)
-            )
-        conn.commit()
-    finally:
-        conn.close()
+    except Exception as e:
+        from loguru import logger
+        logger.error(f"Erreur lors de l'enregistrement de l'utilisation SaaS: {e}")

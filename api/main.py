@@ -21,7 +21,7 @@ from api.auth import get_current_user, router as auth_router
 from api.interview import router as interview_router
 from api.subscription import check_subscription_limit, log_usage
 from api.stripe_service import create_checkout_session, handle_webhook_payload
-from core.database import get_db_connection
+from core.database import get_db
 
 app.include_router(auth_router)
 app.include_router(interview_router)
@@ -41,7 +41,7 @@ orchestrator = OrchestratorAgent()
 @app.on_event("startup")
 async def startup_event():
     from core.database import init_db
-    init_db()
+    await init_db()
     await orchestrator.initialize()
     
     # --- Démarrage Automatique du Frontend ---
@@ -256,31 +256,36 @@ async def draft_network_email(request: EmailDraftRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/network/contacts")
-def get_network_contacts(current_user: dict = Depends(get_current_user)):
+async def get_network_contacts(current_user: dict = Depends(get_current_user)):
     """Récupère tout le carnet d'adresses réseau."""
     import json as _json
     try:
-        from core.database import get_db_connection
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT * FROM contacts 
-            WHERE user_id = ? OR user_id = 'system_user' 
-            ORDER BY last_updated DESC
-        """, (current_user["id"],))
-        rows = cursor.fetchall()
-        conn.close()
+        from core.database import get_db
+        db = get_db()
+        cursor = db.contacts.find({
+            "$or": [
+                {"user_id": current_user["id"]},
+                {"user_id": 'system_user'}
+            ]
+        }).sort("last_updated", -1)
+        rows = await cursor.to_list(length=None)
+        
         contacts = []
         for row in rows:
             contact = dict(row)
-            # Parse le champ emails stocké en JSON string vers une liste Python
-            if contact.get("emails"):
+            # Clean ObjectID
+            if "_id" in contact:
+                contact["_id"] = str(contact["_id"])
+            
+            # Format emails list if needed
+            if contact.get("emails") and isinstance(contact["emails"], str):
                 try:
                     contact["emails"] = _json.loads(contact["emails"])
                 except Exception:
                     contact["emails"] = contact["emails"].split(",")
-            else:
+            elif not contact.get("emails"):
                 contact["emails"] = []
+            
             contacts.append(contact)
         return {"status": "success", "data": contacts}
     except Exception as e:
@@ -291,45 +296,35 @@ def get_network_contacts(current_user: dict = Depends(get_current_user)):
 # ==========================================
 
 @app.get("/api/profile")
-def get_profile(current_user: dict = Depends(get_current_user)):
+async def get_profile(current_user: dict = Depends(get_current_user)):
     """Récupère les informations complètes du profil utilisateur."""
-    from core.database import get_db_connection
-    conn = get_db_connection()
+    from core.database import get_db
+    db = get_db()
     try:
-        user = conn.execute("SELECT id, email, full_name, bio, cv_text, portfolio_url, avatar_url FROM users WHERE id = ?", (current_user["id"],)).fetchone()
+        user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
         if not user:
             raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-        return {"status": "success", "data": dict(user)}
-    finally:
-        conn.close()
+        return {"status": "success", "data": user}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/profile")
-def update_profile(request: ProfileUpdateRequest, current_user: dict = Depends(get_current_user)):
+async def update_profile(request: ProfileUpdateRequest, current_user: dict = Depends(get_current_user)):
     """Met à jour les informations du profil utilisateur."""
-    from core.database import get_db_connection
-    conn = get_db_connection()
+    from core.database import get_db
+    db = get_db()
     try:
         fields = request.dict(exclude_unset=True)
         if not fields:
             return {"status": "success", "message": "Aucun champ à mettre à jour"}
         
-        query = "UPDATE users SET "
-        params = []
-        for key, value in fields.items():
-            query += f"{key} = ?, "
-            params.append(value)
-        
-        query = query.rstrip(", ") + " WHERE id = ?"
-        params.append(current_user["id"])
-        
-        conn.execute(query, params)
-        conn.commit()
+        await db.users.update_one(
+            {"id": current_user["id"]},
+            {"$set": fields}
+        )
         return {"status": "success", "message": "Profil mis à jour avec succès"}
     except Exception as e:
-        conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
 
 @app.post("/api/profile/upload-cv")
 async def upload_cv_endpoint(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
@@ -348,11 +343,12 @@ async def upload_cv_endpoint(file: UploadFile = File(...), current_user: dict = 
         
         extracted_text = text.strip()
         
-        from core.database import get_db_connection
-        conn = get_db_connection()
-        conn.execute("UPDATE users SET cv_text = ? WHERE id = ?", (extracted_text, current_user["id"]))
-        conn.commit()
-        conn.close()
+        from core.database import get_db
+        db = get_db()
+        await db.users.update_one(
+            {"id": current_user["id"]}, 
+            {"$set": {"cv_text": extracted_text}}
+        )
         
         return {"status": "success", "text": extracted_text}
     except Exception as e:
@@ -378,11 +374,12 @@ async def upload_avatar_endpoint(file: UploadFile = File(...), current_user: dic
         
         avatar_url = f"http://localhost:8000/static/uploads/avatars/{filename}"
         
-        from core.database import get_db_connection
-        conn = get_db_connection()
-        conn.execute("UPDATE users SET avatar_url = ? WHERE id = ?", (avatar_url, current_user["id"]))
-        conn.commit()
-        conn.close()
+        from core.database import get_db
+        db = get_db()
+        await db.users.update_one(
+            {"id": current_user["id"]}, 
+            {"$set": {"avatar_url": avatar_url}}
+        )
         
         return {"status": "success", "avatar_url": avatar_url}
     except Exception as e:
@@ -394,114 +391,48 @@ import os
 os.makedirs("static/uploads/avatars", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ==========================================
-# CRM Endpoints (Kanban)
-# ==========================================
-
-@app.post("/api/crm/applications")
-def add_crm_application(request: CRMApplicationRequest, current_user: dict = Depends(get_current_user)):
-    """Ajoute une candidature au CRM."""
-    try:
-        from core.database import get_db_connection
-        import uuid
-        from datetime import datetime
-        
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        app_id = str(uuid.uuid4())
-        
-        cursor.execute('''
-            INSERT INTO applications (id, user_id, job_title, company_name, url, reference, status, notes, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            app_id, current_user["id"], request.job_title, request.company_name, request.url, 
-            request.reference, request.status, request.notes, datetime.now().isoformat()
-        ))
-        
-        conn.commit()
-        return {"status": "success", "data": {"id": app_id}}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if 'conn' in locals() and conn:
-            conn.close()
-
-@app.get("/api/crm/applications")
-def get_crm_applications(current_user: dict = Depends(get_current_user)):
-    """Récupère toutes les candidatures pour le Kanban."""
-    try:
-        from core.database import get_db_connection
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT * FROM applications WHERE user_id = ? ORDER BY created_at DESC", (current_user["id"],))
-        rows = cursor.fetchall()
-        
-        apps = [dict(r) for r in rows]
-        return {"status": "success", "data": apps}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if 'conn' in locals() and conn:
-            conn.close()
+# --- CRM Endpoints (Kanban) ---
+# Note: Les endpoints /api/crm/applications font doublons avec /api/crm
+# Je les supprime et on passe directement au drag and drop status et followup.
 
 @app.put("/api/crm/applications/{app_id}/status")
-def update_crm_status(app_id: str, request: CRMStatusUpdateRequest, current_user: dict = Depends(get_current_user)):
-    """Met à jour le statut (Drag and Drop) et horodate."""
+async def update_crm_status(app_id: str, request: CRMStatusUpdateRequest, current_user: dict = Depends(get_current_user)):
+    """Met à jour le statut (Drag and Drop) et horodate MongoDB."""
     try:
-        from core.database import get_db_connection
+        from core.database import get_db
         from datetime import datetime
         
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Si on passe en APPLIED, on note la date d'application par exemple
-        applied_at_clause = ""
-        params = [request.status]
+        db = get_db()
+        update_fields = {"status": request.status}
         
         if request.status == "APPLIED":
-            applied_at_clause = ", applied_at = ?"
-            params.append(datetime.now().isoformat())
+            update_fields["applied_at"] = datetime.utcnow()
             
-        params.append(app_id)
+        await db.applications.update_one(
+            {"id": app_id, "user_id": current_user["id"]},
+            {"$set": update_fields}
+        )
         
-        query = f"UPDATE applications SET status = ? {applied_at_clause} WHERE id = ? AND user_id = ?"
-        params.append(current_user["id"])
-        cursor.execute(query, tuple(params))
-        
-        conn.commit()
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if 'conn' in locals() and conn:
-            conn.close()
+
 
 @app.post("/api/crm/applications/{app_id}/followup")
 async def generate_followup_email(app_id: str, current_user: dict = Depends(get_current_user)):
-    """Génère un email de relance personnalisé et incrémente le compteur."""
+    """Génère un email de relance personnalisé et incrémente le compteur MongoDB."""
     try:
-        from core.database import get_db_connection
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        from core.database import get_db
+        db = get_db()
 
         # Fetch application details
-        cursor.execute("SELECT * FROM applications WHERE id = ? AND user_id = ?", (app_id, current_user["id"]))
-        app = cursor.fetchone()
-        if not app:
+        app_data = await db.applications.find_one({"id": app_id, "user_id": current_user["id"]})
+        if not app_data:
             raise HTTPException(status_code=404, detail="Application not found")
 
-        job_title = app["job_title"] or "le poste"
-        company = app["company_name"] or "l'entreprise"
-        notes = app["notes"] or ""
-
-        # Auto-migrate: add follow_up_count column if it doesn't exist
-        try:
-            cursor.execute("ALTER TABLE applications ADD COLUMN follow_up_count INTEGER DEFAULT 0")
-            conn.commit()
-        except Exception:
-            pass  # Column already exists
+        job_title = app_data.get("job_title", "le poste")
+        company = app_data.get("company_name", "l'entreprise")
+        notes = app_data.get("notes", "")
 
         # Check limit
         check = await check_subscription_limit(current_user["id"], "follow_up")
@@ -509,15 +440,17 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
             raise HTTPException(status_code=403, detail=check["message"])
 
         # Increment follow-up counter
-        cursor.execute("UPDATE applications SET follow_up_count = COALESCE(follow_up_count, 0) + 1 WHERE id = ?", (app_id,))
-        cursor.execute("SELECT follow_up_count FROM applications WHERE id = ?", (app_id,))
-        count_row = cursor.fetchone()
-        follow_up_count = count_row["follow_up_count"] if count_row else 1
-        conn.commit()
+        updated = await db.applications.find_one_and_update(
+            {"id": app_id},
+            {"$inc": {"follow_up_count": 1}},
+            return_document=True
+        )
+        follow_up_count = updated.get("follow_up_count", 1) if updated else 1
 
         # Generate email with GoldArmy unified LLM client
         from llm.unified_client import LLMClient
         llm = LLMClient()
+
         
         prompt = f"""
         Tu es l'assistant de recrutement GoldArmy.
@@ -547,60 +480,65 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         import logging
         logging.error(f"Followup generation error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if 'conn' in locals() and conn:
-            conn.close()
+
 
 # ==========================================
 # Dashboard Endpoints
 # ==========================================
 
 @app.get("/api/dashboard/stats")
-def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
-    """Récupère les statistiques réelles pour le Dashboard depuis SQLite."""
+async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
+    """Récupère les statistiques réelles pour le Dashboard depuis MongoDB Atlas."""
     try:
-        from core.database import get_db_connection
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        from core.database import get_db
+        db = get_db()
         
         # 1. Candidatures envoyées (tout sauf TO_APPLY)
-        cursor.execute("SELECT COUNT(*) FROM applications WHERE status != 'TO_APPLY' AND user_id = ?", (current_user["id"],))
-        applied_count = cursor.fetchone()[0] or 0
+        applied_count = await db.applications.count_documents({
+            "status": {"$ne": "TO_APPLY"}, 
+            "user_id": current_user["id"]
+        })
         
         # 2. Entretiens (status = INTERVIEW)
-        cursor.execute("SELECT COUNT(*) FROM applications WHERE status = 'INTERVIEW' AND user_id = ?", (current_user["id"],))
-        interview_count = cursor.fetchone()[0] or 0
+        interview_count = await db.applications.count_documents({
+            "status": "INTERVIEW", 
+            "user_id": current_user["id"]
+        })
         
-        # 3. Réseau (Contacts totaux — user direct + contacts auto-extraits par les agents)
-        cursor.execute(
-            "SELECT COUNT(*) FROM contacts WHERE user_id = ? OR user_id = 'system_user'",
-            (current_user["id"],)
-        )
-        network_count = cursor.fetchone()[0] or 0
+        # 3. Réseau (Contacts totaux — user direct + système)
+        network_count = await db.contacts.count_documents({
+            "$or": [
+                {"user_id": current_user["id"]},
+                {"user_id": "system_user"}
+            ]
+        })
         
-        # 4. CV Analysés (Correspond au nombre réel de candidatures traitées par l'agent)
-        cursor.execute("SELECT COUNT(*) FROM applications WHERE user_id = ?", (current_user["id"],))
-        total_apps = cursor.fetchone()[0] or 0
-        cv_analyzed = total_apps
+        # 4. CV Analysés (Candidatures totales)
+        cv_analyzed = await db.applications.count_documents({
+            "user_id": current_user["id"]
+        })
         
-        # 5. Croissance Mensuelle (Pour le graphique)
-        cursor.execute('''
-            SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count 
-            FROM applications 
-            WHERE user_id = ?
-            GROUP BY month 
-            ORDER BY month ASC
-        ''', (current_user["id"],))
-        monthly_raw = cursor.fetchall()
+        # 5. Croissance Mensuelle (Aggregation Pipeline)
+        pipeline = [
+            {"$match": {"user_id": current_user["id"]}},
+            {"$group": {
+                "_id": {
+                    "$dateToString": {"format": "%Y-%m", "date": "$created_at"}
+                },
+                "count": {"$sum": 1}
+            }},
+            {"$sort": {"_id": 1}}
+        ]
         
+        monthly_raw = await db.applications.aggregate(pipeline).to_list(length=None)
+        monthly_dict = {row["_id"]: row["count"] for row in monthly_raw if row.get("_id")}
+
         import datetime
         from dateutil.relativedelta import relativedelta
         
         now = datetime.datetime.now()
         chart_data = []
         months_fr = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
-        
-        monthly_dict = {row['month']: row['count'] for row in monthly_raw if row['month']}
         
         max_val = max(monthly_dict.values()) if monthly_dict else 10
         if max_val < 10: max_val = 10
@@ -635,9 +573,7 @@ def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         import logging
         logging.error(f"Erreur Dashboard Stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if 'conn' in locals() and conn:
-            conn.close()
+
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_current_user)):
@@ -711,47 +647,57 @@ async def adapt_cv_endpoint(request: CVAdaptRequest):
 
 # --- CRM Endpoints (Sniper Pillar) ---
 # Note: Consolidé pour utiliser core.database au lieu de api.crm_db (JSON)
-from core.database import get_db_connection
+from core.database import get_db
 
 @app.get("/api/crm")
-def fetch_crm(current_user: dict = Depends(get_current_user)):
-    """Alias pour les candidatures existantes."""
+async def fetch_crm(current_user: dict = Depends(get_current_user)):
+    """Alias pour les candidatures existantes via MongoDB."""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM applications WHERE user_id = ? ORDER BY created_at DESC", (current_user["id"],))
-        rows = cursor.fetchall()
-        return {"status": "success", "data": [dict(r) for r in rows]}
-    finally:
-        conn.close()
+        db = get_db()
+        cursor = db.applications.find({"user_id": current_user["id"]}).sort("created_at", -1)
+        apps = await cursor.to_list(length=None)
+        
+        # Clean ObjectID for JSON serialization
+        for app in apps:
+            app["_id"] = str(app["_id"])
+            
+        return {"status": "success", "data": apps}
+    except Exception as e:
+        logger.error(f"Error fetching CRM: {e}")
+        return {"status": "error", "message": "Failed to fetch CRM data"}
 
 @app.post("/api/crm")
-def create_crm_entry(request: CRMApplicationRequest, current_user: dict = Depends(get_current_user)):
-    """Crée une entrée dans le CRM SQLite."""
+async def create_crm_entry(request: CRMApplicationRequest, current_user: dict = Depends(get_current_user)):
+    """Crée une entrée dans le CRM MongoDB."""
     import uuid
     from datetime import datetime
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        db = get_db()
         app_id = str(uuid.uuid4())
-        cursor.execute('''
-            INSERT INTO applications (id, user_id, job_title, company_name, url, reference, status, notes, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            app_id, current_user["id"], request.job_title, request.company_name, request.url, 
-            request.reference, request.status, request.notes, datetime.now().isoformat()
-        ))
-        conn.commit()
+        
+        new_app = {
+            "id": app_id,
+            "user_id": current_user["id"],
+            "job_title": request.job_title,
+            "company_name": request.company_name,
+            "url": request.url,
+            "reference": getattr(request, 'reference', ''),
+            "status": request.status,
+            "notes": getattr(request, 'notes', ''),
+            "created_at": datetime.utcnow() # Using UTC for safer global timestamping
+        }
+        
+        await db.applications.insert_one(new_app)
         return {"status": "success", "data": {"id": app_id}}
-    finally:
-        conn.close()
+    except Exception as e:
+        logger.error(f"Error creating CRM entry: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create CRM entry")
 
 @app.put("/api/crm/{item_id}")
-def update_crm_entry(item_id: str, updates: Dict[str, Any], current_user: dict = Depends(get_current_user)):
-    """Met à jour une entrée CRM SQLite."""
+async def update_crm_entry(item_id: str, updates: Dict[str, Any], current_user: dict = Depends(get_current_user)):
+    """Met à jour une entrée CRM MongoDB."""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        db = get_db()
         
         # Filtre les champs modifiables
         allowed_fields = ["status", "notes", "job_title", "company_name"]
@@ -760,26 +706,26 @@ def update_crm_entry(item_id: str, updates: Dict[str, Any], current_user: dict =
         if not update_fields:
             return {"status": "success", "message": "No changes"}
             
-        sql = "UPDATE applications SET " + ", ".join([f"{k} = ?" for k in update_fields.keys()]) + " WHERE id = ? AND user_id = ?"
-        params = list(update_fields.values()) + [item_id, current_user["id"]]
+        await db.applications.update_one(
+            {"id": item_id, "user_id": current_user["id"]},
+            {"$set": update_fields}
+        )
         
-        cursor.execute(sql, params)
-        conn.commit()
         return {"status": "success"}
-    finally:
-        conn.close()
+    except Exception as e:
+        logger.error(f"Error updating CRM entry: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update CRM entry")
 
 @app.delete("/api/crm/{item_id}")
-def delete_crm_entry(item_id: str, current_user: dict = Depends(get_current_user)):
-    """Supprime une entrée CRM SQLite."""
+async def delete_crm_entry(item_id: str, current_user: dict = Depends(get_current_user)):
+    """Supprime une entrée CRM MongoDB."""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM applications WHERE id = ? AND user_id = ?", (item_id, current_user["id"]))
-        conn.commit()
+        db = get_db()
+        await db.applications.delete_one({"id": item_id, "user_id": current_user["id"]})
         return {"status": "success", "message": "Deleted"}
-    finally:
-        conn.close()
+    except Exception as e:
+        logger.error(f"Erreur delete CRM: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # --- Radar Endpoints (Market Insights) ---
 class RadarRequest(BaseModel):
@@ -837,7 +783,7 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
-    success, message = handle_webhook_payload(payload, sig_header)
+    success, message = await handle_webhook_payload(payload, sig_header)
     if not success:
         raise HTTPException(status_code=400, detail=message)
     

@@ -283,7 +283,7 @@ const runRadar = async (job) => {
 const addToCrmAndApply = async (job) => {
     try {
         // 1. Enregistrer dans le CRM
-        await authFetch('http://localhost:8000/api/crm/applications', {
+        await authFetch('http://localhost:8000/api/crm', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

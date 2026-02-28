@@ -49,7 +49,7 @@ const appliedCount = computed(() => crmCards.value['APPLIED']?.length || 0)
 const fetchCrmData = async () => {
     isLoading.value = true
     try {
-        const res = await authFetch('http://localhost:8000/api/crm/applications')
+        const res = await authFetch('http://localhost:8000/api/crm')
         const json = await res.json()
         const rawData = json.data || []
         const grouped = { 'TO_APPLY': [], 'APPLIED': [], 'FOLLOW_UP': [], 'INTERVIEW': [] }
@@ -75,7 +75,7 @@ const handleDrop = async (e, targetColumnId) => {
     crmCards.value[targetColumnId].push(card)
     draggedItem.value = null
     try {
-        await authFetch(`http://localhost:8000/api/crm/applications/${card.id}/status`, {
+        await authFetch(`http://localhost:8000/api/crm/${card.id}`, {
             method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: targetColumnId })
         })

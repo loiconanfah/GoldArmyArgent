@@ -8,8 +8,7 @@ load_dotenv() # Load from .env file
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 import google.generativeai as genai
-from core.database import get_db_connection
-from api.auth import get_current_user
+from core.database import get_db
 
 # Ensure API key is set
 api_key = os.environ.get("GEMINI_API_KEY", "")
@@ -131,8 +130,9 @@ async def websocket_interview(websocket: WebSocket, token: str):
             return
             
         # Get user
-        conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (user_email,)).fetchone()
+        from core.database import get_db
+        db = get_db()
+        user = await db.users.find_one({"email": user_email})
         if not user:
             await websocket.close(code=1008)
             return
@@ -154,8 +154,6 @@ async def websocket_interview(websocket: WebSocket, token: str):
     except Exception as e:
         await websocket.close(code=1008)
         return
-    finally:
-        if 'conn' in locals(): conn.close()
     
     # 2. Wait for Setup Payload from Frontend
     try:

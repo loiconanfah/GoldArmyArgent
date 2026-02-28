@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import jwt
 import bcrypt
 import os
-from core.database import get_db_connection
+from core.database import get_db
 from config.settings import settings
 import uuid
 
@@ -69,7 +69,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -83,37 +83,33 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except jwt.PyJWTError:
         raise credentials_exception
         
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, email, subscription_tier FROM users WHERE id = ?", (user_id,))
-        user = cursor.fetchone()
-        if user is None:
-            raise credentials_exception
-        return dict(user)
-    finally:
-        conn.close()
+    db = get_db()
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "id": 1, "email": 1, "subscription_tier": 1})
+    if user is None:
+        raise credentials_exception
+    return user
 
 @router.post("/register", response_model=Token)
-def register(user_data: UserCreate):
-    conn = get_db_connection()
+async def register(user_data: UserCreate):
+    db = get_db()
     try:
-        cursor = conn.cursor()
-        
         # Check if email exists
-        cursor.execute("SELECT id FROM users WHERE email = ?", (user_data.email,))
-        if cursor.fetchone():
+        existing_user = await db.users.find_one({"email": user_data.email})
+        if existing_user:
             raise HTTPException(status_code=400, detail="Email already registered")
             
         # Create user
         user_id = str(uuid.uuid4())
         hashed_password = get_password_hash(user_data.password)
         
-        cursor.execute(
-            "INSERT INTO users (id, email, hashed_password) VALUES (?, ?, ?)",
-            (user_id, user_data.email, hashed_password)
-        )
-        conn.commit()
+        new_user = {
+            "id": user_id,
+            "email": user_data.email,
+            "hashed_password": hashed_password,
+            "subscription_tier": "FREE",
+            "created_at": datetime.utcnow()
+        }
+        await db.users.insert_one(new_user)
         
         # Create token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -127,20 +123,18 @@ def register(user_data: UserCreate):
             "user": {"id": user_id, "email": user_data.email, "subscription_tier": "FREE"}
         }
     except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
+        if isinstance(e, HTTPException):
+            raise
+        logger.error(f"Erreur inscription: {e}")
+        raise HTTPException(status_code=500, detail=f"Database/Registration Error: {str(e)}")
 
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    conn = get_db_connection()
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE email = ?", (form_data.username,))
-        user = cursor.fetchone()
+        db = get_db()
+        user = await db.users.find_one({"email": form_data.username})
         
-        if not user or not verify_password(form_data.password, user["hashed_password"]):
+        if not user or not verify_password(form_data.password, user.get("hashed_password", "")):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
@@ -158,14 +152,19 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
             "user": {
                 "id": user["id"], 
                 "email": user["email"],
-                "subscription_tier": user["subscription_tier"]
+                "subscription_tier": user.get("subscription_tier", "FREE")
             }
         }
-    finally:
-        conn.close()
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        import traceback
+        err_msg = traceback.format_exc()
+        logger.error(f"Erreur login:\n{err_msg}")
+        raise HTTPException(status_code=500, detail=f"DEBUG ERROR: {err_msg}")
 
 @router.get("/me")
-def read_users_me(current_user: dict = Depends(get_current_user)):
+async def read_users_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
 
@@ -174,7 +173,7 @@ class GoogleTokenRequest(BaseModel):
     credential: str  # Google ID token from the frontend
 
 @router.post("/google", response_model=Token)
-def google_login(payload: GoogleTokenRequest):
+async def google_login(payload: GoogleTokenRequest):
     """Verify a Google ID token and return our own JWT."""
     if not GOOGLE_AUTH_AVAILABLE:
         raise HTTPException(status_code=501, detail="google-auth library not installed. Run: pip install google-auth")
@@ -196,38 +195,39 @@ def google_login(payload: GoogleTokenRequest):
     full_name   = idinfo.get("name", "")
     avatar_url  = idinfo.get("picture", "")
 
-    conn = get_db_connection()
+    db = get_db()
     try:
-        cursor = conn.cursor()
-
-        # Try to find by google_id first, then by email
-        cursor.execute("SELECT * FROM users WHERE google_id = ?", (google_id,))
-        user = cursor.fetchone()
+        # Try to find by google_id first
+        user = await db.users.find_one({"google_id": google_id})
 
         if user is None:
-            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-            user = cursor.fetchone()
+            # Try to find by email
+            user = await db.users.find_one({"email": email})
 
         if user is None:
             # Create new user (no password for Google OAuth users)
             user_id = str(uuid.uuid4())
-            cursor.execute(
-                """INSERT INTO users (id, email, hashed_password, full_name, avatar_url, google_id, subscription_tier)
-                   VALUES (?, ?, ?, ?, ?, ?, 'FREE')""",
-                (user_id, email, "GOOGLE_OAUTH_NO_PASSWORD", full_name, avatar_url, google_id)
-            )
-            conn.commit()
+            new_user = {
+                "id": user_id,
+                "email": email,
+                "hashed_password": "GOOGLE_OAUTH_NO_PASSWORD",
+                "full_name": full_name,
+                "avatar_url": avatar_url,
+                "google_id": google_id,
+                "subscription_tier": "FREE",
+                "created_at": datetime.utcnow()
+            }
+            await db.users.insert_one(new_user)
             tier = "FREE"
         else:
             user_id = user["id"]
-            tier = user["subscription_tier"]
+            tier = user.get("subscription_tier", "FREE")
             # Link google_id if not yet set
-            if not user["google_id"]:
-                cursor.execute(
-                    "UPDATE users SET google_id = ?, avatar_url = ? WHERE id = ?",
-                    (google_id, avatar_url, user_id)
+            if not user.get("google_id"):
+                await db.users.update_one(
+                    {"id": user_id},
+                    {"$set": {"google_id": google_id, "avatar_url": avatar_url}}
                 )
-                conn.commit()
 
         access_token = create_access_token(
             data={"sub": user_id, "email": email},
@@ -239,7 +239,9 @@ def google_login(payload: GoogleTokenRequest):
             "user": {"id": user_id, "email": email, "subscription_tier": tier}
         }
     except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
+        if isinstance(e, HTTPException):
+            raise
+        logger.error(f"Erreur oauth google: {e}")
+        import traceback
+        err_msg = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"DEBUG ERROR: {err_msg}")
