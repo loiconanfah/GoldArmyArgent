@@ -15,11 +15,14 @@ def get_db_client():
     global _client
     if _client is None:
         try:
+            import certifi
+            ca = certifi.where()
+            
             _client = AsyncIOMotorClient(
                 settings.mongodb_uri,
-                serverSelectionTimeoutMS=5000,
+                serverSelectionTimeoutMS=10000,
                 tz_aware=True,
-                tlsAllowInvalidCertificates=True
+                tlsCAFile=ca
             )
             # Test connection
             await _client.admin.command('ping')
