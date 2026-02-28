@@ -4,7 +4,22 @@ import { toastState } from '../store/toastState'
 
 import { ref, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { PaperAirplaneIcon, ArrowPathIcon, DocumentTextIcon, CheckIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/solid'
+import { 
+  PaperAirplaneIcon, 
+  ArrowPathIcon, 
+  DocumentTextIcon, 
+  CheckIcon, 
+  XMarkIcon, 
+  ArrowUpTrayIcon, 
+  EyeIcon, 
+  CodeBracketIcon,
+  CommandLineIcon,
+  GlobeAltIcon,
+  CloudArrowUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ArrowDownTrayIcon
+} from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const inputQuery = ref('')
@@ -14,6 +29,19 @@ const cvFilename = ref('')
 const isUploadingCv = ref(false)
 const isUploading = ref(false)
 const isLoading = ref(false)
+
+// Workspace IDE State
+const isWorkspaceOpen = ref(false)
+const activeWorkspaceTab = ref('app') // 'app', 'code', 'terminal'
+const workspaceProject = ref({
+    title: 'Nouveau Projet',
+    content: ''
+})
+const mockTerminalLogs = ref([
+    { type: 'info', text: '[GoldArmy] Système d\'initialisation démarré...' },
+    { type: 'success', text: '[Buid] Compilation du code source terminée.' },
+    { type: 'info', text: '[DevServer] Écoute sur http://localhost:3000' }
+])
 // Session unique par onglet pour que le backend maintienne l'historique
 const sessionId = ref((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `session_${Date.now()}`)
 const messages = ref([
@@ -83,17 +111,31 @@ const sendMessage = async () => {
     })
     const data = await res.json()
     
-    messages.value.push({
+    const assistantMsg = {
       id: Date.now() + 2,
       role: 'assistant',
       type: (data.data && data.data.type) || 'chat',
       is_html: data.data && data.data.type === 'portfolio_html',
+      activeTab: data.data && data.data.type === 'portfolio_html' ? 'preview' : 'code',
       is_cv_rewrite: data.data && data.data.type === 'cv_rewrite',
       is_audit_rewrite: data.data && data.data.type === 'cv_audit_rewrite',
       audit: (data.data && data.data.audit) || '',
       content: (data.data && data.data.content) || 'Réponse vide du serveur.',
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-    })
+    }
+    
+    messages.value.push(assistantMsg)
+
+    // Si c'est un portfolio, on l'ouvre dans le Workspace (IDE style)
+    if (assistantMsg.is_html) {
+        workspaceProject.value = {
+            title: 'Portfolio Généré',
+            content: assistantMsg.content
+        }
+        isWorkspaceOpen.value = true
+        activeWorkspaceTab.value = 'app'
+        mockTerminalLogs.value.push({ type: 'success', text: `[Action] Portfolio rendu avec succès à ${assistantMsg.timestamp}` })
+    }
     
   } catch (e) {
     messages.value.push({
@@ -199,10 +241,22 @@ const downloadCvDocx = async (cvJsonString) => {
         isDownloadingDocx.value = false
     }
 }
+const openInWorkspace = (msg) => {
+    workspaceProject.value = {
+        title: msg.is_html ? 'Portfolio' : 'Projet',
+        content: msg.content
+    }
+    isWorkspaceOpen.value = true
+}
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 md:p-8 max-w-4xl mx-auto w-full relative animate-fade-in-up">
+  <div class="h-screen w-full flex bg-surface-950 overflow-hidden relative">
+    
+    <!-- LEFT PANEL: CHAT (Flexible width) -->
+    <div :class="['flex flex-col h-full border-r border-surface-800 transition-all duration-300', isWorkspaceOpen ? 'w-full md:w-1/3' : 'w-full']">
+        <div class="h-full flex flex-col p-4 md:p-6 relative">
+
     <!-- Header Minimal -->
     <div class="flex items-center justify-between mb-8">
       <div>
@@ -439,21 +493,18 @@ const downloadCvDocx = async (cvJsonString) => {
             <!-- Standard text/markdown rendering -->
             <div v-else-if="!msg.is_html && !msg.is_cv_rewrite && !msg.is_audit_rewrite" class="whitespace-pre-wrap text-slate-300" v-html="msg.content.replace(/\n/g, '<br/>')"></div>
             
-            <!-- HTML App Rendering (Portfolio generator) -->
+            <!-- Workspace Integrated Rendering (Portfolio) -->
             <div v-else class="space-y-4 w-full">
-                <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h4 class="font-bold text-emerald-400 text-lg m-0">✅ Portfolio Généré</h4>
-                        <p class="text-sm text-emerald-500/80 m-0 mt-1">Code source complet prêt à être déployé.</p>
+                <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col gap-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <h4 class="font-bold text-emerald-400 text-sm m-0">✅ Portfolio Prêt</h4>
+                            <p class="text-[10px] text-emerald-500/80 m-0 leading-tight">Le code a été injecté dans ton espace de travail.</p>
+                        </div>
+                        <button @click="openInWorkspace(msg)" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-surface-950 rounded-lg font-bold transition-all text-[10px] whitespace-nowrap">
+                            Voir le Site
+                        </button>
                     </div>
-                    <button @click="downloadHtml(msg.content)" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-surface-950 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 whitespace-nowrap">
-                        Télécharger HTML
-                    </button>
-                </div>
-                
-                <h4 class="text-slate-400 text-sm mt-4 font-bold border-b border-surface-700 pb-2">Aperçu du Code Source</h4>
-                <div class="relative group/code">
-                    <pre class="bg-surface-950/80 overflow-x-auto p-5 rounded-2xl border border-surface-700 mt-2 font-mono text-xs text-slate-300 max-h-96 shadow-inner">{{ msg.content }}</pre>
                 </div>
             </div>
             
@@ -475,48 +526,100 @@ const downloadCvDocx = async (cvJsonString) => {
       </div>
     </div>
 
-    <!-- Floating Input Area -->
-    <div class="absolute bottom-4 left-4 right-4 md:left-8 md:right-8 lg:bottom-8 lg:left-8 lg:right-8 bg-surface-950/80 pt-4 backdrop-blur-md">
-      <div class="bg-surface-900 border border-surface-700 p-2 rounded-2xl shadow-lg flex flex-col sm:flex-row items-end sm:items-center gap-2 focus-within:ring-1 focus-within:ring-surface-600 focus-within:border-surface-600 transition-all">
-         
-         <!-- Champ Localisation -->
-         <div class="w-full sm:w-1/3 md:w-1/4 flex items-center gap-2 px-3 py-2 bg-surface-800 rounded-xl border border-surface-700">
-             <span class="text-slate-400 text-lg">📍</span>
-             <input 
-                 v-model="inputLocation" 
-                 type="text" 
-                 placeholder="Lieu (ex: Paris, France...)" 
-                 class="w-full bg-transparent border-none focus:ring-0 text-white text-sm placeholder-slate-500 p-0"
-                 @keydown.enter="sendMessage"
-             />
-         </div>
-
-         <!-- Séparateur visuel Desktop -->
-         <div class="hidden sm:block w-px h-8 bg-surface-700 mx-1"></div>
-
-         <!-- Champ principal Message -->
-         <textarea 
-            v-model="inputQuery"
-            @keydown.enter.exact.prevent="sendMessage"
-            class="w-full bg-transparent border-none focus:ring-0 text-white resize-none h-14 max-h-48 p-3 placeholder-slate-500 scrollbar-hide font-medium text-[15px]"
-            placeholder="Rechercher un emploi, demander un audit CV..."
-         ></textarea>
-         
-         <!-- Bouton Envoyer -->
-         <button 
-            @click="sendMessage"
-            :disabled="(!inputQuery.trim() && !cvText.trim()) || isLoading"
-            class="p-4 bg-gold-500 hover:bg-gold-400 disabled:bg-surface-800 text-surface-950 disabled:text-slate-600 rounded-xl transition-all font-bold shrink-0 shadow-lg shadow-gold-500/20"
-         >
-            <PaperAirplaneIcon v-if="!isLoading" class="w-6 h-6" />
-            <ArrowPathIcon v-else class="w-6 h-6 animate-spin" />
-         </button>
+      <div class="absolute bottom-4 left-4 right-4 bg-surface-950/90 pt-4 backdrop-blur-md">
+        <div class="bg-surface-900 border border-surface-700 p-2 rounded-2xl shadow-lg flex flex-col sm:flex-row items-end sm:items-center gap-2">
+           <!-- Location Field -->
+           <div class="w-full sm:w-1/3 flex items-center gap-2 px-3 py-2 bg-surface-800 rounded-xl border border-surface-700">
+               <span class="text-slate-400">📍</span>
+               <input v-model="inputLocation" type="text" placeholder="Lieu..." class="w-full bg-transparent border-none focus:ring-0 text-white text-xs"/>
+           </div>
+           <!-- Main Message -->
+           <textarea v-model="inputQuery" @keydown.enter.exact.prevent="sendMessage" class="w-full bg-transparent border-none focus:ring-0 text-white resize-none h-12 p-2 text-sm" placeholder="Question ou commande..."></textarea>
+           <!-- Send Button -->
+           <button @click="sendMessage" :disabled="isLoading" class="p-3 bg-gold-500 hover:bg-gold-400 text-surface-950 rounded-xl font-bold shrink-0">
+              <PaperAirplaneIcon v-if="!isLoading" class="w-5 h-5" />
+              <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
+           </button>
+        </div>
       </div>
-      <div class="text-center mt-3">
-          <p class="text-[11px] font-bold text-slate-500 tracking-wide">
-             GoldArmy peut faire des erreurs. Vérifiez les informations importantes.
-          </p>
-      </div>
+    </div>
+  </div>
+
+    <!-- RIGHT PANEL: WORKSPACE (IDE Style) -->
+    <div v-if="isWorkspaceOpen" class="flex-1 h-full bg-[#020617] flex flex-col shadow-2xl animate-fade-in">
+        <!-- Explorer / Workspace Header (IDE Style) -->
+        <div class="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-1.5 p-1 bg-surface-900 rounded-lg border border-surface-800">
+                    <button @click="activeWorkspaceTab = 'app'" :class="activeWorkspaceTab === 'app' ? 'bg-surface-700 text-white' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
+                        <GlobeAltIcon class="w-3.5 h-3.5" /> App
+                    </button>
+                    <button @click="activeWorkspaceTab = 'code'" :class="activeWorkspaceTab === 'code' ? 'bg-surface-700 text-white' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
+                        <CodeBracketIcon class="w-3.5 h-3.5" /> Code
+                    </button>
+                    <button @click="activeWorkspaceTab = 'terminal'" :class="activeWorkspaceTab === 'terminal' ? 'bg-surface-700 text-white' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
+                        <CommandLineIcon class="w-3.5 h-3.5" /> Terminal
+                    </button>
+                </div>
+                <div class="hidden lg:flex items-center gap-2 text-slate-500 text-[11px] font-mono">
+                    <span class="opacity-50">/</span>
+                    <span>{{ workspaceProject.title }}</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button @click="downloadHtml(workspaceProject.content)" class="p-2 text-slate-400 hover:text-white transition-colors" title="Download">
+                    <ArrowDownTrayIcon class="w-4 h-4" />
+                </button>
+                <button class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/20">
+                    <CloudArrowUpIcon class="w-3.5 h-3.5" /> Deploy
+                </button>
+                <button @click="isWorkspaceOpen = false" class="p-2 text-slate-500 hover:text-rose-400 transition-colors ml-2">
+                    <XMarkIcon class="w-5 h-5" />
+                </button>
+            </div>
+        </div>
+
+        <!-- Address Bar (Browser-like) -->
+        <div v-if="activeWorkspaceTab === 'app'" class="flex items-center gap-4 px-4 py-2 bg-[#0a0f1d] border-b border-surface-800">
+            <div class="flex items-center gap-1 text-slate-500">
+                <ChevronLeftIcon class="w-4 h-4" />
+                <ChevronRightIcon class="w-4 h-4" />
+                <ArrowPathIcon class="w-3.5 h-3.5 ml-1" />
+            </div>
+            <div class="flex-1 bg-surface-950 border border-surface-800 rounded-lg px-3 py-1.5 flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+                <span class="opacity-50">http://localhost:3000/</span>
+            </div>
+            <div class="text-slate-600 text-[10px] font-black uppercase tracking-widest">3000</div>
+        </div>
+
+        <!-- Workspace Content Area -->
+        <div class="flex-1 w-full overflow-hidden relative bg-white">
+            <!-- APP PREVIEW -->
+            <iframe v-if="activeWorkspaceTab === 'app'" :srcdoc="workspaceProject.content" class="w-full h-full border-none" sandbox="allow-scripts"></iframe>
+            
+            <!-- CODE EDITOR (Pre) -->
+            <div v-else-if="activeWorkspaceTab === 'code'" class="h-full bg-[#0d1117] overflow-auto p-6 font-mono text-sm text-slate-300">
+                <div class="flex items-center gap-2 mb-4 pb-2 border-b border-surface-800 text-xs text-slate-500">
+                    <span class="text-indigo-400">index.html</span>
+                    <span class="opacity-30">|</span>
+                    <span>GoldArmy V2 Editor</span>
+                </div>
+                <pre class="leading-relaxed">{{ workspaceProject.content }}</pre>
+            </div>
+
+            <!-- TERMINAL -->
+            <div v-else-if="activeWorkspaceTab === 'terminal'" class="h-full bg-black p-4 font-mono text-xs overflow-auto">
+                <div v-for="(log, i) in mockTerminalLogs" :key="i" :class="['mb-1', log.type === 'error' ? 'text-red-400' : log.type === 'success' ? 'text-emerald-400' : 'text-slate-400']">
+                    {{ log.text }}
+                </div>
+                <div class="flex items-center gap-2 text-slate-300 mt-2">
+                    <span class="text-emerald-400">➜</span>
+                    <span class="text-indigo-400">~/goldarmy-workspace</span>
+                    <span class="animate-pulse">_</span>
+                </div>
+            </div>
+        </div>
     </div>
   </div>
 </template>

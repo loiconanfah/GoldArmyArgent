@@ -595,10 +595,23 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
                     "content": check["message"]
                 }
         
+        cv_text = request.cv_text
+        cv_filename = request.cv_filename
+
+        # Auto-CV Retrieval from MongoDB if missing
+        if not cv_text:
+            from core.database import get_db
+            db = get_db()
+            user_profile = await db.users.find_one({"id": current_user["id"]}, {"cv_text": 1, "_id": 0})
+            if user_profile and user_profile.get("cv_text"):
+                cv_text = user_profile["cv_text"]
+                cv_filename = "CV_Profil_Sauvegarde.pdf"
+                logger.info(f"Using stored CV for user {current_user['id']}")
+
         task = {
             "query": request.message,
-            "cv_text": request.cv_text,
-            "cv_filename": request.cv_filename,
+            "cv_text": cv_text,
+            "cv_filename": cv_filename,
             "nb_results": request.nb_results,
             "location": request.location,
             "session_id": request.session_id or "default"
