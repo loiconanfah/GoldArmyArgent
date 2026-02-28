@@ -39,7 +39,10 @@ const isUploadingCv = ref(false)
 const isUploading = ref(false)
 const isLoading = ref(false)
 const isWorkspaceFullScreen = ref(false)
+const adminEmailToPromote = ref('')
+const isPromoting = ref(false)
 const selectedImage = ref(null) // Base64 of the design image
+const currentUser = ref(null)
 
 // Workspace IDE State
 const isWorkspaceOpen = ref(false)
@@ -100,6 +103,17 @@ onMounted(async () => {
       } catch (e) {
           console.error("Erreur restauration portfolio:", e)
       }
+    }
+
+  // Fetch current user info for Admin/Premium checks
+  try {
+      const res = await authFetch('http://localhost:8000/api/profile')
+      if (res.ok) {
+          const json = await res.json()
+          currentUser.value = json.data
+      }
+  } catch (e) {
+      console.error("Erreur chargement profil:", e)
   }
 })
 
@@ -280,6 +294,29 @@ const saveWorkspaceProject = async () => {
         isSaving.value = false
     }
 }
+
+const promoteUser = async () => {
+    if (!adminEmailToPromote.value) return
+    isPromoting.value = true
+    try {
+        const res = await authFetch('http://localhost:8000/api/admin/promote-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: adminEmailToPromote.value, tier: 'PRO' })
+        })
+        const data = await res.json()
+        if (res.ok) {
+            toastState.addToast(`L'utilisateur ${adminEmailToPromote.value} est maintenant Premium !`, 'success')
+            adminEmailToPromote.value = ''
+        } else {
+            toastState.addToast(data.detail || 'Erreur promotion', 'error')
+        }
+    } catch (e) {
+        toastState.addToast('Erreur connexion admin', 'error')
+    } finally {
+        isPromoting.value = false
+    }
+}
 const downloadZip = async () => {
     try {
         const token = localStorage.getItem('token')
@@ -423,6 +460,20 @@ const openInWorkspace = (msg) => {
             </label>
         </div>
     </transition>
+
+    <!-- Admin Section -->
+    <div v-if="currentUser?.subscription_tier === 'ADMIN'" class="mb-6 bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-2xl shadow-lg animate-fade-in">
+        <div class="flex items-center gap-2 mb-3">
+            <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+            <h3 class="text-xs font-black text-indigo-400 uppercase tracking-widest">Console Admin GoldArmy</h3>
+        </div>
+        <div class="flex gap-2">
+            <input v-model="adminEmailToPromote" type="email" placeholder="E-mail de l'utilisateur..." class="flex-1 bg-surface-950 border-surface-700 rounded-xl text-xs text-white focus:ring-indigo-500 py-2.5" />
+            <button @click="promoteUser" :disabled="isPromoting" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/20 whitespace-nowrap">
+                {{ isPromoting ? '...' : 'DONNER PREMIUM' }}
+            </button>
+        </div>
+    </div>
 
     <!-- Chat History Area -->
     <div ref="chatContainer" class="flex-1 overflow-y-auto space-y-8 pr-2 pb-32 scroll-smooth">
@@ -748,8 +799,8 @@ const openInWorkspace = (msg) => {
                         </body>
                     </html>
                 `" 
-                class="w-full h-full border-none" 
-                sandbox="allow-scripts"
+                class="w-full h-full border-none bg-white" 
+                sandbox="allow-scripts allow-same-origin"
             ></iframe>
             
             <!-- CODE EDITOR (Pre) -->

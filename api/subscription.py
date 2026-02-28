@@ -32,6 +32,15 @@ SUBSCRIPTION_LIMITS = {
         'cv_adaptation': {'limit': 99999, 'period': 'month'},
         'headhunter': {'limit': 99999, 'period': 'month'},
         'address_book': {'limit': 99999, 'period': 'total'},
+    },
+    'ADMIN': {
+        'sniper_search': {'limit': 999999, 'period': 'month'},
+        'cv_audit': {'limit': 999999, 'period': 'month'},
+        'hr_interview': {'limit': 999999, 'period': 'month'},
+        'follow_up': {'limit': 999999, 'period': 'month'},
+        'cv_adaptation': {'limit': 999999, 'period': 'month'},
+        'headhunter': {'limit': 999999, 'period': 'month'},
+        'address_book': {'limit': 999999, 'period': 'total'},
     }
 }
 
@@ -46,6 +55,10 @@ async def check_subscription_limit(user_id: str, feature: str) -> Dict[str, Any]
         user = await db.users.find_one({"id": user_id})
         tier = user.get('subscription_tier', 'FREE') if user else 'FREE'
         
+        # Bypass pour l'ADMIN
+        if tier == 'ADMIN':
+            return {'allowed': True, 'current': 0, 'limit': 999999}
+
         limits = SUBSCRIPTION_LIMITS.get(tier, SUBSCRIPTION_LIMITS['FREE'])
         config = limits.get(feature)
         

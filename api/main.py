@@ -131,6 +131,10 @@ class ProfileUpdateRequest(BaseModel):
     avatar_url: Optional[str] = None
     last_portfolio: Optional[dict] = None
 
+class PromoteUserRequest(BaseModel):
+    email: str
+    tier: str = "PRO"
+
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "GoldArmy Agent V2 API is running"}
@@ -844,6 +848,28 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=400, detail=message)
     
     return {"status": "success"}
+
+@app.post("/api/admin/promote-user")
+async def admin_promote_user(req: PromoteUserRequest, current_user: dict = Depends(get_current_user)):
+    """Permet à un administrateur de promouvoir un utilisateur au rang Premium."""
+    if current_user.get("subscription_tier") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs GoldArmy.")
+    
+    from core.database import get_db
+    db = get_db()
+    # Trouver l'utilisateur par email
+    target = await db.users.find_one({"email": req.email})
+    if not target:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable avec cet email.")
+    
+    # Mettre à jour le tier
+    await db.users.update_one(
+        {"email": req.email},
+        {"$set": {"subscription_tier": req.tier}}
+    )
+    
+    logger.info(f"👑 Admin {current_user['email']} a promu {req.email} au tier {req.tier}")
+    return {"status": "success", "message": f"Utilisateur {req.email} promu au tier {req.tier} avec succès."}
 
 if __name__ == "__main__":
     import uvicorn
