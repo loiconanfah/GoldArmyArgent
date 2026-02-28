@@ -161,8 +161,16 @@ class GeminiClient:
             
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, ssl=False) as response:
+            async with session.post(url, json=payload) as response:
+                if response.status != 200:
+                    err_text = await response.text()
+                    logger.error(f"Gemini API Error {response.status}: {err_text}")
+                    raise Exception(f"Gemini API HTTP {response.status}")
                 data = await response.json()
-                return data["candidates"][0]["content"]["parts"][0]["text"]
+                try:
+                    return data["candidates"][0]["content"]["parts"][0]["text"]
+                except KeyError:
+                    logger.error(f"Erreur de parsing Gemini: {data}")
+                    raise Exception("Format de réponse Gemini inattendu")
 
     async def close(self): pass

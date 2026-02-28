@@ -208,8 +208,9 @@ class OrchestratorAgent:
 
     async def _route_request(self, user_input: Dict[str, Any]) -> Dict[str, str]:
         """Determine which agent handles the query."""
-        query = user_input.get("query", "").lower().strip()
-        has_cv = bool(user_input.get("cv_text", "").strip())
+        query = (user_input.get("query") or "").lower().strip()
+        cv_text = user_input.get("cv_text") or ""
+        has_cv = bool(cv_text.strip())
 
         if "portfolio" in query or "site web" in query:
             if not has_cv:

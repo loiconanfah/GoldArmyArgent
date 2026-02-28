@@ -431,8 +431,8 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         follow_up_count = updated.get("follow_up_count", 1) if updated else 1
 
         # Generate email with GoldArmy unified LLM client
-        from llm.unified_client import LLMClient
-        llm = LLMClient()
+        from llm.unified_client import UnifiedLLMClient
+        llm = UnifiedLLMClient()
 
         
         prompt = f"""
