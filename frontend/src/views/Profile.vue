@@ -12,7 +12,8 @@ import {
     PencilSquareIcon,
     ArrowLeftIcon,
     CameraIcon,
-    CloudArrowUpIcon
+    CloudArrowUpIcon,
+    ShieldCheckIcon
 } from '@heroicons/vue/24/outline'
 import { useRouter } from 'vue-router'
 
@@ -41,7 +42,7 @@ const isPromoting = ref(false)
 const fetchProfile = async () => {
     isLoading.value = true
     try {
-        const res = await authFetch('http://localhost:8000/api/profile')
+        const res = await authFetch('/api/profile')
         const json = await res.json()
         if (json.status === 'success') {
             profile.value = { ...profile.value, ...json.data }
@@ -56,7 +57,7 @@ const fetchProfile = async () => {
 const saveProfile = async () => {
     isSaving.value = true
     try {
-        const res = await authFetch('http://localhost:8000/api/profile', {
+        const res = await authFetch('/api/profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(profile.value)
@@ -84,7 +85,7 @@ const onCvFileChange = async (event) => {
     formData.append('file', file)
     
     try {
-        const res = await fetch('http://localhost:8000/api/profile/upload-cv', {
+        const res = await authFetch('/api/profile/upload-cv', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
             body: formData
@@ -113,7 +114,7 @@ const onAvatarFileChange = async (event) => {
     formData.append('file', file)
     
     try {
-        const res = await fetch('http://localhost:8000/api/profile/upload-avatar', {
+        const res = await authFetch('/api/profile/upload-avatar', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
             body: formData
@@ -161,7 +162,7 @@ const promoteUser = async () => {
     if (!adminEmailToPromote.value) return
     isPromoting.value = true
     try {
-        const res = await authFetch('http://localhost:8000/api/admin/promote-user', {
+        const res = await authFetch('/api/admin/promote-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: adminEmailToPromote.value, tier: 'PRO' })

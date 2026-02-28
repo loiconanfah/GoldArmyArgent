@@ -26,7 +26,7 @@ const activeTab = ref('osint')
 const profile = ref({ cv_text: '' })
 const fetchProfile = async () => {
     try {
-        const res = await authFetch('http://localhost:8000/api/profile')
+        const res = await authFetch('/api/profile')
         const json = await res.json()
         if (json.status === 'success') {
             profile.value = json.data
@@ -65,7 +65,7 @@ const isLoadingContacts = ref(false)
 const loadContacts = async () => {
     isLoadingContacts.value = true
     try {
-        const res = await authFetch('http://localhost:8000/api/network/contacts')
+        const res = await authFetch('/api/network/contacts')
         const json = await res.json()
         if (json.status === 'success') {
             savedContacts.value = json.data || []
@@ -96,7 +96,7 @@ const enrichCompany = async () => {
     draftResult.value = null
     
     try {
-        const res = await authFetch('http://localhost:8000/api/network/enrich', {
+        const res = await authFetch('/api/network/enrich', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ company_name: companyName.value })
@@ -121,7 +121,7 @@ const findDecisionMakers = async () => {
     decisionMakers.value = []
     
     try {
-        const res = await authFetch('http://localhost:8000/api/network/headhunter', {
+        const res = await authFetch('/api/network/headhunter', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ company_name: hhCompanyName.value })
@@ -156,7 +156,7 @@ const draftEmail = async () => {
     draftCopied.value = false
     
     try {
-        const res = await authFetch('http://localhost:8000/api/network/draft-email', {
+        const res = await authFetch('/api/network/draft-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 

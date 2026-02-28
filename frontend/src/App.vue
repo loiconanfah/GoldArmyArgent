@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { authFetch } from './utils/auth'
 import { 
   HomeIcon, 
   MapIcon,
@@ -40,16 +41,16 @@ onMounted(async () => {
     } catch(e){}
   }
 
-  // Refresh tier from API to be sure
-  try {
-    const res = await fetch('http://localhost:8000/api/profile', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-    const json = await res.json()
-    if (json.status === 'success') {
-      userTier.value = json.data.subscription_tier || 'FREE'
-    }
-  } catch(e){}
+  // Refresh tier from API to be sure if logged in
+  if (localStorage.getItem('token')) {
+    try {
+      const res = await authFetch('/api/profile')
+      const json = await res.json()
+      if (json.status === 'success') {
+        userTier.value = json.data.subscription_tier || 'FREE'
+      }
+    } catch(e){}
+  }
 })
 
 const handleLogout = () => {

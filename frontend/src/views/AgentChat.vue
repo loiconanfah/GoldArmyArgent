@@ -1,6 +1,7 @@
 <script setup>
 import { authFetch } from '../utils/auth'
 import { toastState } from '../store/toastState'
+import { getApiUrl } from '../config'
 
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
@@ -52,7 +53,7 @@ const workspaceProject = ref({
 const mockTerminalLogs = ref([
     { type: 'info', text: '[GoldArmy] Système d\'initialisation démarré...' },
     { type: 'success', text: '[Buid] Compilation du code source terminée.' },
-    { type: 'info', text: '[DevServer] Écoute sur http://localhost:3000' }
+    { type: 'info', text: '[DevServer] Écoute sur port 3000' }
 ])
 const activeFileTab = ref('html') // 'html', 'css', 'js'
 // Session unique par onglet pour que le backend maintienne l'historique
@@ -62,7 +63,7 @@ const iframeKey = ref(0) // Utilisé pour forcer le rafraîchissement de l'ifram
 
 const portfolioRenderUrl = computed(() => {
     if (!currentUser.value?.id) return ''
-    return `http://localhost:8000/api/portfolio/render/${currentUser.value.id}?t=${iframeKey.value}`
+    return getApiUrl(`/api/portfolio/render/${currentUser.value.id}?t=${iframeKey.value}`)
 })
 
 const messages = ref([
@@ -93,7 +94,7 @@ onMounted(async () => {
   if (route.query.action === 'edit_last_portfolio') {
       try {
           mockTerminalLogs.value.push({ type: 'info', text: '[System] Récupération du portfolio sauvegardé...' })
-          const res = await authFetch('http://localhost:8000/api/profile')
+          const res = await authFetch('/api/profile')
           const json = await res.json()
           if (json.status === 'success' && json.data.last_portfolio) {
               workspaceProject.value = {
@@ -113,7 +114,7 @@ onMounted(async () => {
 
   // Fetch current user info for Admin/Premium checks
   try {
-      const res = await authFetch('http://localhost:8000/api/profile')
+      const res = await authFetch('/api/profile')
       if (res.ok) {
           const json = await res.json()
           currentUser.value = json.data
@@ -158,9 +159,8 @@ const sendMessage = async () => {
   }
   
   try {
-    const res = await authFetch('http://localhost:8000/api/chat', {
+    const res = await authFetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             message: userMsg, 
             cv_text: cvText.value, 
@@ -249,10 +249,8 @@ const uploadCvPdf = async (event) => {
     try {
         const formData = new FormData()
         formData.append('file', file)
-        const token = localStorage.getItem('token')
-        const res = await fetch('http://localhost:8000/api/parse-pdf', {
+        const res = await authFetch('/api/parse-pdf', {
             method: 'POST',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
             body: formData
         })
         const data = await res.json()
@@ -277,9 +275,8 @@ const removeCv = () => {
 const saveWorkspaceProject = async () => {
     try {
         isSaving.value = true
-        const res = await authFetch('http://localhost:8000/api/profile', {
+        const res = await authFetch('/api/profile', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 last_portfolio: {
                     html: workspaceProject.value.html,
@@ -304,10 +301,7 @@ const saveWorkspaceProject = async () => {
 
 const downloadZip = async () => {
     try {
-        const token = localStorage.getItem('token')
-        const res = await fetch('http://localhost:8000/api/portfolio/download-zip', {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-        })
+        const res = await authFetch('/api/portfolio/download-zip')
         if (!res.ok) throw new Error("Erreur de téléchargement")
         const blob = await res.blob()
         const url = URL.createObjectURL(blob)
@@ -333,13 +327,8 @@ const downloadCvDocx = async (cvJsonString) => {
             }
         } catch {}
 
-        const token = localStorage.getItem('token')
-        const res = await fetch('http://localhost:8000/api/generate-cv-pdf', {
+        const res = await authFetch('/api/generate-cv-pdf', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {})
-            },
             body: JSON.stringify({ cv_json: cvJsonString, filename })
         })
 

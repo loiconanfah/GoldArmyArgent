@@ -86,7 +86,7 @@ const userTier = ref('FREE')
 
 const fetchProfile = async () => {
   try {
-    const res = await authFetch('http://localhost:8000/api/profile')
+    const res = await authFetch('/api/profile')
     const json = await res.json()
     if (json.status === 'success') {
       userTier.value = json.data.subscription_tier || 'FREE'
@@ -124,7 +124,7 @@ const handleSubscribe = async (tierId) => {
 
   isSubscribing.value = true
   try {
-    const res = await authFetch('http://localhost:8000/api/stripe/create-checkout-session', {
+    const res = await authFetch('/api/stripe/create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tier })

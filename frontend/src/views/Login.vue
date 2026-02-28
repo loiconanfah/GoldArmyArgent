@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 import { useGoogleAuth } from '@/composables/useGoogleAuth'
+import { getApiUrl } from '@/config'
 
 const router = useRouter()
 const email = ref('')
@@ -21,7 +22,7 @@ const handleLogin = async () => {
     formData.append('username', email.value)
     formData.append('password', password.value)
 
-    const res = await fetch('http://localhost:8000/api/auth/login', {
+    const res = await fetch(getApiUrl('/api/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData

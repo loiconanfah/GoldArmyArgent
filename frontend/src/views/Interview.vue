@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { authFetch } from '../utils/auth'
+import { getWsUrl, getApiUrl } from '../config'
 import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon, ChartBarIcon, AcademicCapIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { CheckIcon, UserCircleIcon, StarIcon } from '@heroicons/vue/24/solid'
 
@@ -121,13 +123,9 @@ const handleFileUpload = async (event) => {
     formData.append("file", file)
     
     try {
-        const response = await fetch('http://localhost:8000/api/parse-pdf', {
+        const response = await authFetch('/api/parse-pdf', {
             method: 'POST',
-            body: formData,
-            headers: {
-                 // Do not set Content-Type for FormData, the browser will set it with the boundary
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+            body: formData
         })
         const result = await response.json()
         if (result.status === 'success') {
@@ -222,7 +220,7 @@ const connectWebSocket = () => {
     }
     
     try {
-        socket.value = new WebSocket(`ws://localhost:8000/api/interview/ws?token=${token}`)
+        socket.value = new WebSocket(getWsUrl(`/api/interview/ws?token=${token}`))
         
         socket.value.onopen = () => {
             console.log("Connecté au Mentor IA")
@@ -324,9 +322,8 @@ const getVoice = () => {
 const testAudio = async () => {
     ttsStatus.value = "Génération du test HD..."
     try {
-        const response = await fetch('http://localhost:8000/api/interview/test-voice', {
+        const response = await authFetch('/api/interview/test-voice', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 text: `Bonjour, je suis ${currentRecruiter.value.name}. Je suis prête à commencer votre entretien en Haute Définition. M'entendez-vous bien ?`,
                 recruiterId: config.value.recruiterId
@@ -537,9 +534,8 @@ const finishInterview = async () => {
     stopAudioPulse()
     
     try {
-        const response = await fetch('http://localhost:8000/api/interview/analyze', {
+        const response = await authFetch('/api/interview/analyze', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 history: conversation.value,
                 jobTitle: config.value.jobTitle

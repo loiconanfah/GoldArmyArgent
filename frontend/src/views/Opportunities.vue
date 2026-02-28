@@ -46,7 +46,7 @@ const handleFileUpload = async (event) => {
     formData.append('file', file)
     
     try {
-        const res = await authFetch('http://localhost:8000/api/parse-pdf', {
+        const res = await authFetch('/api/parse-pdf', {
             method: 'POST',
             body: formData
         })
@@ -138,7 +138,7 @@ const performSearch = async () => {
     jobs.value = [] // Clear previous results
     
     try {
-        const res = await authFetch('http://localhost:8000/api/chat', {
+        const res = await authFetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -202,7 +202,7 @@ const adaptCV = async (job) => {
     adaptedData.value = null;
     
     try {
-        const res = await authFetch('http://localhost:8000/api/adapt-cv', {
+        const res = await authFetch('/api/adapt-cv', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -234,7 +234,7 @@ const saveAdaptedToProfile = async () => {
     if (!adaptedData.value || !adaptedData.value.markdown) return
     isSavingToProfile.value = true
     try {
-        const res = await authFetch('http://localhost:8000/api/profile', {
+        const res = await authFetch('/api/profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -265,7 +265,7 @@ const closeAdaptModal = () => {
 const runRadar = async (job) => {
     loadingRadarFor.value = job.id
     try {
-        const res = await authFetch('http://localhost:8000/api/radar', {
+        const res = await authFetch('/api/radar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ company_name: job.company, job_title: job.title })
@@ -283,7 +283,7 @@ const runRadar = async (job) => {
 const addToCrmAndApply = async (job) => {
     try {
         // 1. Enregistrer dans le CRM
-        await authFetch('http://localhost:8000/api/crm', {
+        await authFetch('/api/crm', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

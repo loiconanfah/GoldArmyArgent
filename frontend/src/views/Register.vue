@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 import { useGoogleAuth } from '@/composables/useGoogleAuth'
+import { getApiUrl } from '@/config'
 
 const router = useRouter()
 const email = ref('')
@@ -17,7 +18,7 @@ const handleRegister = async () => {
   errorMsg.value = ''
   isLoading.value = true
   try {
-    const res = await fetch('http://localhost:8000/api/auth/register', {
+    const res = await fetch(getApiUrl('/api/auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
