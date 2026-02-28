@@ -520,10 +520,13 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         
         # 5. Croissance Mensuelle (Aggregation Pipeline)
         pipeline = [
-            {"$match": {"user_id": current_user["id"]}},
+            {"$match": {
+                "user_id": current_user["id"],
+                "created_at": {"$exists": True, "$ne": None}
+            }},
             {"$group": {
                 "_id": {
-                    "$dateToString": {"format": "%Y-%m", "date": "$created_at"}
+                    "$dateToString": {"format": "%Y-%m", "date": {"$toDate": "$created_at"}}
                 },
                 "count": {"$sum": 1}
             }},
