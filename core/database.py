@@ -24,11 +24,9 @@ def get_db_client():
                 tz_aware=True,
                 tlsCAFile=ca
             )
-            # Test connection
-            await _client.admin.command('ping')
-            logger.info("✅ Connecté avec succès à MongoDB Atlas!")
+            logger.info("ℹ️ Client MongoDB configuré (en attente de connexion...)")
         except Exception as e:
-            logger.error(f"❌ Erreur de connexion MongoDB: {e}")
+            logger.error(f"❌ Erreur de configuration MongoDB: {e}")
             raise
     return _client
 
@@ -39,10 +37,14 @@ def get_db():
 
 async def init_db():
     """Initialise les index critiques pour la base MongoDB."""
-    logger.info("🗄️ Initialisation des index MongoDB (SaaS)...")
-    db = get_db()
+    logger.info("🗄️ Initialisation de la connexion MongoDB Atlas...")
+    client = get_db_client()
+    db = client[settings.mongodb_db_name]
     
     try:
+        # Test connection (Le ping est asynchrone, il doit être ici)
+        await client.admin.command('ping')
+        logger.info("✅ MongoDB Atlas est joignable et authentifié!")
         # Index Collections Users
         await db.users.create_index("email", unique=True)
         await db.users.create_index("google_id")
