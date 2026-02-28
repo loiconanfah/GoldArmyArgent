@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Classe de base abstraite pour tous les agents."""
 import asyncio
 import uuid
