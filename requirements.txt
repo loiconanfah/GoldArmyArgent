@@ -47,3 +47,6 @@ jinja2>=3.1.2
 # Background & Async (Optional for now)
 redis>=5.0.1
 celery>=5.3.4
+
+# Voice & TTS
+edge-tts>=6.1.0
