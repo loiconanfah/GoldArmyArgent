@@ -17,8 +17,11 @@ import {
   GlobeAltIcon,
   CloudArrowUpIcon,
   ChevronLeftIcon,
-  ChevronRightIcon,
-  ArrowDownTrayIcon
+  ChevronRightIcon, 
+  ArrowDownTrayIcon,
+  PhotoIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon
 } from '@heroicons/vue/24/solid'
 import {
     SparklesIcon,
@@ -35,6 +38,8 @@ const isGeneratingPortfolio = ref(false)
 const isUploadingCv = ref(false)
 const isUploading = ref(false)
 const isLoading = ref(false)
+const isWorkspaceFullScreen = ref(false)
+const selectedImage = ref(null) // Base64 of the design image
 
 // Workspace IDE State
 const isWorkspaceOpen = ref(false)
@@ -142,7 +147,8 @@ const sendMessage = async () => {
             cv_filename: cvFilename.value, 
             nb_results: 5, 
             location: inputLocation.value,
-            session_id: sessionId.value 
+            session_id: sessionId.value,
+            image_data: selectedImage.value
         })
     })
     const data = await res.json()
@@ -160,10 +166,9 @@ const sendMessage = async () => {
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     }
     
-    messages.value.push(assistantMsg)
-
-    // Si c'est un portfolio (Projet structuré), on l'ouvre dans le Workspace
-    if (assistantMsg.type === 'portfolio_project' && data.data.project) {
+    
+    // Si c'est un portfolio (Projet structuré), on l'ouvre dans le Workspace SANS message dans le chat
+    if (data.data && data.data.type === 'portfolio_project' && data.data.project) {
         workspaceProject.value = {
             title: 'Projet Portfolio',
             ...data.data.project
@@ -171,11 +176,11 @@ const sendMessage = async () => {
         isWorkspaceOpen.value = true
         activeWorkspaceTab.value = 'app'
         
-        // Push personality analysis to terminal
+        // Push personality analysis to terminal only
         if (data.data.project.personality_analysis) {
              mockTerminalLogs.value.push({ type: 'info', text: `[IA] Analyse : ${data.data.project.personality_analysis}` })
         }
-        mockTerminalLogs.value.push({ type: 'success', text: `[Action] Projet structuré généré avec succès à ${assistantMsg.timestamp}` })
+        mockTerminalLogs.value.push({ type: 'success', text: `[Action] Projet structuré généré avec succès.` })
     }
     // Cas fallback pour l'ancien format HTML unique
     else if (assistantMsg.is_html) {
@@ -188,6 +193,13 @@ const sendMessage = async () => {
         isWorkspaceOpen.value = true
         activeWorkspaceTab.value = 'app'
     }
+    else {
+        // Pour tout le reste, on garde le message dans le chat
+        messages.value.push(assistantMsg)
+    }
+    
+    // Clear image after send
+    selectedImage.value = null
     
   } catch (e) {
     messages.value.push({
@@ -349,9 +361,9 @@ const openInWorkspace = (msg) => {
 
 <template>
   <div class="h-screen w-full flex bg-surface-950 overflow-hidden relative">
-    
+
     <!-- LEFT PANEL: CHAT (Flexible width) -->
-    <div :class="['flex flex-col h-full border-r border-surface-800 transition-all duration-300', isWorkspaceOpen ? 'w-full md:w-1/3' : 'w-full']">
+    <div v-show="!isWorkspaceFullScreen" :class="['flex flex-col h-full border-r border-surface-800 transition-all duration-300', isWorkspaceOpen ? 'w-full md:w-1/3' : 'w-full']">
         <div class="h-full flex flex-col p-4 md:p-6 relative">
 
     <!-- Header Minimal -->
@@ -590,19 +602,8 @@ const openInWorkspace = (msg) => {
             <!-- Standard text/markdown rendering -->
             <div v-else-if="!msg.is_html && !msg.is_cv_rewrite && !msg.is_audit_rewrite" class="whitespace-pre-wrap text-slate-300" v-html="msg.content.replace(/\n/g, '<br/>')"></div>
             
-            <!-- Workspace Integrated Rendering (Portfolio) -->
-            <div v-else-if="msg.is_html || msg.type === 'portfolio_project'" class="space-y-4 w-full">
-                <div class="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex flex-col gap-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <div>
-                            <h4 class="font-bold text-emerald-400 text-sm m-0">✅ Portfolio Prêt</h4>
-                            <p class="text-[10px] text-emerald-500/80 m-0 leading-tight">Le projet structuré (HTML/CSS/JS) est prêt.</p>
-                        </div>
-                        <button @click="openInWorkspace(msg)" class="px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-surface-950 rounded-lg font-bold transition-all text-[10px] whitespace-nowrap">
-                            Ouvrir l'IDE
-                        </button>
-                    </div>
-                </div>
+            <!-- Workspace Notification (REMOVED as requested) -->
+            <div v-else-if="msg.type === 'portfolio_project' || msg.is_html" class="hidden">
             </div>
             
             <span class="block text-[10px] mt-4 opacity-40 font-bold" :class="msg.error ? 'text-rose-200' : 'text-slate-500'">{{ msg.timestamp }}</span>
@@ -630,8 +631,24 @@ const openInWorkspace = (msg) => {
                <span class="text-slate-400">📍</span>
                <input v-model="inputLocation" type="text" placeholder="Lieu..." class="w-full bg-transparent border-none focus:ring-0 text-white text-xs"/>
            </div>
-           <!-- Main Message -->
-           <textarea v-model="inputQuery" @keydown.enter.exact.prevent="sendMessage" class="w-full bg-transparent border-none focus:ring-0 text-white resize-none h-12 p-2 text-sm" placeholder="Question ou commande..."></textarea>
+            <!-- Image Upload -->
+            <div class="flex items-center px-2">
+                <label class="cursor-pointer p-2 hover:bg-surface-800 rounded-xl transition-colors text-slate-400 hover:text-gold-400 relative">
+                    <PhotoIcon class="w-5 h-5" />
+                    <input type="file" accept="image/*" class="hidden" @change="e => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => { selectedImage.value = ev.target.result; };
+                            reader.readAsDataURL(file);
+                        }
+                    }" />
+                    <!-- Preview dot -->
+                    <div v-if="selectedImage" class="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full border border-surface-900 shadow-sm"></div>
+                </label>
+            </div>
+            <!-- Main Message -->
+            <textarea v-model="inputQuery" @keydown.enter.exact.prevent="sendMessage" class="w-full bg-transparent border-none focus:ring-0 text-white resize-none h-12 p-2 text-sm" placeholder="Question ou commande (Ex: Design-le comme ça...)"></textarea>
            <!-- Send Button -->
            <button @click="sendMessage" :disabled="isLoading" class="p-3 bg-gold-500 hover:bg-gold-400 text-surface-950 rounded-xl font-bold shrink-0">
               <PaperAirplaneIcon v-if="!isLoading" class="w-5 h-5" />
@@ -667,6 +684,11 @@ const openInWorkspace = (msg) => {
             <div class="flex items-center gap-2">
                 <button @click="saveWorkspaceProject" :disabled="isSaving" class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50">
                     <CloudArrowDownIcon class="w-3.5 h-3.5" /> Save
+                </button>
+                <div class="h-4 w-[1px] bg-surface-800 mx-1"></div>
+                <button @click="isWorkspaceFullScreen = !isWorkspaceFullScreen" class="p-2 text-slate-400 hover:text-white transition-colors">
+                    <ArrowsPointingOutIcon v-if="!isWorkspaceFullScreen" class="w-4 h-4" />
+                    <ArrowsPointingInIcon v-else class="w-4 h-4" />
                 </button>
                 <button @click="downloadZip" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
                     <ArrowDownTrayIcon class="w-3.5 h-3.5" /> ZIP

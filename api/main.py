@@ -90,6 +90,7 @@ class ChatRequest(BaseModel):
     nb_results: Optional[int] = None
     location: Optional[str] = None
     session_id: Optional[str] = "default"
+    image_data: Optional[str] = None # Base64 image for vision tasks
 
 class CVAdaptRequest(BaseModel):
     job_title: str
@@ -640,7 +641,8 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
             "cv_filename": cv_filename,
             "nb_results": request.nb_results,
             "location": request.location,
-            "session_id": request.session_id or "default"
+            "session_id": request.session_id or "default",
+            "image_data": request.image_data
         }
         
         response = await orchestrator.think(task)

@@ -40,7 +40,8 @@ class MentorAgent(BaseAgent):
             elif "futuriste" in query: theme = "Cyber Futurism"
             elif "élégant" in query: theme = "Elegant Luxury"
             
-            return await self._generate_portfolio(cv_text, theme=theme)
+            image_data = user_input.get("image_data")
+            return await self._generate_portfolio(cv_text, theme=theme, image_data=image_data)
         else:
              return {"status": "error", "type": "chat", "content": f"Action inconnue: {action}"}
 
@@ -265,37 +266,49 @@ IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans ba
                 "content": f"⚠️ Le moteur IA a retourné un format inattendu. Réessaie en tapant **'Réécris mon CV'**.\n\nDétail technique: {str(e)}"
             }
 
-    async def _generate_portfolio(self, cv_text: str, theme: str = "GoldArmy Premium") -> Dict[str, Any]:
+    async def _generate_portfolio(self, cv_text: str, theme: str = "GoldArmy Premium", image_data: str = None) -> Dict[str, Any]:
         """Generates a structured portfolio project (HTML/CSS/JS) in JSON format."""
         logger.info(f"[Mentor] Generating multi-file Portfolio project with theme: {theme}...")
         
-        prompt = f"""Tu es un Senior Web Architect & UX Designer.
-Ta mission est de concevoir un projet web Portfolio COMPLET et LUXUEUX basé sur ce CV :
+        prompt = f"""Tu es un Senior Web Architect & Lead UX Designer chez GoldArmy.
+Ta mission : Créer un Portfolio "GOD MODE" (Ultra-Premium, Moderne, Futuriste) basé sur ce CV :
 {cv_text[:4000]}
 
-STRUCTURE DU PROJET :
+[DESIGN_SYSTEM_MANDATORY]
 - Thème : {theme}
-- Framework : Tailwind CSS (CDN requis dans le HTML).
-- Séparation : HTML, CSS (pour animations complexes) et JS (interactivité avancée) distincts.
+- Styles : Glassmorphism, Mesh Gradients, Bento Grid (si pertinent).
+{"- INSPIRATION IMAGE : Je t'ai fourni une image de design en pièce jointe. IGNORE le thème ci-dessus si l'image propose une direction plus moderne ou pertinente. Inspire-toi FORTEMENT de ses couleurs, de son layout et de son ambiance." if image_data else ""}
+- Typographie : Utilise Google Fonts (ex: Inter, Montserrat, Syne) via @import dans le CSS.
+- Couleurs : Palettes vibrantes et contrastées adaptées au thème.
+
+[TECHNICAL_STACK]
+- Structure : HTML5 Sémantique.
+- Styling : Tailwind CSS (via CDN) + CSS Custom pour les animations complexes (@keyframes).
+- Interactivité : JavaScript Vanille OBLIGATOIRE (Minimum 50 lignes). Implémente :
+    1. Un système de "Reveal on Scroll" via Intersection Observer pour chaque section.
+    2. Un effet de Parrelative ou de curseur personnalisé si le thème s'y prête.
+    3. Une gestion de filtrage pour les compétences ou les projets.
+    4. Un système de navigation fluide (Smooth Scroll) manuel si nécessaire.
 
 [INSTRUCTIONS_CRUCIALES]
-- Réponds UNIQUEMENT avec les balises ci-dessous. Pas de blabla.
-- Code complet, prêt à l'emploi. Pas de placeholders.
-- Design Premium : Profite de Tailwind pour des dégradés et une UI moderne.
+- Réponds UNIQUEMENT avec les balises [SECTION]. Aucun texte en dehors.
+- N'utilise PAS de blocs de code markdown (pas de ```) à l'intérieur des balises, mets le code BRUT.
+- Images : Utilise des images Unsplash (ex: https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426) pour un rendu pro.
+- JavaScript : Le code DOIT être complet, commenté et fonctionnel dès l'ouverture.
 
 [PERSONALITY_ANALYSIS]
-(Analyse du profil en 3-4 lignes max)
+(Analyse pro ultra-courte + Choix de la direction artistique)
 
 [HTML_CODE]
-(Code HTML complet)
+(Code HTML complet - Inclut les scripts et styles via balises standard)
 
 [CSS_CODE]
-(Styles personnalisés)
+(Animations @keyframes et styles spécifiques non-Tailwind)
 
 [JS_CODE]
-(Scripts interactifs)
+(Logique d'animation et interactions réelles. Pas de commentaire vide !)
 """
-        response = await self.generate_response(prompt, max_tokens=8192)
+        response = await self.generate_response(prompt, max_tokens=8192, image_data=image_data)
         
         # Extraction par Regex unifiée et insensible à la casse
         def extract_section(tag, text):

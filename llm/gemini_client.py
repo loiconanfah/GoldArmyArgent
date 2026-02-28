@@ -26,6 +26,20 @@ class GeminiClient:
         payload = {
             "contents": [{"parts": [{"text": prompt}]}]
         }
+
+        # Support VISION : ajout de l'image si présente
+        image_data = kwargs.get("image_data")
+        if image_data:
+            # Nettoyer le préfixe data:image/...;base64, si présent
+            if "," in image_data:
+                image_data = image_data.split(",")[1]
+            
+            payload["contents"][0]["parts"].append({
+                "inlineData": {
+                    "mimeType": "image/png", # Par défaut PNG, Gemini détecte souvent le reste
+                    "data": image_data
+                }
+            })
         
         if system:
             payload["systemInstruction"] = {"parts": [{"text": system}]}
