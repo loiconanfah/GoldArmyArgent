@@ -58,6 +58,7 @@ let audioInterval = null
 
 let recognition = null;
 let currentSynthesis = null;
+let currentHDAudio = null; // Une seule piste HD à la fois (évite la voix en double)
 let cachedVoices = []; // ✅ Voix mémorisées dès le chargement de la page
 let pendingUtteranceText = null; // Texte en attente si les voix ne sont pas prêtes
 let accumulatedTranscript = ''; // ✅ Evite que la phrase soit coupée entre deux respirations
@@ -367,29 +368,38 @@ const testAudio = async () => {
 }
 
 /**
- * Joue l'audio Haute Définition (edge-tts) reçu du backend
+ * Joue l'audio Haute Définition (edge-tts) reçu du backend.
+ * Une seule piste à la fois : on arrête toute lecture HD précédente pour éviter la voix en double.
  */
 const playHDAudio = (base64Data) => {
     if (!base64Data) return
-    
+
+    if (currentHDAudio) {
+        try {
+            currentHDAudio.pause()
+            currentHDAudio.currentTime = 0
+            currentHDAudio.src = ''
+        } catch (e) {}
+        currentHDAudio = null
+    }
+    window.speechSynthesis.cancel() // TTS local coupé pour n'avoir qu'une seule voix
+
     ttsStatus.value = "Lecture audio HD..."
-    window.speechSynthesis.cancel() // On coupe le TTS local au cas où
-    
     try {
         const audio = new Audio(`data:audio/mp3;base64,${base64Data}`)
-        
+        currentHDAudio = audio
+
         audio.onplay = () => {
             isSpeaking.value = true
             startAudioPulse()
             if (recognition) { try { recognition.stop() } catch(e) {} }
         }
-        
+
         audio.onended = () => {
+            currentHDAudio = null
             isSpeaking.value = false
             stopAudioPulse()
             ttsStatus.value = "Prêt (HD)"
-            
-            // Relancer le micro
             setTimeout(() => {
                 if (pendingFinish.value) {
                     finishInterview()
@@ -401,15 +411,17 @@ const playHDAudio = (base64Data) => {
                 }
             }, 800)
         }
-        
+
         audio.onerror = (e) => {
+            currentHDAudio = null
             console.error("HD Audio error:", e)
             ttsStatus.value = "Erreur Audio HD"
             isSpeaking.value = false
         }
-        
+
         audio.play()
     } catch (err) {
+        currentHDAudio = null
         console.error("Failed to play HD Audio:", err)
         ttsStatus.value = "Erreur lecture HD"
     }
@@ -530,6 +542,10 @@ const stopInterview = () => {
     if (socket.value) socket.value.close()
     if (recognition) recognition.stop()
     if (window.speechSynthesis) window.speechSynthesis.cancel()
+    if (currentHDAudio) {
+        try { currentHDAudio.pause(); currentHDAudio.src = '' } catch (e) {}
+        currentHDAudio = null
+    }
     stopWebcam()
     stopAudioPulse()
     conversation.value = []

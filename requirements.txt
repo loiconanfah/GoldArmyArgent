@@ -36,8 +36,10 @@ stripe>=7.0.0
 
 # Generation & Utilities
 reportlab>=4.0.0
+pymupdf>=1.23.0
 pypdf>=3.17.0
 python-docx>=1.1.0
+
 python-dateutil>=2.8.2
 pyyaml>=6.0.1
 loguru>=0.7.2
@@ -47,6 +49,8 @@ jinja2>=3.1.2
 # Background & Async (Optional for now)
 redis>=5.0.1
 celery>=5.3.4
+websockets>=12.0
 
 # Voice & TTS
 edge-tts>=6.1.0
+
