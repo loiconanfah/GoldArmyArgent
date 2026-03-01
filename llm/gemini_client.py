@@ -64,26 +64,45 @@ class GeminiClient:
         logger.debug(f"DEBUG GEMINI URL: {url.replace(self.api_key, 'REDACTED')}")
         timeout = aiohttp.ClientTimeout(total=120) # Timeout à 120s pour les recherches Deep Pro
         
-        try:
-            # SSL=False est requis car certains environnements (Windows) ont des problèmes de certs
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(url, json=payload, ssl=False) as response:
-                    text = await response.text()
-                    if response.status != 200:
-                        logger.error(f"❌ Gemini Error {response.status}: {text}")
-                        # Provide more context for debugging
-                        with open("gemini_error_body.json", "w", encoding="utf-8") as f:
-                            f.write(text)
-                        raise Exception(f"Erreur API Gemini {response.status}: {text[:200]}")
-                    data = json.loads(text)
-                    return data["candidates"][0]["content"]["parts"][0]["text"]
-        except Exception as e:
-            import traceback
-            with open("gemini_crash.txt", "w", encoding="utf-8") as f:
-                f.write(f"Exception Type: {type(e)}\n")
-                f.write(traceback.format_exc())
-            logger.error(f"Gemini generate error: {e}")
-            raise e
+        max_retries = 3
+        backoff = 1.0 # secondes
+        
+        for attempt in range(max_retries):
+            try:
+                async with aiohttp.ClientSession(timeout=timeout) as session:
+                    async with session.post(url, json=payload, ssl=False) as response:
+                        text = await response.text()
+                        
+                        if response.status == 429:
+                            logger.warning(f"⚠️ Gemini Rate Limit (429). Tentative {attempt+1}/{max_retries}...")
+                            await asyncio.sleep(backoff * (2 ** attempt))
+                            continue
+                            
+                        if response.status in [500, 502, 503, 504]:
+                            logger.warning(f"⚠️ Gemini Server Error ({response.status}). Tentative {attempt+1}/{max_retries}...")
+                            await asyncio.sleep(backoff * (attempt + 1))
+                            continue
+
+                        if response.status != 200:
+                            logger.error(f"❌ Gemini Error {response.status}: {text}")
+                            with open("gemini_error_body.json", "w", encoding="utf-8") as f:
+                                f.write(text)
+                            raise Exception(f"Erreur API Gemini {response.status}: {text[:200]}")
+                            
+                        data = json.loads(text)
+                        return data["candidates"][0]["content"]["parts"][0]["text"]
+                        
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    import traceback
+                    with open("gemini_crash.txt", "w", encoding="utf-8") as f:
+                        f.write(f"Exception Type: {type(e)}\n")
+                        f.write(traceback.format_exc())
+                    logger.error(f"Gemini final generate error after {max_retries} attempts: {e}")
+                    raise e
+                logger.debug(f"Gemini retryable error (attempt {attempt+1}): {e}")
+                await asyncio.sleep(backoff * (attempt + 1))
+
 
 
     async def generate_with_sources(self, prompt: str, system: str = None, **kwargs) -> tuple:

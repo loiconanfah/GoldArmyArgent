@@ -24,41 +24,53 @@ class JudgeAgent(BaseAgent):
         }
 
     async def act(self, plan: Dict[str, Any]) -> Dict[str, Any]:
-        """Évalue les offres en lots (batches) pour optimiser les appels LLM."""
+        """Évalue les offres en lots avec Gemini 2.0 Flash (Mode Hyper-Vitesse)."""
         jobs = plan.get("jobs", [])
         cv_profile = plan.get("cv_profile", {})
-        chunk_size = plan.get("chunk_size", 10)
+        
+        # Gemini 2.0 Flash est 5x plus rapide, on peut augmenter le lot
+        chunk_size = 25 
         
         if not jobs:
             return {"success": True, "evaluated_jobs": []}
             
-        logger.info(f"⚖️ Judge analyse {len(jobs)} offres par rapport au CV...")
+        logger.info(f"⚖️ Judge analyse {len(jobs)} offres (Gemini 2.0 Flash Swarm)...")
         
-        # Découpage en lots
         chunks = [jobs[i:i + chunk_size] for i in range(0, len(jobs), chunk_size)]
         
-        # Exécution parallèle
-        tasks = [self._evaluate_batch(chunk, cv_profile) for chunk in chunks]
+        # Sémaphore pour parallélisme contrôlé sur Render (évite les 429)
+        semaphore = asyncio.Semaphore(5)
+
+        async def _evaluate_with_semaphore(chunk, profile):
+            async with semaphore:
+                try:
+                    # On force l'usage de flash pour la vitesse
+                    return await self._evaluate_batch(chunk, profile, model="gemini-2.0-flash")
+                except Exception as e:
+                    logger.error(f"🔴 Erreur Judge lot: {e}")
+                    return chunk
+
+        tasks = [_evaluate_with_semaphore(chunk, cv_profile) for chunk in chunks]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         evaluated_jobs = []
-        for i, res in enumerate(results):
+        for res in results:
             if isinstance(res, list):
                 evaluated_jobs.extend(res)
-            else:
-                logger.error(f"🔴 Erreur Judge lot {i+1}: {res}")
             
         # Tri par score décroissant
         evaluated_jobs.sort(key=lambda x: x.get("match_score", 0), reverse=True)
         
-        # Suppression stricte des offres non-pertinentes (Score < 40)
-        filtered_jobs = [j for j in evaluated_jobs if j.get("match_score", 0) >= 40]
+        # Filtre souple (Score >= 30)
+        filtered_jobs = [j for j in evaluated_jobs if j.get("match_score", 0) >= 30]
         
-        logger.info(f"⚖️ Judge a validé {len(filtered_jobs)} offres pertinentes (sur {len(evaluated_jobs)} analysées).")
+        logger.info(f"⚖️ Judge a validé {len(filtered_jobs)} offres en mode Flash.")
         
         return {"success": True, "evaluated_jobs": filtered_jobs}
 
-    async def _evaluate_batch(self, jobs: List[Dict[str, Any]], profile: Dict[str, Any]) -> List[Dict[str, Any]]:
+
+
+    async def _evaluate_batch(self, jobs: List[Dict[str, Any]], profile: Dict[str, Any], model: str = None) -> List[Dict[str, Any]]:
         """Appelle le LLM pour noter un lot d'offres."""
         job_list_text = ""
         for i, job in enumerate(jobs):
@@ -100,7 +112,8 @@ class JudgeAgent(BaseAgent):
         """
         
         try:
-            resp = await self.generate_response(prompt, json_mode=True)
+            resp = await self.generate_response(prompt, json_mode=True, model=model)
+
             # Nettoyage JSON
             match = re.search(r'\[.*\]', resp.replace('\n', ''), re.S)
 

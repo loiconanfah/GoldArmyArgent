@@ -49,75 +49,87 @@ class HunterAgent(BaseAgent):
         keywords = plan.get("keywords", [])
         location = plan.get("location", "")
         apis = plan.get("apis", [])
-        # On pousse la recherche au maximum : on multiplie par 10 la limite demandée
-        # pour s'assurer que Gemini a un pool massif d'offres à trier.
+        
+        # SNIPER SWARM 7.0: Pool massif pour maximiser les opportunités.
         limit = plan.get("limit", 10)
-        api_limit = max(100, limit * 10) 
+        api_limit = max(200, limit * 20) 
         job_type = plan.get("job_type", "emploi")
-        # Exclusions appliquées en POST-TRAITEMENT (pas injectées dans les requêtes API)
         exclude = [e.lower().strip() for e in plan.get("exclude", [])]
         
         all_jobs = []
-        tasks = []
         
-        logger.info(f"🏹 Hunter lance la traque MASSIVE sur {len(apis)} sources pour {location} (Max: {api_limit}/source)")
+        # Stratégie de Swarm : On découpe les mots-clés par petits groupes pour paralléliser l'appel aux APIs
+        logger.info(f"🚀 SWARM ACTIVÉ: Traque massive sur {len(apis)} sources | Localisation: {location}")
         logger.info(f"📝 Mots-clés: {keywords} | Exclusions locales: {exclude[:5]}...")
 
-        for kw in keywords:
-            # On cherche à la fois l'expression exacte et les mots clés larges
-            search_queries = [kw, f'"{kw}"']
-            
-            if job_type in ["alternance", "stage"] and job_type not in kw.lower():
-                search_queries.append(f"{kw} {job_type}")
-                if job_type == "alternance":
-                    search_queries.append(f"{kw} apprentissage")
-                    search_queries.append(f"{kw} contrat de professionnalisation")
-            
-            for sq in search_queries:
-                if "jooble" in apis and settings.jooble_api_key:
-                    tasks.append(self._search_jooble(sq, location, api_limit))
-                if "jsearch" in apis and settings.rapidapi_key:
-                    tasks.append(self._search_jsearch(sq, location, api_limit))
-                if "glassdoor" in apis and settings.rapidapi_key:
-                    tasks.append(self._search_glassdoor(sq, location, api_limit))
-                if "indeed" in apis:
-                    tasks.append(self._search_indeed(sq, location, api_limit))
-                if "gov" in apis:
-                    tasks.append(self._search_gov(kw, location, api_limit))
-                if "findwork" in apis:
-                    tasks.append(self._search_findwork(sq, location, api_limit))
-            
-            # Sources appelées une seule fois par mot-clé (évite le spam)
-            if "linkedin" in apis:
-                tasks.append(self._search_linkedin(kw, location, api_limit))
-            if "indeed_fr" in apis:
-                tasks.append(self._search_indeed_fr(kw, location, api_limit))
-            if "google_jobs" in apis:
-                tasks.append(self._search_google_jobs(kw, location, api_limit))
+        # Sémaphores pour stabiliser Render
+        semaphore = asyncio.Semaphore(15)
 
-        if not tasks:
+        async def _swarm_search(kw: str, api: str):
+            async with semaphore:
+                search_queries = [kw]
+                if job_type in ["alternance", "stage"]:
+                    search_queries.append(f"{kw} {job_type}")
+                
+                tasks = []
+                for sq in search_queries:
+                    if api == "jooble" and settings.jooble_api_key:
+                        tasks.append(self._search_jooble(sq, location, api_limit))
+                    elif api == "jsearch" and settings.rapidapi_key:
+                        tasks.append(self._search_jsearch(sq, location, api_limit))
+                    elif api == "glassdoor" and settings.rapidapi_key:
+                        tasks.append(self._search_glassdoor(sq, location, api_limit))
+                    elif api == "indeed":
+                        tasks.append(self._search_indeed(sq, location, api_limit))
+                    elif api == "gov":
+                        tasks.append(self._search_gov(kw, location, api_limit))
+                    elif api == "findwork":
+                        tasks.append(self._search_findwork(sq, location, api_limit))
+                    elif api == "linkedin":
+                        tasks.append(self._search_linkedin(kw, location, api_limit))
+                    elif api == "indeed_fr":
+                        tasks.append(self._search_indeed_fr(kw, location, api_limit))
+                    elif api == "google_jobs":
+                        tasks.append(self._search_google_jobs(kw, location, api_limit))
+                
+                if not tasks:
+                    return []
+                
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                jobs = []
+                for res in results:
+                    if isinstance(res, list):
+                        jobs.extend(res)
+                return jobs
+
+        # Déclenchement du Swarm
+        swarm_tasks = []
+        for kw in keywords:
+            for api in apis:
+                swarm_tasks.append(_swarm_search(kw, api))
+
+        if not swarm_tasks:
             logger.warning("⚠️ Aucune tâche de recherche lancée (Clés API manquantes ?)")
             return {"success": False, "jobs": []}
 
-        # Exécution parallèle
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # Exécution du Swarm
+        swarm_results = await asyncio.gather(*swarm_tasks, return_exceptions=True)
         
-        for res in results:
+        for res in swarm_results:
             if isinstance(res, list):
                 all_jobs.extend(res)
             elif isinstance(res, Exception):
-                logger.error(f"🔴 Erreur Hunter: {res}")
+                logger.error(f"🔴 Erreur Swarm: {res}")
 
+        
         # 1. Filtrage par exclusions (côté client)
         if exclude:
             before = len(all_jobs)
             all_jobs = self._filter_by_exclusions(all_jobs, exclude)
             logger.info(f"🧹 Exclusion filtrée: {before} → {len(all_jobs)} offres")
 
-        # 1.b Filtrage DÉFINITIF par type et localisation (Tolérance Zéro)
-        before_strict = len(all_jobs)
+        # 1.b Filtrage par localisation
         all_jobs = self._filter_strict_precision(all_jobs, location, job_type)
-        logger.info(f"🛡️ Filtre Strict Precision (Localité/Contrat): {before_strict} → {len(all_jobs)} offres conservées.")
 
         # 2. Dédoublonnage par titre+company
         unique_jobs = []
@@ -128,8 +140,9 @@ class HunterAgent(BaseAgent):
                 seen.add(key)
                 unique_jobs.append(job)
 
-        logger.info(f"🎯 Hunter a ramené {len(unique_jobs)} offres brutes après filtrage.")
+        logger.info(f"🎯 Swarm a ramené {len(unique_jobs)} offres brutes uniques.")
         return {"success": True, "jobs": unique_jobs}
+
 
     def _filter_by_exclusions(self, jobs: list, exclude: list) -> list:
         """Filtre les offres dont le titre ou la description contient un terme exclu."""
@@ -229,10 +242,11 @@ class HunterAgent(BaseAgent):
             }
             ssl_ctx = ssl._create_unverified_context()
             async with aiohttp.ClientSession(headers=headers) as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=12), ssl=ssl_ctx) as resp:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=8), ssl=ssl_ctx) as resp:
                     if resp.status != 200:
                         raise Exception(f"HTTP {resp.status}")
                     html = await resp.text()
+
             
             from bs4 import BeautifulSoup
             soup = BeautifulSoup(html, "html.parser")
