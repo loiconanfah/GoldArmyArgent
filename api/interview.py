@@ -232,11 +232,22 @@ async def websocket_interview(websocket: WebSocket, token: str):
             # Generate response
             # Format prompt for UnifiedLLMClient
             full_prompt = "\n".join([f"{m['role']}: {m['content']}" for m in conversation_history])
-            response_text = await llm_client.generate(full_prompt)
             
-            if not response_text:
-                response_text = "Je vous prie de m'excuser, pouvez-vous reformuler ?"
+            try:
+                response_text = await llm_client.generate(full_prompt)
+                if not response_text:
+                    response_text = "Je vous prie de m'excuser, pouvez-vous reformuler ?"
+            except Exception as llm_err:
+                logger.error(f"LLM Error in interview: {llm_err}")
+                response_text = "⚠️ Désolé, j'ai rencontré un problème technique pour générer ma réponse. Pouvons-nous reprendre ?"
                 
+                # Send error notice to frontend so it doesn't just hang
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Erreur technique LLM. L'entretien peut être instable.",
+                    "recruiter_name": recruiter_name
+                })
+
             conversation_history.append({"role": "assistant", "content": response_text})
             
             # Send text
@@ -254,7 +265,10 @@ async def websocket_interview(websocket: WebSocket, token: str):
     except Exception as e:
         logger.error(f"WS Loop Error: {e}")
         try:
+            # Try to notify the user before final crash
+            await websocket.send_json({"type": "error", "message": f"Erreur critique: {str(e)}"})
             await websocket.close()
         except:
             pass
+
 

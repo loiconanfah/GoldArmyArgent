@@ -1,5 +1,8 @@
 Exception Type: <class 'Exception'>
 Traceback (most recent call last):
-  File "D:\GoldArmyArgent\llm\gemini_client.py", line 60, in generate
-    raise Exception(f"Erreur API Gemini: {response.status}")
-Exception: Erreur API Gemini: 400
+  File "D:\GoldArmyArgent\llm\gemini_client.py", line 77, in generate
+    raise Exception(f"Erreur API Gemini {response.status}: {text[:200]}")
+Exception: Erreur API Gemini 404: {
+  "error": {
+    "code": 404,
+    "message": "models/gemini-3.0-pro-preview is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available

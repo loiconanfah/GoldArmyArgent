@@ -71,7 +71,10 @@ class GeminiClient:
                     text = await response.text()
                     if response.status != 200:
                         logger.error(f"❌ Gemini Error {response.status}: {text}")
-                        raise Exception(f"Erreur API Gemini: {response.status}")
+                        # Provide more context for debugging
+                        with open("gemini_error_body.json", "w", encoding="utf-8") as f:
+                            f.write(text)
+                        raise Exception(f"Erreur API Gemini {response.status}: {text[:200]}")
                     data = json.loads(text)
                     return data["candidates"][0]["content"]["parts"][0]["text"]
         except Exception as e:
@@ -81,6 +84,7 @@ class GeminiClient:
                 f.write(traceback.format_exc())
             logger.error(f"Gemini generate error: {e}")
             raise e
+
 
     async def generate_with_sources(self, prompt: str, system: str = None, **kwargs) -> tuple:
         """Génère une réponse et retourne les sources de grounding (Gemini 2.0)."""

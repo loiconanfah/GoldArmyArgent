@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+import json
 from dotenv import load_dotenv
 
 # Ajouter le chemin racine pour importer les modules
@@ -10,27 +11,32 @@ from llm.gemini_client import GeminiClient
 
 async def test_gemini():
     load_dotenv()
-    print(f"Clé API trouvée: {'Oui' if os.getenv('GEMINI_API_KEY') else 'Non'}")
+    print(f"API Key found: {'Yes' if os.getenv('GEMINI_API_KEY') else 'No'}")
     
     try:
         client = GeminiClient()
-        print("Initialisation du client... OK")
+        print(f"Client init... OK")
         
-        prompt = "Réponds juste 'L'armée de l'air est prête' si tu m'entends."
-        print(f"Envoi du prompt: {prompt}")
+        prompt = "Hello"
+        models_to_test = ["gemini-3.0-pro-preview", "gemini-3.1-pro-preview"]
         
-        response = await client.generate(prompt)
-        print(f"Réponse de Gemini: {response}")
-        
-        if "prête" in response.lower():
-            print("✅ TEST GEMINI RÉUSSI")
-        else:
-            print("⚠️ Réponse inattendue mais l'API a répondu.")
+        for model in models_to_test:
+            print(f"\n--- Testing model: {model} ---")
+            try:
+                response = await client.generate(prompt, model=model)
+                print(f"Response: {response}")
+                print(f"SUCCESS: {model} is working.")
+            except Exception as api_err:
+                print(f"ERROR with {model}: {api_err}")
             
     except Exception as e:
-        print(f"❌ TEST GEMINI ÉCHOUÉ: {e}")
+        print(f"TEST FAILED: {e}")
         import traceback
         traceback.print_exc()
 
+
 if __name__ == "__main__":
+    if sys.platform == 'win32':
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(test_gemini())
+
