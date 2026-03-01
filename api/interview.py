@@ -266,17 +266,16 @@ async def websocket_interview(websocket: WebSocket, token: str):
     """
 
     try:
-        # Main Recruiter
-        recruiter_model = genai.GenerativeModel("gemini-2.0-flash", system_instruction=recruiter_instruction)
-        recruiter_chat = recruiter_model.start_chat()
+        from llm.unified_client import UnifiedLLMClient
+        llm = UnifiedLLMClient()
         
-        # Shadow Analyst (Nano is great for fast tips)
-        analyst_model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=analyst_instruction)
-        analyst_chat = analyst_model.start_chat()
+        # Historique manuel
+        interview_history = []
         
         # Initial greeting
         initial_greeting = f"Bonjour, je suis ravi de vous recevoir pour ce poste de {job_title} chez {company}. Nous sommes en visioconférence, je vous vois bien. Pourrions-nous commencer par votre présentation ?"
         await websocket.send_json({"type": "message", "role": "assistant", "content": initial_greeting})
+        interview_history.append({"role": "assistant", "content": initial_greeting})
         await websocket.send_json({"type": "done"})
         
         while True:
@@ -285,19 +284,23 @@ async def websocket_interview(websocket: WebSocket, token: str):
             user_msg = payload.get("text", "")
             if not user_msg: continue
 
-            # 1. Recruiter Response (Gemini 3)
-            def _get_recruiter_resp():
-                return recruiter_chat.send_message(user_msg, stream=True)
+            # 1. Recruiter Response via REST
+            interview_history.append({"role": "user", "content": user_msg})
             
-            recruiter_stream = await asyncio.to_thread(_get_recruiter_resp)
+            messages_recruiter = [{"role": "system", "content": recruiter_instruction}] + interview_history
             
-            full_reply = ""
-            for chunk in recruiter_stream:
-                if chunk.text:
-                    full_reply += chunk.text
-                    await websocket.send_json({"type": "chunk", "content": chunk.text})
-            
-            await websocket.send_json({"type": "done"})
+            try:
+                full_reply = await llm.chat(messages_recruiter, model="gemini-2.0-flash")
+                interview_history.append({"role": "assistant", "content": full_reply})
+                
+                # Send the full block (flash is fast)
+                await websocket.send_json({"type": "chunk", "content": full_reply})
+                await websocket.send_json({"type": "done"})
+            except Exception as e:
+                print(f"Recruiter LLM Error: {e}")
+                await websocket.send_json({"type": "chunk", "content": "Je suis désolé, je rencontre un problème de connexion momentané. Pouvez-vous répéter ?"})
+                await websocket.send_json({"type": "done"})
+                full_reply = "Désolé, problème technique."
 
             # 3. Generate HD Voice (edge-tts)
             async def _generate_voice(text, voice):
@@ -324,14 +327,13 @@ async def websocket_interview(websocket: WebSocket, token: str):
             # 2. Shadow Analysis (Nano Banana) - Runs after the turn to provide a "tip"
             async def _run_analysis():
                 try:
-                    analysis_resp = await asyncio.to_thread(analyst_chat.send_message, f"Analyse ce message du candidat: {user_msg}")
-                    # Extract JSON from Nano Banana response
-                    raw_text = analysis_resp.text
-                    # Simple cleanup in case it adds markdown ```json
+                    messages_analyst = [{"role": "system", "content": analyst_instruction}, {"role": "user", "content": f"Analyse ce message du candidat: {user_msg}"}]
+                    raw_text = await llm.chat(messages_analyst, model="gemini-1.5-flash")
                     clean_text = raw_text.replace("```json", "").replace("```", "").strip()
                     analysis_data = json.loads(clean_text)
                     await websocket.send_json({"type": "analysis", "payload": analysis_data})
-                except:
+                except Exception as e:
+                    print(f"Analyst Error: {e}")
                     pass # Analyst is silent if error
 
             # Run analyst in background so recruiter stays fast
