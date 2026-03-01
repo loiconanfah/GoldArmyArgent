@@ -199,16 +199,17 @@ async def websocket_interview(websocket: WebSocket, token: str):
         "recruiter_name": recruiter_name
     })
 
-    # Async voice greeting
+    # Async voice: collect all chunks then send one "voice" message (frontend expects type "voice" + key "audio")
     async def _speak(text):
         try:
             communicate = edge_tts.Communicate(text, selected_voice)
+            chunks = []
             async for chunk in communicate.stream():
                 if chunk["type"] == "audio":
-                    await websocket.send_json({
-                        "type": "audio_chunk",
-                        "data": base64.b64encode(chunk["data"]).decode('utf-8')
-                    })
+                    chunks.append(chunk["data"])
+            if chunks:
+                full_audio_b64 = base64.b64encode(b"".join(chunks)).decode("utf-8")
+                await websocket.send_json({"type": "voice", "audio": full_audio_b64})
         except Exception as ve:
             logger.error(f"TTS Error: {ve}")
 

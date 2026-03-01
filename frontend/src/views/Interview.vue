@@ -44,7 +44,7 @@ const isAIThinking = ref(false)
 const analystNote = ref(null)
 const userVideo = ref(null)
 const stream = ref(null)
-const showChat = ref(false)
+const showChat = ref(true) // Transcription visible par défaut pour lire l'entretien
 const showScorecard = ref(false)
 const isAnalyzing = ref(false)
 const scorecard = ref(null)
@@ -188,26 +188,42 @@ const initSpeechRecognition = () => {
         isListening.value = false
         stopAudioPulse()
         if (silenceTimer) clearTimeout(silenceTimer)
-        
+        if (recognition._noSpeechRestartTimer) {
+            clearTimeout(recognition._noSpeechRestartTimer)
+            recognition._noSpeechRestartTimer = null
+        }
         // On n'envoie que si on a un transcrit et qu'on n'est pas déjà en train de parler
         if (accumulatedTranscript.trim() !== '' && !isSpeaking.value) {
             sendMessageToAI(accumulatedTranscript.trim())
             accumulatedTranscript = ''
             transcript.value = ''
         } else if (!isSpeaking.value && isInterviewStarted.value) {
-            // Si le micro s'arrête tout seul sans texte (timeout navigateur), on le relance
-            console.log("Micro arrêté sans texte, relance...")
-            try { recognition.start() } catch(e) {}
+            // Si le micro s'arrête sans texte (timeout navigateur), relancer après un court délai pour éviter la boucle no-speech
+            recognition._noSpeechRestartTimer = setTimeout(() => {
+                recognition._noSpeechRestartTimer = null
+                try { recognition.start() } catch(e) {}
+            }, 800)
         }
     }
     
     recognition.onerror = (event) => {
-        console.error("Speech recognition error", event.error)
+        if (recognition._noSpeechRestartTimer) {
+            clearTimeout(recognition._noSpeechRestartTimer)
+            recognition._noSpeechRestartTimer = null
+        }
         isListening.value = false
         stopAudioPulse()
-        if(event.error !== 'no-speech' && event.error !== 'aborted') {
-            errorMsg.value = "Erreur micro: " + event.error
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+            // Ne pas afficher d'erreur à l'utilisateur ; relancer le micro après un délai pour éviter le spam
+            if (isInterviewStarted.value && !isSpeaking.value) {
+                setTimeout(() => {
+                    try { recognition.start() } catch(e) {}
+                }, 1000)
+            }
+            return
         }
+        console.error("Speech recognition error", event.error)
+        errorMsg.value = "Erreur micro: " + event.error
     }
     return true
 }
@@ -233,7 +249,19 @@ const connectWebSocket = () => {
         socket.value.onmessage = (event) => {
             const msg = JSON.parse(event.data)
             
-            if (msg.type === 'message' || msg.type === 'chunk') {
+            // Texte du recruteur (backend envoie "recruiter_response" avec .text)
+            if (msg.type === 'recruiter_response' && msg.text) {
+                isAIThinking.value = false
+                const content = msg.text
+                if (conversation.value.length && conversation.value[conversation.value.length - 1].role === 'assistant') {
+                    conversation.value[conversation.value.length - 1].content = content
+                } else {
+                    conversation.value.push({ id: Date.now(), role: 'assistant', content })
+                }
+                const endKeywords = ['au revoir', 'bonne journée', 'bonne chance', 'merci pour votre temps', 'bientôt', 'clôturer', 'fini cet entretien']
+                if (endKeywords.some(k => content.toLowerCase().includes(k))) pendingFinish.value = true
+                scrollToBottom()
+            } else if (msg.type === 'message' || msg.type === 'chunk') {
                 isAIThinking.value = false
                 const content = msg.content
                 if (msg.type === 'message') {
@@ -245,14 +273,8 @@ const connectWebSocket = () => {
                         conversation.value[conversation.value.length - 1].content += content
                     }
                 }
-                
-                // Détection automatique de fin (Au revoir / Merci)
                 const endKeywords = ['au revoir', 'bonne journée', 'bonne chance', 'merci pour votre temps', 'bientôt', 'clôturer', 'fini cet entretien']
-                if (endKeywords.some(k => content.toLowerCase().includes(k))) {
-                     console.log("Fin d'entretien détectée dans le message de l'IA.")
-                     pendingFinish.value = true
-                }
-
+                if (endKeywords.some(k => content.toLowerCase().includes(k))) pendingFinish.value = true
                 scrollToBottom()
             } else if (msg.type === 'analysis') {
                 analystNote.value = msg.payload
