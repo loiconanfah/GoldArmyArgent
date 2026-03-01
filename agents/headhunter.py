@@ -65,7 +65,7 @@ class HeadhunterAgent(BaseAgent):
             
             response_text, sources = await self.generate_with_sources(
                 search_prompt,
-                model="gemini-3.1-pro-preview", # ou gemini-2.5-pro
+                model="gemini-2.0-flash", 
                 tools=[{"google_search": {}}],
                 json_mode=False, 
                 system="Tu es un chercheur expert OSINT. Trouve des profils LinkedIn réels et donne les liens exacts."
@@ -96,7 +96,7 @@ class HeadhunterAgent(BaseAgent):
             # Utilisation de Flash pour le parsing pur (plus rapide et très fiable pour le JSON statique)
             json_response = await self.generate_response(
                 parse_prompt,
-                model="gemini-2.5-flash",
+                model="gemini-2.0-flash",
                 json_mode=True,
                 system="Tu es un parseur JSON strict."
             )

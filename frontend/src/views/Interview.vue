@@ -64,10 +64,11 @@ let pendingUtteranceText = null; // Texte en attente si les voix ne sont pas pr�
 let accumulatedTranscript = ''; // ✅ Evite que la phrase soit coupée entre deux respirations
 
 const startInterview = async () => {
-    if (!config.value.jobTitle || !config.value.company) {
-        errorMsg.value = "Poste et Entreprise sont requis."
+    if (!config.value.jobTitle || !config.value.company || !config.value.cv) {
+        errorMsg.value = "Poste, Entreprise et CV sont obligatoires."
         return
     }
+
     errorMsg.value = ""
     isInterviewStarted.value = true
     

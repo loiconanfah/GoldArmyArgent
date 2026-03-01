@@ -88,9 +88,9 @@ class NetworkAgent(BaseAgent):
         """
         
         try:
-            # Upgrade to ultra-high reasoning model for max personalization
-            # Using Pro for complex reasoning on CV + Company
-            resp = await self.generate_response(prompt, model="gemini-2.0-pro-exp-02-05")
+            # Mode Super-Rapide pour le Networking
+            resp = await self.generate_response(prompt, model="gemini-2.0-flash")
+
             import json, re
             
             # Robust parsing

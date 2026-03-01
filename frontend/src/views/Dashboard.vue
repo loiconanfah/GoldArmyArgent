@@ -22,7 +22,8 @@ const recentActivity = ref([])
 // Y-axis max value (always at least 10)
 const yMax = computed(() => {
     const m = Math.max(...chartData.value.map(d => d.count), 0)
-    return Math.max(Math.ceil(m / 10) * 10, 10)
+    return Math.max(Math.ceil(m / 10) * 10, 120)
+
 })
 
 // Y grid lines (from top to bottom)
@@ -264,9 +265,9 @@ onMounted(() => {
           
           <div class="flex-1 flex items-end justify-around gap-2 px-2 pb-4 border-b border-surface-800 relative z-10 w-full">
               <div class="absolute inset-x-0 bottom-4 top-0 flex flex-col justify-between pointer-events-none z-0">
-                  <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">60</span></div>
+                  <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">120</span></div>
+                  <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">80</span></div>
                   <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">40</span></div>
-                  <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">20</span></div>
                   <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">0</span></div>
               </div>
               
