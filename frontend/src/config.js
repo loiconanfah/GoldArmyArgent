@@ -1,4 +1,16 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Configuration dynamique de l'URL de l'API mission 16.1
+const getBaseUrl = () => {
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    // En production sur Render, le backend est souvent sur le même domaine ou un sous-domaine
+    if (window.location.hostname !== 'localhost') {
+        const origin = window.location.origin;
+        // Si on est sur Render, l'API est souvent sur le même domaine (ou configurée via VITE_API_URL)
+        return origin;
+    }
+    return 'http://localhost:8000';
+};
+
+export const API_URL = getBaseUrl();
 
 export const getApiUrl = (path) => {
     if (path.startsWith('http')) return path;

@@ -37,9 +37,13 @@ class JoobleSearcher:
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, json=payload) as response:
                     if response.status == 200:
-                        data = await response.json()
-                        jobs = data.get("jobs", [])
-                        return self._normalize_jobs(jobs)
+                        try:
+                            data = await response.json()
+                            jobs = data.get("jobs", [])
+                            return self._normalize_jobs(jobs)
+                        except Exception as e:
+                            logger.error(f"❌ Erreur parsing JSON Jooble: {e}")
+                            return []
                     else:
                         logger.error(f"❌ Erreur Jooble {response.status}: {await response.text()}")
                         return []

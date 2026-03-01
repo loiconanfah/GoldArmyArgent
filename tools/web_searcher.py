@@ -59,7 +59,7 @@ class JobWebSearcher:
             try:
                 # SSL False pour éviter les erreurs de certificat sur certains sites
                 async with aiohttp.ClientSession(headers=self.headers) as session:
-                    async with session.get(url, timeout=10, ssl=False) as response:
+                    async with session.get(url, timeout=10) as response:
                         if response.status == 200:
                             html = await response.text()
                             soup = BeautifulSoup(html, 'html.parser')
@@ -91,7 +91,7 @@ class JobWebSearcher:
         
         async with aiohttp.ClientSession(headers=self.headers) as session:
             try:
-                async with session.get(url, timeout=10, ssl=False) as response:
+                async with session.get(url, timeout=10) as response:
                     if response.status == 200:
                         html = await response.text()
                         soup = BeautifulSoup(html, 'html.parser')

@@ -37,11 +37,15 @@ class GlassdoorSearcher:
             try:
                 async with session.get(url, timeout=15) as response:
                     if response.status == 200:
-                        data = await response.json()
-                        logger.debug(f"Glassdoor API Data: {str(data)[:200]}...")
-                        results = self._map_results(data, limit)
-                        logger.info(f"🟢 Glassdoor a trouvé {len(results)} offres.")
-                        return results
+                        try:
+                            data = await response.json()
+                            logger.debug(f"Glassdoor API Data: {str(data)[:200]}...")
+                            results = self._map_results(data, limit)
+                            logger.info(f"🟢 Glassdoor a trouvé {len(results)} offres.")
+                            return results
+                        except Exception as e:
+                            logger.error(f"❌ Erreur parsing JSON Glassdoor: {e}")
+                            return []
                     else:
                         error_text = await response.text()
                         logger.error(f"🔴 Erreur Glassdoor API ({response.status}): {error_text}")
