@@ -94,11 +94,13 @@ async def analyze_interview(data: dict):
     """
     
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = await asyncio.to_thread(model.generate_content, analysis_prompt)
+        from llm.unified_client import UnifiedLLMClient
+        llm = UnifiedLLMClient()
+        
+        response_text = await llm.generate(analysis_prompt, max_tokens=2048)
         
         # Clean JSON
-        clean_json = response.text.replace("```json", "").replace("```", "").strip()
+        clean_json = response_text.replace("```json", "").replace("```", "").strip()
         analysis_result = json.loads(clean_json)
         
         return {
@@ -106,7 +108,8 @@ async def analyze_interview(data: dict):
             "analysis": analysis_result
         }
     except Exception as e:
-        print(f"Analysis Error: {e}")
+        import logging
+        logging.error(f"Analysis Error: {e}")
         return {"status": "error", "message": str(e)}
 
 @router.websocket("/ws")

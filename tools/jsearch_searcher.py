@@ -55,9 +55,13 @@ class JSearchSearcher:
             async with aiohttp.ClientSession() as session:
                 async with session.get(self.BASE_URL, headers=headers, params=params) as response:
                     if response.status == 200:
-                        data = await response.json()
-                        jobs = data.get("data", [])
-                        return self._normalize_jobs(jobs)
+                        try:
+                            data = await response.json()
+                            jobs = data.get("data", [])
+                            return self._normalize_jobs(jobs)
+                        except Exception as e:
+                            logger.error(f"❌ Erreur parsing JSON JSearch: {e}")
+                            return []
                     elif response.status == 429:
                         from config.settings import settings
                         backup_key = getattr(settings, "rapidapi_key_2", None)
@@ -67,10 +71,14 @@ class JSearchSearcher:
                             headers["X-RapidAPI-Key"] = self.api_key
                             async with session.get(self.BASE_URL, headers=headers, params=params) as response_retry:
                                 if response_retry.status == 200:
-                                    data_retry = await response_retry.json()
-                                    jobs_retry = data_retry.get("data", [])
-                                    logger.success("✅ Succès du Fallback avec la clé JSearch secondaire")
-                                    return self._normalize_jobs(jobs_retry)
+                                    try:
+                                        data_retry = await response_retry.json()
+                                        jobs_retry = data_retry.get("data", [])
+                                        logger.success("✅ Succès du Fallback avec la clé JSearch secondaire")
+                                        return self._normalize_jobs(jobs_retry)
+                                    except Exception as e:
+                                        logger.error(f"❌ Erreur parsing JSON JSearch (Fallback): {e}")
+                                        return []
                                     
                         logger.warning("⚠️ Limite API JSearch atteinte (429) pour toutes les clés.")
                         return []

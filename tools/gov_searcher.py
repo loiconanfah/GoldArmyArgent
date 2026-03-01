@@ -110,7 +110,7 @@ class GovSearcher:
         }
         try:
             async with aiohttp.ClientSession(headers=headers_html) as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=15), ssl=False) as resp:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
                     if resp.status != 200:
                         raise Exception(f"HTTP {resp.status}")
                     html = await resp.text()
@@ -175,7 +175,7 @@ class GovSearcher:
         params = {"motCle": keywords, "page": 0, "taille": limit}
         try:
             async with aiohttp.ClientSession(headers=self.headers) as session:
-                async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10), ssl=False) as resp:
+                async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status != 200:
                         raise Exception(f"HTTP {resp.status}")
                     data = await resp.json()
@@ -195,7 +195,7 @@ class GovSearcher:
         try:
             headers_html = {"User-Agent": "Mozilla/5.0", "Accept-Language": "fr-FR,fr;q=0.9"}
             async with aiohttp.ClientSession(headers=headers_html) as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=10), ssl=False) as resp:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status != 200:
                         raise Exception(f"HTTP {resp.status}")
                     html = await resp.text()
@@ -276,7 +276,7 @@ class GovSearcher:
         }
         try:
             async with aiohttp.ClientSession(headers=headers) as session:
-                async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10), ssl=False) as resp:
+                async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status != 200:
                         raise Exception(f"HTTP {resp.status}")
                     data = await resp.json()
@@ -322,7 +322,7 @@ class GovSearcher:
         try:
             headers = {**self.headers, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "fr-CA,fr;q=0.9"}
             async with aiohttp.ClientSession(headers=headers) as session:
-                async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10), ssl=False) as resp:
+                async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status != 200:
                         raise Exception(f"HTTP {resp.status}")
                     html = await resp.text()
@@ -379,7 +379,7 @@ class GovSearcher:
         }
         try:
             async with aiohttp.ClientSession(headers=self.headers) as session:
-                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10), ssl=False) as resp:
+                async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status != 200:
                         raise Exception(f"HTTP {resp.status}")
                     data = await resp.json()
@@ -417,7 +417,7 @@ class GovSearcher:
         params = {"keywords": keywords, "location": "Non spécifié", "limit": limit}
         try:
             async with aiohttp.ClientSession(headers=self.headers) as session:
-                async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10), ssl=False) as resp:
+                async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status not in (200, 201):
                         raise Exception(f"HTTP {resp.status}")
                     data = await resp.json()

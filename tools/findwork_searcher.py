@@ -39,21 +39,26 @@ class FindWorkSearcher:
                         logger.error(f"FindWork API Error {response.status}: {await response.text()}")
                         return []
                         
-                    data = await response.json()
-                    results = data.get("results", [])
-                    
-                    for i, item in enumerate(results[:limit]):
-                        jobs.append({
-                            "id": f"findwork-{item.get('id', i)}",
-                            "title": item.get("role", "Titre Non Spécifié"),
-                            "company": item.get("company_name", "Entreprise Anonyme"),
-                            "location": item.get("location", location),
-                            "url": item.get("url", ""), # Assuming 'url' field exists or we link to the platform
-                            "description": item.get("text", "") or item.get("description", ""),
-                            "source": "FindWork.dev",
-                            "match_score": 0,
-                            "raw_contract_type": item.get("employment_type", ""), # To help local filtering
-                        })
+                    try:
+                        data = await response.json()
+                        results = data.get("results", [])
+                        
+                        for i, item in enumerate(results[:limit]):
+                            jobs.append({
+                                "id": f"findwork-{item.get('id', i)}",
+                                "title": item.get("role", "Titre Non Spécifié"),
+                                "company": item.get("company_name", "Entreprise Anonyme"),
+                                "location": item.get("location", location),
+                                "url": item.get("url", ""), # Assuming 'url' field exists or we link to the platform
+                                "description": item.get("text", "") or item.get("description", ""),
+                                "source": "FindWork.dev",
+                                "match_score": 0,
+                                "raw_contract_type": item.get("employment_type", ""), # To help local filtering
+                            })
+                            
+                    except Exception as e:
+                        logger.error(f"❌ Erreur parsing JSON FindWork: {e}")
+                        return []
                         
             logger.info(f"🌐 FindWork: {len(jobs)} offres trouvées pour '{keywords}' à '{location}'")
             return jobs

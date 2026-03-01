@@ -51,7 +51,7 @@ class LinkedInJobsSearcher:
         
         try:
             async with aiohttp.ClientSession(headers=self.headers) as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=12), ssl=False) as resp:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=12)) as resp:
                     if resp.status != 200:
                         raise Exception(f"HTTP {resp.status}")
                     html = await resp.text()
@@ -68,7 +68,7 @@ class LinkedInJobsSearcher:
         
         try:
             async with aiohttp.ClientSession(headers=self.headers) as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=12), ssl=False) as resp:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=12)) as resp:
                     if resp.status != 200:
                         raise Exception(f"HTTP {resp.status}")
                     html = await resp.text()
