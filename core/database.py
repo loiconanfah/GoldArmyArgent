@@ -21,9 +21,9 @@ def get_db_client():
                 tz_aware=True,
                 tlsAllowInvalidCertificates=True
             )
-            # Test connection
-            await _client.admin.command('ping')
-            logger.info("✅ Connecté avec succès à MongoDB Atlas!")
+            # Test connection (commented out as it requires async context)
+            # await _client.admin.command('ping')
+            logger.info("✅ Client MongoDB Atlas initialisé!")
         except Exception as e:
             logger.error(f"❌ Erreur de connexion MongoDB: {e}")
             raise

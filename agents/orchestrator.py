@@ -89,6 +89,7 @@ class OrchestratorAgent:
 
         # 1. Analyze intention
         intention = await self._route_request(user_input)
+        logger.debug(f"[Orchestrator] Intention détectée: {intention['action']} | CV présent: {bool(user_input.get('cv_text'))}")
 
         # 2. Delegate to correct Agent
         if intention["action"] == "headhunter":
@@ -120,19 +121,6 @@ class OrchestratorAgent:
             if query:
                 _add_to_history(session_id, "user", query)
             _add_to_history(session_id, "assistant", f"[Recherche d'emploi executée pour: {query}]")
-            return response
-
-        elif intention["action"] == "headhunter":
-            logger.info(f"[Orchestrator] Routing to HeadhunterAgent")
-            result = await self.headhunter.execute_task(user_input)
-            response = {
-                "status": "success",
-                "type": "headhunter_results",
-                "content": result
-            }
-            if query:
-                _add_to_history(session_id, "user", query)
-            _add_to_history(session_id, "assistant", f"[Recherche de décideurs LinkedIn executée pour: {query}]")
             return response
 
         elif intention["action"] in ["audit_cv", "generate_portfolio", "rewrite_cv"]:

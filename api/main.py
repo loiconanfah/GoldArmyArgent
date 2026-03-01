@@ -27,14 +27,22 @@ from core.database import get_db
 app.include_router(auth_router)
 app.include_router(interview_router)
 
-# Enable CORS for Vue.js frontend (Usually runs on port 5173 or 3000)
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins in dev mode; should be restricted in prod
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    # Fix for Google Auth COOP issues in console
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+    response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
+    return response
 
 # Global orchestrator instance
 orchestrator = OrchestratorAgent()
@@ -422,17 +430,17 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         if not check["allowed"]:
             raise HTTPException(status_code=403, detail=check["message"])
 
-        # Increment follow-up counter
+        # Increment follow-up counter (scoped by user_id for security)
         updated = await db.applications.find_one_and_update(
-            {"id": app_id},
+            {"id": app_id, "user_id": current_user["id"]},
             {"$inc": {"follow_up_count": 1}},
             return_document=True
         )
         follow_up_count = updated.get("follow_up_count", 1) if updated else 1
 
         # Generate email with GoldArmy unified LLM client
-        from llm.unified_client import LLMClient
-        llm = LLMClient()
+        from llm.unified_client import UnifiedLLMClient
+        llm = UnifiedLLMClient()
 
         
         prompt = f"""
@@ -591,6 +599,7 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
     Main endpoint for interacting with the Orchestrator.
     Handles general chat, search requests, and CV context.
     """
+    logger.info(f"📥 REQUEST /api/chat - User: {current_user['email']} | Message: {request.message[:50]}")
     try:
         # Intercept search for limit check
         if request.nb_results or any(k in request.message.lower() for k in ["cherche", "trouve", "stage", "emploi", "job"]):
@@ -650,7 +659,7 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/adapt-cv")
-async def adapt_cv_endpoint(request: CVAdaptRequest):
+async def adapt_cv_endpoint(request: CVAdaptRequest, current_user: dict = Depends(get_current_user)):
     """
     Adapter un CV spécifiquement pour une offre d'emploi via Gemini 3.
     """

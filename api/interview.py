@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import base64
+import re
 import edge_tts
 from dotenv import load_dotenv
 load_dotenv() # Load from .env file
@@ -9,19 +10,16 @@ load_dotenv() # Load from .env file
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 import google.generativeai as genai
 from core.database import get_db
+from config.settings import settings
 
-# Ensure API key is set
-api_key = os.environ.get("GEMINI_API_KEY", "")
-if not api_key:
-    # Try alternate name if needed
-    api_key = os.environ.get("GOOGLE_API_KEY", "")
-
-if not api_key:
-    print("WARNING: GEMINI_API_KEY is not set in environment!")
+# Configure Gemini from central settings
+if settings.gemini_api_key:
+    genai.configure(api_key=settings.gemini_api_key)
 else:
-    print(f"INFO: Gemini API Key found (starts with {api_key[:5]}...)")
+    print("WARNING: GEMINI_API_KEY is not set in environment!")
 
-genai.configure(api_key=api_key)
+from llm.unified_client import UnifiedLLMClient
+llm_client = UnifiedLLMClient() # Auto-selects Gemini if available
 
 router = APIRouter(prefix="/api/interview", tags=["Interview Simulator"])
 
@@ -94,68 +92,58 @@ async def analyze_interview(data: dict):
     """
     
     try:
+        if not settings.gemini_api_key:
+            return {"status": "error", "message": "GEMINI_API_KEY non configurée"}
         model = genai.GenerativeModel("gemini-2.0-flash")
         response = await asyncio.to_thread(model.generate_content, analysis_prompt)
-        
-        # Clean JSON
-        clean_json = response.text.replace("```json", "").replace("```", "").strip()
+        raw_text = getattr(response, "text", None) or ""
+        if not raw_text or not raw_text.strip():
+            return {"status": "error", "message": "Réponse vide du modèle d'analyse"}
+        clean_json = raw_text.replace("```json", "").replace("```", "").strip()
+        clean_json = re.sub(r"^[^{]*", "", clean_json).strip()  # drop leading non-JSON
         analysis_result = json.loads(clean_json)
-        
         return {
             "status": "success",
             "analysis": analysis_result
         }
+    except json.JSONDecodeError as e:
+        return {"status": "error", "message": f"Format d'analyse invalide: {e}"}
     except Exception as e:
-        print(f"Analysis Error: {e}")
         return {"status": "error", "message": str(e)}
 
 @router.websocket("/ws")
 async def websocket_interview(websocket: WebSocket, token: str):
     """
-    WebSocket endpoint for real-time Siri-like voice interview using Gemini.
-    We expect the frontend to send a token in query params to authenticate.
+    WebSocket endpoint for real-time Siri-like voice interview.
     """
     await websocket.accept()
 
-    # 1. Authenticate user from token
-    # (Simplified for WebSocket, normally use the auth dependency but WS needs token extraction)
-    from api.auth import oauth2_scheme, ALGORITHM, SECRET_KEY
+    from api.auth import ALGORITHM, SECRET_KEY
     import jwt
+    from loguru import logger
     
+    # 1. Authenticate
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_email = payload.get("sub")
-        if user_email is None:
+        user_id = payload.get("sub")
+        if not user_id:
             await websocket.close(code=1008)
             return
             
-        # Get user
-        from core.database import get_db
         db = get_db()
-        user = await db.users.find_one({"email": user_email})
+        user = await db.users.find_one({"id": user_id})
         if not user:
+            logger.error(f"WS Auth: User {user_id} not found")
             await websocket.close(code=1008)
             return
-
-        # 1b. Check Subscription Limit
-        from api.subscription import check_subscription_limit, log_usage
-        check = await check_subscription_limit(user["id"], "hr_interview")
-        if not check["allowed"]:
-            await websocket.send_json({"type": "error", "message": check["message"]})
-            await websocket.close(code=1008)
-            return
-
-        # Get user's latest CV text context if any
-        cv_text = user.get("cv_text") or "Candidat avec une expérience en développement logiciel."
-        
-        # Log usage
-        await log_usage(user["id"], "hr_interview")
-        
+            
+        logger.success(f"WS Auth Success: {user.get('email')}")
     except Exception as e:
+        logger.error(f"WS Auth Error: {e}")
         await websocket.close(code=1008)
         return
-    
-    # 2. Wait for Setup Payload from Frontend
+
+    # 2. Setup
     try:
         setup_data = await websocket.receive_text()
         setup_payload = json.loads(setup_data)
@@ -168,10 +156,9 @@ async def websocket_interview(websocket: WebSocket, token: str):
         job_title = cfg.get("jobTitle", "Poste général")
         company = cfg.get("company", "L'entreprise")
         job_details = cfg.get("jobDetails", "Pas de détails")
-        interview_type = cfg.get("interviewType", "general") # "general" or "technical"
-        recruiter_id = cfg.get("recruiterId", "tech") # tech, hr, ceo
+        interview_type = cfg.get("interviewType", "general")
+        recruiter_id = cfg.get("recruiterId", "tech")
 
-        # Map recruiter to edge-tts voice
         voice_map = {
             "tech": "fr-FR-DeniseNeural",
             "hr": "fr-FR-HenriNeural", 
@@ -179,172 +166,95 @@ async def websocket_interview(websocket: WebSocket, token: str):
         }
         selected_voice = voice_map.get(recruiter_id, "fr-FR-DeniseNeural")
         
+        recruiter_names = {"tech": "Denise", "hr": "Henri", "ceo": "Eloise"}
+        recruiter_name = recruiter_names.get(recruiter_id, "Denise")
+
     except Exception as e:
-        print(f"Failed to receive setup: {e}")
+        logger.error(f"WS Setup Error: {e}")
         await websocket.close(code=1008)
         return
 
-    # 3. Initialize Gemini Models (Recruiter + Analyst)
-    role_desc = "un recruteur expert (DRH ou Manager)"
-    tech_rule = ""
-    if interview_type == "technical":
-        role_desc = "le CTO ou Lead Tech"
-        tech_rule = """
-        Pose des questions techniques extrêmement pointues. 
-        Cherche à piéger poliment le candidat sur la complexité (Big O), les designs patterns, et les choix d'architecture.
-        Si la réponse est vague, demande des précisions techniques concrètes.
-        Donne ton feedback technique brièvement après chaque réponse avant d'enchaîner.
-        """
-
-    recruiter_instruction = f"""
-    Tu es {role_desc} chez {company}, un recruteur professionnel et expérimenté.
-    Tu mènes un entretien de visioconférence avec un candidat qui postule pour le poste de : {job_title}.
+    # 3. LLM Instructions
+    role_desc = "un recruteur expert" if interview_type != "technical" else "le CTO/Lead Tech"
     
-    CV du candidat (extrait) :
-    ---
-    {cv_content[:1500] if cv_content and cv_content != 'Non renseigné' else 'Non fourni — adapte-toi en posant des questions ouvertes.'}
-    ---
-    Description de l'offre :
-    ---
-    {job_details[:800] if job_details and job_details != 'Pas de détails' else 'Poste standard.'}
-    ---
-
-    STRUCTURE DE L'ENTRETIEN (tu dois couvrir TOUTES ces phases, dans l'ordre) :
+    system_prompt = f"""
+    Tu es {recruiter_name}, {role_desc} chez {company}. 
+    Tu mènes un entretien pour le poste de {job_title}.
     
-    PHASE 1 — BRISE-GLACE ET PRÉSENTATION (1-2 échanges)
-    - "Pouvez-vous vous présenter en 2-3 minutes ?"
-    - Commentaire bref et passage à la suite.
+    CV candidat: {cv_content[:1000]}
     
-    PHASE 2 — MOTIVATION & CONNAISSANCE DE L'ENTREPRISE (2-3 échanges, OBLIGATOIRE)
-    - "Qu'est-ce qui vous attire vers {company} spécifiquement ? Que savez-vous de nous ?"
-    - "Pourquoi ce poste de {job_title} vous intéresse-t-il à ce stade de votre carrière ?"
-    - Si la réponse est vague : "Vous n'avez pas mentionné [aspect spécifique de l'entreprise]. Qu'en pensez-vous ?"
-    
-    PHASE 3 — EXPÉRIENCES & COMPÉTENCES CLÉS (2-3 échanges)
-    - "Parlez-moi d'une réalisation dont vous êtes particulièrement fier dans votre parcours."
-    - Rebondir sur des éléments du CV pour creuser : "Vous mentionnez [X] sur votre CV, pouvez-vous m'en dire plus ?"
-    
-    PHASE 4 — QUESTIONS COMPORTEMENTALES/SITUATIONNELLES (2-3 échanges)
-    - "Décrivez une situation difficile au travail et comment vous l'avez gérée." (Méthode STAR attendue)
-    - "Parlez-moi d'un conflit avec un collègue ou manager. Comment l'avez-vous résolu ?"
-    
-    PHASE 5 — DÉFAUTS ET AUTO-ÉVALUATION (1-2 échanges, OBLIGATOIRE)
-    - "Quels sont vos 2 ou 3 principaux défauts professionnels ?" (Surveille si le candidat donne de faux défauts "déguisés en qualités")
-    - "Comment travaillez-vous sur ces axes d'amélioration ?"
-    
-    PHASE 6 — LA QUESTION CLÉE : POURQUOI VOUS ? (1-2 échanges, OBLIGATOIRE)
-    - "Si je devais choisir entre vous et un autre candidat au profil similaire, pourquoi devrais-je vous choisir vous ?"
-    - "Qu'est-ce qui vous rend unique pour ce poste ?"
-    
-    PHASE 7 — AMBITION & VISION (1 échange)
-    - "Où vous voyez-vous dans 3-5 ans ?"
-    - "Comment ce poste s'inscrit-il dans vos objectifs de carrière ?"
-    
-    PHASE 8 — QUESTIONS DU CANDIDAT & CLÔTURE (1-2 échanges)
-    - "Avez-vous des questions sur le poste, l'équipe, ou {company} ?"
-    - Conclude avec une formule de fin professionnelle et souhaite bonne chance.
-    
-    RÈGLES IMPÉRATIVES :
+    CONSIGNES:
     1. Pose UNE SEULE question à la fois.
-    2. Écoute la réponse et REBONDIS dessus avant de passer à la phase suivante (sois naturel).
-    3. Si une réponse est trop vague, relance : "Pouvez-vous me donner un exemple concret ?"
-    4. Sois exigeant mais bienveillant. Tu veux faire ressortir le meilleur du candidat.
-    5. Parle en FRANÇAIS naturel et conversationnel. JAMAIS de listes, jamais de markdown.
-    6. Sois concis (synthèse vocale). Maximum 2-3 phrases par réplique.
-    7. {tech_rule}
+    2. Sois concis (max 2-3 phrases). C'est pour de la synthèse vocale.
+    3. Rebondis sur ce que dit le candidat.
+    4. Pas de Markdown, pas de listes. Uniquement du texte brut.
     """
 
-    analyst_instruction = f"""
-    Tu es un analyste RH "fantôme" qui observe l'entretien pour le poste de {job_title}.
-    Ton rôle est de donner des CONSEILS BREF au candidat en temps réel (metadata).
-    Analyse ce qu'il dit et donne des points sur : Posture, Pertinence technique, ou Soft skills.
-    Réponds TOUJOURS en JSON format court : {{"tip": "ton conseil court", "sentiment": "neutre|positif|stressé"}}
-    Max 10 mots par conseil.
-    """
+    # 4. Starting greeting
+    greeting = f"Bonjour ! Je suis {recruiter_name} pour le poste de {job_title} chez {company}. Ravi de vous rencontrer. Pouvez-vous vous présenter ?"
+    
+    await websocket.send_json({
+        "type": "recruiter_response",
+        "text": greeting,
+        "recruiter_name": recruiter_name
+    })
 
+    # Async voice greeting
+    async def _speak(text):
+        try:
+            communicate = edge_tts.Communicate(text, selected_voice)
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    await websocket.send_json({
+                        "type": "audio_chunk",
+                        "data": base64.b64encode(chunk["data"]).decode('utf-8')
+                    })
+        except Exception as ve:
+            logger.error(f"TTS Error: {ve}")
+
+    asyncio.create_task(_speak(greeting))
+    
+    conversation_history = [
+        {"role": "system", "content": system_prompt},
+        {"role": "assistant", "content": greeting}
+    ]
+
+    # 5. Loop
     try:
-        # Main Recruiter
-        recruiter_model = genai.GenerativeModel("gemini-2.0-flash", system_instruction=recruiter_instruction)
-        recruiter_chat = recruiter_model.start_chat()
-        
-        # Shadow Analyst (Nano is great for fast tips)
-        analyst_model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=analyst_instruction)
-        analyst_chat = analyst_model.start_chat()
-        
-        # Initial greeting
-        initial_greeting = f"Bonjour, je suis ravi de vous recevoir pour ce poste de {job_title} chez {company}. Nous sommes en visioconférence, je vous vois bien. Pourrions-nous commencer par votre présentation ?"
-        await websocket.send_json({"type": "message", "role": "assistant", "content": initial_greeting})
-        await websocket.send_json({"type": "done"})
-        
         while True:
             data = await websocket.receive_text()
             payload = json.loads(data)
             user_msg = payload.get("text", "")
             if not user_msg: continue
-
-            # 1. Recruiter Response (Gemini 3)
-            def _get_recruiter_resp():
-                return recruiter_chat.send_message(user_msg, stream=True)
             
-            recruiter_stream = await asyncio.to_thread(_get_recruiter_resp)
+            conversation_history.append({"role": "user", "content": user_msg})
             
-            full_reply = ""
-            for chunk in recruiter_stream:
-                if chunk.text:
-                    full_reply += chunk.text
-                    await websocket.send_json({"type": "chunk", "content": chunk.text})
+            # Generate response
+            # Format prompt for UnifiedLLMClient
+            full_prompt = "\n".join([f"{m['role']}: {m['content']}" for m in conversation_history])
+            response_text = await llm_client.generate(full_prompt)
             
-            await websocket.send_json({"type": "done"})
-
-            # 3. Generate HD Voice (edge-tts)
-            async def _generate_voice(text, voice):
-                try:
-                    communicate = edge_tts.Communicate(text, voice)
-                    audio_data = b""
-                    async for chunk in communicate.stream():
-                        if chunk["type"] == "audio":
-                            audio_data += chunk["data"]
-                    
-                    if audio_data:
-                        # Encode in base64 to send via JSON
-                        b64_audio = base64.b64encode(audio_data).decode('utf-8')
-                        await websocket.send_json({
-                            "type": "voice",
-                            "audio": b64_audio
-                        })
-                except Exception as e:
-                    print(f"TTS Error: {e}")
-
-            # Trigger voice generation after the recruiter finished talking
-            asyncio.create_task(_generate_voice(full_reply, selected_voice))
-
-            # 2. Shadow Analysis (Nano Banana) - Runs after the turn to provide a "tip"
-            async def _run_analysis():
-                try:
-                    analysis_resp = await asyncio.to_thread(analyst_chat.send_message, f"Analyse ce message du candidat: {user_msg}")
-                    # Extract JSON from Nano Banana response
-                    raw_text = analysis_resp.text
-                    # Simple cleanup in case it adds markdown ```json
-                    clean_text = raw_text.replace("```json", "").replace("```", "").strip()
-                    analysis_data = json.loads(clean_text)
-                    await websocket.send_json({"type": "analysis", "payload": analysis_data})
-                except:
-                    pass # Analyst is silent if error
-
-            # Run analyst in background so recruiter stays fast
-            asyncio.create_task(_run_analysis())
-
+            if not response_text:
+                response_text = "Je vous prie de m'excuser, pouvez-vous reformuler ?"
+                
+            conversation_history.append({"role": "assistant", "content": response_text})
+            
+            # Send text
+            await websocket.send_json({
+                "type": "recruiter_response",
+                "text": response_text,
+                "recruiter_name": recruiter_name
+            })
+            
+            # Send voice
+            asyncio.create_task(_speak(response_text))
+            
     except WebSocketDisconnect:
-        print("Interview WebSocket disconnected")
+        logger.info("WS Interview Disconnected")
     except Exception as e:
-        import traceback
-        error_info = traceback.format_exc()
-        print(f"CRITICAL Error in interview WS:\n{error_info}")
-        
+        logger.error(f"WS Loop Error: {e}")
         try:
-            # Send a more descriptive error if possible
-            msg = f"Erreur de connexion au serveur IA: {str(e)}"
-            await websocket.send_json({"type": "error", "message": msg})
             await websocket.close()
         except:
             pass
+

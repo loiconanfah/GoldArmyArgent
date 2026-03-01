@@ -1,6 +1,7 @@
 from typing import Dict, Any, List
 import json
 import re
+import time
 from loguru import logger
 from core.agent_base import BaseAgent
 
@@ -135,43 +136,56 @@ CV à analyser :
 
 RÉPONSE : JSON uniquement, rien d'autre."""
 
-        response = await self.generate_response(prompt, json_mode=True)
-
-        # Nettoyage robuste avec Regex pour extraire le JSON même entouré de texte
-        import re
-        match = re.search(r'\{.*\}', response, re.DOTALL)
-        if match:
-            response = match.group(0)
-        else:
-            response = response.strip()
-            
-        # Retirer d'éventuels backticks résiduels
-        response = response.replace("```json", "").replace("```", "").strip()
-
+        logger.debug(f"[Mentor] Prompt envoyé (taille: {len(prompt)})")
+        response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)
+        logger.debug(f"[Mentor] Réponse brute reçue (taille: {len(response)})")
+        
+        # Log de secours dans un fichier local pour être sûr de voir le contenu
+        with open("mentor_debug.log", "a", encoding="utf-8") as f:
+            f.write(f"\n--- {time.ctime()} ---\n")
+            f.write(f"PROMPT: {prompt[:200]}...\n")
+            f.write(f"RESPONSE: {response}\n")
+            f.write("-" * 50 + "\n")
         try:
-            parsed = json.loads(response)
+            # Chercher le premier '{' et le dernier '}'
+            start_index = response.find('{')
+            end_index = response.rfind('}')
+            
+            if start_index != -1 and end_index != -1 and end_index > start_index:
+                cleaned_response = response[start_index:end_index+1]
+            else:
+                cleaned_response = response.strip()
+                # Retirer les backticks markdown si présents
+                cleaned_response = re.sub(r'```json\s*', '', cleaned_response)
+                cleaned_response = re.sub(r'```\s*', '', cleaned_response)
+
+            parsed = json.loads(cleaned_response)
             audit_data = parsed.get("audit", {})
             cv_data = parsed.get("cv_data", {})
             
-            # Ensure cv_data is a dict before dumping (in case the LLM returned a string somehow)
+            # Ensure cv_data is a dict before dumping
             if isinstance(cv_data, str):
                 try: cv_data = json.loads(cv_data)
                 except: cv_data = {}
                 
             cv_json = json.dumps(cv_data, ensure_ascii=False)
 
+            logger.success("[Mentor] Audit JSON décodé avec succès.")
             return {
                 "status": "success",
                 "type": "cv_audit_rewrite",
                 "audit": audit_data,   # dict avec ats_score, scores, failles, actions...
                 "content": cv_json,    # JSON string du CV réécrit (pour download)
             }
-        except json.JSONDecodeError as e:
-            logger.error(f"[Mentor] Parsing JSON échoué: {e}")
+        except Exception as e:
+            logger.error(f"[Mentor] Échec critique du parsing JSON: {e}")
+            logger.debug(f"[Mentor] Début de la réponse problématique: {response[:200]}...")
+            
+            # Fallback Chat mais avec un message d'explication
             return {
                 "status": "success",
                 "type": "chat",
-                "content": response
+                "content": f"⚠️ Désolé, l'analyse détaillée a rencontré une erreur technique de formatage. \n\nVoici néanmoins l'analyse brute générée :\n\n{response}"
             }
 
     async def _rewrite_cv(self, cv_text: str) -> Dict[str, Any]:
@@ -235,35 +249,38 @@ CV original à réécrire :
 
 IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans balises markdown."""
 
-        response = await self.generate_response(prompt, json_mode=True)
+        response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)
         
-        # Nettoyage robuste avec Regex pour extraire le JSON même entouré de texte
+        # Nettoyage ultra-robuste avec Regex pour extraire le JSON même entouré de texte ou de Markdown
         import re
-        match = re.search(r'\{.*\}', response, re.DOTALL)
-        if match:
-            response = match.group(0)
-        else:
-            response = response.strip()
-            
-        # Retirer d'éventuels backticks résiduels
-        response = response.replace("```json", "").replace("```", "").strip()
-        
-        # Valider que c'est du JSON
         try:
-            cv_data = json.loads(response)
+            # Chercher le premier '{' et le dernier '}'
+            start_index = response.find('{')
+            end_index = response.rfind('}')
+            
+            if start_index != -1 and end_index != -1 and end_index > start_index:
+                cleaned_response = response[start_index:end_index+1]
+            else:
+                cleaned_response = response.strip()
+                # Retirer les backticks markdown si présents
+                cleaned_response = re.sub(r'```json\s*', '', cleaned_response)
+                cleaned_response = re.sub(r'```\s*', '', cleaned_response)
+
+            cv_data = json.loads(cleaned_response)
+            logger.success("[Mentor] Réécriture CV décodée avec succès.")
             return {
                 "status": "success",
                 "type": "cv_rewrite",
-                "content": response,   # JSON string pour le frontend
-                "cv_data": cv_data     # Dict Python pour usage interne
+                "content": cleaned_response,   # JSON string pour le frontend
+                "cv_data": cv_data             # Dict Python pour usage interne
             }
-        except json.JSONDecodeError as e:
-            logger.error(f"[Mentor] Erreur parsing JSON CV: {e} | Response: {response[:200]}")
-            # Fallback: retourner quand même en demandant de réessayer
+        except Exception as e:
+            logger.error(f"[Mentor] Erreur critique parsing réécriture CV: {e}")
+            logger.debug(f"[Mentor] Réponse brute: {response[:200]}...")
             return {
-                "status": "error",
+                "status": "success",
                 "type": "chat",
-                "content": f"⚠️ Le moteur IA a retourné un format inattendu. Réessaie en tapant **'Réécris mon CV'**.\n\nDétail technique: {str(e)}"
+                "content": f"⚠️ Le moteur IA a retourné un format inattendu pour la réécriture. Voici le résultat brut :\n\n{response}"
             }
 
     async def _generate_portfolio(self, cv_text: str, theme: str = "GoldArmy Premium", image_data: str = None) -> Dict[str, Any]:

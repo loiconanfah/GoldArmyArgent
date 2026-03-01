@@ -20,8 +20,8 @@ except ImportError:
 
 # Removed direct os.getenv calls, using settings instead
 
-# Configuration (In production, load this from env variables)
-SECRET_KEY = "goldarmy-super-secret-key-change-in-production"
+# Configuration (SECRET_KEY from settings / JWT_SECRET_KEY in .env)
+SECRET_KEY = settings.jwt_secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
@@ -158,10 +158,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     except Exception as e:
         if isinstance(e, HTTPException):
             raise
-        import traceback
-        err_msg = traceback.format_exc()
-        logger.error(f"Erreur login:\n{err_msg}")
-        raise HTTPException(status_code=500, detail=f"DEBUG ERROR: {err_msg}")
+        logger.exception("Erreur login")
+        raise HTTPException(status_code=500, detail="Erreur serveur lors de la connexion")
 
 @router.get("/me")
 async def read_users_me(current_user: dict = Depends(get_current_user)):
@@ -241,7 +239,5 @@ async def google_login(payload: GoogleTokenRequest):
     except Exception as e:
         if isinstance(e, HTTPException):
             raise
-        logger.error(f"Erreur oauth google: {e}")
-        import traceback
-        err_msg = traceback.format_exc()
-        raise HTTPException(status_code=500, detail=f"DEBUG ERROR: {err_msg}")
+        logger.exception("Erreur oauth google")
+        raise HTTPException(status_code=500, detail="Erreur serveur lors de l'authentification Google")
