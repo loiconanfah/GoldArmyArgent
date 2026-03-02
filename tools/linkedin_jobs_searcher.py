@@ -122,16 +122,21 @@ class LinkedInJobsSearcher:
                 if not title or len(title) < 3:
                     continue
                 
+                # Localisation
+                loc_tag = card.find(class_=lambda c: c and "location" in str(c).lower() if c else False)
+                job_location = loc_tag.get_text(strip=True) if loc_tag else "Non spécifié"
+                
                 jobs.append({
                     "id": f"linkedin-{i}",
                     "title": title,
                     "company": company,
-                    "location": "Non spécifié",
+                    "location": job_location,
                     "url": href or f"https://www.linkedin.com/jobs/search/?keywords={urllib.parse.quote_plus(title)}",
                     "description": "",
                     "source": "LinkedIn Jobs",
                     "match_score": 0,
                 })
+
             
             return jobs
         except Exception as e:

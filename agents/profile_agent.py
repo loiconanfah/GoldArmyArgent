@@ -72,11 +72,12 @@ class ProfileAgent(BaseAgent):
         }}
         """
         try:
-            resp = await self.generate_response(prompt, json_mode=True)
+            resp = await self.generate_response(prompt, json_mode=True, model="gemini-2.0-flash")
             match = re.search(r'\{.*\}', resp.replace('\n', ''), re.S)
             if match: return json.loads(match.group(0))
         except: pass
         return {}
+
 
     async def _generate_search_strategy(self, query: str, profile: Dict[str, Any]) -> Dict[str, Any]:
         """Génère des variations de mots-clés et des termes à exclure."""
@@ -97,7 +98,7 @@ class ProfileAgent(BaseAgent):
         }}
         """
         try:
-            resp = await self.generate_response(prompt, json_mode=True)
+            resp = await self.generate_response(prompt, json_mode=True, model="gemini-2.0-flash")
             match = re.search(r'\{.*\}', resp.replace('\n', ''), re.S)
             if match:
                 data = json.loads(match.group(0))
@@ -106,3 +107,4 @@ class ProfileAgent(BaseAgent):
             logger.error(f"Error generating search strategy: {e}")
             
         return {"keywords": [query], "exclude": []}
+

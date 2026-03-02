@@ -142,56 +142,89 @@ class JobSearchAgent(BaseAgent):
 
     async def act(self, action_plan: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Phase d'action : Coordonne les agents Hunter et Judge.
+        Phase d'action : Coordonne les agents Hunter et Judge par vagues optimisées.
         """
-        logger.info("🎬 Orchestrateur: Phase d'exécution du Swarm...")
+        logger.info("🎬 Orchestrateur: Phase d'exécution du Swarm (Waves Strategy)...")
         
-        # 1. Traque (Hunting)
-        from agents.hunter_agent import HunterAgent
-        hunter = HunterAgent()
-        await hunter.initialize()
-        hunt_results = await hunter.act(await hunter.think(action_plan))
-        raw_jobs = hunt_results.get("jobs", [])
-        
-        if not raw_jobs:
-            logger.warning("📭 Aucun job trouvé par le Hunter.")
-            return {
-                "success": True, 
-                "total_jobs_found": 0, 
-                "matched_jobs": [], 
-                "cv_profile": action_plan.get("cv_profile", {})
-            }
+        all_apis = action_plan.get("criteria", {}).get("apis", [])
+        # Vague 1 : APIs Ultra-Rapides (Jooble, JSearch, Findwork sont souvent < 5s)
+        wave_1_apis = [api for api in all_apis if api in ["jooble", "jsearch", "findwork", "gov"]]
+        # Vague 2 : APIs Profondes ou plus lentes
+        wave_2_apis = [api for api in all_apis if api not in wave_1_apis]
 
-        # 2. Jugement (Judging)
+        from agents.hunter_agent import HunterAgent
         from agents.judge_agent import JudgeAgent
+        hunter = HunterAgent()
         judge = JudgeAgent()
-        await judge.initialize()
+        await asyncio.gather(hunter.initialize(), judge.initialize())
+
+        # --- VAGUE 1 : TRAQUE RAPIDE ---
+        logger.info(f"🌊 VAGUE 1 : {wave_1_apis}")
+        plan_v1 = action_plan.copy()
+        plan_v1["criteria"] = action_plan["criteria"].copy()
+        plan_v1["criteria"]["apis"] = wave_1_apis
         
-        # Passer la localisation cible au Judge pour le scoring
+        # On attend la vague 1 car elle est la base du premier feedback rapide
+        hunt_v1 = await hunter.act(await hunter.think(plan_v1))
+        jobs_v1 = hunt_v1.get("jobs", [])
+        
         cv_profile = action_plan.get("cv_profile", {})
         cv_profile["target_location"] = action_plan.get("criteria", {}).get("location", "Paris, France")
         
-        judgment_task = {
-            "jobs": raw_jobs,
-            "cv_profile": cv_profile
-        }
-        judge_results = await judge.act(await judge.think(judgment_task))
-        final_jobs = judge_results.get("evaluated_jobs", [])
+        # --- PARALLÉLISME MASSIF : JUDGE 1 + HUNTER 2 ---
+        logger.info("⚡ Lancement concurrent du Jugement Vague 1 et de la Traque Vague 2...")
         
-        # 3. Finalisation : On garde toutes les offres qui ne sont pas un rejet absolu (score > 0)
-        valid_final_jobs = [j for j in final_jobs if j.get("match_score", 0) > 0]
+        async def run_judge_v1():
+            if not jobs_v1: return []
+            res = await judge.act({"jobs": jobs_v1, "cv_profile": cv_profile})
+            return res.get("evaluated_jobs", [])
+
+        async def run_hunt_v2():
+            if not wave_2_apis: return []
+            plan_v2 = action_plan.copy()
+            plan_v2["criteria"] = action_plan["criteria"].copy()
+            plan_v2["criteria"]["apis"] = wave_2_apis
+            hunt = await hunter.act(await hunter.think(plan_v2))
+            return hunt.get("jobs", [])
+
+        # On lance les deux en même temps
+        judged_v1_task = asyncio.create_task(run_judge_v1())
+        hunt_v2_task = asyncio.create_task(run_hunt_v2())
         
-        limit = action_plan.get("limit", 10)
-        # Si l'utilisateur veut "pousser au max", on renvoie jusqu'à 3x sa limite ou un plafond de 100
-        display_limit = max(limit, min(100, limit * 3))
-        top_jobs = valid_final_jobs[:display_limit]
+        # On attend que les deux soient prêts
+        judged_v1, jobs_v2 = await asyncio.gather(judged_v1_task, hunt_v2_task)
+
+        # --- JUGEMENT VAGUE 2 ---
+        judged_v2 = []
+        if jobs_v2:
+            logger.info("⚖️ Jugement Vague 2 en cours...")
+            res_v2 = await judge.act({"jobs": jobs_v2, "cv_profile": cv_profile})
+            judged_v2 = res_v2.get("evaluated_jobs", [])
+
+        # Fusion et Dédoublonnage final
+        all_results = judged_v1 + judged_v2
+        unique_final = []
+        seen = set()
+        for j in all_results:
+            key = f"{j.get('title')}-{j.get('company')}".lower()
+            if key not in seen and j.get("match_score", 0) > 0:
+                seen.add(key)
+                unique_final.append(j)
+
+        # Tri final par pertinence
+        unique_final.sort(key=lambda x: x.get("match_score", 0), reverse=True)
         
-        logger.info(f"📨 Orchestration terminée: {len(top_jobs)} offres pertinentes trouvées.")
+        # Limite finale (Max 200)
+        top_jobs = unique_final[:200]
+        
+        logger.success(f"💎 Sniper Swarm terminé : {len(top_jobs)} offres pertinentes sur {len(unique_final)} trouvées.")
         
         return {
             "success": True,
             "total_jobs_found": len(top_jobs),
             "matched_jobs": top_jobs,
-            "cv_profile": action_plan.get("cv_profile", {}),
+            "cv_profile": cv_profile,
             "search_criteria": action_plan.get("criteria")
         }
+
+

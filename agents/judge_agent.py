@@ -39,7 +39,8 @@ class JudgeAgent(BaseAgent):
         chunks = [jobs[i:i + chunk_size] for i in range(0, len(jobs), chunk_size)]
         
         # Sémaphore pour parallélisme contrôlé sur Render (évite les 429)
-        semaphore = asyncio.Semaphore(5)
+        semaphore = asyncio.Semaphore(10)
+
 
         async def _evaluate_with_semaphore(chunk, profile):
             async with semaphore:
@@ -95,11 +96,22 @@ class JudgeAgent(BaseAgent):
            - Si l'utilisateur cherche explicitement un "Stage" (Intern) ou une "Alternance" et que l'offre est un emploi permanent (CDI, Permanent, Senior, Staff, etc.), la note DOIT ÊTRE 0. Aucune exception.
            - Si l'utilisateur cherche un emploi et que l'offre est un "Stage étudiant", la note DOIT ÊTRE 0.
         2. PERTINENCE DU RÔLE (CRITÈRE ÉLIMINATOIRE) :
-           - L'offre DOIT correspondre au domaine et au métier exact visé par le candidat. Analyse les "Rôles visés" et les "Compétences". Si l'offre concerne un tout autre domaine d'expertise (ex: l'offre est en Vente alors que le profil cible la Finance, ou l'offre est en Ressources Humaines alors que le profil cible l'Informatique), la note DOIT ÊTRE 0. Fais preuve d'analyse et sois intransigeant sur les hors-sujets.
+           - L'offre DOIT correspondre au domaine et au métier exact visé par le candidat. Si le domaine s'écarte (ex: Vente vs Informatique), note = 0.
         3. NIVEAU D'EXPÉRIENCE (CRITÈRE ÉLIMINATOIRE) :
-           - Un candidat Junior/Stagiaire postulant à une offre "Senior", "Staff", "Principal" ou demandant 5+ ans d'expérience DOIT recevoir une note de 0.
-        4. PERTINENCE GLOBALE ET LOCALISATION :
-           - Ajuste le score (de 40 à 100) selon la proximité des compétences et de la localisation visées. Sanctionne fortement (score < 40) si l'offre s'éloigne techniquement des compétences du profil.
+           - Un Junior postulant à un poste "Senior/Lead/Staff" (5+ ans) DOIT recevoir une note de 0.
+        4. LOCALISATION ULTRA-PRÉCISE (CRITÈRE ÉLIMINATOIRE) :
+           - La cible est : "{profile.get('target_location')}".
+           - Si la localisation affiche "Non spécifié" :
+             - Analyse le TITRE et l'ENTREPRISE. Si tu y trouves une AUTRE ville que la cible, note = 0.
+             - Si AUCUNE ville n'est mentionnée nulle part, la note NE PEUT PAS dépasser 50.
+           - Si l'offre est dans une AUTRE ville ou un AUTRE pays que la cible, la note DOIT ÊTRE 0. 
+           - On-site à 50km+ de la cible = Note 0.
+           - Remote (Télétravail) autorisé uniquement si validé par le profil.
+           - Sois impitoyable : l'utilisateur veut du local précis.
+
+        5. PERTINENCE GLOBALE :
+           - Ajuste le score (40-100) selon l'adéquation technique.
+
         5. Descriptions Courtes : Si la description est vide, base-toi sur le "TITRE" et "L'ENTREPRISE". Ne donne pas 0 pour manque de texte si le titre correspond parfaitement au rôle recherché.
 
         Raisonnement : Décris ta décision de manière claire et concise.

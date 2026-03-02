@@ -50,9 +50,9 @@ class HunterAgent(BaseAgent):
         location = plan.get("location", "")
         apis = plan.get("apis", [])
         
-        # SNIPER SWARM 7.0: Pool massif pour maximiser les opportunités.
+        # SNIPER SWARM 7.1: Volume agressif (60 par API) pour les vagues.
         limit = plan.get("limit", 10)
-        api_limit = max(200, limit * 20) 
+        api_limit = 60 
         job_type = plan.get("job_type", "emploi")
         exclude = [e.lower().strip() for e in plan.get("exclude", [])]
         
@@ -176,16 +176,57 @@ class HunterAgent(BaseAgent):
     def _filter_strict_precision(self, jobs: list, expected_location: str, expected_job_type: str) -> list:
         """
         Filtre impitoyable garanti sans hallucination.
-        Si l'user demande un "stage", on supprime tout ce qui ressemble de loin à un CDI.
-        Si l'user demande "toronto", on supprime ce qui est en France ou UK.
+        Si l'user demande "Paris", on supprime ce qui mentionne explicitement une autre grande ville.
+        Tentative de récupération de la ville dans le titre si 'Non spécifié'.
         """
+        if not expected_location or expected_location == "Non spécifié":
+            return jobs
+            
         result = []
-        loc_lower = expected_location.lower()
-        type_lower = expected_job_type.lower()
+        loc_target = expected_location.lower().split(",")[0].strip() # "Paris"
         
-        # Désormais, la lourde responsabilité du filtrage strict est déléguée au JudgeAgent (Gemini 3.1 Pro)
-        # pour éviter les faux-positifs algorithmiques qui suppriment de vraies offres.
-        return jobs
+        # Villes à éviter si on cherche dans une autre (exclusion mutuelle simple)
+        major_cities = [
+            "paris", "lyon", "marseille", "bordeaux", "nantes", "lille", "toulouse", 
+            "montreal", "quebec", "toronto", "vancouver", "ottawa", "calgary",
+            "london", "manchester", "birmingham", 
+            "new york", "san francisco", "los angeles", "chicago", "boston", "seattle"
+        ]
+        other_cities = [c for c in major_cities if c != loc_target]
+
+        for job in jobs:
+            job_loc = job.get("location", "").lower()
+            job_title = job.get("title", "").lower()
+            
+            # RECOVERY: Si localisation inconnue, on check le titre
+            if "non spécifié" in job_loc or not job_loc.strip():
+                for city in major_cities:
+                    if city in job_title:
+                        job_loc = city # On "découvre" la ville dans le titre
+                        job["location"] = city.capitalize()
+                        break
+            
+            # 1. Si la ville cible est dans la loc -> OK
+            if loc_target in job_loc:
+                result.append(job)
+                continue
+            
+            # 2. Si une AUTRE grande ville est mentionnée (dans loc ou titre découvert) -> KO
+            if any(other in job_loc for other in other_cities):
+                logger.debug(f"🚫 Filtre Strict: Exclusion de {job.get('title')} ({job_loc}) car hors de {loc_target}")
+                continue
+            
+            # 3. Remote -> On garde (le Judge décidera selon le profil)
+            if "remote" in job_loc or "télétravail" in job_loc or "anywhere" in job_loc:
+                result.append(job)
+                continue
+            
+            # 4. Par défaut on garde pour ne pas être trop destructif sur les petites villes
+            result.append(job)
+            
+        return result
+
+
 
     async def _search_jsearch(self, kw, loc, limit):
         try:

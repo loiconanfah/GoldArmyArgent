@@ -133,35 +133,57 @@ class GeminiClient:
             payload["generationConfig"] = gen_config
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
-        timeout = aiohttp.ClientTimeout(total=120) # 120s pour la fusion Search + JSON
+        timeout = aiohttp.ClientTimeout(total=180) # 180s pour la fusion Search + JSON (CGI, etc.)
         
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.post(url, json=payload, ssl=False) as response:
                     text = await response.text()
+                    
+                    if response.status != 200:
+                        logger.error(f"❌ Gemini Grounding Error {response.status}: {text[:500]}")
+                        # On dump pour analyse car le grounding est complexe
+                        with open("gemini_grounding_fail.json", "w", encoding="utf-8") as f:
+                            f.write(text)
+                        raise Exception(f"API Error {response.status}")
+
                     try:
                         data = json.loads(text)
                     except Exception as je:
-                        logger.error(f"❌ JSON Parse Error (len={len(text)}): {str(je)[:100]}")
-                        # Tentative de récupération partielle si possible ou log pour debug
-                        with open("gemini_error_dump.json", "w", encoding="utf-8") as f:
-                            f.write(text)
+                        logger.error(f"❌ JSON Parse Error in Grounding: {str(je)[:100]}")
                         raise je
                     
                     # Extraction du texte
                     text_out = ""
                     try: 
-                        text_out = data["candidates"][0]["content"]["parts"][0]["text"]
+                        if "candidates" in data:
+                            text_out = data["candidates"][0]["content"]["parts"][0]["text"]
+                        else:
+                            # Gérer les safety filters ou blocages
+                            logger.warning(f"⚠️ Aucun candidat Gemini (Safety filter ?): {text[:200]}")
+                            return "Aucun résultat trouvé (bloqué ou filtré).", []
                     except: pass
+
 
                     # Extraction OSINT des sources
                     source_urls = []
                     try:
                         grounding = data["candidates"][0].get("groundingMetadata", {})
+                        if grounding:
+                            # Debug dump si besoin pour analyse des 404
+                            try:
+                                with open("grounding_metadata_debug.json", "w", encoding="utf-8") as f:
+                                    json.dump(grounding, f, indent=2)
+                            except: pass
+                                
                         # On ratisse large pour ne rater aucune URL LinkedIn
                         for chunk in grounding.get("groundingChunks", []):
                             uri = chunk.get("web", {}).get("uri")
                             if uri and uri not in source_urls: source_urls.append(uri)
+
+                        logger.debug(f"🔍 Gemini Client extracted {len(source_urls)} source URIs.")
+
+
                         
                         for sup in grounding.get("groundingSupport", []):
                             u = sup.get("segment", {}).get("uri") or sup.get("web", {}).get("uri")
@@ -170,8 +192,9 @@ class GeminiClient:
 
                     return text_out, source_urls
         except Exception as e:
-            logger.error(f"Gemini Grounding error: {e}")
+            logger.error(f"Gemini Grounding error ({type(e).__name__}): {e}")
             raise e
+
 
     async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
         """Simulation mode chat."""
