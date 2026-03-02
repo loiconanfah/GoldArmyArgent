@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse, FileResponse
 from loguru import logger
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 import asyncio
@@ -46,6 +47,30 @@ async def add_security_headers(request: Request, call_next):
 
 # Global orchestrator instance
 orchestrator = OrchestratorAgent()
+
+# ─── Frontend static files (SPA) ─────────────────────────────────────────────
+# Serve the Vite build output so the frontend and backend share the same origin.
+# All /api/* and /auth/* calls are intercepted by FastAPI routes first;
+# everything else falls through to index.html (Vue Router handles it client-side).
+_FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+if os.path.isdir(_FRONTEND_DIST):
+    app.mount("/assets", StaticFiles(directory=os.path.join(_FRONTEND_DIST, "assets")), name="assets")
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        f = os.path.join(_FRONTEND_DIST, "favicon.ico")
+        return FileResponse(f) if os.path.exists(f) else FileResponse(os.path.join(_FRONTEND_DIST, "index.html"))
+
+    # SPA catch-all — must be LAST so it doesn't shadow /api/* routes
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_fallback(full_path: str, request: Request):
+        """Return index.html for all unknown paths so Vue Router works on refresh."""
+        # Never intercept /api or /docs paths
+        if full_path.startswith(("api/", "docs", "redoc", "openapi")):
+            raise HTTPException(status_code=404, detail="Not found")
+        return FileResponse(os.path.join(_FRONTEND_DIST, "index.html"))
+else:
+    logger.warning("⚠️  frontend/dist not found — run 'npm run build' in the frontend directory.")
 
 @app.on_event("startup")
 async def startup_event():
