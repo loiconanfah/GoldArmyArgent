@@ -11,7 +11,11 @@ services:
   - type: static
     name: goldarmy-frontend
     env: static
-    buildCommand: cd frontend && npm install && npm run build
+    # CRITICAL: VITE_API_URL must point to the deployed backend, NOT localhost.
+    # Without this, the production frontend calls http://localhost:8000 which
+    # only exists on the developer's machine — causing 100% API failure for all
+    # users not running the backend locally.
+    buildCommand: cd frontend && npm install && VITE_API_URL=https://goldarmyai.com npm run build
     staticPublishPath: frontend/dist
     routes:
       - source: /*
