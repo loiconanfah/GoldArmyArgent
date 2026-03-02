@@ -134,16 +134,15 @@ onUnmounted(() => clearInterval(tipInterval))
 // ── Tutorial ─────────────────────────────────────────────────────────────────
 const tutorialActive = ref(false)
 const tutorialStep = ref(0)
-const tooltipStyle = ref({})
 
 const tutorialSteps = [
-  { targetId: 'home-hero', title: '👋 Bienvenue sur GoldArmy !', text: 'Cette page résume tout ce que tu peux faire avec GoldArmy. Chaque card correspond à un outil IA. Clique sur une card pour y accéder.', pos: 'bottom' },
-  { targetId: 'feature-card-sniper', title: '🎯 Sniper Search', text: 'Lance ici ta recherche d\'emploi ultra-précise. L\'IA scanne 50+ sources et filtre les meilleures offres selon ton profil.', pos: 'right' },
-  { targetId: 'feature-card-mentor', title: '🧠 Mentor IA', text: 'Upload ton CV et l\'IA l\'analyse en 30 secondes. Elle adapte aussi ton CV pour chaque offre et génère tes lettres de motivation.', pos: 'right' },
-  { targetId: 'feature-card-interview', title: '🎙️ Entretien Vocal', text: 'Simule un vrai entretien à voix haute ! L\'IA joue le rôle d\'un recruteur et te donne un feedback instantané sur tes réponses.', pos: 'left' },
-  { targetId: 'feature-card-crm', title: '📋 CRM Candidatures', text: 'Suis toutes tes candidatures dans un tableau Kanban. Glisse les cartes pour changer leur statut, génère des relances en 1 clic.', pos: 'left' },
-  { targetId: 'feature-card-network', title: '🤝 Réseau Pro', text: 'Accède au marché caché de l\'emploi. L\'IA trouve les décideurs des entreprises cibles et rédige des emails d\'approche personnalisés.', pos: 'right' },
-  { targetId: 'home-tips', title: '💡 Conseils Pro', text: 'Ces conseils s\'actualisent automatiquement. Suis-les pour maximiser tes chances de décrocher un entretien rapidement.', pos: 'top' },
+  { targetId: 'home-hero',          title: '👋 Bienvenue sur GoldArmy !',  text: 'Cette page résume tout ce que tu peux faire. Chaque card correspond à un outil IA — clique dessus pour y accéder directement.' },
+  { targetId: 'feature-card-sniper',title: '🎯 Sniper Search',             text: 'Lance ici ta recherche d\'emploi ultra-précise. L\'IA scanne 50+ sources et filtre les meilleures offres selon ton profil.' },
+  { targetId: 'feature-card-mentor',title: '🧠 Mentor IA',                 text: 'Upload ton CV et l\'IA l\'analyse en 30s. Elle adapte aussi ton CV pour chaque offre et génère tes lettres de motivation.' },
+  { targetId: 'feature-card-interview', title: '🎙️ Entretien Vocal',       text: 'Simule un vrai entretien à voix haute. L\'IA joue le recruteur et te donne un feedback instantané sur tes réponses.' },
+  { targetId: 'feature-card-crm',   title: '📋 CRM Candidatures',          text: 'Suis tes candidatures en tableau Kanban. Glisse les cartes pour changer leur statut, génère des relances en 1 clic.' },
+  { targetId: 'feature-card-network',title: '🤝 Réseau Pro',               text: 'Accède au marché caché de l\'emploi. L\'IA trouve les décideurs et rédige des emails d\'approche personnalisés.' },
+  { targetId: 'home-tips',          title: '💡 Conseils Pro',               text: 'Ces conseils s\'actualisent automatiquement toutes les 4s. Suis-les pour maximiser tes chances de succès rapidement.' },
 ]
 
 const currentStep = computed(() => tutorialSteps[tutorialStep.value])
@@ -152,38 +151,30 @@ const isLast = computed(() => tutorialStep.value === tutorialSteps.length - 1)
 function startTutorial() {
   tutorialStep.value = 0
   tutorialActive.value = true
-  updateTooltipPos()
+  scrollTarget()
 }
-function nextStep() { if (isLast.value) { closeTutorial(); return } tutorialStep.value++; updateTooltipPos() }
-function prevStep() { if (tutorialStep.value > 0) { tutorialStep.value--; updateTooltipPos() } }
+function nextStep() {
+  if (isLast.value) { closeTutorial(); return }
+  tutorialStep.value++
+  scrollTarget()
+}
+function prevStep() {
+  if (tutorialStep.value > 0) { tutorialStep.value--; scrollTarget() }
+}
 function closeTutorial() { tutorialActive.value = false }
 
-function updateTooltipPos() {
+function scrollTarget() {
   nextTick(() => {
     const el = document.getElementById(currentStep.value.targetId)
     if (!el) return
+    // Scroll the <main> scroll container so the target is visible
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setTimeout(() => {
-      const r = el.getBoundingClientRect()
-      const pos = currentStep.value.pos
-      const TW = 320, TH = 220
-      let style = {}
-      if (pos === 'bottom') style = { top: r.bottom + 16 + 'px', left: Math.min(window.innerWidth - TW - 8, Math.max(8, r.left + r.width / 2 - TW / 2)) + 'px' }
-      else if (pos === 'top') style = { top: r.top - TH - 16 + 'px', left: Math.min(window.innerWidth - TW - 8, Math.max(8, r.left + r.width / 2 - TW / 2)) + 'px' }
-      else if (pos === 'right') style = { top: Math.min(window.innerHeight - TH - 8, Math.max(8, r.top + r.height / 2 - TH / 2)) + 'px', left: r.right + 16 + 'px' }
-      else if (pos === 'left') style = { top: Math.min(window.innerHeight - TH - 8, Math.max(8, r.top + r.height / 2 - TH / 2)) + 'px', left: r.left - TW - 16 + 'px' }
-      tooltipStyle.value = style
-    }, 400)
   })
 }
 
-// scroll listener keeps tooltip pinned
-function onScroll() { if (tutorialActive.value) updateTooltipPos() }
 onMounted(() => {
-  document.querySelector('main')?.addEventListener('scroll', onScroll)
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTutorial() })
 })
-onUnmounted(() => { document.querySelector('main')?.removeEventListener('scroll', onScroll) })
 </script>
 
 <template>
@@ -194,41 +185,48 @@ onUnmounted(() => { document.querySelector('main')?.removeEventListener('scroll'
       <div v-if="tutorialActive" class="fixed inset-0 bg-black/65 backdrop-blur-sm z-40 pointer-events-none" />
     </Transition>
 
-    <!-- Tutorial tooltip — FIXED so it stays visible while scrolling -->
+    <!-- Tutorial tooltip — anchored bottom-right, always visible -->
     <Transition name="pop">
-      <div v-if="tutorialActive" :style="tooltipStyle"
-        class="fixed z-50 w-80 bg-[#1e2030] border border-indigo-500/30 rounded-2xl shadow-2xl shadow-indigo-500/10 p-5 pointer-events-auto"
+      <div v-if="tutorialActive"
+        class="fixed bottom-6 right-6 z-50 w-80 bg-[#1e2030] border border-indigo-500/30 rounded-2xl shadow-2xl shadow-indigo-900/40 p-5 pointer-events-auto"
       >
-        <!-- Glow -->
+        <!-- Top glow -->
         <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/5 to-violet-500/5 pointer-events-none" />
 
         <div class="relative">
-          <div class="flex items-start justify-between mb-3">
-            <h3 class="font-bold text-white text-sm leading-tight">{{ currentStep.title }}</h3>
-            <button @click="closeTutorial" class="text-slate-500 hover:text-white transition-colors ml-3 shrink-0 p-1 hover:bg-white/5 rounded-lg">
+          <!-- Step indicator badge -->
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-black uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">
+              Étape {{ tutorialStep + 1 }} / {{ tutorialSteps.length }}
+            </span>
+            <button @click="closeTutorial" class="text-slate-500 hover:text-white transition-colors p-1 hover:bg-white/5 rounded-lg text-sm">
               ✕
             </button>
           </div>
+
+          <h3 class="font-bold text-white text-sm leading-tight mb-2">{{ currentStep.title }}</h3>
           <p class="text-slate-300 text-xs leading-relaxed mb-4">{{ currentStep.text }}</p>
 
-          <!-- Progress dots -->
-          <div class="flex items-center gap-1.5 mb-4">
+          <!-- Progress bar -->
+          <div class="flex items-center gap-1 mb-4">
             <div v-for="(_, i) in tutorialSteps" :key="i"
-              class="h-1 rounded-full transition-all duration-300 cursor-pointer"
-              :class="i === tutorialStep ? 'w-5 bg-indigo-400' : i < tutorialStep ? 'w-2 bg-indigo-600/50' : 'w-2 bg-surface-700'"
-              @click="tutorialStep = i; updateTooltipPos()"
+              class="flex-1 h-1 rounded-full transition-all duration-500 cursor-pointer"
+              :class="i <= tutorialStep ? 'bg-indigo-400' : 'bg-surface-700'"
+              @click="tutorialStep = i; scrollTarget()"
             />
           </div>
 
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between gap-2">
             <button @click="prevStep" :disabled="tutorialStep === 0"
-              class="text-xs font-bold text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+              class="flex-1 text-xs font-bold py-2 rounded-xl border border-surface-600 text-slate-400 hover:text-white hover:border-surface-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >← Préc.</button>
-            <span class="text-[10px] text-slate-600 font-semibold">{{ tutorialStep + 1 }}/{{ tutorialSteps.length }}</span>
             <button @click="nextStep"
-              class="text-xs font-bold px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all hover:shadow-lg hover:shadow-indigo-500/20"
+              class="flex-1 text-xs font-bold py-2 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all hover:shadow-lg hover:shadow-indigo-500/20"
             >{{ isLast ? '🎉 Terminer' : 'Suivant →' }}</button>
           </div>
+
+          <!-- Hint -->
+          <p class="text-[10px] text-slate-600 text-center mt-3">L'élément est mis en surbrillance dans la page · Appuie sur Échap pour quitter</p>
         </div>
       </div>
     </Transition>
