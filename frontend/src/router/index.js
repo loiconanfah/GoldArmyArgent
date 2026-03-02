@@ -17,6 +17,13 @@ const routes = [
         name: 'Landing',
         component: () => import('../views/Landing.vue')
     },
+    // ── Accueil (post-login home page) ────────────────────────────────────
+    {
+        path: '/home',
+        name: 'Home',
+        component: () => import('../views/Home.vue'),
+        meta: { requiresAuth: true }
+    },
     {
         path: '/dashboard',
         name: 'Dashboard',
@@ -83,7 +90,8 @@ router.beforeEach((to, from, next) => {
     if (to.meta.requiresAuth && !isAuthenticated) {
         next('/login')
     } else if ((to.name === 'Login' || to.name === 'Register' || to.name === 'Landing') && isAuthenticated) {
-        next('/dashboard')
+        // Redirect authenticated users to home page instead of dashboard
+        next('/home')
     } else {
         next()
     }

@@ -34,7 +34,7 @@ const handleLogin = async () => {
     } else {
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('user', JSON.stringify(data.user))
-      router.push('/')
+      router.push('/home')
     }
   } catch (err) {
     errorMsg.value = 'Erreur de connexion au serveur.'

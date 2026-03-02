@@ -60,6 +60,7 @@ const handleLogout = () => {
 }
 
 const navigation = [
+  { name: 'Accueil', href: '/home', icon: HomeIcon },
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, exact: false },
   { name: 'Sniper', href: '/opportunities', icon: MapIcon },
   { name: 'Mentor IA', href: '/mentor', icon: ChatBubbleBottomCenterTextIcon },
