@@ -16,7 +16,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MicrophoneIcon,
-  UserIcon
+  UserIcon,
+  SparklesIcon
 } from '@heroicons/vue/24/outline'
 import ToastPortal from './components/ToastPortal.vue'
 
@@ -60,7 +61,7 @@ const handleLogout = () => {
 }
 
 const navigation = [
-  { name: 'Accueil', href: '/home', icon: HomeIcon },
+  { name: 'Accueil', href: '/home', icon: SparklesIcon },
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, exact: false },
   { name: 'Sniper', href: '/opportunities', icon: MapIcon },
   { name: 'Mentor IA', href: '/mentor', icon: ChatBubbleBottomCenterTextIcon },
