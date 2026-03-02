@@ -2,6 +2,7 @@
 Scraper OSINT pour trouver les profils LinkedIn des recruteurs (RH) d'une entreprise.
 Utilise DuckDuckGo HTML pour contourner partiellement les restrictions.
 """
+import re
 import urllib.request
 import urllib.parse
 import ssl
@@ -25,65 +26,60 @@ class LinkedInScraper:
         if not company_name or company_name.lower() in ["confidentiel", "anonyme", "incognito", "non spécifié"]:
             return []
             
-        logger.info(f"🔎 Dorking LinkedIn RH pour: {company_name}")
-        
-        # Requête ciblée (dorking)
-        query = f'site:linkedin.com/in/ "{company_name}" "Recrutement" OR "RH" OR "Recruteur" OR "Talent Acquisition"'
-        encoded_query = urllib.parse.quote_plus(query)
-        # Use Lite version
-        url = f"https://lite.duckduckgo.com/lite/?q={encoded_query}"
-        
+        logger.info(f"🔎 LinkedIn RH pour: {company_name}")
         profiles = []
-        
-        try:
-            req = urllib.request.Request(url, headers=self.headers)
-            # Run in executor to avoid blocking the event loop
-            loop = asyncio.get_event_loop()
-            
-            def fetch_url():
-                with urllib.request.urlopen(req, context=ssl_context, timeout=10) as response:
-                    return response.read().decode('utf-8')
-                    
-            html = await loop.run_in_executor(None, fetch_url)
-            soup = BeautifulSoup(html, 'html.parser')
-            
-            # Lite DDG result links
-            results = soup.find_all('a', class_='result-link')
-            
-            for res in results:
-                if len(profiles) >= limit:
-                    break
-                    
-                href = res.get('href', '')
-                if not href: continue
 
-                # Unwrap DDG redirect
-                if 'uddg=' in href:
-                    try:
-                        href = urllib.parse.unquote(href.split('uddg=')[-1].split('&')[0])
-                    except:
-                        pass
-                
-                if 'linkedin.com/in/' in href:
-                    # Clean URL
-                    href = href.split('?')[0].rstrip('/')
-                    
-                    title = res.get_text(strip=True)
-                    # Nettoyage pro du nom et rôle
-                    clean_title = title.replace(" | LinkedIn", "").replace(" - LinkedIn", "")
-                    name_parts = re.split(r' - | \| |: ', clean_title)
-                    name = name_parts[0].strip()
-                    
-                    profiles.append({
-                        "name": name,
-                        "url": href,
-                        "snippet": f"Profil identifié: {clean_title}"
-                    })
-                    
-        except Exception as e:
-            logger.warning(f"⚠️ Scraping LinkedIn: {e}")
-            
-        # Fallback Links if nothing found
+        # 1. AsyncDDGS en premier (rapide, ~2-4s)
+        try:
+            from duckduckgo_search import AsyncDDGS
+            query = f'site:linkedin.com/in/ "{company_name}" recruteur OR RH OR "Talent Acquisition"'
+            seen = set()
+            async with AsyncDDGS() as ddgs:
+                async for r in ddgs.text(query, max_results=limit):
+                    href = r.get("href", "")
+                    if "linkedin.com/in/" in href:
+                        href = href.split("?")[0].rstrip("/")
+                        if href and href not in seen:
+                            seen.add(href)
+                            profiles.append({
+                                "name": (r.get("title") or "Profil LinkedIn").replace(" | LinkedIn", ""),
+                                "url": href,
+                                "snippet": (r.get("body") or "")[:120] or f"Profil chez {company_name}"
+                            })
+                            if len(profiles) >= limit:
+                                break
+        except Exception as ddg_err:
+            logger.debug(f"AsyncDDGS: {ddg_err}")
+
+        # 2. Fallback DDG Lite HTML si vide
+        if not profiles:
+            try:
+                query = f'site:linkedin.com/in/ "{company_name}" Recrutement OR RH OR Recruteur'
+                encoded = urllib.parse.quote_plus(query)
+                req = urllib.request.Request(f"https://lite.duckduckgo.com/lite/?q={encoded}", headers=self.headers)
+                loop = asyncio.get_event_loop()
+                html = await asyncio.wait_for(loop.run_in_executor(None, lambda: urllib.request.urlopen(req, context=ssl_context, timeout=8).read().decode()), timeout=10)
+                soup = BeautifulSoup(html, "html.parser")
+                seen = set()
+                for a in soup.find_all("a", href=True):
+                    if len(profiles) >= limit:
+                        break
+                    href = a.get("href", "")
+                    if "uddg=" in href:
+                        try:
+                            href = urllib.parse.unquote(href.split("uddg=")[-1].split("&")[0])
+                        except Exception:
+                            pass
+                    if "linkedin.com/in/" in href:
+                        href = href.split("?")[0].rstrip("/")
+                        if href not in seen:
+                            seen.add(href)
+                            title = a.get_text(strip=True).replace(" | LinkedIn", "").replace(" - LinkedIn", "")
+                            name = re.split(r" - | \| |: ", title)[0].strip() if title else "Profil LinkedIn"
+                            profiles.append({"name": name, "url": href, "snippet": f"Profil: {title[:80]}"})
+            except Exception as e:
+                logger.debug(f"DDG Lite: {e}")
+
         if not profiles:
             logger.info("ℹ️ Fallback LinkedIn Search Link.")
             direct_search_url = f"https://www.linkedin.com/search/results/people/?keywords={urllib.parse.quote_plus('recruteur ' + company_name)}"

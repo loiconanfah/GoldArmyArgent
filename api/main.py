@@ -593,6 +593,60 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+async def _enrich_contacts_from_jobs(content: Any, user_id: str) -> None:
+    """Enrichit le carnet avec site officiel + emails RH pour les entreprises des offres trouvées."""
+    if not content or not isinstance(content, dict):
+        return
+    jobs = content.get("matched_jobs") or content.get("jobs") or []
+    if not jobs:
+        return
+    seen = set()
+    companies = []
+    for j in jobs:
+        company = (j.get("company") or "").strip()
+        if not company or company.lower() in ("confidentiel", "anonyme", "incognito"):
+            continue
+        key = company.lower()
+        if key not in seen:
+            seen.add(key)
+            apply_email = (j.get("apply_email") or "").strip().lower()
+            if "@" not in apply_email:
+                apply_email = ""
+            companies.append({
+                "company": company,
+                "location": j.get("location", ""),
+                "source_job": j.get("url", ""),
+                "apply_email": apply_email
+            })
+    companies = companies[:12]
+    if not companies:
+        return
+    try:
+        from tools.web_searcher import web_searcher
+        from core.contacts import contacts_manager
+        for c in companies:
+            try:
+                data = await web_searcher.find_official_website_and_contact(c["company"], c.get("location", ""))
+                emails = list(data.get("emails", []))
+                if c.get("apply_email") and c["apply_email"] not in emails:
+                    emails.insert(0, c["apply_email"])
+                if data.get("site_url") or emails:
+                    await contacts_manager.save_contact(
+                        company_name=data["company_name"],
+                        site_url=data.get("site_url", ""),
+                        emails=emails,
+                        phone=data.get("phone", ""),
+                        source_job=c.get("source_job", ""),
+                        category="Sniper Recherche",
+                        user_id=user_id
+                    )
+                    logger.info(f"📇 Carnet enrichi: {data['company_name']} ({len(emails)} emails)")
+            except Exception as e:
+                logger.debug(f"Enrich contact {c.get('company')}: {e}")
+    except Exception as e:
+        logger.warning(f"Enrichissement carnet: {e}")
+
+
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_current_user)):
     """
@@ -635,10 +689,12 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
         }
         
         response = await orchestrator.think(task)
-        
-        # Log usage if it was a search
+
+        # Log usage si recherche d'emploi
         if response.get("type") == "job_search_results":
-             await log_usage(current_user["id"], "sniper_search")
+            await log_usage(current_user["id"], "sniper_search")
+            # Enrichissement carnet en arrière-plan : site officiel + emails RH pour chaque entreprise
+            asyncio.create_task(_enrich_contacts_from_jobs(response.get("content"), current_user["id"]))
         
         # Persistance du Portfolio en MongoDB si généré
         if response.get("type") == "portfolio_project":

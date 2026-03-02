@@ -17,9 +17,9 @@ class ContactsManager:
         Ajoute ou met à jour une entreprise dans la collection MongoDB.
         Fusionne les e-mails sans créer de doublons.
         """
-        if not company_name or company_name.lower() in ["confidentiel", "anonyme"]:
+        if not company_name or company_name.lower() in ["confidentiel", "anonyme", "incognito", "non spécifié"]:
             return False
-            
+
         emails_list = emails if emails else []
         if not site_url and not emails_list:
             return False

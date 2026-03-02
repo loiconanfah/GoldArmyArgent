@@ -8,6 +8,13 @@ from bs4 import BeautifulSoup
 import ssl
 import urllib.parse
 
+# Mots-clés prioritaires pour emails RH / recrutement
+HR_EMAIL_PATTERNS = [
+    r"recrutement@", r"rh@", r"jobs@", r"careers@", r"emploi@",
+    r"recruitment@", r"hr@", r"talent@", r"contact@", r"info@",
+    r"carrieres@", r"emplois@", r"recrutement\.",
+]
+
 class JobWebSearcher:
     """Recherche web spécialisée pour l'emploi (offres individuelles uniquement)."""
     
@@ -119,8 +126,82 @@ class JobWebSearcher:
         return []
 
     async def find_official_website_and_contact(self, company_name: str, location: str = "") -> Dict[str, Any]:
-        """Version simplifiée sans DuckDuckGo pour éviter les hangs."""
-        return {"company_name": company_name, "site_url": "", "emails": [], "phone": ""}
+        """
+        Trouve le site officiel de l'entreprise et extrait les emails RH / contact.
+        Utilise DuckDuckGo (AsyncDDGS) + scraping de la page pour maximiser la précision.
+        """
+        if not company_name or company_name.lower() in ("confidentiel", "anonyme", "incognito", "non spécifié"):
+            return {"company_name": company_name, "site_url": "", "emails": [], "phone": ""}
+
+        site_url = ""
+        emails = []
+        phone = ""
+
+        try:
+            results = []
+            try:
+                from duckduckgo_search import AsyncDDGS
+                query = f'"{company_name}" site officiel'
+                if location:
+                    query += f" {location}"
+                async with AsyncDDGS() as ddgs:
+                    async for r in ddgs.text(query, max_results=5):
+                        results.append(r)
+                        if len(results) >= 5:
+                            break
+            except Exception as ddg_err:
+                logger.debug(f"AsyncDDGS fallback: {ddg_err}")
+                from duckduckgo_search import DDGS
+                loop = asyncio.get_event_loop()
+                def _sync_search():
+                    with DDGS() as ddgs:
+                        return list(ddgs.text(f'"{company_name}" site officiel', max_results=5))
+                results = await loop.run_in_executor(None, _sync_search)
+
+            for r in results:
+                href = r.get("href", "")
+                title = (r.get("title") or "").lower()
+                if not href or not href.startswith("http"):
+                    continue
+                if any(skip in href for skip in ["linkedin.com", "facebook.com", "twitter.com", "instagram.com", "youtube.com", "wikipedia.org", "indeed.", "glassdoor.", "jobboom", "guichetemplois", "monster."]):
+                    continue
+                site_url = href.split("?")[0].rstrip("/")
+                break
+
+            if not site_url:
+                return {"company_name": company_name, "site_url": "", "emails": [], "phone": ""}
+
+            async with self.semaphore:
+                async with aiohttp.ClientSession(headers=self.headers) as session:
+                    try:
+                        async with session.get(site_url, timeout=aiohttp.ClientTimeout(total=8)) as resp:
+                            if resp.status != 200:
+                                return {"company_name": company_name, "site_url": site_url, "emails": [], "phone": ""}
+                            html = await resp.text()
+                            soup = BeautifulSoup(html, "html.parser")
+                            text = soup.get_text(separator=" ", strip=True)
+                            all_emails = re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", text)
+                            seen = set()
+                            for e in all_emails:
+                                e_lower = e.lower()
+                                if e_lower in seen:
+                                    continue
+                                seen.add(e_lower)
+                                if any(re.search(p, e_lower) for p in HR_EMAIL_PATTERNS):
+                                    emails.insert(0, e_lower)
+                                elif "noreply" not in e_lower and "no-reply" not in e_lower and "mailer" not in e_lower:
+                                    emails.append(e_lower)
+                            emails = list(dict.fromkeys(emails))[:5]
+                            phones = re.findall(r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{2,4}[-.\s]?\d{2,4}[-.\s]?\d{0,4}", text)
+                            if phones:
+                                phone = phones[0].strip()[:20]
+                    except Exception as e:
+                        logger.debug(f"Enrich contact {company_name}: {e}")
+
+            return {"company_name": company_name, "site_url": site_url, "emails": emails, "phone": phone}
+        except Exception as e:
+            logger.warning(f"find_official_website_and_contact ({company_name}): {e}")
+            return {"company_name": company_name, "site_url": site_url or "", "emails": emails, "phone": phone}
 
     def _generate_fallback_links(self, keywords: str, location: str) -> List[Dict[str, Any]]:
         """Génère des liens de recherche directs."""
