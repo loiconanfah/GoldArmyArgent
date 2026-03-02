@@ -708,7 +708,8 @@ onUnmounted(() => {
           <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40"></div>
           
           <!-- Futuristic Grid Overlay -->
-          <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none"></div>
+          <!-- Noise texture overlay — class defined in <style scoped> to avoid Vue template parser issue with '/' in data URIs -->
+          <div class="noise-overlay absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none" />
           <div class="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none"></div>
           
           <!-- Pulse / Aura effect around the AI face -->
@@ -957,3 +958,13 @@ onUnmounted(() => {
    </div>
   </div>
 </template>
+
+<style scoped>
+/* Noise texture — defined here instead of inline style="" to avoid Vue
+   template-compiler error: "Illegal '/' in tags" when data URIs are used
+   directly in style attributes inside Vue SFC templates.               */
+.noise-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+</style>
