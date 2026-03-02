@@ -3,6 +3,7 @@ Cible directement l'API publique de LinkedIn Jobs pour retrouver des offres.
 """
 import aiohttp
 import asyncio
+import re
 import urllib.parse
 from typing import List, Dict, Any
 from loguru import logger
@@ -126,16 +127,22 @@ class LinkedInJobsSearcher:
                 loc_tag = card.find(class_=lambda c: c and "location" in str(c).lower() if c else False)
                 job_location = loc_tag.get_text(strip=True) if loc_tag else "Non spécifié"
                 
+                # Description courte (Snippet)
+                snippet_tag = card.find("p", class_=re.compile("snippet|description")) or \
+                              card.find(class_=re.compile("job-search-card__snippet"))
+                snippet = snippet_tag.get_text(strip=True) if snippet_tag else ""
+                
                 jobs.append({
                     "id": f"linkedin-{i}",
                     "title": title,
                     "company": company,
                     "location": job_location,
                     "url": href or f"https://www.linkedin.com/jobs/search/?keywords={urllib.parse.quote_plus(title)}",
-                    "description": "",
+                    "description": snippet,
                     "source": "LinkedIn Jobs",
                     "match_score": 0,
                 })
+
 
             
             return jobs
@@ -143,7 +150,31 @@ class LinkedInJobsSearcher:
             logger.debug(f"LinkedIn card parsing failed: {e}")
             return []
 
+    async def fetch_full_description(self, url: str) -> str:
+        """Récupère la description complète depuis la page de l'offre."""
+        if not url or "linkedin.com" not in url:
+            return ""
+        try:
+            async with aiohttp.ClientSession(headers=self.headers) as session:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=10), ssl=ssl_context) as resp:
+                    if resp.status != 200:
+                        return ""
+                    html = await resp.text()
+                    from bs4 import BeautifulSoup
+                    soup = BeautifulSoup(html, "html.parser")
+                    # Sélecteurs pour la description LinkedIn publique
+                    desc_tag = soup.find(class_=re.compile("description__text|show-more-less-html__markup"))
+                    if desc_tag:
+                        # Nettoyer le HTML
+                        for tag in desc_tag.find_all(["button", "script", "style"]):
+                            tag.decompose()
+                        return desc_tag.get_text(separator=" ", strip=True)[:2000]
+        except Exception as e:
+            logger.debug(f"LinkedIn detail fetch failed: {e}")
+        return ""
+
     def _generate_linkedin_search_links(self, keywords: str, location: str) -> List[Dict[str, Any]]:
+
         """Génère un lien de recherche LinkedIn direct (fallback garanti)."""
         kw_enc = urllib.parse.quote_plus(keywords)
         loc_enc = urllib.parse.quote_plus(location)

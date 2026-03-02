@@ -343,3 +343,32 @@ class HunterAgent(BaseAgent):
         except Exception as e:
             logger.error(f"Google Jobs Error: {e}")
             return []
+
+    async def enrich_jobs(self, jobs: List[Dict[str, Any]], limit: int = 15) -> List[Dict[str, Any]]:
+        """Enrichit les offres avec des descriptions complètes (priorité LinkedIn)."""
+        to_enrich = [j for j in jobs if not j.get("description") and "linkedin" in j.get("source", "").lower()]
+        to_enrich = to_enrich[:limit]
+        
+        if not to_enrich:
+            return jobs
+            
+        logger.info(f"✨ Enrichment: Récupération des détails pour {len(to_enrich)} offres LinkedIn...")
+        
+        from tools.linkedin_jobs_searcher import LinkedInJobsSearcher
+        lk_searcher = LinkedInJobsSearcher()
+        
+        semaphore = asyncio.Semaphore(5) # Parallélisme modéré pour éviter les bans
+
+        async def _enrich_one(job):
+            async with semaphore:
+                url = job.get("url")
+                if url:
+                    desc = await lk_searcher.fetch_full_description(url)
+                    if desc:
+                        job["description"] = desc
+        
+        tasks = [_enrich_one(j) for j in to_enrich]
+        await asyncio.gather(*tasks)
+        
+        return jobs
+

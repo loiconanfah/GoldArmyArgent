@@ -103,7 +103,9 @@ async def test_job_search():
             print(f"\n{i}. {job['title']}")
             print(f"   {job['company']} - {job['location']}")
             print(f"   Score de compatibilite: {job['match_score']}%")
+            print(f"   Desc: {job.get('description', 'N/A')[:100]}...")
             print(f"   Competences matchees: {', '.join(job.get('matched_skills', [])[:5])}")
+
             print(f"   {job.get('match_justification', 'N/A')[:150]}...")
             print(f"   {job.get('url', 'N/A')}")
     else:
