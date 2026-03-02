@@ -152,11 +152,13 @@ const handleRegister = async () => {
             
             <div class="grid grid-cols-2 gap-4">
               <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 bg-transparent border border-[#32323f] rounded-2xl hover:bg-white/5 transition-all font-bold text-white text-[10px] uppercase tracking-widest opacity-50 cursor-not-allowed" title="Arrive bientôt">
-                  <img src="https://www.svgrepo.com/show/442887/apple-black.svg" class="w-4 h-4 invert" />
+                  <!-- Apple icon inline — no external CDN -->
+                  <svg class="w-4 h-4 fill-white" viewBox="0 0 814 1000" xmlns="http://www.w3.org/2000/svg"><path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 376.2 0 293.8 0 213.5c0-84.1 53.4-128.5 106.1-128.5 77.5 0 98.1 49.7 167.5 49.7 67.9 0 103.2-50 167.5-50 59.7 0 121.4 37.8 160.6 109.8zM642 94.1c0 44.7-16.2 89.5-47.7 123.5-32.2 35.3-76.5 58.2-119.7 58.2-1.4 0-2.8 0-4.1-.1 1.2-43.8 19.1-86.2 48.9-118.7 31-33.1 77.3-55.7 119.8-56.9 1.5-.1 2.8-.1 2.8-.1z"/></svg>
                   Apple
               </button>
               <button type="button" class="flex items-center justify-center gap-3 py-3 px-4 bg-transparent border border-[#32323f] rounded-2xl hover:bg-white/5 transition-all font-bold text-white text-[10px] uppercase tracking-widest opacity-50 cursor-not-allowed" title="Arrive bientôt">
-                  <img src="https://www.svgrepo.com/show/442938/facebook-color.svg" class="w-4 h-4" />
+                  <!-- Meta/Facebook icon inline — no external CDN -->
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/></svg>
                   Meta
               </button>
             </div>

@@ -34,17 +34,21 @@
     content="Accélérez votre recherche d'emploi avec l'intelligence artificielle la plus puissante du marché." />
   <meta property="twitter:image" content="/og-banner.png" />
 
-  <!-- Google Fonts: Outfit (headings) & Inter (body) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;600;700;800&display=swap"
-    rel="stylesheet">
+  <!--
+    NOTE: Google Fonts removed intentionally.
+    External CDN fonts (googleapis.com) are blocked in China, Russia, Iran and many
+    other countries, causing the app to render blank while waiting for resources
+    that never arrive. System fonts load instantly everywhere.
+  -->
 </head>
 
 <body>
   <div id="app"></div>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!--
+    Google Sign-In SDK is loaded dynamically in useGoogleAuth.js with error handling.
+    Loading it here as a blocking/async script causes the page to stall in countries
+    where accounts.google.com is blocked.
+  -->
   <script type="module" src="/src/main.js"></script>
 </body>
 

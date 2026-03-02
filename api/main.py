@@ -346,7 +346,7 @@ async def upload_cv_endpoint(file: UploadFile = File(...), current_user: dict = 
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/profile/upload-avatar")
-async def upload_avatar_endpoint(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+async def upload_avatar_endpoint(request: Request, file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """Upload une photo de profil et sauvegarde l'URL."""
     import os
     import uuid
@@ -363,7 +363,12 @@ async def upload_avatar_endpoint(file: UploadFile = File(...), current_user: dic
         with open(file_path, "wb") as f:
             f.write(content)
         
-        avatar_url = f"http://localhost:8000/static/uploads/avatars/{filename}"
+        # Build the public URL using the incoming request base (works in all envs)
+        # Falls back to BASE_URL env var, then to the request origin.
+        base_url = os.getenv("BASE_URL", "").rstrip("/")
+        if not base_url:
+            base_url = str(request.base_url).rstrip("/")
+        avatar_url = f"{base_url}/static/uploads/avatars/{filename}"
         
         from core.database import get_db
         db = get_db()

@@ -7,8 +7,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Outfit', 'sans-serif'],
+        // System fonts first — work everywhere with zero latency, no external CDN needed.
+        // Inter/Outfit removed from primary to avoid blocking in countries that block Google Fonts.
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+        display: ['"Segoe UI"', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
       },
       colors: {
         gold: {
