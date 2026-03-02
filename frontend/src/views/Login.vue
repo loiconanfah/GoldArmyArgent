@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 import { useGoogleAuth } from '@/composables/useGoogleAuth'
+import { safeJson } from '@/utils/auth'
 import { getApiUrl } from '@/config'
 
 const router = useRouter()
@@ -28,9 +29,11 @@ const handleLogin = async () => {
       body: formData
     })
     
-    const data = await res.json()
+    const data = await safeJson(res)
     if (!res.ok) {
-      errorMsg.value = data.detail || 'Identifiants incorrects'
+      errorMsg.value = data?.detail || 'Identifiants incorrects'
+    } else if (!data) {
+      errorMsg.value = 'Réponse du serveur invalide. Réessaie.'
     } else {
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('user', JSON.stringify(data.user))

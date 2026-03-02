@@ -129,8 +129,8 @@ export function useGoogleAuth() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ credential: response.credential }),
             })
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.detail ?? 'Echec connexion Google')
+            const data = await res.json().catch(() => null)
+            if (!res.ok || !data) throw new Error(data?.detail ?? 'Echec connexion Google')
 
             localStorage.setItem('token', data.access_token)
             localStorage.setItem('user', JSON.stringify(data.user))
