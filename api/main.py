@@ -755,6 +755,123 @@ async def adapt_cv_endpoint(request: CVAdaptRequest, current_user: dict = Depend
 # Note: Consolidé pour utiliser core.database au lieu de api.crm_db (JSON)
 from core.database import get_db
 
+class CRMLinkRequest(BaseModel):
+    url: str
+
+@app.post("/api/crm/link")
+async def add_crm_from_link(request: CRMLinkRequest, current_user: dict = Depends(get_current_user)):
+    """Scrape une URL d'offre d'emploi, extrait le poste et l'entreprise via Gemini et l'ajoute au CRM."""
+    import uuid
+    from datetime import datetime
+    import httpx
+    try:
+        from loguru import logger
+        logger.info(f"[CRM] Scraping de l'URL: {request.url}")
+        
+        # 1. Scraper le contenu de la page
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml",
+                "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+            }
+            resp = await client.get(request.url, headers=headers)
+            resp.raise_for_status()
+            html_content = resp.text
+
+        # 2. Nettoyer basiquement le HTML et extraire les métadonnées pour Gemini (utile pour les sites JS)
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, "html.parser")
+        
+        # Extraire le title et les metas OG pour aider l'IA (très utile si le body est vide car rendu en JS)
+        page_title = soup.title.string if soup.title else ""
+        og_title_tag = soup.find("meta", attrs={"property": "og:title"})
+        og_title = og_title_tag["content"] if og_title_tag else ""
+        meta_desc_tag = soup.find("meta", attrs={"name": "description"})
+        meta_desc = meta_desc_tag["content"] if meta_desc_tag else ""
+        
+        # Nettoyer le script/style
+        for script in soup(["script", "style", "nav", "footer", "header", "noscript"]):
+            script.decompose()
+        text_content = soup.get_text(separator=" ", strip=True)
+        # Tronquer à 15000 caractères pour le LLM
+        text_snippet = text_content[:15000]
+
+        # 3. Extraction via LLM
+        from llm.unified_client import UnifiedLLMClient
+        import json
+        llm = UnifiedLLMClient()
+        prompt = f"""Tu es un assistant expert en recrutement.
+Voici les métadonnées et le texte extrait d'une page web d'offre d'emploi :
+
+[METADONNEES SEO]
+Titre de la page : {page_title}
+OG Title : {og_title}
+Description : {meta_desc}
+
+[CONTENU DU CORPS]
+{text_snippet}
+
+Renvoie UNIQUEMENT un JSON avec les clés :
+- "job_title" (le titre explicite du poste, ex: "Développeur Full Stack")
+- "company_name" (le nom de l'entreprise qui recrute)
+Ne rajoute PAS de balises markdown comme ```json, renvoie uniquement l'objet JSON brut."""
+        
+        logger.info(f"[CRM] Appel LLM pour extraction d'offre...")
+        result_text = await llm.chat([{"role": "user", "content": prompt}], json_mode=True)
+        
+        extracted = {}
+        try:
+            import re
+            cleaned_result = re.sub(r'```json\s*', '', result_text, flags=re.IGNORECASE)
+            cleaned_result = re.sub(r'```\s*', '', cleaned_result).strip()
+            
+            json_match = re.search(r'\{.*\}', cleaned_result, re.DOTALL)
+            if json_match:
+                extracted = json.loads(json_match.group(0))
+            else:
+                extracted = json.loads(cleaned_result)
+        except Exception as parse_error:
+            logger.error(f"[CRM] Erreur parsing JSON: {parse_error} - Raw: {result_text}")
+            extracted = {}
+            
+        job_title = str(extracted.get("job_title", "")).strip()
+        company_name = str(extracted.get("company_name", "")).strip()
+        if not job_title or job_title.lower() == "none" or job_title.lower() == "inconnu": job_title = "Poste non identifié"
+        if not company_name or company_name.lower() == "none" or company_name.lower() == "inconnu": company_name = "Entreprise non identifiée"
+            
+        logger.info(f"[CRM] Link Extrait: '{job_title}' chez '{company_name}'")
+
+        # 4. Insertion dans MongoDB
+        db = get_db()
+        app_id = str(uuid.uuid4())
+        
+        new_app = {
+            "id": app_id,
+            "user_id": current_user["id"],
+            "job_title": job_title,
+            "company_name": company_name,
+            "url": request.url,
+            "reference": "",
+            "status": "APPLIED",
+            "notes": "Ajouté via le lien externe.",
+            "created_at": datetime.utcnow()
+        }
+        
+        await db.applications.insert_one(new_app)
+        
+        # Rend les ObjectId stringifiable
+        new_app["_id"] = str(new_app["_id"])
+        
+        return {"status": "success", "data": new_app}
+        
+    except httpx.HTTPError as e:
+        logger.error(f"[CRM] Erreur HTTP lors du scraping : {e}")
+        raise HTTPException(status_code=400, detail="Impossible d'accéder à ce lien. Le site bloque l'accès aux requêtes externes.")
+    except Exception as e:
+        logger.error(f"[CRM] Erreur traitement lien CRM: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'analyse du lien: {str(e)}")
+
 @app.get("/api/crm")
 async def fetch_crm(current_user: dict = Depends(get_current_user)):
     """Alias pour les candidatures existantes via MongoDB."""

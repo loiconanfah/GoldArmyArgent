@@ -26,7 +26,8 @@ import {
 } from '@heroicons/vue/24/solid'
 import {
     SparklesIcon,
-    CloudArrowDownIcon
+    CloudArrowDownIcon,
+    CheckCircleIcon
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
@@ -39,6 +40,8 @@ const isGeneratingPortfolio = ref(false)
 const isUploadingCv = ref(false)
 const isUploading = ref(false)
 const isLoading = ref(false)
+const loadingStep = ref(0) // 0 to 4 pour les étapes d'analyse CV
+const loadingInterval = ref(null)
 const isWorkspaceFullScreen = ref(false)
 const selectedImage = ref(null) // Base64 of the design image
 const currentUser = ref(null)
@@ -82,6 +85,28 @@ const scrollToBottom = async () => {
     if (chatContainer.value) {
         chatContainer.value.scrollTop = chatContainer.value.scrollHeight
     }
+}
+
+const loadingStepsTexts = [
+    "Connexion au système central...",
+    "Extraction des données du CV...",
+    "Analyse algorithmique ATS en cours...",
+    "Restructuration du parcours...",
+    "Génération du rapport d'optimisation..."
+]
+
+const startLoadingAnimation = () => {
+    loadingStep.value = 0
+    loadingInterval.value = setInterval(() => {
+        if (loadingStep.value < 4) {
+             loadingStep.value++
+             scrollToBottom()
+        }
+    }, 2500) // Change step every 2.5s
+}
+
+const stopLoadingAnimation = () => {
+    clearInterval(loadingInterval.value)
 }
 
 onMounted(async () => {
@@ -150,6 +175,10 @@ const sendMessage = async () => {
   
   scrollToBottom()
   isLoading.value = true
+  
+  if (cvText.value) {
+      startLoadingAnimation()
+  }
   // Si on détecte une demande de portfolio, on prépare le workspace
   if (userMsg.toLowerCase().includes('portfolio')) {
       isGeneratingPortfolio.value = true
@@ -231,6 +260,7 @@ const sendMessage = async () => {
     })
   } finally {
     isLoading.value = false
+    stopLoadingAnimation()
     isGeneratingPortfolio.value = false
     scrollToBottom()
   }
@@ -622,12 +652,37 @@ const openInWorkspace = (msg) => {
         </div>
       </div>
       
-      <!-- Typing Indicator -->
-      <div v-if="isLoading" class="flex w-full justify-start gap-4">
-         <div class="shrink-0 w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center border border-surface-700 text-sm mt-1 animate-pulse">
+      <!-- Typing Indicator & Analysis Steps -->
+      <div v-if="isLoading" class="flex w-full justify-start gap-4 transition-all duration-500">
+         <div class="shrink-0 w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center border border-surface-700 text-sm mt-1 animate-pulse shadow-glow shadow-gold-500/10">
              🤖
          </div>
-         <div class="py-2.5 flex items-center gap-1.5 opacity-50">
+         
+         <!-- Loading CV Analysis Steps -->
+         <div v-if="cvText" class="w-full max-w-sm bg-surface-800/50 border border-surface-700/50 rounded-2xl p-4 shadow-sm backdrop-blur-sm">
+             <div class="flex items-center gap-2 mb-3">
+                 <SparklesIcon class="w-4 h-4 text-gold-400 animate-pulse" />
+                 <span class="text-xs font-bold text-gold-400 uppercase tracking-widest">Traitement en cours</span>
+             </div>
+             <div class="space-y-3">
+                 <div v-for="(stepText, index) in loadingStepsTexts" :key="index" 
+                      class="flex items-center gap-3 transition-all duration-500"
+                      :class="{'opacity-100': loadingStep >= index, 'opacity-20 hidden': loadingStep < index}">
+                     
+                     <div v-if="loadingStep > index" class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                         <CheckCircleIcon class="w-3.5 h-3.5 text-emerald-400" />
+                     </div>
+                     <div v-else-if="loadingStep === index" class="w-5 h-5 rounded-full border-2 border-gold-500 border-t-transparent animate-spin shrink-0"></div>
+                     
+                     <span class="text-xs font-medium" :class="loadingStep > index ? 'text-slate-400 line-through' : 'text-slate-200'">
+                         {{ stepText }}
+                     </span>
+                 </div>
+             </div>
+         </div>
+         
+         <!-- Standard Typing dots (if not CV) -->
+         <div v-else class="py-2.5 flex items-center gap-1.5 opacity-50">
             <div class="w-2 h-2 rounded-full bg-gold-500/50 animate-bounce" style="animation-delay: 0ms"></div>
             <div class="w-2 h-2 rounded-full bg-gold-500/50 animate-bounce" style="animation-delay: 150ms"></div>
             <div class="w-2 h-2 rounded-full bg-gold-500/50 animate-bounce" style="animation-delay: 300ms"></div>
@@ -704,8 +759,9 @@ const openInWorkspace = (msg) => {
                 <button @click="downloadZip" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
                     <ArrowDownTrayIcon class="w-3.5 h-3.5" /> ZIP
                 </button>
-                <button class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-indigo-500/20">
+                <button class="flex items-center gap-2 px-3 py-1.5 bg-surface-800 text-slate-500 text-xs font-bold rounded-lg transition-all border border-surface-700 cursor-not-allowed relative overflow-hidden group">
                     <CloudArrowUpIcon class="w-3.5 h-3.5" /> Deploy
+                    <span class="absolute -top-1 -right-1 bg-amber-500 text-[8px] text-white px-1.5 py-0.5 rounded shadow-sm rotate-12 scale-90 group-hover:scale-100 transition-transform">Bientôt</span>
                 </button>
                 <button @click="isWorkspaceOpen = false" class="p-2 text-slate-500 hover:text-rose-400 transition-colors ml-2">
                     <XMarkIcon class="w-5 h-5" />
@@ -768,22 +824,23 @@ const openInWorkspace = (msg) => {
                         <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> script.js
                     </button>
                 </div>
+                <div class="p-2 text-white bg-red-900text-xs select-all">Debug Keys: {{ Object.keys(workspaceProject) }} | HTML length: {{ workspaceProject.html?.length || 0 }}</div>
                 <!-- Editor -->
-                <div class="flex-1 overflow-hidden p-0 font-mono text-xs text-slate-300">
+                <div class="flex-1 overflow-hidden p-0 font-mono text-xs text-slate-300 bg-[#0d1117]">
                     <textarea 
                         v-if="activeFileTab === 'html'" 
                         v-model="workspaceProject.html"
-                        class="w-full h-full bg-transparent p-4 resize-none focus:outline-none custom-scrollbar leading-relaxed"
+                        class="w-full h-full bg-transparent p-4 resize-none focus:outline-none custom-scrollbar leading-relaxed text-slate-300"
                     ></textarea>
                     <textarea 
                         v-else-if="activeFileTab === 'css'" 
                         v-model="workspaceProject.css"
-                        class="w-full h-full bg-transparent p-4 resize-none focus:outline-none custom-scrollbar leading-relaxed"
+                        class="w-full h-full bg-transparent p-4 resize-none focus:outline-none custom-scrollbar leading-relaxed text-slate-300"
                     ></textarea>
                     <textarea 
                         v-else-if="activeFileTab === 'js'" 
                         v-model="workspaceProject.js"
-                        class="w-full h-full bg-transparent p-4 resize-none focus:outline-none custom-scrollbar leading-relaxed"
+                        class="w-full h-full bg-transparent p-4 resize-none focus:outline-none custom-scrollbar leading-relaxed text-slate-300"
                     ></textarea>
                 </div>
             </div>

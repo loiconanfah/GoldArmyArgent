@@ -52,92 +52,79 @@ class MentorAgent(BaseAgent):
 
     async def _audit_and_rewrite_cv(self, cv_text: str) -> Dict[str, Any]:
         """Audite et réécrit le CV en une seule passe pour l'optimisation ATS + feedback."""
-        logger.info("[Mentor] Audit + Réécriture ATS du CV...")
+        logger.info("[Mentor] Audit + Réécriture ATS du CV (Mode Rapide & Exhaustif)...")
 
-        prompt = f"""Tu es un expert RH senior, recruteur tech et optimiseur ATS de haut niveau.
-Tu as reçu un CV. Tu dois faire DEUX choses :
-1. **AUDIT GRAPHIQUE** avec scores numériques précis.
-2. **RÉÉCRITURE ATS** : Version restructurée et optimisée.
+        prompt = f"""Tu es un expert RH senior et optimiseur ATS.
+Ta mission est d'auditer et réécrire ce CV.
+POUR ALLER VITE : Sois très bref dans tes textes d'audit (max 1 ligne par point).
+POUR LE CANDIDAT : NE SUPPRIME AUCUNE EXPÉRIENCE dans le JSON "cv_data". Tu DOIS garder 100% de l'historique complet, reformule juste les puces en "Verbe d'action + Résultat". Il est INTERDIT de raccourcir ou tronquer la carrière du candidat.
 
-**Renvoie UNIQUEMENT ce JSON valide (sans texte avant/après, sans markdown) :**
+**Renvoie UNIQUEMENT ce JSON valide (sans markdown) :**
 {{
   "audit": {{
     "ats_score": 72,
     "candidate_name": "Yvan Loic Nanfah",
-    "candidate_title": "Développeur C#",
-    "scores": {{
-      "mots_cles": 65,
-      "impact_resultats": 45,
-      "mise_en_forme": 80,
-      "lisibilite": 70,
-      "experience_pertinence": 75
-    }},
-    "failles": [
-      "Aucun résultat quantifié (chiffres, %, délais) dans les expériences",
-      "Résumé absent ou trop générique — perd des mots-clés ATS cruciaux",
-      "Technologies clés manquantes par rapport au marché 2025"
-    ],
-    "actions": [
-      "Ajouter 2-3 chiffres concrets par poste (ex: 'réduit le temps de déploiement de 40%')",
-      "Réécrire le résumé avec 5+ mots-clés techniques ciblés",
-      "Ajouter CI/CD, Docker, Azure/AWS dans la section compétences"
-    ],
-    "tech_manquantes": ["Docker", "Kubernetes", "CI/CD", "Azure", "React"],
-    "points_forts": [
-      "Stack technique solide (C#, .NET)",
-      "Expérience en développement logiciel démontrée"
-    ]
+    "candidate_title": "Développeur",
+    "scores": {{ "mots_cles": 65, "impact_resultats": 45, "mise_en_forme": 80, "lisibilite": 70, "experience_pertinence": 75 }},
+    "failles": ["Aucun résultat chiffré", "Résumé manquant"],
+    "actions": ["Ajouter des métriques de succès", "Créer un résumé technique"],
+    "tech_manquantes": ["Docker", "Kubernetes"],
+    "points_forts": ["Stack C# solide"]
   }},
   "cv_data": {{
-    "full_name": "Prénom Nom",
-    "title": "Titre professionnel",
-    "email": "email@example.com",
-    "phone": "+1 (514) xxx-xxxx",
-    "location": "Ville, Province",
-    "linkedin": "linkedin.com/in/xxx",
-    "github": "github.com/xxx",
-    "summary": "Résumé 3-4 phrases percutantes riche en mots-clés ATS",
+    "full_name": "...",
+    "title": "...",
+    "email": "...",
+    "phone": "...",
+    "location": "...",
+    "linkedin": "...",
+    "github": "...",
+    "summary": "Résumé de 3 lignes maxi pour l'ATS.",
     "experiences": [
       {{
-        "title": "Titre du poste",
+        "title": "Titre exact",
         "company": "Entreprise",
-        "location": "Ville, Province",
-        "start_date": "Mois YYYY",
-        "end_date": "Présent",
+        "location": "Lieu",
+        "start_date": "MM/YYYY",
+        "end_date": "Mois YYYY ou Présent",
         "bullets": [
-          "Développé X fonctionnalité avec Y technologie, améliorant Z de N%",
-          "Optimisé le pipeline CI/CD, réduisant le temps de build de 30%"
+          "Verbe d'action + résultat quantifié",
+          "Technologie + impact"
         ]
       }}
     ],
     "skills": {{
-      "Langages": ["C#", "Python", "JavaScript"],
-      "Frameworks": [".NET", "React", "FastAPI"],
-      "Outils": ["Git", "Docker", "Azure DevOps"],
-      "Bases de données": ["SQL Server", "PostgreSQL"]
+      "Langages": ["C#"],
+      "Outils": ["Git"]
     }},
     "education": [
       {{
-        "degree": "Bac. en Informatique",
-        "institution": "Université X",
-        "location": "Ville, Province",
-        "year": "2023"
+        "degree": "...",
+        "institution": "...",
+        "location": "...",
+        "year": "..."
       }}
     ],
-    "certifications": ["Certification - Émetteur (Année)"],
-    "languages": ["Français (natif)", "Anglais (avancé)"]
+    "certifications": ["..."],
+    "languages": ["..."]
   }}
 }}
 
-**Règles ATS pour la réécriture :** verbes d'action forts, résultats quantifiés, mots-clés techniques, mono-colonne, pas de tableau.
+**Règles absolues :**
+1. INCLUS TOUTES LES EXPÉRIENCES du CV source sans exception. Ne coupe rien.
+2. Les "failles" et "actions" doivent faire 5 à 10 mots maximum pour économiser des tokens.
 
-CV à analyser :
-{cv_text[:4000]}
+CV à traiter :
+{cv_text[:5000]}
 
-RÉPONSE : JSON uniquement, rien d'autre."""
+RÉPONSE JSON UNIQUEMENT:"""
 
         logger.debug(f"[Mentor] Prompt envoyé (taille: {len(prompt)})")
         response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)
+        
+        if not response:
+            raise Exception("L'API Gemini n'a retourné aucune réponse (Surcharge serveur 503 probable).")
+            
         logger.debug(f"[Mentor] Réponse brute reçue (taille: {len(response)})")
         
         # Log de secours dans un fichier local pour être sûr de voir le contenu

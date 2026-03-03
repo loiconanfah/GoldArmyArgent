@@ -2,6 +2,7 @@
 import { authFetch } from '../utils/auth'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { toastState } from '../store/toastState'
 import { 
   ChartBarIcon, 
   EnvelopeIcon, 
@@ -15,7 +16,8 @@ import {
   PlusIcon,
   XMarkIcon,
   ClipboardDocumentIcon,
-  CheckIcon
+  CheckIcon,
+  TrashIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -40,6 +42,10 @@ const isGeneratingFollowup = ref(false)
 const followupCount = ref(0)
 const copied = ref(false)
 
+// Delete popup state
+const showDeletePopup = ref(false)
+const itemToDelete = ref(null)
+
 // Summary stats
 const totalCards = computed(() => Object.values(crmCards.value).flat().length)
 const interviewCount = computed(() => crmCards.value['INTERVIEW']?.length || 0)
@@ -57,6 +63,32 @@ const fetchCrmData = async () => {
         crmCards.value = grouped
     } catch(e) { console.error("Failed to fetch CRM data", e) }
     finally { isLoading.value = false }
+}
+
+const newLinkUrl = ref('')
+const isAddingLink = ref(false)
+
+const addFromLink = async () => {
+    if(!newLinkUrl.value.trim()) return
+    isAddingLink.value = true
+    try {
+        const res = await authFetch('/api/crm/link', {
+            method: 'POST',
+            body: JSON.stringify({ url: newLinkUrl.value.trim() })
+        })
+        const json = await res.json()
+        if (res.ok && json.status === 'success') {
+            toastState.addToast('Candidature importée avec succès !', 'success')
+            newLinkUrl.value = ''
+            await fetchCrmData() // refresh the board
+        } else {
+            toastState.addToast(`Erreur: ${json.detail || json.message || "Impossible d'importer l'offre"}`, 'error')
+        }
+    } catch(e) {
+        toastState.addToast("Erreur réseau: impossible de joindre le serveur.", 'error')
+    } finally {
+        isAddingLink.value = false
+    }
 }
 
 const handleDragStart = (e, card, sourceColumn) => {
@@ -80,6 +112,33 @@ const handleDrop = async (e, targetColumnId) => {
             body: JSON.stringify({ status: targetColumnId })
         })
     } catch(err) { fetchCrmData() }
+}
+
+const deleteCard = (cardId, colId) => {
+    itemToDelete.value = { cardId, colId };
+    showDeletePopup.value = true;
+}
+
+const confirmDeleteCard = async () => {
+    if (!itemToDelete.value) return;
+    const { cardId, colId } = itemToDelete.value;
+    
+    // Simulate optimistic UI update
+    const previousState = [...crmCards.value[colId]];
+    crmCards.value[colId] = crmCards.value[colId].filter(c => c.id !== cardId);
+    
+    showDeletePopup.value = false;
+    itemToDelete.value = null;
+    
+    try {
+        const res = await authFetch(`/api/crm/${cardId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error("Failed to delete");
+        toastState.addToast("Candidature supprimée avec succès", "success");
+    } catch(err) {
+        // Revert on failure
+        crmCards.value[colId] = previousState;
+        toastState.addToast("Erreur lors de la suppression", "error");
+    }
 }
 
 const handleDragOver = (e, colId) => { e.preventDefault(); dragOverCol.value = colId }
@@ -160,6 +219,32 @@ onMounted(() => { fetchCrmData() })
         </button>
       </div>
 
+      <!-- ADD URL SECTION -->
+      <div class="mt-5 max-w-[1800px] mx-auto">
+        <form @submit.prevent="addFromLink" class="relative flex items-center">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <LinkIcon class="w-5 h-5 text-slate-500" />
+          </div>
+          <input 
+            v-model="newLinkUrl"
+            type="url" 
+            placeholder="Collez l'URL d'une offre d'emploi (LinkedIn, Indeed, site vitrine...) pour l'ajouter au CRM..." 
+            class="w-full bg-surface-900 border border-surface-800 text-white text-sm rounded-xl focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 block pl-11 pr-32 py-3.5 shadow-sm transition-all"
+            :disabled="isAddingLink"
+            required
+          >
+          <button 
+            type="submit" 
+            :disabled="isAddingLink || !newLinkUrl.trim()"
+            class="absolute right-2 top-2 bottom-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs px-4 rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-indigo-500/20"
+          >
+            <ArrowPathIcon v-if="isAddingLink" class="w-4 h-4 animate-spin" />
+            <SparklesIcon v-else class="w-4 h-4" />
+            {{ isAddingLink ? 'Analyse IA...' : 'Ajouter Magiquement' }}
+          </button>
+        </form>
+      </div>
+
       <!-- OVERVIEW STATS -->
       <div class="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-[1800px] mx-auto">
         <div class="bg-surface-900 border border-surface-800 rounded-2xl p-4 flex items-center gap-3">
@@ -236,13 +321,17 @@ onMounted(() => { fetchCrmData() })
                   <div class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center font-black text-sm text-white" :style="`background: ${col.accent}25; border: 1px solid ${col.accent}40`">
                     {{ getInitial(card.company_name) }}
                   </div>
-                  <p class="text-xs font-bold text-slate-400 truncate">{{ card.company_name }}</p>
+                  <p class="text-xs font-bold text-slate-400 truncate w-32" :title="card.company_name">{{ card.company_name }}</p>
                 </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <span class="text-[10px] font-bold text-slate-600 bg-surface-800 px-2 py-0.5 rounded-lg border border-surface-700">{{ formatDate(card.created_at) }}</span>
-                  <a v-if="card.url" :href="card.url" target="_blank" class="text-slate-600 hover:text-indigo-400 transition-colors p-1" @click.stop>
+                <!-- Card actions (Date, Link, Delete) -->
+                <div class="flex items-center gap-1.5 shrink-0 opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity">
+                  <span class="text-[10px] font-bold text-slate-600 bg-surface-800 px-2 py-0.5 rounded-lg border border-surface-700 hidden sm:inline-block">{{ formatDate(card.created_at) }}</span>
+                  <a v-if="card.url" :href="card.url" target="_blank" title="Ouvrir le lien" class="text-slate-500 hover:text-indigo-400 transition-colors bg-surface-800 p-1 rounded-lg border border-surface-700" @click.stop>
                     <ArrowTopRightOnSquareIcon class="w-3.5 h-3.5" />
                   </a>
+                  <button @click.stop="deleteCard(card.id, col.id)" title="Supprimer l'opportunité" class="text-slate-500 hover:text-rose-400 transition-colors bg-surface-800 p-1 rounded-lg border border-surface-700">
+                    <TrashIcon class="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -343,6 +432,27 @@ onMounted(() => { fetchCrmData() })
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ DELETE CONFIRMATION POPUP ═══ -->
+    <div v-if="showDeletePopup" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showDeletePopup = false; itemToDelete = null"></div>
+      <div class="relative z-10 bg-surface-900 border border-surface-700 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-scale-in text-center p-6">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500/20 to-rose-600/5 flex items-center justify-center mx-auto mb-4 border border-rose-500/20">
+          <TrashIcon class="w-7 h-7 text-rose-500" />
+        </div>
+        <h3 class="text-xl font-display font-black text-white mb-2">Supprimer l'offre ?</h3>
+        <p class="text-[13px] leading-relaxed text-slate-400 mb-6 font-medium">Cette opportunité sera effacée définitivement de votre pipeline.</p>
+        <div class="flex gap-3">
+          <button @click="showDeletePopup = false; itemToDelete = null" class="flex-1 py-3 px-4 rounded-xl font-bold text-sm bg-surface-800 hover:bg-surface-700 text-slate-300 border border-surface-700 transition-colors">
+            Annuler
+          </button>
+          <button @click="confirmDeleteCard" class="flex-1 py-3 px-4 rounded-xl font-bold text-sm bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20 transition-all flex items-center justify-center gap-2">
+            <TrashIcon class="w-4 h-4" />
+            Supprimer
+          </button>
         </div>
       </div>
     </div>

@@ -19,7 +19,14 @@ export const getApiUrl = (path) => {
 };
 
 export const getWsUrl = (path) => {
-    const wsBase = API_URL.replace(/^http/, 'ws');
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+    // Vercel Serverless Functions NE PEUVENT PAS proxifier les WebSockets persistants.
+    // On doit attaquer Render directement.
+    if (window.location.hostname !== 'localhost') {
+        return `wss://goldarmy.onrender.com${cleanPath}`;
+    }
+
+    const wsBase = API_URL.replace(/^http/, 'ws');
     return `${wsBase}${cleanPath}`;
 };
