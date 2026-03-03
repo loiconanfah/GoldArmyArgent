@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /home
+Disallow: /opportunities
+Disallow: /mentor
+Disallow: /interview
+Disallow: /profile
+Disallow: /settings
+Disallow: /crm
+Disallow: /reseaux
+
+# Pages publiques indexables
+Allow: /
+Allow: /login
+Allow: /register
+
+Sitemap: https://www.goldarmyai.com/sitemap.xml
