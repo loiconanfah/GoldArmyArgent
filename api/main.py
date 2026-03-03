@@ -815,6 +815,7 @@ Description : {meta_desc}
 Renvoie UNIQUEMENT un JSON avec les clés :
 - "job_title" (le titre explicite du poste, ex: "Développeur Full Stack")
 - "company_name" (le nom de l'entreprise qui recrute)
+- "job_summary" (un résumé concis de l'offre en 2-3 phrases max, incluant les technos/mots-clés principaux ou les missions clés)
 Ne rajoute PAS de balises markdown comme ```json, renvoie uniquement l'objet JSON brut."""
         
         logger.info(f"[CRM] Appel LLM pour extraction d'offre...")
@@ -837,8 +838,11 @@ Ne rajoute PAS de balises markdown comme ```json, renvoie uniquement l'objet JSO
             
         job_title = str(extracted.get("job_title", "")).strip()
         company_name = str(extracted.get("company_name", "")).strip()
+        job_summary = str(extracted.get("job_summary", "")).strip()
+        
         if not job_title or job_title.lower() == "none" or job_title.lower() == "inconnu": job_title = "Poste non identifié"
         if not company_name or company_name.lower() == "none" or company_name.lower() == "inconnu": company_name = "Entreprise non identifiée"
+        if not job_summary: job_summary = "Ajouté via le lien externe (aucune description extraite)."
             
         logger.info(f"[CRM] Link Extrait: '{job_title}' chez '{company_name}'")
 
@@ -854,7 +858,7 @@ Ne rajoute PAS de balises markdown comme ```json, renvoie uniquement l'objet JSO
             "url": request.url,
             "reference": "",
             "status": "APPLIED",
-            "notes": "Ajouté via le lien externe.",
+            "notes": job_summary,
             "created_at": datetime.utcnow()
         }
         
