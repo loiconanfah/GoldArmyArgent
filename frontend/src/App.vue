@@ -24,7 +24,9 @@ import ToastPortal from './components/ToastPortal.vue'
 const route = useRoute()
 const router = useRouter()
 const currentRoute = computed(() => route.path)
-const isPublicRoute = computed(() => ['/', '/login', '/register'].includes(route.path))
+const isPublicRoute = computed(() => {
+  return ['/', '/login', '/register', '/blog'].includes(route.path) || route.path.startsWith('/blog/')
+})
 const isImmersive = computed(() => route.path === '/interview')
 const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(false)

@@ -17,6 +17,16 @@ const routes = [
         name: 'Landing',
         component: () => import('../views/Landing.vue')
     },
+    {
+        path: '/blog',
+        name: 'Blog',
+        component: () => import('../views/Blog.vue')
+    },
+    {
+        path: '/blog/:id',
+        name: 'Article',
+        component: () => import('../views/Article.vue')
+    },
     // ── Accueil (post-login home page) ────────────────────────────────────
     {
         path: '/home',

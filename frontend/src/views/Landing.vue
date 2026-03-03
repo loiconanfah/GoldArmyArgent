@@ -16,6 +16,7 @@ import {
   DocumentTextIcon,
   MagnifyingGlassIcon,
   ChatBubbleLeftEllipsisIcon,
+  ChevronRightIcon
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -73,10 +74,13 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
         <!-- Links -->
         <div class="hidden md:flex items-center gap-8">
           <a v-for="link in ['Agents','Fonctions','Tarifs','Avis']" :key="link"
-             :href="`#${link.toLowerCase()}`"
+             :href="`/#${link.toLowerCase()}`"
              class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">
             {{ link }}
           </a>
+          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors">
+            Blog
+          </router-link>
         </div>
         <!-- CTA -->
         <div class="flex items-center gap-3">
@@ -509,18 +513,60 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
       </div>
     </section>
 
-    <!-- ─── FOOTER ─── -->
-    <footer class="border-t border-white/5 py-10">
-      <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-7 h-7 rounded-lg overflow-hidden border border-violet-500/30">
-            <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
+    <!-- ─── FULL FOOTER ─── -->
+    <footer class="border-t border-white/5 pt-20 pb-10 mt-32 relative bg-[#0a0a12] z-10">
+      <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+        <!-- Brand -->
+        <div class="md:col-span-2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-9 h-9 rounded-xl overflow-hidden border border-violet-500/30">
+              <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
+            </div>
+            <span class="text-lg font-black uppercase tracking-widest text-white">GoldArmy</span>
           </div>
-          <span class="text-sm font-black uppercase tracking-widest text-white/40">GoldArmy</span>
+          <p class="text-white/40 text-sm leading-relaxed max-w-sm mb-8">
+            L'intelligence artificielle au service de votre carrière. Ne cherchez plus d'emploi, laissez les opportunités venir à vous grâce à nos agents autonomes.
+          </p>
+          <div class="flex items-center gap-2 text-xs text-white/20 font-bold">
+            <ShieldCheckIcon class="w-4 h-4 text-violet-500" /> Plateforme 100% sécurisée
+          </div>
         </div>
+
+        <!-- Liens Rapides -->
+        <div>
+          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">Navigation</h4>
+          <ul class="space-y-4">
+            <li><a href="/#agents" class="text-sm text-white/40 hover:text-white transition-colors">Nos Agents IA</a></li>
+            <li><a href="/#tarifs" class="text-sm text-white/40 hover:text-white transition-colors">Tarification</a></li>
+            <li><router-link to="/blog" class="text-sm text-white/40 hover:text-white transition-colors">Le Blog IA</router-link></li>
+            <li><router-link to="/login" class="text-sm text-white/40 hover:text-white transition-colors">Espace Candidat</router-link></li>
+          </ul>
+        </div>
+
+        <!-- Contact & Legal -->
+        <div>
+          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">Contact</h4>
+          <ul class="space-y-4 mb-8">
+            <li>
+              <a href="mailto:support@goldarmyai.com" class="text-sm text-white/40 hover:text-violet-400 transition-colors flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Support Client
+              </a>
+            </li>
+            <li>
+              <a href="mailto:yvanloic@goldarmyai.com" class="text-sm text-white/40 hover:text-violet-400 transition-colors flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Contacter le CEO
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="max-w-7xl mx-auto px-6 border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <p class="text-xs text-white/20 font-bold">© 2026 GoldArmy Agent IA. Tous droits réservés.</p>
-        <div class="flex items-center gap-2 text-xs text-white/20 font-bold">
-          <ShieldCheckIcon class="w-4 h-4" /> Sécurisé & Privé
+        <div class="flex gap-6">
+          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">Confidentialité</a>
+          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">CGU</a>
         </div>
       </div>
     </footer>
