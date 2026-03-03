@@ -61,6 +61,16 @@ if os.path.isdir(_FRONTEND_DIST):
         f = os.path.join(_FRONTEND_DIST, "favicon.ico")
         return FileResponse(f) if os.path.exists(f) else FileResponse(os.path.join(_FRONTEND_DIST, "index.html"))
 
+    @app.get("/sitemap.xml", include_in_schema=False)
+    async def sitemap():
+        f = os.path.join(_FRONTEND_DIST, "sitemap.xml")
+        return FileResponse(f, media_type="application/xml") if os.path.exists(f) else HTTPException(status_code=404)
+
+    @app.get("/robots.txt", include_in_schema=False)
+    async def robots():
+        f = os.path.join(_FRONTEND_DIST, "robots.txt")
+        return FileResponse(f, media_type="text/plain") if os.path.exists(f) else HTTPException(status_code=404)
+
     # SPA catch-all — must be LAST so it doesn't shadow /api/* routes
     @app.get("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str, request: Request):
