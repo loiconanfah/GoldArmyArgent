@@ -1,6 +1,8 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useHead } from '@unhead/vue'
 import {
   RocketLaunchIcon,
   ChartBarIcon,
@@ -20,7 +22,19 @@ import {
   VideoCameraIcon
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
+
+useHead({
+  title: computed(() => t('seo.landing.title')),
+  meta: [
+    { name: 'description', content: computed(() => t('seo.landing.description')) },
+    { property: 'og:title', content: computed(() => t('seo.landing.title')) },
+    { property: 'og:description', content: computed(() => t('seo.landing.description')) },
+    { property: 'og:image', content: '/og-banner.png' },
+    { name: 'twitter:card', content: 'summary_large_image' }
+  ]
+})
 
 // Parallax mouse effect
 const mouseX = ref(0)
@@ -30,29 +44,29 @@ const handleMouseMove = (e) => {
   mouseY.value = (e.clientY / window.innerHeight - 0.5) * 30
 }
 
-const testimonials = [
+const testimonials = computed(() => [
   {
-    quote: 'GoldArmy a trouvé une offre cachée sur un petit site carrière. J\'ai postulé avec la lettre générée et eu l\'entretien le lendemain.',
+    quote: t('landing.testimonials.quote1'),
     name: 'Marc R.',
     role: 'Développeur Fullstack',
     color: 'from-violet-500 to-purple-500',
     initials: 'MR'
   },
   {
-    quote: 'Le Mentor IA m\'a préparé à 80% des questions que j\'ai eues chez le GAFAM. C\'est une arme redoutable.',
+    quote: t('landing.testimonials.quote2'),
     name: 'Sophie L.',
     role: 'Data Scientist',
     color: 'from-emerald-500 to-teal-500',
     initials: 'SL'
   },
   {
-    quote: 'Mon taux de réponse a explosé grâce au Générateur de Réseau. Je contacte directement les CTOs maintenant.',
+    quote: t('landing.testimonials.quote3'),
     name: 'Julien D.',
     role: 'Product Manager',
     color: 'from-orange-500 to-amber-500',
     initials: 'JD'
   }
-]
+])
 onMounted(() => window.addEventListener('mousemove', handleMouseMove))
 onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 </script>
@@ -74,33 +88,38 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
         </div>
         <!-- Links -->
         <div class="hidden md:flex items-center gap-6">
-          <a v-for="link in ['Agents','Fonctions','Tarifs','Avis']" :key="link"
-             :href="`/#${link.toLowerCase()}`"
+          <a v-for="link in [
+               { name: t('landing.nav.agents'), id: 'agents' },
+               { name: t('landing.nav.features'), id: 'fonctions' },
+               { name: t('landing.nav.pricing'), id: 'tarifs' },
+               { name: t('landing.nav.reviews'), id: 'avis' }
+             ]" :key="link.id"
+             :href="`/#${link.id}`"
              class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">
-            {{ link }}
+            {{ link.name }}
           </a>
           <!-- Added Freemium & Blog links -->
           <div class="h-4 w-px bg-white/10 mx-2"></div>
           <router-link to="/free-cv-roast" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1.5">
-            <DocumentTextIcon class="w-3.5 h-3.5" /> Audit CV
+            <DocumentTextIcon class="w-3.5 h-3.5" /> {{ t('landing.nav.cv_audit') }}
           </router-link>
           <router-link to="/free-interview" class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5">
-            <VideoCameraIcon class="w-3.5 h-3.5" /> Simulation
+            <VideoCameraIcon class="w-3.5 h-3.5" /> {{ t('landing.nav.simulation') }}
           </router-link>
           <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-400 hover:text-fuchsia-300 transition-colors">
-            Blog
+            {{ t('landing.nav.blog') }}
           </router-link>
         </div>
         <!-- CTA -->
         <div class="flex items-center gap-3">
           <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-            Connexion
+            {{ t('landing.nav.login') }}
           </router-link>
           <router-link to="/register"
             class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
                    px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
                    transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
-            Démarrer →
+            {{ t('landing.nav.get_started') }} →
           </router-link>
         </div>
       </div>
@@ -127,43 +146,42 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
               <span class="animate-ping absolute h-full w-full rounded-full bg-violet-400 opacity-75"></span>
               <span class="relative block h-2 w-2 rounded-full bg-violet-400"></span>
             </span>
-            { Sniper IA 7.1 — Maintenant disponible }
+            { {{ t('landing.hero.badge') }} }
           </div>
 
           <h1 class="text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter mb-8">
-            <span class="text-white">Trouvez votre<br/></span>
+            <span class="text-white">{{ t('landing.hero.title_1') }}<br/></span>
             <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400">
-              job de rêve
+              {{ t('landing.hero.title_2') }}
             </span>
             <br/>
-            <span class="text-white/30">avec l'IA.</span>
+            <span class="text-white/30">{{ t('landing.hero.title_3') }}</span>
           </h1>
 
           <p class="text-lg text-white/50 leading-relaxed max-w-md mb-10">
-            GoldArmy automatise chaque étape de votre recherche d'emploi — du sourcing des offres cachées
-            à la préparation d'entretiens — propulsé par une IA de précision militaire.
+            {{ t('landing.hero.description') }}
           </p>
 
           <div class="flex flex-col sm:flex-row flex-wrap items-center gap-4">
             <router-link to="/register"
               class="w-full sm:w-auto flex justify-center items-center gap-3 bg-violet-600 hover:bg-violet-500 text-white font-black text-sm uppercase tracking-[0.2em]
                      px-8 py-4 rounded-2xl shadow-xl shadow-violet-600/30 transition-all hover:scale-[1.02] active:scale-95">
-              Créer un Compte <ArrowRightIcon class="w-4 h-4" />
+              {{ t('landing.hero.cta_main') }} <ArrowRightIcon class="w-4 h-4" />
             </router-link>
             <a href="#fonctions"
                class="flex justify-center items-center gap-2 text-sm font-bold text-white/40 hover:text-white/70 transition-colors uppercase tracking-widest mt-2 sm:mt-0 w-full sm:w-auto">
-              Voir les agents ↓
+              {{ t('landing.hero.cta_secondary') }} ↓
             </a>
           </div>
 
           <!-- Trust bar -->
           <div class="mt-12 flex flex-wrap gap-6">
-            <div v-for="t in [
-              { n: '98.5%', l: 'précision IA' },
-              { n: '40h', l: 'économisées/mois' }
-            ]" :key="t.n" class="flex flex-col">
-              <span class="text-2xl font-black text-white">{{ t.n }}</span>
-              <span class="text-[10px] font-bold uppercase tracking-widest text-white/30">{{ t.l }}</span>
+            <div v-for="t_item in [
+              { n: '98.5%', l: t('landing.hero.stat_precision') },
+              { n: '40h', l: t('landing.hero.stat_hours') }
+            ]" :key="t_item.l" class="flex flex-col">
+              <span class="text-2xl font-black text-white">{{ t_item.n }}</span>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-white/30">{{ t_item.l }}</span>
             </div>
           </div>
         </div>
@@ -226,17 +244,17 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
       <!-- Bottom mini features bar -->
       <div class="absolute bottom-0 inset-x-0 border-t border-white/5">
         <div class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div v-for="f in [
-            { icon: MagnifyingGlassIcon, title: 'Sourcing IA Sniper', desc: 'Offres cachées détectées avant tout le monde' },
-            { icon: DocumentTextIcon, title: 'CV & Lettre Automatique', desc: 'Candidatures hyper-personnalisées en 1 clic' },
-            { icon: ChatBubbleLeftEllipsisIcon, title: 'Coach Entretien IA', desc: 'Simulations réalistes et débriefings précis' },
-          ]" :key="f.title" class="flex items-center gap-4 p-4 rounded-xl bg-white/3 hover:bg-white/5 transition-colors border border-white/5">
+          <div v-for="f_item in [
+            { icon: MagnifyingGlassIcon, title: t('landing.features.title'), desc: t('landing.features.desc') },
+            { icon: DocumentTextIcon, title: t('landing.features.cv_title'), desc: t('landing.features.cv_desc') },
+            { icon: ChatBubbleLeftEllipsisIcon, title: t('landing.features.coach_title'), desc: t('landing.features.coach_desc') },
+          ]" :key="f_item.title" class="flex items-center gap-4 p-4 rounded-xl bg-white/3 hover:bg-white/5 transition-colors border border-white/5">
             <div class="w-10 h-10 rounded-xl bg-violet-600/20 border border-violet-500/20 flex items-center justify-center shrink-0">
-              <component :is="f.icon" class="w-5 h-5 text-violet-400" />
+              <component :is="f_item.icon" class="w-5 h-5 text-violet-400" />
             </div>
             <div>
-              <div class="text-sm font-black text-white">{{ f.title }}</div>
-              <div class="text-[11px] text-white/40 font-medium mt-0.5">{{ f.desc }}</div>
+              <div class="text-sm font-black text-white">{{ f_item.title }}</div>
+              <div class="text-[11px] text-white/40 font-medium mt-0.5">{{ f_item.desc }}</div>
             </div>
           </div>
         </div>
@@ -249,11 +267,8 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 
       <div class="relative max-w-7xl mx-auto px-6">
         <div class="text-center mb-20">
-          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">Notre Arsenal IA</p>
-          <h2 class="text-5xl md:text-6xl font-black tracking-tighter leading-none">
-            Quatre agents.<br/><span class="text-white/30">Un seul objectif :</span><br/>
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">votre succès.</span>
-          </h2>
+          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">{{ t('landing.agents.tagline') }}</p>
+          <h2 class="text-5xl md:text-6xl font-black tracking-tighter leading-none" v-html="t('landing.agents.title').replace('. ', '.<br/>').replace(': ', ':<br/>')"></h2>
         </div>
 
         <!-- Agent 1 – Sniper IA -->
@@ -264,16 +279,16 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
                 <RocketLaunchIcon class="w-7 h-7 text-white" />
               </div>
               <div>
-                <div class="text-[10px] font-black uppercase tracking-widest text-violet-400 mb-0.5">Agent Sourcing</div>
-                <div class="text-2xl font-black text-white">Sniper IA 7.1</div>
+                <div class="text-[10px] font-black uppercase tracking-widest text-violet-400 mb-0.5">{{ t('landing.agents.sniper.tag') }}</div>
+                <div class="text-2xl font-black text-white">{{ t('landing.agents.sniper.name') }}</div>
               </div>
             </div>
-            <p class="text-white/50 leading-relaxed mb-8">Notre IA parcourt le web profond, LinkedIn, Jooble, Indeed et des centaines de sites carrières pour détecter les offres cachées <span class="text-violet-400 font-bold">avant même leur publication officielle</span>. Zéro résultats génériques, 100% précision.</p>
+            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.sniper.desc').replace('avant même leur publication officielle', '<span class=\"text-violet-400 font-bold\">avant même leur publication officielle</span>')"></p>
             <ul class="space-y-3">
-              <li v-for="item in ['Scraping multi-sources intelligent (15+ plateformes)', 'Scoring d\'affinité avec votre profil CV', 'Alertes en temps réel sur nouvelles offres', 'Contournement anti-bot automatisé']" :key="item"
+              <li v-for="agent_feat in t('landing.agents.sniper.features', {returnObjects: true})" :key="agent_feat"
                   class="flex items-center gap-3 text-sm text-white/60">
                 <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" />
-                {{ item }}
+                {{ agent_feat }}
               </li>
             </ul>
           </div>
@@ -292,10 +307,9 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
         <!-- Agent 2 – CRM -->
         <div class="grid lg:grid-cols-2 gap-8 items-center mb-16">
           <!-- Visual card first on desktop -->
-          <div class="lg:order-1 bg-white/2 border border-white/5 rounded-3xl p-8 space-y-4">
             <div class="grid grid-cols-3 gap-3">
               <div v-for="col in [
-                { label: 'Envoyées', count: 12, color: 'indigo' },
+                { label: t('landing.pricing.essential.features').find(f => f.includes('CRM')) ? 'En cours' : 'Sent', count: 12, color: 'indigo' },
                 { label: 'En cours', count: 5, color: 'amber' },
                 { label: 'Entretiens', count: 3, color: 'emerald' }
               ]" :key="col.label" class="bg-white/5 border border-white/5 rounded-2xl p-4 text-center">
@@ -313,16 +327,16 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
                 <ChartBarIcon class="w-7 h-7 text-white" />
               </div>
               <div>
-                <div class="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-0.5">Agent Organisation</div>
-                <div class="text-2xl font-black text-white">CRM Intelligent</div>
+                <div class="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-0.5">{{ t('landing.agents.crm.tag') }}</div>
+                <div class="text-2xl font-black text-white">{{ t('landing.agents.crm.name') }}</div>
               </div>
             </div>
-            <p class="text-white/50 leading-relaxed mb-8">Transformez votre recherche en <span class="text-purple-400 font-bold">machine de guerre organisée</span>. Chaque candidature est suivie, scorée et planifiée. L'IA vous rappelle quand relancer et détecte les signaux d'intérêt.</p>
+            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.crm.desc').replace('machine de guerre organisée', '<span class=\"text-purple-400 font-bold\">machine de guerre organisée</span>')"></p>
             <ul class="space-y-3">
-              <li v-for="item in ['Kanban drag & drop automatisé', 'Rappels intelligents de relance', 'Scoring de probabilité de succès', 'Historisation complète des échanges']" :key="item"
+              <li v-for="agent_feat in t('landing.agents.crm.features', {returnObjects: true})" :key="agent_feat"
                   class="flex items-center gap-3 text-sm text-white/60">
                 <CheckCircleIcon class="w-4 h-4 text-purple-500 shrink-0" />
-                {{ item }}
+                {{ agent_feat }}
               </li>
             </ul>
           </div>
@@ -336,16 +350,16 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
                 <UserGroupIcon class="w-7 h-7 text-white" />
               </div>
               <div>
-                <div class="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-0.5">Agent Social</div>
-                <div class="text-2xl font-black text-white">Générateur de Réseau</div>
+                <div class="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-0.5">{{ t('landing.agents.network.tag') }}</div>
+                <div class="text-2xl font-black text-white">{{ t('landing.agents.network.name') }}</div>
               </div>
             </div>
-            <p class="text-white/50 leading-relaxed mb-8">L'IA scanne l'organigramme des entreprises cibles et rédige des <span class="text-emerald-400 font-bold">messages d'accroche ultra-personnalisés</span> pour court-circuiter le processus classique.</p>
+            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.network.desc').replace('messages d\'accroche ultra-personnalisés', '<span class=\"text-emerald-400 font-bold\">messages d\'accroche ultra-personnalisés</span>')"></p>
             <ul class="space-y-3">
-              <li v-for="item in ['Analyse des décideurs clés (CTOs, RH)', 'Génération de messages sur-mesure', 'Carnet d\'adresses réseau unifié']" :key="item"
+              <li v-for="agent_feat in t('landing.agents.network.features', {returnObjects: true})" :key="agent_feat"
                   class="flex items-center gap-3 text-sm text-white/60">
                 <CheckCircleIcon class="w-4 h-4 text-emerald-500 shrink-0" />
-                {{ item }}
+                {{ agent_feat }}
               </li>
             </ul>
           </div>
@@ -356,16 +370,16 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
                 <CpuChipIcon class="w-7 h-7 text-white" />
               </div>
               <div>
-                <div class="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-0.5">Agent Formation</div>
-                <div class="text-2xl font-black text-white">Mentor IA Pro</div>
+                <div class="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-0.5">{{ t('landing.agents.mentor.tag') }}</div>
+                <div class="text-2xl font-black text-white">{{ t('landing.agents.mentor.name') }}</div>
               </div>
             </div>
-            <p class="text-white/50 leading-relaxed mb-8">Simulez des entretiens techniques ou RH face à un recruteur intransigeant. L'IA débriefe chaque réponse et vous donne un plan d'amélioration <span class="text-orange-400 font-bold">précis et actionnable</span>.</p>
+            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.mentor.desc').replace('précis et actionnable', '<span class=\"text-orange-400 font-bold\">précis et actionnable</span>')"></p>
             <ul class="space-y-3">
-              <li v-for="item in ['Entretiens techniques & RH simulés', 'Débriefing détaillé post-simulation', 'Suivi de progression personnalisé']" :key="item"
+              <li v-for="agent_feat in t('landing.agents.mentor.features', {returnObjects: true})" :key="agent_feat"
                   class="flex items-center gap-3 text-sm text-white/60">
                 <CheckCircleIcon class="w-4 h-4 text-orange-500 shrink-0" />
-                {{ item }}
+                {{ agent_feat }}
               </li>
             </ul>
           </div>
@@ -377,14 +391,14 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
     <section id="fonctions" class="py-32 border-y border-white/5 bg-white/[0.01]">
       <div class="max-w-7xl mx-auto px-6">
         <div class="text-center mb-20">
-          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">La Méthode GoldArmy</p>
-          <h2 class="text-5xl font-black tracking-tighter">Opérationnel en 3 étapes.</h2>
+          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">{{ t('landing.how_it_works.tagline') }}</p>
+          <h2 class="text-5xl font-black tracking-tighter">{{ t('landing.how_it_works.title') }}</h2>
         </div>
         <div class="grid md:grid-cols-3 gap-6">
           <div v-for="(step, idx) in [
-            { n: '01', title: 'Configurez votre profil IA', desc: 'Importez votre CV (PDF). L\'IA analyse vos compétences, votre secteur cible et vos critères (salaire, remote, localisation) pour créer votre empreinte digitale unique.', icon: DocumentTextIcon },
-            { n: '02', title: 'Activez les agents', desc: 'Le Sniper IA scanne 15+ sources en continu. Le CRM centralise automatiquement toutes les opportunités. Vous recevez une shortlist qualifiée directement sur votre tableau de bord.', icon: BoltIcon },
-            { n: '03', title: 'Passez à l\'action', desc: 'Générez une lettre de motivation sur-mesure en 1 clic, contactez les décideurs via le Générateur de Réseau, et préparez votre entretien avec le Mentor IA.', icon: RocketLaunchIcon },
+            { n: '01', title: t('landing.how_it_works.step1_title'), desc: t('landing.how_it_works.step1_desc'), icon: DocumentTextIcon },
+            { n: '02', title: t('landing.how_it_works.step2_title'), desc: t('landing.how_it_works.step2_desc'), icon: BoltIcon },
+            { n: '03', title: t('landing.how_it_works.step3_title'), desc: t('landing.how_it_works.step3_desc'), icon: RocketLaunchIcon },
           ]" :key="step.n"
           class="relative p-8 rounded-3xl bg-white/3 border border-white/8 hover:border-violet-500/20 transition-all group overflow-hidden">
             <div class="absolute top-6 right-6 text-7xl font-black text-white/3 group-hover:text-white/5 transition-colors leading-none">{{ step.n }}</div>
@@ -402,10 +416,10 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
     <section class="py-32">
       <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div v-for="s in [
-          { val: '40h', label: 'Économisées par mois', color: 'violet' },
-          { val: '+300%', label: 'Taux de réponse', color: 'indigo' },
-          { val: '5/sem', label: 'Entretiens décrochés', color: 'purple' },
-          { val: '98.5%', label: 'Précision IA', color: 'pink' }
+          { val: '40h', label: t('landing.stats.hours'), color: 'violet' },
+          { val: '+300%', label: t('landing.stats.rate'), color: 'indigo' },
+          { val: '5/sem', label: t('landing.stats.interviews'), color: 'purple' },
+          { val: '98.5%', label: t('landing.stats.precision'), color: 'pink' }
         ]" :key="s.label"
         class="p-8 rounded-3xl bg-white/3 border border-white/8 text-center hover:bg-white/5 transition-all">
           <div :class="`text-4xl font-black text-${s.color}-400 mb-2`">{{ s.val }}</div>
@@ -418,8 +432,8 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
     <section id="avis" class="py-32 border-y border-white/5 bg-white/[0.01]">
       <div class="max-w-7xl mx-auto px-6">
         <div class="text-center mb-20">
-          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">Ils ont décroché le poste</p>
-          <h2 class="text-5xl font-black tracking-tighter">Ce qu'ils en pensent.</h2>
+          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">{{ t('landing.testimonials.tagline') }}</p>
+          <h2 class="text-5xl font-black tracking-tighter">{{ t('landing.testimonials.title') }}</h2>
         </div>
         <div class="grid md:grid-cols-3 gap-6">
           <div v-for="t in testimonials" :key="t.name"
@@ -444,55 +458,55 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
     <section id="tarifs" class="py-32">
       <div class="max-w-7xl mx-auto px-6">
         <div class="text-center mb-20">
-          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">Tarification</p>
-          <h2 class="text-5xl font-black tracking-tighter">Choisissez votre armure.</h2>
+          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">{{ t('landing.pricing.tagline') }}</p>
+          <h2 class="text-5xl font-black tracking-tighter">{{ t('landing.pricing.title') }}</h2>
         </div>
         <div class="grid lg:grid-cols-3 gap-6 items-stretch">
           <!-- FREE -->
           <div class="p-10 rounded-3xl bg-white/3 border border-white/8 flex flex-col">
-            <div class="text-sm font-black uppercase tracking-[0.3em] text-white/40 mb-8">Gratuit</div>
+            <div class="text-sm font-black uppercase tracking-[0.3em] text-white/40 mb-8">{{ t('landing.pricing.free.name') }}</div>
             <div class="mb-8">
               <span class="text-6xl font-black text-white">0€</span>
-              <span class="text-sm text-white/30 font-bold"> /mois</span>
+              <span class="text-sm text-white/30 font-bold"> {{ t('landing.pricing.month') }}</span>
             </div>
             <ul class="space-y-4 mb-10 flex-1">
-              <li v-for="item in ['2 recherches Sniper / jour', 'Analyse de 1 CV par jour', 'Accès limité au CRM']" :key="item" class="flex items-center gap-3 text-sm text-white/50">
+              <li v-for="item in t('landing.pricing.free.features', {returnObjects: true})" :key="item" class="flex items-center gap-3 text-sm text-white/50">
                 <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" /> {{ item }}
               </li>
               <li v-for="item in ['Mentor IA Pro', 'Générateur de Réseau']" :key="item" class="flex items-center gap-3 text-sm text-white/20 line-through">
                 <XMarkIcon class="w-4 h-4 shrink-0" /> {{ item }}
               </li>
             </ul>
-            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl border border-white/10 font-black text-sm uppercase tracking-widest text-white/50 hover:bg-white/5 hover:text-white transition-all">Démarrer</router-link>
+            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl border border-white/10 font-black text-sm uppercase tracking-widest text-white/50 hover:bg-white/5 hover:text-white transition-all">{{ t('landing.nav.get_started') }}</router-link>
           </div>
           <!-- ESSENTIAL — popular -->
           <div class="relative p-10 rounded-3xl border-2 border-violet-500 bg-gradient-to-b from-violet-600/10 to-transparent shadow-2xl shadow-violet-600/20 flex flex-col">
-            <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest px-5 py-1.5 rounded-full shadow-lg shadow-violet-600/30">Populaire</div>
-            <div class="text-sm font-black uppercase tracking-[0.3em] text-violet-400 mb-8">Essentiel</div>
+            <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest px-5 py-1.5 rounded-full shadow-lg shadow-violet-600/30">{{ t('landing.pricing.essential.popular') }}</div>
+            <div class="text-sm font-black uppercase tracking-[0.3em] text-violet-400 mb-8">{{ t('landing.pricing.essential.name') }}</div>
             <div class="mb-8">
               <span class="text-6xl font-black text-white">9.99€</span>
-              <span class="text-sm text-white/30 font-bold"> /mois</span>
+              <span class="text-sm text-white/30 font-bold"> {{ t('landing.pricing.month') }}</span>
             </div>
             <ul class="space-y-4 mb-10 flex-1">
-              <li v-for="item in ['25 recherches Sniper / jour', '10 audits de CV complets', '10 simulations d\'entretien', 'CRM Illimité', 'Générateur de Réseau']" :key="item" class="flex items-center gap-3 text-sm text-white/70">
+              <li v-for="item in t('landing.pricing.essential.features', {returnObjects: true})" :key="item" class="flex items-center gap-3 text-sm text-white/70">
                 <CheckCircleIcon class="w-4 h-4 text-violet-400 shrink-0" /> {{ item }}
               </li>
             </ul>
-            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl bg-violet-600 hover:bg-violet-500 font-black text-sm uppercase tracking-widest text-white shadow-xl shadow-violet-600/30 hover:scale-[1.01] active:scale-95 transition-all">Choisir Essentiel</router-link>
+            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl bg-violet-600 hover:bg-violet-500 font-black text-sm uppercase tracking-widest text-white shadow-xl shadow-violet-600/30 hover:scale-[1.01] active:scale-95 transition-all">{{ t('landing.pricing.essential.cta') }}</router-link>
           </div>
           <!-- PRO -->
           <div class="p-10 rounded-3xl bg-white/3 border border-white/8 flex flex-col">
-            <div class="text-sm font-black uppercase tracking-[0.3em] text-white/40 mb-8">Pro</div>
+            <div class="text-sm font-black uppercase tracking-[0.3em] text-white/40 mb-8">{{ t('landing.pricing.pro.name') }}</div>
             <div class="mb-8">
               <span class="text-6xl font-black text-white">19.99€</span>
-              <span class="text-sm text-white/30 font-bold"> /mois</span>
+              <span class="text-sm text-white/30 font-bold"> {{ t('landing.pricing.month') }}</span>
             </div>
             <ul class="space-y-4 mb-10 flex-1">
-              <li v-for="item in ['Sniper IA Illimité', 'Audits CV Illimités', 'Mentor IA Vocal & Illimité', 'Headhunter IA Pro', 'Support prioritaire 24/7']" :key="item" class="flex items-center gap-3 text-sm text-white/70">
+              <li v-for="item in t('landing.pricing.pro.features', {returnObjects: true})" :key="item" class="flex items-center gap-3 text-sm text-white/70">
                 <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" /> {{ item }}
               </li>
             </ul>
-            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl border border-white/10 font-black text-sm uppercase tracking-widest text-white/50 hover:bg-white/5 hover:text-white transition-all">Passer Pro</router-link>
+            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl border border-white/10 font-black text-sm uppercase tracking-widest text-white/50 hover:bg-white/5 hover:text-white transition-all">{{ t('landing.pricing.pro.cta') }}</router-link>
           </div>
         </div>
       </div>
@@ -504,18 +518,16 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
         <div class="relative rounded-[3rem] border border-violet-500/20 bg-gradient-to-b from-violet-600/10 to-transparent p-20 overflow-hidden">
           <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-80 bg-violet-600/20 blur-[100px] rounded-full pointer-events-none"></div>
           <div class="relative z-10">
-            <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-6">Rejoignez l'élite</p>
-            <h2 class="text-5xl md:text-6xl font-black tracking-tighter leading-none mb-8">
-              Prêt à décrocher<br/>le job de vos rêves ?
-            </h2>
-            <p class="text-lg text-white/40 mb-12 max-w-lg mx-auto">Rejoignez les professionnels qui utilisent l'IA pour prendre l'avantage définitif sur le marché du travail.</p>
+            <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-6">{{ t('landing.cta_final.tagline') }}</p>
+            <h2 class="text-5xl md:text-6xl font-black tracking-tighter leading-none mb-8" v-html="t('landing.cta_final.title').replace('?', '?<br/>').replace('décrocher', 'décrocher<br/>')"></h2>
+            <p class="text-lg text-white/40 mb-12 max-w-lg mx-auto">{{ t('landing.cta_final.description') }}</p>
             <router-link to="/register"
               class="inline-flex items-center gap-3 bg-violet-600 hover:bg-violet-500 text-white font-black text-sm uppercase tracking-[0.2em]
                      px-12 py-5 rounded-2xl shadow-2xl shadow-violet-600/30 transition-all hover:scale-[1.02] active:scale-95">
-              Créer mon compte gratuitement <ArrowRightIcon class="w-5 h-5" />
+              {{ t('landing.cta_final.button') }} <ArrowRightIcon class="w-5 h-5" />
             </router-link>
             <div class="mt-8 flex items-center justify-center gap-2 text-xs text-white/20 font-bold">
-              <ShieldCheckIcon class="w-4 h-4" /> Sans carte de crédit · Résiliation à tout moment
+              <ShieldCheckIcon class="w-4 h-4" /> {{ t('landing.cta_final.footer') }}
             </div>
           </div>
         </div>
@@ -534,36 +546,36 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
             <span class="text-lg font-black uppercase tracking-widest text-white">GoldArmy</span>
           </div>
           <p class="text-white/40 text-sm leading-relaxed max-w-sm mb-8">
-            L'intelligence artificielle au service de votre carrière. Ne cherchez plus d'emploi, laissez les opportunités venir à vous grâce à nos agents autonomes.
+            {{ t('landing.footer.description') }}
           </p>
           <div class="flex items-center gap-2 text-xs text-white/20 font-bold">
-            <ShieldCheckIcon class="w-4 h-4 text-violet-500" /> Plateforme 100% sécurisée
+            <ShieldCheckIcon class="w-4 h-4 text-violet-500" /> {{ t('landing.footer.secure') }}
           </div>
         </div>
 
         <!-- Liens Rapides -->
         <div>
-          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">Navigation</h4>
+          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">{{ t('landing.footer.navigation') }}</h4>
           <ul class="space-y-4">
-            <li><a href="/#agents" class="text-sm text-white/40 hover:text-white transition-colors">Nos Agents IA</a></li>
-            <li><a href="/#tarifs" class="text-sm text-white/40 hover:text-white transition-colors">Tarification</a></li>
-            <li><router-link to="/blog" class="text-sm text-white/40 hover:text-white transition-colors">Le Blog IA</router-link></li>
-            <li><router-link to="/login" class="text-sm text-white/40 hover:text-white transition-colors">Espace Candidat</router-link></li>
+            <li><a href="/#agents" class="text-sm text-white/40 hover:text-white transition-colors">{{ t('landing.nav.agents') }}</a></li>
+            <li><a href="/#tarifs" class="text-sm text-white/40 hover:text-white transition-colors">{{ t('landing.nav.pricing') }}</a></li>
+            <li><router-link to="/blog" class="text-sm text-white/40 hover:text-white transition-colors">{{ t('landing.nav.blog') }}</router-link></li>
+            <li><router-link to="/login" class="text-sm text-white/40 hover:text-white transition-colors">{{ t('landing.nav.login') }}</router-link></li>
           </ul>
         </div>
 
         <!-- Contact & Legal -->
         <div>
-          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">Contact</h4>
+          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">{{ t('landing.footer.contact') }}</h4>
           <ul class="space-y-4 mb-8">
             <li>
               <a href="mailto:support@goldarmyai.com" class="text-sm text-white/40 hover:text-violet-400 transition-colors flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Support Client
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> {{ t('landing.footer.support') }}
               </a>
             </li>
             <li>
               <a href="mailto:yvanloic@goldarmyai.com" class="text-sm text-white/40 hover:text-violet-400 transition-colors flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Contacter le CEO
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> {{ t('landing.footer.ceo') }}
               </a>
             </li>
           </ul>
@@ -572,10 +584,10 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
 
       <!-- Bottom Bar -->
       <div class="max-w-7xl mx-auto px-6 border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-        <p class="text-xs text-white/20 font-bold">© 2026 GoldArmy Agent IA. Tous droits réservés.</p>
+        <p class="text-xs text-white/20 font-bold">{{ t('landing.footer.rights') }}</p>
         <div class="flex gap-6">
-          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">Confidentialité</a>
-          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">CGU</a>
+          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">{{ t('landing.footer.privacy') }}</a>
+          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">{{ t('landing.footer.terms') }}</a>
         </div>
       </div>
     </footer>

@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
+import { useI18n } from 'vue-i18n'
 import Footer from '../components/Footer.vue'
 import {
   DocumentTextIcon,
@@ -13,12 +14,15 @@ import {
   CheckCircleIcon
 } from '@heroicons/vue/24/outline'
 
+const { t, locale } = useI18n()
+const router = useRouter()
+
 useHead({
-  title: 'Audit CV IA Gratuit | Optimisation ATS | GoldArmy',
+  title: computed(() => t('seo.free_cv.title')),
   meta: [
-    { name: 'description', content: 'Scannez votre CV gratuitement avec l\'IA GoldArmy. Découvrez instantanément si votre PDF est invisible pour les recruteurs et les logiciels ATS.' },
-    { property: 'og:title', content: 'Scanner ATS & Audit CV IA | GoldArmy' },
-    { property: 'og:description', content: 'Passez le test de l\'ATS. Uploadez votre CV en PDF et obtenez une note sur 100 ainsi que l\'erreur fatale qui bloque vos candidatures.' },
+    { name: 'description', content: computed(() => t('seo.free_cv.description')) },
+    { property: 'og:title', content: computed(() => t('seo.free_cv.og_title')) },
+    { property: 'og:description', content: computed(() => t('seo.free_cv.og_description')) },
   ],
   script: [
     {
@@ -29,7 +33,7 @@ useHead({
         "name": "Audit CV IA GoldArmy",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "All",
-        "description": "Un outil gratuit propulsé par l'intelligence artificielle pour analyser instantanément les CV au format PDF et détecter les erreurs qui bloquent les algorithmes de recrutement ATS.",
+        "description": t('seo.free_cv.description'),
         "offers": {
           "@type": "Offer",
           "price": "0",
@@ -39,8 +43,6 @@ useHead({
     }
   ]
 })
-
-const router = useRouter()
 
 const file = ref(null)
 const isDragging = ref(false)
@@ -145,13 +147,13 @@ const goToRegister = () => {
         <!-- CTA -->
         <div class="flex items-center gap-3">
           <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-            Connexion
+            {{ t('landing.nav.login') }}
           </router-link>
           <router-link to="/register"
             class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
                    px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
                    transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
-            Démarrer →
+            {{ t('landing.nav.get_started') }} →
           </router-link>
         </div>
       </div>
@@ -167,26 +169,26 @@ const goToRegister = () => {
             <div class="text-left relative z-20">
                 <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-surface-900/80 border border-white/5 backdrop-blur-md mb-8 shadow-2xl">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span class="text-xs font-bold text-slate-300 tracking-widest uppercase">Scanner IA Gratuit</span>
+                    <span class="text-xs font-bold text-slate-300 tracking-widest uppercase">{{ t('free_cv.hero_badge') }}</span>
                 </div>
                 
                 <h1 class="text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-[1.1] mb-6">
-                    Votre CV est-il
-                    <span class="block text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400 pb-2">Invisible ?</span>
+                    {{ t('free_cv.hero_title') }}
+                    <span class="block text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400 pb-2">{{ t('free_cv.hero_highlight') }}</span>
                 </h1>
                 
                 <p class="text-lg md:text-xl text-slate-400 mb-10 max-w-lg font-medium leading-relaxed">
-                    Les géants de la Tech utilisent des robots (ATS) pour vous filtrer en 3 secondes. Glissez votre PDF pour découvrir votre note et la <strong class="text-white">pire erreur</strong> qui bloque vos entretiens.
+                    {{ t('free_cv.hero_subtitle1') }} <strong class="text-white">{{ t('free_cv.hero_error_bold') }}</strong> {{ t('free_cv.hero_subtitle2') }}
                 </p>
                 
                 <div class="flex items-center gap-6 text-sm font-bold text-slate-500">
                     <div class="flex items-center gap-2">
                         <ShieldCheckIcon class="w-5 h-5 text-emerald-500" />
-                        <span>100% Confidentiel</span>
+                        <span>{{ t('free_cv.confidential') }}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <DocumentTextIcon class="w-5 h-5 text-violet-400" />
-                        <span>Format PDF</span>
+                        <span>{{ t('free_cv.pdf_format') }}</span>
                     </div>
                 </div>
             </div>
@@ -214,13 +216,13 @@ const goToRegister = () => {
                         <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-surface-800 to-surface-900 border border-white/5 mx-auto flex items-center justify-center mb-6 shadow-xl group-hover:-translate-y-2 transition-transform duration-300">
                             <DocumentTextIcon class="w-8 h-8 text-violet-400 group-hover:text-fuchsia-400 transition-colors" />
                         </div>
-                        <h3 class="text-2xl font-black text-white mb-2">Glissez votre PDF</h3>
-                        <p class="text-sm text-slate-400 mb-8 font-medium">Max 5MB • Scan immédiat</p>
+                        <h3 class="text-2xl font-black text-white mb-2">{{ t('free_cv.upload_title') }}</h3>
+                        <p class="text-sm text-slate-400 mb-8 font-medium">{{ t('free_cv.upload_subtitle') }}</p>
                         
                         <input type="file" ref="fileInput" @change="handleFileSelect" accept="application/pdf" class="hidden" />
                         
                         <button class="w-full bg-white text-black font-black uppercase tracking-widest text-sm py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
-                            <ArrowUpTrayIcon class="w-5 h-5" /> Sélectionner un fichier
+                            <ArrowUpTrayIcon class="w-5 h-5" /> {{ t('free_cv.upload_button') }}
                         </button>
                     </div>
                 </template>
@@ -237,12 +239,12 @@ const goToRegister = () => {
                             <DocumentTextIcon class="w-full h-full text-violet-300 relative z-10 drop-shadow-[0_0_15px_rgba(167,139,250,0.5)]" />
                         </div>
                         
-                        <h2 class="text-2xl font-black text-white mb-6">L'IA dissèque votre profil...</h2>
+                        <h2 class="text-2xl font-black text-white mb-6">{{ t('free_cv.analyzing_title') }}</h2>
                         
                         <div class="flex flex-col gap-3 w-full max-w-[240px] mx-auto text-sm font-bold text-slate-400 text-left">
-                            <div class="flex items-center gap-3 bg-surface-900/50 py-2 px-4 rounded-lg border border-white/5"><span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-ping"></span> Mots-clés filtrés</div>
-                            <div class="flex items-center gap-3 bg-surface-900/50 py-2 px-4 rounded-lg border border-white/5"><span class="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_10px_#8b5cf6]"></span> Impact mesuré</div>
-                            <div class="flex items-center gap-3 bg-surface-900/50 py-2 px-4 rounded-lg border border-white/5 opacity-50"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Verdict final</div>
+                            <div class="flex items-center gap-3 bg-surface-900/50 py-2 px-4 rounded-lg border border-white/5"><span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-ping"></span> {{ t('free_cv.analyzing_step1') }}</div>
+                            <div class="flex items-center gap-3 bg-surface-900/50 py-2 px-4 rounded-lg border border-white/5"><span class="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_10px_#8b5cf6]"></span> {{ t('free_cv.analyzing_step2') }}</div>
+                            <div class="flex items-center gap-3 bg-surface-900/50 py-2 px-4 rounded-lg border border-white/5 opacity-50"><span class="w-2 h-2 rounded-full bg-rose-500"></span> {{ t('free_cv.analyzing_step3') }}</div>
                         </div>
                     </div>
                 </template>
@@ -269,15 +271,15 @@ const goToRegister = () => {
                             </svg>
                             <div class="absolute inset-0 flex flex-col items-center justify-center">
                                 <span class="text-7xl font-black font-display text-white tracking-tighter">{{ result.score }}</span>
-                                <span class="text-xs uppercase tracking-widest text-slate-400 font-bold mt-2">Sur 100</span>
+                                <span class="text-xs uppercase tracking-widest text-slate-400 font-bold mt-2">{{ t('free_cv.score_label') }}</span>
                             </div>
                         </div>
                         
                         <h3 class="text-3xl md:text-4xl font-black text-white mb-4">
-                            {{ result.score > 70 ? 'Plutôt solide.' : 'Rejeté par l\'ATS.' }}
+                            {{ result.score > 70 ? t('free_cv.score_good') : t('free_cv.score_bad') }}
                         </h3>
                         <p class="text-slate-400 text-lg font-medium px-4 max-w-2xl mx-auto">
-                            L'IA a trouvé <strong class="text-rose-400 font-black">{{ result.flaws.length }} failles critiques</strong> bloquant vos entretiens :
+                            {{ t('free_cv.flaws_found', { count: result.flaws.length }) }}
                         </p>
                     </div>
                     
@@ -296,7 +298,7 @@ const goToRegister = () => {
                                     </div>
                                     <div>
                                         <span class="text-[10px] font-black tracking-widest uppercase mb-1 block transition-colors duration-300"
-                                              :class="expandedIdx === idx ? 'text-rose-400' : 'text-slate-500'">Faille Critique</span>
+                                              :class="expandedIdx === idx ? 'text-rose-400' : 'text-slate-500'">{{ t('free_cv.faille_critique') }}</span>
                                         <span class="font-medium text-sm leading-relaxed transition-colors duration-300"
                                               :class="expandedIdx === idx ? 'text-white' : 'text-slate-300 group-hover:text-white'">
                                             {{ item.flaw || item }}
@@ -317,7 +319,7 @@ const goToRegister = () => {
                                             <CheckCircleIcon class="w-4 h-4 text-emerald-400" />
                                         </div>
                                         <div>
-                                            <span class="text-[10px] font-black tracking-widest text-emerald-400 uppercase mb-1 block">Correction Recommandée</span>
+                                            <span class="text-[10px] font-black tracking-widest text-emerald-400 uppercase mb-1 block">{{ t('free_cv.correction_title') }}</span>
                                             <span class="text-slate-300 font-medium text-sm leading-relaxed">{{ item.correction }}</span>
                                         </div>
                                     </div>
@@ -338,8 +340,8 @@ const goToRegister = () => {
                                     <LockClosedIcon class="w-4 h-4 text-slate-500" />
                                 </div>
                                 <div>
-                                    <span class="text-[10px] font-black tracking-widest uppercase mb-1 block text-slate-600">Faille Masquée</span>
-                                    <span class="font-medium text-sm text-slate-500">Débloquez l'audit complet pour voir les détails.</span>
+                                    <span class="text-[10px] font-black tracking-widest uppercase mb-1 block text-slate-600">{{ t('free_cv.locked_fails') }}</span>
+                                    <span class="font-medium text-sm text-slate-500">{{ t('free_cv.locked_subtitle') }}</span>
                                 </div>
                             </div>
                         </div>
@@ -349,23 +351,23 @@ const goToRegister = () => {
                             <div class="w-14 h-14 bg-rose-500/20 rounded-full flex items-center justify-center mb-4 border border-rose-500/30 shadow-[0_0_40px_rgba(244,63,94,0.4)]">
                                 <LockClosedIcon class="w-7 h-7 text-rose-400" />
                             </div>
-                            <span class="text-white font-black text-2xl drop-shadow-md">+{{ result.flaws.length - 8 }} failles bloquées</span>
+                            <span class="text-white font-black text-2xl drop-shadow-md">{{ t('free_cv.locked_count_cta', { count: result.flaws.length - 8 }) }}</span>
                         </div>
                     </div>
 
                     <!-- CTA Callout -->
                     <div class="mt-12 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-3xl p-8 md:p-10 text-center text-white shadow-2xl relative overflow-hidden group mx-auto max-w-3xl">
                         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] mix-blend-overlay opacity-20"></div>
-                        <h4 class="font-black text-2xl md:text-3xl mb-3 relative z-10">Débloquer l'Audit Complet</h4>
-                        <p class="text-violet-200 mb-8 font-medium relative z-10 text-base md:text-lg">Laissez notre IA Mentor corriger ces {{ result.flaws.length }} failles et générer un CV de haut niveau.</p>
+                        <h4 class="font-black text-2xl md:text-3xl mb-3 relative z-10">{{ t('free_cv.cta_unlock_title') }}</h4>
+                        <p class="text-violet-200 mb-8 font-medium relative z-10 text-base md:text-lg">{{ t('free_cv.cta_unlock_subtitle', { count: result.flaws.length }) }}</p>
                         
                         <button @click="goToRegister" class="w-full bg-white text-indigo-950 font-black uppercase tracking-widest py-5 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-transform group-hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 relative z-10 text-lg">
-                            Corriger l'entièreté de mon CV <ArrowRightIcon class="w-6 h-6" />
+                            {{ t('free_cv.cta_unlock_button') }} <ArrowRightIcon class="w-6 h-6" />
                         </button>
                     </div>
                     
                     <button @click="result = null; file = null" class="w-full mt-8 text-sm font-bold text-slate-500 hover:text-white transition-colors uppercase tracking-widest py-4">
-                        Scanner un autre PDF
+                        {{ t('free_cv.scan_another') }}
                     </button>
                 </div>
             </div>
@@ -374,8 +376,8 @@ const goToRegister = () => {
         <!-- Bento Box Explanatory Section -->
         <section class="max-w-[1400px] mx-auto w-full pt-20 border-t border-white/5 relative z-10">
             <div class="text-center mb-20">
-                <span class="text-fuchsia-400 text-xs font-black uppercase tracking-[0.2em] mb-4 block">Pourquoi vous échouez</span>
-                <h2 class="text-4xl md:text-6xl font-black mb-6 tracking-tight">L'IA voit ce que <span class="italic font-display text-slate-500">vous ignorez.</span></h2>
+                <span class="text-fuchsia-400 text-xs font-black uppercase tracking-[0.2em] mb-4 block">{{ t('free_cv.bento_tagline') }}</span>
+                <h2 class="text-4xl md:text-6xl font-black mb-6 tracking-tight">{{ t('free_cv.bento_title1') }} <span class="italic font-display text-slate-500">{{ t('free_cv.bento_title2') }}</span></h2>
             </div>
 
             <!-- Asymmetrical Bento Grid -->
@@ -385,9 +387,9 @@ const goToRegister = () => {
                 <div class="md:col-span-2 md:row-span-2 bg-gradient-to-br from-surface-900 to-[#0a0a12] border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
                     <div class="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-violet-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                     <div class="w-16 h-16 bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-400 font-black text-2xl mb-8 border border-violet-500/20 shadow-[0_0_30px_rgba(139,92,246,0.2)]">1</div>
-                    <h3 class="text-3xl font-black mb-4">Le Filtrage Sémantique ATS</h3>
+                    <h3 class="text-3xl font-black mb-4">{{ t('free_cv.bento_feature1_title') }}</h3>
                     <p class="text-slate-400 text-lg leading-relaxed max-w-md">
-                        Les RH ne lisent plus les CV. Des algorithmes scannent votre PDF pour extraire le texte. Si votre mise en page bloque l'IA (colonnes complexes, barres de niveau) ou qu'il manque des mots-clés exacts, votre score tombe à zéro.
+                        {{ t('free_cv.bento_feature1_desc') }}
                     </p>
                     <div class="mt-10 h-32 bg-surface-950 rounded-2xl border border-surface-800 flex items-end justify-center p-4 overflow-hidden relative">
                         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
@@ -402,9 +404,9 @@ const goToRegister = () => {
                 <!-- BENTO 2: Top Right Small -->
                 <div class="md:col-span-2 md:row-span-1 bg-surface-900 border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden">
                     <div class="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-400 font-black text-xl mb-4 border border-rose-500/20">2</div>
-                    <h3 class="text-2xl font-black mb-3 text-white">L'Erreur Invisible</h3>
+                    <h3 class="text-2xl font-black mb-3 text-white">{{ t('free_cv.bento_feature2_title') }}</h3>
                     <p class="text-slate-400 text-sm leading-relaxed max-w-sm">
-                        Notre modèle LLM est entraîné sur 10,000+ refus réels. L'audit gratuit extrait **de manière cash** le défaut qui fait tiquer instantanément un Lead Tech.
+                        {{ t('free_cv.bento_feature2_desc') }}
                     </p>
                 </div>
 
@@ -412,9 +414,9 @@ const goToRegister = () => {
                 <div class="md:col-span-2 md:row-span-1 bg-surface-900 border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 font-black text-xl mb-4 border border-emerald-500/20">3</div>
-                    <h3 class="text-2xl font-black mb-3 text-white">Générateur de Succès</h3>
+                    <h3 class="text-2xl font-black mb-3 text-white">{{ t('free_cv.bento_feature3_title') }}</h3>
                     <p class="text-slate-400 text-sm leading-relaxed max-w-sm">
-                        Dans l'Espace Premium, laissez l'IA réécrire bullet point par bullet point vos expériences avec des métriques orientées impact.
+                        {{ t('free_cv.bento_feature3_desc') }}
                     </p>
                 </div>
 
@@ -423,49 +425,49 @@ const goToRegister = () => {
             <!-- Massive SEO Content: How It Works & FAQ -->
             <section class="max-w-4xl mx-auto w-full pt-12 pb-24 text-left px-4">
                 <article class="prose prose-invert prose-lg max-w-none">
-                    <h2 class="text-3xl font-black text-white mb-6">Comment l'IA décrypte votre CV format ATS ?</h2>
+                    <h2 class="text-3xl font-black text-white mb-6">{{ t('free_cv.seo_article_title') }}</h2>
                     <p class="text-slate-400 mb-6 leading-relaxed">
-                        Sur le marché actuel de la Tech et de la Finance, <strong>près de 90% des grandes entreprises</strong> filtrent les candidatures via des <em>Applicant Tracking Systems (ATS)</em>. Ces logiciels scannent et trient automatiquement les milliers de PDF reçus sans aucune intervention humaine initiale.  
-                        L'Audit CV IA reproduit rigoureusement le jugement de la machine et d'un recruteur hyper-sélectif. L'intelligence artificielle passe au cribble l'aspect sémantique du texte, détecte la densité des mots-clés techniques, et recherche des preuves chiffrées d'impact business.
+                        {{ t('free_cv.seo_article_p1') }}
+                        {{ t('free_cv.seo_article_p2') }}
                     </p>
                     
-                    <h3 class="text-2xl font-bold text-white mt-12 mb-4">Pourquoi 90% des candidatures finissent ignorées ?</h3>
+                    <h3 class="text-2xl font-bold text-white mt-12 mb-4">{{ t('free_cv.seo_article_h3') }}</h3>
                     <ul class="text-slate-400 mb-10 space-y-3 list-disc pl-6 marker:text-violet-500">
-                        <li><strong>Paralysie Sémantique :</strong> Les CV surcodés graphiquement (deux colonnes massives, jauges SVG de compétences, polices non-standards) disloquent l'extraction de texte par la machine.</li>
-                        <li><strong>Déficit de métriques de rendement :</strong> L'erreur numéro une identifiée par les leads. Dire "Responsable de l'équipe", ne vaut rien face à "Management d'une squad de 7 devs, hausse de la vélocité de 24% sur 2 sprints". L'IA sanctionnera immédiatement ce manque.</li>
-                        <li><strong>Incohérence des verbes d'action :</strong> Utiliser des passifs ou des termes flous au lieu de mots d'impact comme <em>Orchestré, Maximisé, Implémenté</em>.</li>
+                        <li>{{ t('free_cv.seo_article_li1') }}</li>
+                        <li>{{ t('free_cv.seo_article_li2') }}</li>
+                        <li>{{ t('free_cv.seo_article_li3') }}</li>
                     </ul>
 
-                    <h2 class="text-3xl font-black text-white mt-16 mb-8">Foire Aux Questions (FAQ) sur le Diagnostic CV</h2>
+                    <h2 class="text-3xl font-black text-white mt-16 mb-8">{{ t('free_cv.faq_title') }}</h2>
                     
                     <div class="space-y-6">
                         <details class="bg-surface-900/50 border border-white/5 rounded-2xl p-6 group cursor-pointer hover:bg-surface-800/50 transition-colors">
                             <summary class="text-xl font-bold text-white list-none flex justify-between items-center">
-                                Cet audit instantané est-il 100% gratuit ?
+                                {{ t('free_cv.faq_q1') }}
                                 <span class="text-violet-400 group-open:rotate-180 transition-transform">▼</span>
                             </summary>
                             <p class="text-slate-400 mt-4 leading-relaxed">
-                                Absolument. Sans créer de compte, glissez votre PDF dans le scanner IA. Vous obtiendrez instantanément votre "Score de survie ATS" sur 100 ainsi que l'erreur fondamentale qui vous coûte probablement des entretiens. C'est l'équivalent d'un premier filtre par un cabinet sélectif de recrutement.
+                                {{ t('free_cv.faq_a1') }}
                             </p>
                         </details>
                         
                         <details class="bg-surface-900/50 border border-white/5 rounded-2xl p-6 group cursor-pointer hover:bg-surface-800/50 transition-colors">
                             <summary class="text-xl font-bold text-white list-none flex justify-between items-center">
-                                Conservez-vous mon document Word ou PDF sur vos serveurs ?
+                                {{ t('free_cv.faq_q2') }}
                                 <span class="text-violet-400 group-open:rotate-180 transition-transform">▼</span>
                             </summary>
                             <p class="text-slate-400 mt-4 leading-relaxed">
-                                Sous aucun prétexte. L'analyse algorithmique est éphémère et confidentielle. L'extraction de texte est jetée instantanément après l'inférence du LLM. De plus, seul le format `.pdf` (protégé) est supporté pour garantir une simulation 1-pour-1 des conditions d'envoi.
+                                {{ t('free_cv.faq_a2') }}
                             </p>
                         </details>
 
                         <details class="bg-surface-900/50 border border-white/5 rounded-2xl p-6 group cursor-pointer hover:bg-surface-800/50 transition-colors">
                             <summary class="text-xl font-bold text-white list-none flex justify-between items-center">
-                                Que se passe-t-il si mon score est en dessous de la moyenne ?
+                                {{ t('free_cv.faq_q3') }}
                                 <span class="text-violet-400 group-open:rotate-180 transition-transform">▼</span>
                             </summary>
                             <p class="text-slate-400 mt-4 leading-relaxed">
-                                Un score en rouge (généralement sub-70) indique que les robots de tri ont de fortes chances de ne même pas le transmettre aux ressources humaines. Si c'est le cas, vous pouvez ouvrir un espace GoldArmy gratuit pour laisser l'intelligence artificielle reconstruire vos expériences de travail avec un "Template Harvard" indéchirable.
+                                {{ t('free_cv.faq_a3') }}
                             </p>
                         </details>
                     </div>
@@ -477,13 +479,13 @@ const goToRegister = () => {
                 <!-- Glowing orb behind -->
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-tr from-violet-600/20 to-fuchsia-600/20 blur-[120px] rounded-full pointer-events-none"></div>
                 
-                <h3 class="text-4xl md:text-6xl font-black mb-6 tracking-tight relative z-10 text-white">Rejoignez l'Élite.</h3>
+                <h3 class="text-4xl md:text-6xl font-black mb-6 tracking-tight relative z-10 text-white">{{ t('free_cv.final_cta_title') }}</h3>
                 <p class="text-slate-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto relative z-10">
-                    Ne laissez plus d'autres candidats moins compétents prendre votre place à cause d'un mauvais PDF.
+                    {{ t('free_cv.final_cta_desc') }}
                 </p>
                 
                 <router-link to="/register" class="relative z-10 inline-flex items-center justify-center bg-white text-black font-black uppercase tracking-widest text-sm px-12 py-6 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-105 hover:shadow-[0_0_60px_rgba(255,255,255,0.4)] active:scale-95 transition-all">
-                    Créer mon Espace Gratuit
+                    {{ t('free_cv.final_cta_button') }}
                 </router-link>
             </div>
         </section>

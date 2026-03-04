@@ -1,17 +1,20 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useHead } from '@unhead/vue'
 import { articles } from '@/data/articles'
-import { useMeta } from '@/composables/useMeta'
-import { ChevronRightIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline'
+import { ChevronRightIcon } from '@heroicons/vue/24/outline'
+import Footer from '@/components/Footer.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 
-onMounted(() => {
-  useMeta({
-    title: 'Blog — Astuces IA & Carrière | GoldArmy AI',
-    description: 'Découvrez comment l\'intelligence artificielle révolutionne la recherche d\'emploi, le recrutement et l\'optimisation de carrière.'
-  })
+useHead({
+  title: computed(() => t('seo.blog.title')),
+  meta: [
+    { name: 'description', content: computed(() => t('seo.blog.description')) }
+  ]
 })
 </script>
 
@@ -30,18 +33,18 @@ onMounted(() => {
           <span class="text-lg font-black tracking-tight uppercase text-white">GoldArmy</span>
         </router-link>
         <div class="hidden md:flex items-center gap-8">
-          <router-link to="/" class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">Accueil</router-link>
-          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors">Blog</router-link>
+          <router-link to="/" class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">{{ t('landing.nav.home') }}</router-link>
+          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors">{{ t('landing.nav.blog') }}</router-link>
         </div>
         <div class="flex items-center gap-3">
           <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-            Connexion
+            {{ t('landing.nav.login') }}
           </router-link>
           <router-link to="/register"
             class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
                    px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
                    transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
-            Démarrer →
+            {{ t('landing.nav.get_started') }} →
           </router-link>
         </div>
       </div>
@@ -56,14 +59,14 @@ onMounted(() => {
       <div class="relative px-6 max-w-7xl mx-auto text-center z-10">
         <div class="inline-flex items-center gap-2.5 mb-8 px-4 py-2 rounded-full
                     bg-violet-500/10 border border-violet-500/20 text-violet-300 text-[10px] font-black uppercase tracking-[0.3em]">
-          Insights & Stratégies
+          {{ t('blog.tagline') }}
         </div>
         <h1 class="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-tight">
-          Maîtrisez <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">l'IA</span><br/>
-          <span class="text-white/30">Dominez votre carrière.</span>
+          {{ t('blog.title_main') }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">{{ t('blog.title_highlight') }}</span><br/>
+          <span class="text-white/30">{{ t('blog.title_sub') }}</span>
         </h1>
         <p class="text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-          Découvrez comment l'intelligence artificielle révolutionne la recherche d'emploi. Analyses, astuces et guides pratiques.
+          {{ t('blog.subtitle') }}
         </p>
       </div>
     </section>
@@ -95,28 +98,13 @@ onMounted(() => {
               {{ article.description }}
             </p>
             <div class="flex items-center gap-2 text-violet-400 font-bold text-xs uppercase tracking-widest mt-auto group-hover:translate-x-2 transition-transform">
-              Lire l'article <ChevronRightIcon class="w-4 h-4" />
+              {{ t('blog.read_more') }} <ChevronRightIcon class="w-4 h-4" />
             </div>
           </div>
         </article>
       </div>
     </section>
 
-    <!-- Footer matching Landing.vue -->
-    <footer class="border-t border-white/5 py-10 mt-20 relative z-10">
-      <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-7 h-7 rounded-lg overflow-hidden border border-violet-500/30">
-            <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
-          </div>
-          <span class="text-sm font-black uppercase tracking-widest text-white/40">GoldArmy</span>
-        </div>
-        <p class="text-xs text-white/20 font-bold">© 2026 GoldArmy Agent IA. Tous droits réservés.</p>
-        <div class="flex items-center gap-6">
-          <a href="mailto:support@goldarmyai.com" class="text-xs text-white/40 hover:text-white transition-colors">Support</a>
-          <a href="mailto:yvanloic@goldarmyai.com" class="text-xs text-white/40 hover:text-white transition-colors">CEO</a>
-        </div>
-      </div>
-    </footer>
+    <Footer />
   </div>
 </template>

@@ -1,10 +1,13 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useHead } from '@unhead/vue'
 import { articles } from '@/data/articles'
-import { useMeta } from '@/composables/useMeta'
 import { ArrowLeftIcon, ArrowRightIcon, LinkIcon } from '@heroicons/vue/24/outline'
+import Footer from '@/components/Footer.vue'
 
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -24,7 +27,7 @@ const handleScroll = () => {
 
 const copyLink = () => {
   navigator.clipboard.writeText(window.location.href)
-  alert('Lien copié dans le presse-papiers !')
+  alert(t('blog.link_copied'))
 }
 
 const shareLinkedIn = () => {
@@ -34,15 +37,17 @@ const shareLinkedIn = () => {
 
 const shareTwitter = () => {
   const url = encodeURIComponent(window.location.href)
-  const text = encodeURIComponent(`Découvrez cet article de GoldArmy AI : ${article.value?.title}`)
+  const text = encodeURIComponent(t('blog.share_text', { title: article.value?.title }))
   window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank')
 }
 
 onMounted(() => {
   if (article.value) {
-    useMeta({
+    useHead({
       title: `${article.value.title} | GoldArmy AI Blog`,
-      description: article.value.description
+      meta: [
+        { name: 'description', content: article.value.description }
+      ]
     })
     window.addEventListener('scroll', handleScroll)
     // Trigger entrance animations
@@ -80,18 +85,18 @@ onUnmounted(() => {
           <span class="text-lg font-black tracking-tight uppercase text-white group-hover:text-violet-100 transition-colors">GoldArmy</span>
         </router-link>
         <div class="hidden md:flex items-center gap-8">
-          <router-link to="/" class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">Accueil</router-link>
-          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors">Blog</router-link>
+          <router-link to="/" class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">{{ t('landing.nav.home') }}</router-link>
+          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors">{{ t('landing.nav.blog') }}</router-link>
         </div>
         <div class="flex items-center gap-3">
           <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-            Connexion
+            {{ t('landing.nav.login') }}
           </router-link>
           <router-link to="/register"
             class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
                    px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
                    transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
-            Démarrer →
+            {{ t('landing.nav.get_started') }} →
           </router-link>
         </div>
       </div>
@@ -128,13 +133,13 @@ onUnmounted(() => {
            :class="isLoaded ? 'opacity-100' : 'opacity-0'"></div>
 
       <button @click="router.push('/blog')" class="flex items-center gap-2 text-white/40 hover:text-white transition-colors mb-12 text-xs font-bold uppercase tracking-widest group">
-        <ArrowLeftIcon class="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Retour au blog
+        <ArrowLeftIcon class="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> {{ t('blog.back_to_blog') }}
       </button>
 
       <div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-violet-400 mb-6">
-        <span class="px-3 py-1 rounded-full border border-violet-500/30 bg-violet-500/10">{{ new Date(article.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
+        <span class="px-3 py-1 rounded-full border border-violet-500/30 bg-violet-500/10">{{ new Date(article.date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
         <span class="w-1 h-1 rounded-full bg-violet-400/50"></span>
-        <span class="flex items-center gap-1.5"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Lecture {{ article.readTime }}</span>
+        <span class="flex items-center gap-1.5"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> {{ t('blog.read_time', { time: article.readTime }) }}</span>
       </div>
 
       <h1 class="text-4xl md:text-6xl font-black mb-8 leading-[1.1] tracking-tighter">
@@ -181,64 +186,23 @@ onUnmounted(() => {
         
         <div class="relative z-10 p-12 rounded-[3rem] bg-gradient-to-b from-white/[0.03] to-transparent border border-white/5 shadow-2xl backdrop-blur-xl">
             <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-6 flex items-center justify-center gap-3">
-              <span class="w-8 h-px bg-violet-500/30"></span> Passez à la vitesse supérieure <span class="w-8 h-px bg-violet-500/30"></span>
+              <span class="w-8 h-px bg-violet-500/30"></span> {{ t('blog.cta_tagline') }} <span class="w-8 h-px bg-violet-500/30"></span>
             </p>
-            <h3 class="text-4xl lg:text-5xl font-black mb-6 tracking-tighter leading-tight">Ne postulez plus dans le vide.</h3>
-            <p class="text-lg text-white/50 mb-10 max-w-lg mx-auto leading-relaxed">Arrêtez d'envoyer des CV qui finissent à la poubelle. Laissez nos Agents IA auditer votre profil et vous trouver les meilleures opportunités en quelques secondes.</p>
+            <h3 class="text-4xl lg:text-5xl font-black mb-6 tracking-tighter leading-tight">{{ t('blog.cta_title') }}</h3>
+            <p class="text-lg text-white/50 mb-10 max-w-lg mx-auto leading-relaxed">{{ t('blog.cta_subtitle') }}</p>
             
             <router-link to="/register"
               class="inline-flex items-center justify-center gap-3 bg-white text-[#0a0a12] font-black text-sm uppercase tracking-[0.2em]
                      px-12 py-5 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all hover:scale-[1.03] active:scale-95 hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] group w-full sm:w-auto">
-              Créer mon compte VIP <ArrowRightIcon class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              {{ t('blog.cta_button') }} <ArrowRightIcon class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </router-link>
             
-            <p class="mt-8 text-xs font-bold text-white/30 uppercase tracking-widest">Essai 100% gratuit. Sans carte de crédit.</p>
+            <p class="mt-8 text-xs font-bold text-white/30 uppercase tracking-widest">{{ t('blog.cta_free_trial') }}</p>
         </div>
       </div>
     </div>
 
-    <!-- Full Footer matching Landing.vue -->
-    <footer class="border-t border-white/5 pt-20 pb-10 mt-20 relative bg-[#0a0a12] z-10">
-      <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-        <div class="md:col-span-2">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-9 h-9 rounded-xl overflow-hidden border border-violet-500/30">
-              <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
-            </div>
-            <span class="text-lg font-black uppercase tracking-widest text-white">GoldArmy</span>
-          </div>
-          <p class="text-white/40 text-sm leading-relaxed max-w-sm mb-8">
-            L'intelligence artificielle au service de votre carrière. Ne cherchez plus d'emploi, laissez les opportunités venir à vous grâce à nos agents autonomes.
-          </p>
-        </div>
-
-        <div>
-          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">Navigation</h4>
-          <ul class="space-y-4">
-            <li><a href="/#agents" class="text-sm text-white/40 hover:text-white transition-colors">Nos Agents IA</a></li>
-            <li><a href="/#tarifs" class="text-sm text-white/40 hover:text-white transition-colors">Tarification</a></li>
-            <li><router-link to="/blog" class="text-sm text-white/40 hover:text-white transition-colors">Le Blog IA</router-link></li>
-            <li><router-link to="/login" class="text-sm text-white/40 hover:text-white transition-colors">Espace Candidat</router-link></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">Contact</h4>
-          <ul class="space-y-4 mb-8">
-            <li><a href="mailto:support@goldarmyai.com" class="text-sm text-white/40 hover:text-violet-400 transition-colors flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Support Client</a></li>
-            <li><a href="mailto:yvanloic@goldarmyai.com" class="text-sm text-white/40 hover:text-violet-400 transition-colors flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> Contacter le CEO</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="max-w-7xl mx-auto px-6 border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-        <p class="text-xs text-white/20 font-bold">© 2026 GoldArmy Agent IA. Tous droits réservés.</p>
-        <div class="flex gap-6">
-          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">Confidentialité</a>
-          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">CGU</a>
-        </div>
-      </div>
-    </footer>
+    <Footer />
   </div>
 </template>
 

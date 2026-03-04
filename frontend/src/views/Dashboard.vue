@@ -1,6 +1,7 @@
 <script setup>
 import { authFetch } from '../utils/auth'
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { 
   BriefcaseIcon,
   DocumentCheckIcon,
@@ -77,14 +78,21 @@ const areaPath = computed(() => {
     return `${linePath.value} L ${pts[pts.length - 1].x} ${bottom} L ${pts[0].x} ${bottom} Z`
 })
 
-const userEmail = ref('Yves')
+const { t } = useI18n()
 
-const kpiStats = ref([
-  { label: 'Candidatures envoyées', value: '0', shortDesc: 'Candidatures récents', timeframe: 'dans les 30 derniers jours', color: 'text-indigo-400', bg: 'bg-indigo-500/10', icon: BriefcaseIcon },
-  { label: 'CV Analysés', value: '0', shortDesc: 'Analyses effectuées', timeframe: 'dans les 30 derniers jours', color: 'text-emerald-400', bg: 'bg-emerald-500/10', icon: DocumentCheckIcon },
-  { label: 'Entretiens Décrochés', value: '0', shortDesc: 'En cours', timeframe: 'dans les 30 derniers jours', color: 'text-amber-400', bg: 'bg-amber-500/10', icon: ChatBubbleLeftRightIcon },
-  { label: 'Réseau (Contacts)', value: '0', shortDesc: 'Nouveaux contacts', timeframe: 'dans les 30 derniers jours', color: 'text-rose-400', bg: 'bg-rose-500/10', icon: UserPlusIcon }
+const kpiStats = computed(() => [
+  { label: t('dashboard.kpis.applied'), value: kpiValues.value.applied, shortDesc: 'Candidatures récents', timeframe: 'dans les 30 derniers jours', color: 'text-indigo-400', bg: 'bg-indigo-500/10', icon: BriefcaseIcon },
+  { label: t('dashboard.kpis.cv_analyzed'), value: kpiValues.value.cv_analyzed, shortDesc: 'Analyses effectuées', timeframe: 'dans les 30 derniers jours', color: 'text-emerald-400', bg: 'bg-emerald-500/10', icon: DocumentCheckIcon },
+  { label: t('dashboard.kpis.interviews'), value: kpiValues.value.interviews, shortDesc: 'En cours', timeframe: 'dans les 30 derniers jours', color: 'text-amber-400', bg: 'bg-amber-500/10', icon: ChatBubbleLeftRightIcon },
+  { label: t('dashboard.kpis.network'), value: kpiValues.value.network, shortDesc: 'Nouveaux contacts', timeframe: 'dans les 30 derniers jours', color: 'text-rose-400', bg: 'bg-rose-500/10', icon: UserPlusIcon }
 ])
+
+const kpiValues = ref({
+  applied: '0',
+  cv_analyzed: '0',
+  interviews: '0',
+  network: '0'
+})
 
 const fetchDashboardData = async () => {
     try {
@@ -100,10 +108,10 @@ const fetchDashboardData = async () => {
         const json = await res.json()
         if (json.data) {
             const kpis = json.data.kpis
-            kpiStats.value[0].value = kpis.applied.toString()
-            kpiStats.value[1].value = kpis.cv_analyzed.toString()
-            kpiStats.value[2].value = kpis.interviews.toString()
-            kpiStats.value[3].value = kpis.network.toString()
+            kpiValues.value.applied = kpis.applied.toString()
+            kpiValues.value.cv_analyzed = kpis.cv_analyzed.toString()
+            kpiValues.value.interviews = kpis.interviews.toString()
+            kpiValues.value.network = kpis.network.toString()
             
             chartData.value = json.data.chart
         }
@@ -146,9 +154,9 @@ onMounted(() => {
     <!-- Header -->
     <div class="mb-6">
       <h1 class="text-2xl md:text-3xl font-display font-bold text-white tracking-tight flex items-center gap-2">
-        Organise tes recherches, Bonjour {{ userEmail }} 🔥
+        {{ t('dashboard.welcome', { name: userEmail }) }}
       </h1>
-      <p class="text-slate-400 text-sm font-medium mt-1">Gère facilement tes candidatures, suis tes entretiens et atteins tes objectifs au même endroit.</p>
+      <p class="text-slate-400 text-sm font-medium mt-1">{{ t('dashboard.description') }}</p>
     </div>
 
     <!-- Cards Row -->
@@ -184,15 +192,15 @@ onMounted(() => {
       <!-- Area Chart -->
       <div class="lg:col-span-2 bg-surface-900 border border-surface-800 rounded-xl p-5 shadow-sm">
           <div class="flex items-center justify-between mb-6">
-                <h3 class="text-sm font-bold text-white">Croissance des Opportunités</h3>
+                <h3 class="text-sm font-bold text-white">{{ t('dashboard.charts.opportunities_title') }}</h3>
                 <button class="flex items-center gap-2 border border-surface-700 bg-surface-800 hover:bg-surface-700 text-xs font-semibold text-slate-300 rounded-lg py-1.5 px-3 transition-colors">
                     <CalendarIcon class="w-4 h-4 text-slate-400" />
-                    Filtrer
+                    {{ t('dashboard.charts.filter') }}
                 </button>
           </div>
           
           <div class="flex items-center gap-4 mb-6">
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded shadow-sm bg-indigo-500"></div><span class="text-[11px] font-bold text-slate-400">Total Opportunités</span></div>
+              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded shadow-sm bg-indigo-500"></div><span class="text-[11px] font-bold text-slate-400">{{ t('dashboard.charts.total_ops') }}</span></div>
           </div>
 
           <!-- Premium SVG Line Chart -->
@@ -242,7 +250,7 @@ onMounted(() => {
               </g>
 
               <!-- Empty state -->
-              <text v-if="!chartData.length" :x="W/2" :y="H/2" text-anchor="middle" fill="#475569" font-size="14" font-family="sans-serif">Aucune donnée disponible</text>
+              <text v-if="!chartData.length" :x="W/2" :y="H/2" text-anchor="middle" fill="#475569" font-size="14" font-family="sans-serif">{{ t('dashboard.recent_activity.empty') }}</text>
             </svg>
           </div>
       </div>
@@ -250,10 +258,10 @@ onMounted(() => {
       <!-- Bar Chart (Mocked Status) -->
       <div class="lg:col-span-1 bg-surface-900 border border-surface-800 rounded-xl p-5 shadow-sm flex flex-col">
           <div class="flex items-center justify-between mb-6">
-                <h3 class="text-sm font-bold text-white">Opportunités par Statut</h3>
+                <h3 class="text-sm font-bold text-white">{{ t('dashboard.charts.status_title') }}</h3>
                 <button class="flex items-center gap-2 border border-surface-700 bg-surface-800 hover:bg-surface-700 text-xs font-semibold text-slate-300 rounded-lg py-1.5 px-3 transition-colors">
                     <CalendarIcon class="w-4 h-4 text-slate-400" />
-                    Filtrer
+                    {{ t('dashboard.charts.filter') }}
                 </button>
           </div>
           
@@ -288,19 +296,19 @@ onMounted(() => {
     <!-- Timeline Section -->
     <div class="bg-surface-900 border border-surface-800 rounded-xl p-5 shadow-sm mt-6">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-sm font-bold text-white">Task Completion Over Time & Activité Récente</h3>
+            <h3 class="text-sm font-bold text-white">{{ t('dashboard.recent_activity.title') }}</h3>
         </div>
         
         <!-- Headers -->
         <div class="grid grid-cols-4 gap-4 px-4 border-b border-surface-800 pb-3 mb-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            <div class="col-span-2">Rôle & Opportunité</div>
-            <div>Statut</div>
-            <div class="text-right">Progression</div>
+            <div class="col-span-2">{{ t('dashboard.recent_activity.role') }}</div>
+            <div>{{ t('dashboard.recent_activity.status') }}</div>
+            <div class="text-right">{{ t('dashboard.recent_activity.progress') }}</div>
         </div>
         
         <div class="space-y-2">
             <div v-if="!recentActivity || recentActivity.length === 0" class="text-center py-6 text-slate-500 text-sm">
-                Aucune activité récente.
+                {{ t('dashboard.recent_activity.empty') }}
             </div>
             
             <div 

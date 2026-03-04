@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
+import { useI18n } from 'vue-i18n'
 import Footer from '../components/Footer.vue'
 import {
   MicrophoneIcon,
@@ -13,12 +14,16 @@ import {
 } from '@heroicons/vue/24/solid'
 import { ShieldCheckIcon } from '@heroicons/vue/24/outline'
 
+const { t, locale } = useI18n()
+const router = useRouter()
+
+// SEO optimization using @unhead/vue
 useHead({
-  title: 'Simulateur Entretien IA | Entraînement Visio Gratuit | GoldArmy',
+  title: computed(() => t('seo.free_interview.title')),
   meta: [
-    { name: 'description', content: 'Entraînez-vous gratuitement aux entretiens d\'embauche avec notre IA vocale. Le simulateur génère des questions pièges sur-mesure pour votre métier.' },
-    { property: 'og:title', content: 'Simulateur d\'Entretien d\'Embauche IA | GoldArmy' },
-    { property: 'og:description', content: 'Ne découvrez pas vos faiblesses le jour J. Passez un faux entretien en visio avec notre Recruteur IA ultra-exigeant.' }
+    { name: 'description', content: computed(() => t('seo.free_interview.description')) },
+    { property: 'og:title', content: computed(() => t('seo.free_interview.og_title')) },
+    { property: 'og:description', content: computed(() => t('seo.free_interview.og_description')) }
   ],
   script: [
     {
@@ -29,7 +34,7 @@ useHead({
         "name": "Simulateur Entretien IA GoldArmy",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "All",
-        "description": "Un simulateur d'entretien d'embauche en temps réel propulsé par l'intelligence artificielle et la reconnaissance vocale pour s'entraîner aux questions pièges.",
+        "description": t('seo.free_interview.description'),
         "offers": {
           "@type": "Offer",
           "price": "0",
@@ -39,8 +44,6 @@ useHead({
     }
   ]
 })
-
-const router = useRouter()
 
 // States
 const step = ref('intro') // intro -> connecting -> interviewing -> feedback
@@ -57,14 +60,22 @@ let synthesis = null
 let recognition = null
 const isListening = ref(false)
 
+// Helper to get locale for Web Speech API
+const speechLocale = computed(() => {
+    return locale.value === 'fr' ? 'fr-FR' : 'en-US'
+})
+
 onMounted(() => {
     synthesis = window.speechSynthesis
-    
-    // Check for Speech Recognition
+    initRecognition()
+})
+
+const initRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (SpeechRecognition) {
+        if (recognition) recognition.stop()
         recognition = new SpeechRecognition()
-        recognition.lang = 'fr-FR'
+        recognition.lang = speechLocale.value
         recognition.continuous = true
         recognition.interimResults = true
         
@@ -82,6 +93,11 @@ onMounted(() => {
             isListening.value = false
         }
     }
+}
+
+// Re-init recognition if language changes
+watch(speechLocale, () => {
+    initRecognition()
 })
 
 onUnmounted(() => {
@@ -93,7 +109,7 @@ const speakText = (text, onEndCallback = null) => {
     if (!synthesis) return
     synthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'fr-FR'
+    utterance.lang = speechLocale.value
     utterance.rate = 1.05
     utterance.pitch = 0.9 // Slightly deeper, more professional voice
     
@@ -112,7 +128,10 @@ const startCall = async () => {
         const res = await fetch(`${apiUrl}/api/public/interview`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ job_title: jobTitle.value })
+            body: JSON.stringify({ 
+                job_title: jobTitle.value,
+                locale: locale.value 
+            })
         })
         const data = await res.json()
         if (data.status === 'success') {
@@ -121,24 +140,21 @@ const startCall = async () => {
             
             // Wait a sec to "connect", then speak
             setTimeout(() => {
-                speakText(question.value, () => {
-                    // Auto-start recording when question finishes? Or let user click.
-                    // Let's let user click to afford control.
-                })
+                speakText(question.value)
             }, 1000)
             
         } else {
             throw new Error("API Exception")
         }
     } catch(err) {
-        alert("La connexion avec le recruteur a échoué. Veuillez réessayer.")
+        alert(t('common.error') + ": " + err.message)
         step.value = 'intro'
     }
 }
 
 const toggleRecording = () => {
     if (!recognition) {
-        alert("Votre navigateur ne supporte pas la reconnaissance vocale. Merci d'utiliser Chrome ou Safari.")
+        alert(t('free_interview.recognition_error'))
         return
     }
     
@@ -161,7 +177,7 @@ const submitAnswer = async () => {
     }
     
     if (!userAnswer.value.trim()) {
-        alert("Vous n'avez rien dit !")
+        alert(t('free_interview.empty_answer'))
         return
     }
     
@@ -175,7 +191,8 @@ const submitAnswer = async () => {
             body: JSON.stringify({ 
                 job_title: jobTitle.value,
                 context: question.value,
-                user_response: userAnswer.value
+                user_response: userAnswer.value,
+                locale: locale.value
             })
         })
         const data = await res.json()
@@ -222,26 +239,26 @@ const endCall = () => {
         <!-- Links -->
         <div class="hidden md:flex items-center gap-6">
           <router-link to="/free-cv-roast" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1.5">
-             Audit CV
+             {{ t('landing.nav.audit_cv') }}
           </router-link>
           <router-link to="/free-interview" class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5">
-             Simulation
+             {{ t('landing.nav.simulation') }}
           </router-link>
           <div class="h-4 w-px bg-white/10 mx-2"></div>
           <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-400 hover:text-fuchsia-300 transition-colors">
-            Blog
+            {{ t('landing.nav.blog') }}
           </router-link>
         </div>
         <!-- CTA -->
         <div class="flex items-center gap-3">
           <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-            Connexion
+            {{ t('landing.nav.login') }}
           </router-link>
           <router-link to="/register"
             class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
                    px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
                    transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
-            Démarrer →
+            {{ t('landing.nav.get_started') }} →
           </router-link>
         </div>
       </div>
@@ -260,25 +277,25 @@ const endCall = () => {
         
         <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-surface-900/80 border border-white/5 backdrop-blur-md mb-8 shadow-2xl">
             <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-            <span class="text-xs font-bold text-slate-300 tracking-widest uppercase">Évaluation Orale IA</span>
+            <span class="text-xs font-bold text-slate-300 tracking-widest uppercase">{{ t('free_interview.hero_badge') }}</span>
         </div>
 
         <h1 class="text-5xl sm:text-6xl md:text-7xl font-black mb-6 tracking-tighter leading-[1.1]">
-            Ne découvrez pas vos <span class="italic text-slate-500 font-display">faiblesses</span><br/>
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-rose-400 pb-2">le jour J.</span>
+            {{ t('free_interview.hero_title1') }} <span class="italic text-slate-500 font-display">{{ t('free_interview.hero_title1_italic') }}</span><br/>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-rose-400 pb-2">{{ t('free_interview.hero_title2') }}</span>
         </h1>
         
         <p class="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
-            Passez une simulation d'entretien Visio ultra-réaliste. Notre IA prend le rôle d'un Lead Tech impitoyable et analyse votre voix, vos silences et vos arguments en temps réel.
+            {{ t('free_interview.hero_subtitle') }}
         </p>
         
         <div class="w-full max-w-2xl relative group">
             <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-fuchsia-500 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
             <div class="relative bg-surface-950/80 backdrop-blur-xl border border-white/10 rounded-3xl p-2 sm:p-3 flex flex-col sm:flex-row gap-2 shadow-2xl overflow-hidden">
-                <input v-model="jobTitle" @keyup.enter="startCall" type="text" placeholder="Le poste visé (ex: Data Analyst)" class="flex-1 bg-transparent px-6 py-4 text-lg font-bold text-white placeholder-slate-500 focus:outline-none text-center sm:text-left" />
+                <input v-model="jobTitle" @keyup.enter="startCall" type="text" :placeholder="t('free_interview.job_placeholder')" class="flex-1 bg-transparent px-6 py-4 text-lg font-bold text-white placeholder-slate-500 focus:outline-none text-center sm:text-left" />
                 
                 <button @click="startCall" :disabled="!jobTitle.trim()" class="bg-white text-indigo-950 disabled:opacity-50 disabled:cursor-not-allowed font-black uppercase tracking-widest py-4 px-8 rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 z-10">
-                    <VideoCameraIcon class="w-5 h-5 text-indigo-600" /> Rejoindre la Visio
+                    <VideoCameraIcon class="w-5 h-5 text-indigo-600" /> {{ t('free_interview.start_button') }}
                 </button>
             </div>
         </div>
@@ -286,11 +303,11 @@ const endCall = () => {
         <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-sm font-bold text-slate-500">
             <div class="flex items-center gap-2 bg-surface-900/50 py-2 px-5 rounded-full border border-white/5 shadow-sm">
                 <MicrophoneIcon class="w-5 h-5 text-fuchsia-400" />
-                <span>Micro Requis</span>
+                <span>{{ t('free_interview.mic_required') }}</span>
             </div>
             <div class="flex items-center gap-2 bg-surface-900/50 py-2 px-5 rounded-full border border-white/5 shadow-sm">
                 <ShieldCheckIcon class="w-5 h-5 text-emerald-500" />
-                <span>Aucun enregistrement conservé</span>
+                <span>{{ t('free_interview.privacy_promise') }}</span>
             </div>
         </div>
     </div>
@@ -298,8 +315,8 @@ const endCall = () => {
     <!-- 2. CONNECTING -->
     <div v-if="step === 'connecting'" class="flex-1 flex flex-col items-center justify-center z-10">
         <div class="w-32 h-32 rounded-full border-4 border-surface-800 border-t-indigo-500 animate-spin mb-8"></div>
-        <h2 class="text-2xl font-bold animate-pulse">Connexion au recruteur...</h2>
-        <p class="text-slate-500 mt-2 font-mono text-sm">Établissement du canal sécurisé</p>
+        <h2 class="text-2xl font-bold animate-pulse">{{ t('free_interview.connecting_title') }}</h2>
+        <p class="text-slate-500 mt-2 font-mono text-sm">{{ t('free_interview.connecting_subtitle') }}</p>
     </div>
 
     <!-- 3. INTERVIEWING (HUD/Glassmorphism UI) -->
@@ -325,7 +342,7 @@ const endCall = () => {
                         <div class="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-20 scale-150" v-if="(step === 'interviewing' && userAnswer === '') || step === 'feedback'"></div>
                         <div class="absolute inset-0 bg-fuchsia-500 rounded-full animate-pulse opacity-10 scale-[1.2]" v-if="(step === 'interviewing' && userAnswer === '') || step === 'feedback'"></div>
                         
-                        <img src="/avatars/tech.png" alt="Recruteur" class="w-full h-full rounded-full object-cover border-[6px] border-surface-900 relative z-10 shadow-2xl bg-[#0d1117] p-2" />
+                        <img src="/avatars/tech.png" :alt="t('free_interview.recruiter_alt')" class="w-full h-full rounded-full object-cover border-[6px] border-surface-900 relative z-10 shadow-2xl bg-[#0d1117] p-2" />
                     </div>
                 </div>
                 
@@ -336,7 +353,7 @@ const endCall = () => {
                         
                         <p class="text-xs font-black text-indigo-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_#6366f1]"></span>
-                            IA Recruteur
+                            {{ t('free_interview.recruiter_label') }}
                         </p>
                         
                         <p class="text-lg sm:text-2xl font-medium leading-relaxed font-sans" v-if="step === 'interviewing'">
@@ -358,7 +375,7 @@ const endCall = () => {
                          <!-- User speaking radar -->
                         <div v-if="isListening" class="absolute inset-0 bg-rose-500/5 animate-pulse"></div>
                         <div class="w-24 h-24 rounded-full bg-surface-800 flex items-center justify-center border border-white/10 shadow-xl relative z-10">
-                            <span class="text-2xl text-slate-500 font-bold">Vous</span>
+                            <span class="text-2xl text-slate-500 font-bold">{{ t('free_interview.user_label') }}</span>
                         </div>
                     </div>
                 </div>
@@ -371,11 +388,11 @@ const endCall = () => {
                         <div>
                             <p class="text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2" :class="isListening ? 'text-rose-400' : 'text-slate-500'">
                                 <span v-if="isListening" class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_10px_#f43f5e]"></span>
-                                {{ isListening ? 'Transcription en direct' : 'En attente...' }}
+                                {{ isListening ? t('free_interview.live_transcription') : t('free_interview.waiting_label') }}
                             </p>
                             
                             <p class="text-base text-slate-300 font-medium leading-relaxed" v-if="step === 'interviewing'">
-                                {{ userAnswer || (isListening ? 'Parlez maintenant...' : 'Activez le micro en bas pour répondre.') }}
+                                {{ userAnswer || (isListening ? t('free_interview.speak_now') : t('free_interview.mic_instruction')) }}
                             </p>
                         </div>
                     </div>
@@ -389,16 +406,16 @@ const endCall = () => {
                         <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-fuchsia-600 rounded-3xl flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(139,92,246,0.4)]">
                             <SparklesIcon class="w-10 h-10 text-white" />
                         </div>
-                        <h3 class="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight">Fin de la simulation.</h3>
+                        <h3 class="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight">{{ t('free_interview.end_title') }}</h3>
                         <p class="text-slate-400 text-lg md:text-xl mb-12 max-w-xl leading-relaxed">
-                            C'était brutal, non ? GoldArmy vous permet de recommencer cette épreuve jusqu'à devenir totalement insensible au stress.
+                            {{ t('free_interview.end_subtitle') }}
                         </p>
                         
                         <button @click="router.push('/register')" class="bg-white text-indigo-950 font-black uppercase tracking-widest text-sm px-12 py-6 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-95 transition-all mb-6">
-                            Créer un compte Gratuit
+                            {{ t('free_interview.end_cta') }}
                         </button>
                         <button @click="endCall" class="text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors py-2">
-                            Quitter l'appel
+                            {{ t('free_interview.end_exit') }}
                         </button>
                     </div>
                 </div>
@@ -416,7 +433,7 @@ const endCall = () => {
                         <MicrophoneIcon class="w-6 h-6 sm:w-7 sm:h-7" v-if="!isListening" />
                         <StopIcon class="w-6 h-6 sm:w-7 sm:h-7" v-else />
                     </button>
-                    <span class="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest hidden sm:block">{{ isListening ? 'Stop' : 'Parler' }}</span>
+                    <span class="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest hidden sm:block">{{ isListening ? t('free_interview.stop_label') : t('free_interview.speak_label') }}</span>
                 </div>
 
                 <div class="w-px h-10 bg-white/10 mx-2"></div>
@@ -426,7 +443,7 @@ const endCall = () => {
                     <button @click="submitAnswer" :disabled="step !== 'interviewing' || !userAnswer || isProcessing" class="px-8 h-14 sm:h-16 rounded-2xl flex items-center gap-3 transition-all duration-300 shadow-lg text-sm sm:text-base font-black tracking-wide uppercase" :class="userAnswer && !isProcessing ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.3)]' : 'bg-surface-800 text-slate-500 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed'">
                         <span v-if="isProcessing" class="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
                         <PlayIcon v-else class="w-5 h-5" />
-                        {{ isProcessing ? 'Analyse...' : 'Valider' }}
+                        {{ isProcessing ? t('free_interview.analyzing_label') : t('free_interview.validate_label') }}
                     </button>
                     <span class="text-[10px] font-bold text-transparent mt-2 hidden sm:block">.</span>
                 </div>
@@ -438,7 +455,7 @@ const endCall = () => {
                     <button @click="endCall" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition-all duration-300 shadow-[0_0_20px_rgba(225,29,72,0.3)]">
                         <PhoneXMarkIcon class="w-6 h-6 sm:w-7 sm:h-7" />
                     </button>
-                    <span class="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest hidden sm:block">Quitter</span>
+                    <span class="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest hidden sm:block">{{ t('free_interview.exit_label') }}</span>
                 </div>
             </div>
         </div>
@@ -450,8 +467,8 @@ const endCall = () => {
         <!-- Bento Box Explanatory Section -->
         <section class="max-w-[1400px] mx-auto w-full pt-20 border-t border-white/5 relative z-10">
             <div class="text-center mb-20">
-                <span class="text-indigo-400 text-xs font-black uppercase tracking-[0.2em] mb-4 block">Le simulateur de stress</span>
-                <h2 class="text-4xl md:text-6xl font-black mb-6 tracking-tight">Ne paniquez plus <span class="italic font-display text-slate-500">face aux RH.</span></h2>
+                <span class="text-indigo-400 text-xs font-black uppercase tracking-[0.2em] mb-4 block">{{ t('free_interview.bento_tagline') }}</span>
+                <h2 class="text-4xl md:text-6xl font-black mb-6 tracking-tight">{{ t('free_interview.bento_title1') }} <span class="italic font-display text-slate-500">{{ t('free_interview.bento_title2') }}</span></h2>
             </div>
 
             <!-- Asymmetrical Bento Grid -->
@@ -461,9 +478,9 @@ const endCall = () => {
                 <div class="md:col-span-2 md:row-span-2 bg-gradient-to-br from-surface-900 to-[#0a0a12] border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
                     <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                     <div class="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400 font-black text-2xl mb-8 border border-indigo-500/20 shadow-[0_0_30px_rgba(99,102,241,0.2)]">1</div>
-                    <h3 class="text-3xl font-black mb-4">Reconnaissance Intelligente</h3>
+                    <h3 class="text-3xl font-black mb-4">{{ t('free_interview.bento_feature1_title') }}</h3>
                     <p class="text-slate-400 text-lg leading-relaxed max-w-md">
-                        Le simulateur vous écoute en temps réel avec le Web Speech API. L'IA analyse votre débit de parole, votre assurance et sanctionne le moindre balbutiement.
+                        {{ t('free_interview.bento_feature1_desc') }}
                     </p>
                     <div class="mt-10 h-32 bg-surface-950 rounded-2xl border border-surface-800 flex items-center justify-center p-4 overflow-hidden relative">
                         <!-- Abstract sound waves -->
@@ -476,9 +493,9 @@ const endCall = () => {
                 <!-- BENTO 2: Top Right Small -->
                 <div class="md:col-span-2 md:row-span-1 bg-surface-900 border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden">
                     <div class="w-12 h-12 bg-fuchsia-500/10 rounded-xl flex items-center justify-center text-fuchsia-400 font-black text-xl mb-4 border border-fuchsia-500/20">2</div>
-                    <h3 class="text-2xl font-black mb-3 text-white">Scénarios Extrêmes</h3>
+                    <h3 class="text-2xl font-black mb-3 text-white">{{ t('free_interview.bento_feature2_title') }}</h3>
                     <p class="text-slate-400 text-sm leading-relaxed max-w-sm">
-                        L'IA génère des questions techniques ultra spécifiques à votre poste, piochées dans les bases de données d'entretiens de Google et Meta.
+                        {{ t('free_interview.bento_feature2_desc') }}
                     </p>
                 </div>
 
@@ -486,9 +503,9 @@ const endCall = () => {
                 <div class="md:col-span-2 md:row-span-1 bg-surface-900 border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-r from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <div class="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-400 font-black text-xl mb-4 border border-rose-500/20">3</div>
-                    <h3 class="text-2xl font-black mb-3 text-white">Feedback Temps Réel</h3>
+                    <h3 class="text-2xl font-black mb-3 text-white">{{ t('free_interview.bento_feature3_title') }}</h3>
                     <p class="text-slate-400 text-sm leading-relaxed max-w-sm">
-                        Recevez des critiques directes. Vous ne saurez pas que votre réponse "manque de metrics" si personne n'ose vous le dire en face. L'IA ose.
+                        {{ t('free_interview.bento_feature3_desc') }}
                     </p>
                 </div>
 
@@ -497,48 +514,48 @@ const endCall = () => {
             <!-- Massive SEO Content: How It Works & FAQ -->
             <section class="max-w-4xl mx-auto w-full pt-12 pb-24 text-left px-4">
                 <article class="prose prose-invert prose-lg max-w-none">
-                    <h2 class="text-3xl font-black text-white mb-6">Comment fonctionne notre Simulateur d'Entretien IA ?</h2>
+                    <h2 class="text-3xl font-black text-white mb-6">{{ t('free_interview.seo_article_title') }}</h2>
                     <p class="text-slate-400 mb-6 leading-relaxed">
-                        Préparer un entretien d'embauche devant un miroir ne suffit plus. Notre <strong>Simulateur d'Entretien IA</strong> utilise la technologie <em>Web Speech API</em> couplée à un Large Language Model (LLM) pour créer un environnement de stress réaliste. L'IA écoute vos réponses en temps réel, analyse la sémantique de votre discours, la richesse de votre vocabulaire technique, et l'absence d'hésitations.
+                        {{ t('free_interview.seo_article_p1') }}
                     </p>
                     
-                    <h3 class="text-2xl font-bold text-white mt-12 mb-4">La Tech derrière la magie</h3>
+                    <h3 class="text-2xl font-bold text-white mt-12 mb-4">{{ t('free_interview.seo_article_h3') }}</h3>
                     <ul class="text-slate-400 mb-10 space-y-3 list-disc pl-6 marker:text-indigo-500">
-                        <li><strong>Scraping de l'Extrême :</strong> L'algorithme se base sur des milliers de questions pièges fuitées des entretiens chez Google, Meta, et Stripe pour forger son caractère d'évaluateur impitoyable.</li>
-                        <li><strong>Analyse Sémantique Profonde :</strong> Le modèle pénalise l'utilisation de mots faibles ("je crois", "peut-être") et récompense les verbes d'action ("j'ai architecturé", "j'ai maximisé").</li>
-                        <li><strong>Feedbacks Temps Réel :</strong> L'IA identifie instantanément si vous n'avez pas répondu à la question de fond ou si vous avez esquivé un point technique.</li>
+                        <li>{{ t('free_interview.seo_article_li1') }}</li>
+                        <li>{{ t('free_interview.seo_article_li2') }}</li>
+                        <li>{{ t('free_interview.seo_article_li3') }}</li>
                     </ul>
 
-                    <h2 class="text-3xl font-black text-white mt-16 mb-8">Foire Aux Questions (FAQ) sur la Simulation</h2>
+                    <h2 class="text-3xl font-black text-white mt-16 mb-8">{{ t('free_interview.faq_title') }}</h2>
                     
                     <div class="space-y-6">
                         <details class="bg-surface-900/50 border border-white/5 rounded-2xl p-6 group cursor-pointer hover:bg-surface-800/50 transition-colors">
                             <summary class="text-xl font-bold text-white list-none flex justify-between items-center">
-                                Dois-je allumer ma caméra pour l'essai gratuit ?
+                                {{ t('free_interview.faq_q1') }}
                                 <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
                             </summary>
                             <p class="text-slate-400 mt-4 leading-relaxed">
-                                Non. Pour cet essai public gratuit, seule la reconnaissance vocale de votre navigateur web est sollicitée. Vos données audios ne quittent temporairement votre appareil que sous forme de texte pour l'analyse algorithmique.
+                                {{ t('free_interview.faq_a1') }}
                             </p>
                         </details>
                         
                         <details class="bg-surface-900/50 border border-white/5 rounded-2xl p-6 group cursor-pointer hover:bg-surface-800/50 transition-colors">
                             <summary class="text-xl font-bold text-white list-none flex justify-between items-center">
-                                Le simulateur prend-il en compte mon métier exact ?
+                                {{ t('free_interview.faq_q2') }}
                                 <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
                             </summary>
                             <p class="text-slate-400 mt-4 leading-relaxed">
-                                Oui. Avant de lancer l'appel, vous tapez le titre de votre poste cible (ex: "Senior Backend Developer Python"). Le Recruteur IA ajustera alors son lexique et générera des questions techniques d'architecture logicielle ou de management adaptées.
+                                {{ t('free_interview.faq_a2') }}
                             </p>
                         </details>
 
                         <details class="bg-surface-900/50 border border-white/5 rounded-2xl p-6 group cursor-pointer hover:bg-surface-800/50 transition-colors">
                             <summary class="text-xl font-bold text-white list-none flex justify-between items-center">
-                                Pourquoi la voix de l'IA semble si froide ?
+                                {{ t('free_interview.faq_q3') }}
                                 <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
                             </summary>
                             <p class="text-slate-400 mt-4 leading-relaxed">
-                                C'est un choix de design. L'idée est de vous placer dans la "Zone de Panique" temporelle. En étant froid et direct, le simulateur vous force à contrôler votre propre respiration et à structurer votre pensée sans l'empathie naturelle d'un humain pour vous rassurer. C'est le meilleur moyen de vous hyper-préparer.
+                                {{ t('free_interview.faq_a3') }}
                             </p>
                         </details>
                     </div>
@@ -550,13 +567,13 @@ const endCall = () => {
                 <!-- Glowing orb behind -->
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-indigo-500/20 via-rose-500/20 to-indigo-500/20 blur-[120px] rounded-full pointer-events-none animate-spin-slow"></div>
                 
-                <h3 class="text-4xl md:text-6xl font-black mb-6 tracking-tight relative z-10 text-white">Devenez inébranlable.</h3>
+                <h3 class="text-4xl md:text-6xl font-black mb-6 tracking-tight relative z-10 text-white">{{ t('free_interview.final_cta_title') }}</h3>
                 <p class="text-slate-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto relative z-10">
-                    Débloquez le simulateur sans limite de temps. Enchaînez les faux entretiens de 45 minutes et apprenez à dominer la discussion.
+                    {{ t('free_interview.final_cta_desc') }}
                 </p>
                 
                 <router-link to="/register" class="relative z-10 inline-flex items-center justify-center bg-white text-black font-black uppercase tracking-widest text-sm px-12 py-6 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-105 hover:shadow-[0_0_60px_rgba(255,255,255,0.4)] active:scale-95 transition-all">
-                    Démarrer l'entraînement
+                    {{ t('free_interview.final_cta_button') }}
                 </router-link>
             </div>
         </section>

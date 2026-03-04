@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useHead } from '@unhead/vue'
 import {
   MapPinIcon, SparklesIcon, MicrophoneIcon, ClipboardDocumentListIcon, UserGroupIcon,
   DocumentTextIcon, BoltIcon, GlobeAltIcon, ChartBarIcon, MagnifyingGlassIcon,
@@ -11,9 +13,17 @@ import {
   BeakerIcon, QuestionMarkCircleIcon,
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 const ready = ref(false)
-const userName = ref('là')
+const userName = ref(t('home.welcome', { name: '' }).replace('Bonjour, ', '').trim() || 'là')
+
+useHead({
+  title: computed(() => t('seo.home.title')),
+  meta: [
+    { name: 'description', content: computed(() => t('seo.home.description')) }
+  ]
+})
 
 onMounted(async () => {
   const stored = localStorage.getItem('user')
@@ -26,28 +36,30 @@ onMounted(async () => {
 onUnmounted(() => clearInterval(tipInterval))
 
 // ── Floating 3D Badges ───────────────────────────────────────────────────────
-const floatingBadges = [
-  { icon: MapPinIcon,                label: 'Sniper',    color: '#3B82F6', delay: '0s',    x: '7%',  y: '22%', size: 'lg' },
-  { icon: SparklesIcon,              label: 'Mentor IA', color: '#8B5CF6', delay: '0.6s',  x: '84%', y: '18%', size: 'lg' },
-  { icon: MicrophoneIcon,            label: 'Entretien', color: '#10B981', delay: '1.2s',  x: '4%',  y: '68%', size: 'md' },
-  { icon: ClipboardDocumentListIcon, label: 'CRM',       color: '#F59E0B', delay: '0.3s',  x: '89%', y: '62%', size: 'md' },
-  { icon: UserGroupIcon,             label: 'Réseau',    color: '#F43F5E', delay: '0.9s',  x: '50%', y: '88%', size: 'sm' },
+const floatingBadges = computed(() => [
+  { icon: MapPinIcon,                label: t('nav.sniper'),    color: '#3B82F6', delay: '0s',    x: '7%',  y: '22%', size: 'lg' },
+  { icon: SparklesIcon,              label: t('nav.mentor'), color: '#8B5CF6', delay: '0.6s',  x: '84%', y: '18%', size: 'lg' },
+  { icon: MicrophoneIcon,            label: t('home.features.interview.tag'), color: '#10B981', delay: '1.2s',  x: '4%',  y: '68%', size: 'md' },
+  { icon: ClipboardDocumentListIcon, label: t('nav.crm'),       color: '#F59E0B', delay: '0.3s',  x: '89%', y: '62%', size: 'md' },
+  { icon: UserGroupIcon,             label: t('nav.network'),    color: '#F43F5E', delay: '0.9s',  x: '50%', y: '88%', size: 'sm' },
   { icon: DocumentTextIcon,          label: 'CV',        color: '#22D3EE', delay: '1.5s',  x: '22%', y: '84%', size: 'sm' },
   { icon: BoltIcon,                  label: 'IA',        color: '#A78BFA', delay: '1.8s',  x: '75%', y: '82%', size: 'sm' },
-]
+])
 
 // ── Feature cards ─────────────────────────────────────────────────────────────
 // Each panelIcon is now a Heroicons component reference
-const features = [
+// ── Feature cards ─────────────────────────────────────────────────────────────
+// Each panelIcon is now a Heroicons component reference
+const features = computed(() => [
   {
-    id: 'sniper', name: 'Sniper Search', route: '/opportunities',
-    icon: MapPinIcon, tag: 'IA Puissante',
+    id: 'sniper', name: t('home.features.sniper.name'), route: '/opportunities',
+    icon: MapPinIcon, tag: t('home.features.sniper.tag'),
     color: '#3B82F6', border: 'rgba(59,130,246,0.25)',
     panelBg: 'linear-gradient(135deg,#0d2045 0%,#0a1628 55%,#071020 100%)',
-    description: 'Recherche ultra-précise d\'offres d\'emploi. L\'IA analyse 50+ sources simultanément pour trouver les opportunités parfaitement adaptées à ton profil et ta localisation.',
-    tip: 'Utilise des mots-clés précis : poste + ville + niveau d\'expérience',
-    stats: [{v:'50+',l:'Sources'},{v:'94%',l:'Précision'},{v:'< 5s',l:'Résultats'}],
-    features: ['Filtres géographiques intelligents','Matching CV automatique','Alertes en temps réel'],
+    description: t('home.features.sniper.desc'),
+    tip: t('home.features.sniper.tip'),
+    stats: [{v:'50+',l:'Sources'},{v:'94%',l:t('landing.hero.stat_precision')},{v:'< 5s',l:'Résultats'}],
+    features: [t('landing.agents.sniper.features').find(f => f.includes('Filtres')) || 'Filtres Smart', t('landing.agents.sniper.features').find(f => f.includes('CV')) || 'Matching CV', t('landing.agents.sniper.features').find(f => f.includes('temps réel')) || 'Alertes'],
     panelIcons: [
       { icon: GlobeAltIcon,      label: 'Carte',  x: '12%', y: '28%' },
       { icon: ChartBarIcon,      label: 'Stats',  x: '50%', y: '18%' },
@@ -57,14 +69,14 @@ const features = [
     ],
   },
   {
-    id: 'mentor', name: 'Mentor IA', route: '/mentor',
-    icon: SparklesIcon, tag: 'Pro',
+    id: 'mentor', name: t('home.features.mentor.name'), route: '/mentor',
+    icon: SparklesIcon, tag: t('home.features.mentor.tag'),
     color: '#8B5CF6', border: 'rgba(139,92,246,0.25)',
     panelBg: 'linear-gradient(135deg,#1e0a4e 0%,#15073a 55%,#0d0425 100%)',
-    description: 'Ton coach carrière IA personnel. Analyse ton CV en 30s, identifie les lacunes, adapte chaque candidature et génère des lettres de motivation sur mesure.',
-    tip: 'Upload ton PDF — l\'IA fait un audit complet en quelques secondes',
+    description: t('home.features.mentor.desc'),
+    tip: t('home.features.mentor.tip'),
     stats: [{v:'< 30s',l:'Audit'},{v:'+40%',l:'Succès'},{v:'100%',l:'Personnalisé'}],
-    features: ['Audit CV détaillé section par section','Adaptation automatique par offre','Génération de lettres de motivation'],
+    features: [t('landing.agents.mentor.features').find(f => f.includes('Audit')) || 'Audit CV', t('landing.agents.mentor.features').find(f => f.includes('Adaptation')) || 'Adaptation', t('landing.agents.mentor.features').find(f => f.includes('Lettre')) || 'Générateur Lettre'],
     panelIcons: [
       { icon: DocumentTextIcon,  label: 'CV',     x: '15%', y: '25%' },
       { icon: BeakerIcon,        label: 'Analyse',x: '55%', y: '18%' },
@@ -74,14 +86,14 @@ const features = [
     ],
   },
   {
-    id: 'interview', name: 'Entretien Vocal', route: '/interview',
-    icon: MicrophoneIcon, tag: 'Vocal IA',
+    id: 'interview', name: t('home.features.interview.name'), route: '/interview',
+    icon: MicrophoneIcon, tag: t('home.features.interview.tag'),
     color: '#10B981', border: 'rgba(16,185,129,0.25)',
     panelBg: 'linear-gradient(135deg,#022c1a 0%,#011d12 55%,#000e09 100%)',
-    description: 'Simulation d\'entretien en temps réel avec un recruteur IA vocal. Parle à voix haute, affine tes réponses et construis ta confiance avant le grand jour.',
-    tip: 'Fais 3 sessions d\'entraînement minimum avant ton vrai entretien',
+    description: t('home.features.interview.desc'),
+    tip: t('home.features.interview.tip'),
     stats: [{v:'10+',l:'Questions'},{v:'100%',l:'Vocal'},{v:'Live',l:'Feedback'}],
-    features: ['Recruteur IA conversationnel','Évaluation instantanée des réponses','Score de clarté et confiance'],
+    features: [t('landing.agents.mentor.features').find(f => f.includes('techniques')) || 'Simulations', t('landing.agents.mentor.features').find(f => f.includes('Débriefing')) || 'Feedback IA', 'Score de confiance'],
     panelIcons: [
       { icon: MicrophoneIcon,            label: 'Voix',   x: '50%', y: '20%' },
       { icon: ChatBubbleLeftRightIcon,   label: 'Dialog', x: '15%', y: '42%' },
@@ -91,14 +103,14 @@ const features = [
     ],
   },
   {
-    id: 'crm', name: 'CRM Candidatures', route: '/crm',
-    icon: ClipboardDocumentListIcon, tag: 'Kanban',
+    id: 'crm', name: t('home.features.crm.name'), route: '/crm',
+    icon: ClipboardDocumentListIcon, tag: t('home.features.crm.tag'),
     color: '#F59E0B', border: 'rgba(245,158,11,0.25)',
     panelBg: 'linear-gradient(135deg,#2d1700 0%,#1e1000 55%,#0f0800 100%)',
-    description: 'Tableau Kanban intelligent pour gérer toutes tes candidatures. Glisse-dépose entre colonnes, génère des relances automatiques, ne laisse plus passer aucune opportunité.',
-    tip: 'Génère une relance IA en 1 clic si pas de réponse après 7 jours',
+    description: t('home.features.crm.desc'),
+    tip: t('home.features.crm.tip'),
     stats: [{v:'5',l:'Colonnes'},{v:'Auto',l:'Relances'},{v:'∞',l:'Candidatures'}],
-    features: ['Glisser-déposer Kanban','Emails de relance générés par IA','Historique complet & notes'],
+    features: [t('landing.agents.crm.features').find(f => f.includes('Kanban')) || 'Kanban', t('landing.agents.crm.features').find(f => f.includes('relance')) || 'Relances IA', t('landing.agents.crm.features').find(f => f.includes('Historique')) || 'Historique'],
     panelIcons: [
       { icon: Squares2X2Icon,    label: 'Board',  x: '50%', y: '20%' },
       { icon: ArrowRightIcon,    label: 'Avance',  x: '18%', y: '42%' },
@@ -108,14 +120,14 @@ const features = [
     ],
   },
   {
-    id: 'network', name: 'Réseau Pro', route: '/network',
-    icon: UserGroupIcon, tag: 'Networking',
+    id: 'network', name: t('home.features.network.name'), route: '/network',
+    icon: UserGroupIcon, tag: t('home.features.network.tag'),
     color: '#F43F5E', border: 'rgba(244,63,94,0.25)',
     panelBg: 'linear-gradient(135deg,#2d0010 0%,#1e000a 55%,#100005 100%)',
-    description: 'Accède au marché caché de l\'emploi. Trouve les RH et décideurs clés des entreprises cibles, puis laisse l\'IA rédiger des emails d\'approche ultra-personnalisés.',
-    tip: '70% des emplois ne sont pas publiés — le réseau est la clé',
+    description: t('home.features.network.desc'),
+    tip: t('home.features.network.tip'),
     stats: [{v:'Auto',l:'Contacts'},{v:'∞',l:'Emails IA'},{v:'70%',l:'Marché caché'}],
-    features: ['Recherche de RH & décideurs','Emails d\'approche personnalisés IA','Carnet d\'adresses intégré'],
+    features: [t('landing.agents.network.features').find(f => f.includes('RH')) || 'RH Search', t('landing.agents.network.features').find(f => f.includes('messages')) || 'Outreach IA', t('landing.agents.network.features').find(f => f.includes('Carnet')) || 'Contacts'],
     panelIcons: [
       { icon: UserGroupIcon,     label: 'Réseau',  x: '50%', y: '20%' },
       { icon: BuildingOfficeIcon,label: 'Société', x: '15%', y: '42%' },
@@ -124,7 +136,7 @@ const features = [
       { icon: BriefcaseIcon,     label: 'Poste',   x: '68%', y: '68%' },
     ],
   },
-]
+])
 
 const panelMousePos = ref(features.map(() => ({ x: 50, y: 50 })))
 function onPanelMove(e, idx) {
@@ -141,31 +153,31 @@ function onCardMove(e, idx) {
 function onCardLeave(idx) { tilts.value[idx] = { x: 0, y: 0 } }
 
 // ── Tips ─────────────────────────────────────────────────────────────────────
-const tips = [
-  { icon: LightBulbIcon, title: 'Commence par ton CV',      text: 'Upload ton CV dans le Mentor IA d\'abord — tous les autres outils seront plus précis avec ton profil.' },
-  { icon: BoltIcon,       title: 'Sniper quotidien',         text: 'Lance une recherche chaque matin. Les offres fraîches reçoivent 3× plus de réponses.' },
-  { icon: MapPinIcon,     title: 'Qualité > Quantité',       text: '5 candidatures ciblées valent mieux que 50 génériques. Adapte chaque CV avec le Mentor.' },
-  { icon: PhoneIcon,      title: 'Relance à J+7',            text: 'Les candidats qui relancent ont 30% de réponses en plus. Utilise le CRM pour programmer ça.' },
-  { icon: UserGroupIcon,  title: 'Réseau d\'abord',          text: '70% des emplois ne sont pas publiés. L\'outil Réseau te donne accès à ce marché caché.' },
-  { icon: MicrophoneIcon, title: 'Pratique l\'entretien',    text: 'La confiance se construit par la répétition. Fais 3 simulations avant tout vrai entretien.' },
-]
+const tips = computed(() => [
+  { icon: LightBulbIcon, title: t('home.tips.tip1_title'),      text: t('home.tips.tip1_text') },
+  { icon: BoltIcon,       title: t('home.tips.tip2_title'),      text: t('home.tips.tip2_text') },
+  { icon: MapPinIcon,     title: t('home.tips.tip3_title'),      text: t('home.tips.tip3_text') },
+  { icon: PhoneIcon,      title: t('home.tips.tip4_title'),      text: t('home.tips.tip4_text') },
+  { icon: UserGroupIcon,  title: t('home.tips.tip5_title'),      text: t('home.tips.tip5_text') },
+  { icon: MicrophoneIcon, title: t('home.tips.tip6_title'),      text: t('home.tips.tip6_text') },
+])
 const activeTip = ref(0)
 let tipInterval = null
 
 // ── Tutorial ─────────────────────────────────────────────────────────────────
 const tutorialActive = ref(false)
 const tutorialStep = ref(0)
-const tutorialSteps = [
-  { targetId: 'home-hero',             title: 'Bienvenue sur GoldArmy !', text: 'Cette page te présente tous les outils disponibles. Chaque card est un outil IA — clique dessus pour y accéder.' },
-  { targetId: 'feature-card-sniper',   title: 'Sniper Search',            text: 'Lance ici ta recherche d\'emploi ultra-précise. Donne ton profil, ta ville, et l\'IA trouve les meilleures offres.' },
-  { targetId: 'feature-card-mentor',   title: 'Mentor IA',                text: 'Upload ton CV en PDF — l\'IA l\'analyse en 30 secondes, l\'adapte à chaque offre et génère tes lettres.' },
-  { targetId: 'feature-card-interview',title: 'Entretien Vocal',           text: 'Simule un vrai entretien vocal. L\'IA joue le recruteur et te donne un feedback instantané.' },
-  { targetId: 'feature-card-crm',      title: 'CRM Candidatures',         text: 'Tableau Kanban pour toutes tes candidatures. Glisse les cartes, génère des relances en 1 clic.' },
-  { targetId: 'feature-card-network',  title: 'Réseau Pro',               text: 'L\'IA trouve les RH des entreprises cibles et rédige des emails d\'approche personnalisés pour toi.' },
-  { targetId: 'home-tips',             title: 'Conseils Pro',              text: 'Ces conseils s\'actualisent automatiquement pour maximiser tes chances de succès rapidement.' },
-]
-const currentStep = computed(() => tutorialSteps[tutorialStep.value])
-const isLast = computed(() => tutorialStep.value === tutorialSteps.length - 1)
+const tutorialSteps = computed(() => [
+  { targetId: 'home-hero',             title: t('home.tutorial.step1_title'), text: t('home.tutorial.step1_text') },
+  { targetId: 'feature-card-sniper',   title: t('home.tutorial.step2_title'), text: t('home.tutorial.step2_text') },
+  { targetId: 'feature-card-mentor',   title: t('home.tutorial.step3_title'), text: t('home.tutorial.step3_text') },
+  { targetId: 'feature-card-interview',title: t('home.tutorial.step4_title'), text: t('home.tutorial.step4_text') },
+  { targetId: 'feature-card-crm',      title: t('home.tutorial.step5_title'), text: t('home.tutorial.step5_text') },
+  { targetId: 'feature-card-network',  title: t('home.tutorial.step6_title'), text: t('home.tutorial.step6_text') },
+  { targetId: 'home-tips',             title: t('home.tutorial.step7_title'), text: t('home.tutorial.step7_text') },
+])
+const currentStep = computed(() => tutorialSteps.value[tutorialStep.value])
+const isLast = computed(() => tutorialStep.value === tutorialSteps.value.length - 1)
 function startTutorial() { tutorialStep.value = 0; tutorialActive.value = true; scrollTarget() }
 function nextStep() { if (isLast.value) { closeTutorial(); return } tutorialStep.value++; scrollTarget() }
 function prevStep() { if (tutorialStep.value > 0) { tutorialStep.value--; scrollTarget() } }
@@ -188,7 +200,7 @@ function scrollTarget() {
         <div class="relative">
           <div class="flex items-center justify-between mb-3">
             <span class="text-[10px] font-black uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">
-              Étape {{ tutorialStep + 1 }} / {{ tutorialSteps.length }}
+              {{ t('home.tutorial.step_label', { current: tutorialStep + 1, total: tutorialSteps.length }) }}
             </span>
             <button @click="closeTutorial" class="text-slate-500 hover:text-white transition-colors p-1 hover:bg-white/5 rounded-lg">
               <component :is="() => null" /><span class="text-sm">✕</span>
@@ -205,14 +217,14 @@ function scrollTarget() {
           <div class="flex gap-2">
             <button @click="prevStep" :disabled="tutorialStep === 0"
               class="flex-1 text-xs font-bold py-2 rounded-xl border border-surface-600 text-slate-400 hover:text-white hover:border-surface-500 disabled:opacity-30 transition-all">
-              ← Préc.
+              ← {{ t('common.prev') }}
             </button>
             <button @click="nextStep"
               class="flex-1 text-xs font-bold py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all">
-              {{ isLast ? 'Terminer' : 'Suivant →' }}
+              {{ isLast ? t('common.finish') : t('common.next') + ' →' }}
             </button>
           </div>
-          <p class="text-[10px] text-slate-600 text-center mt-3">L'élément est surligné · Échap pour quitter</p>
+          <p class="text-[10px] text-slate-600 text-center mt-3">{{ t('home.tutorial.footer') }}</p>
         </div>
       </div>
     </Transition>
@@ -264,12 +276,12 @@ function scrollTarget() {
         <div class="flex justify-center mb-6">
           <span class="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/25 rounded-full text-indigo-300 text-xs font-bold uppercase tracking-wider">
             <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-ping" />
-            Co-Pilote de Carrière IA
+            {{ t('landing.hero.badge').replace('{', '').replace('}', '').trim() }}
           </span>
         </div>
 
         <h1 class="text-5xl lg:text-7xl font-black text-white mb-5 leading-[1.05] tracking-tight">
-          Bonjour,
+          {{ t('home.welcome_prefix') }}
           <span class="relative">
             <span class="bg-gradient-to-r from-indigo-400 via-violet-300 to-blue-400 bg-clip-text text-transparent">{{ userName }}</span>
             <svg class="absolute -bottom-2 left-0 w-full" height="6" viewBox="0 0 200 6" preserveAspectRatio="none">
@@ -280,8 +292,8 @@ function scrollTarget() {
         </h1>
 
         <p class="text-slate-400 text-lg lg:text-xl max-w-xl mx-auto leading-relaxed mb-10">
-          Ton arsenal complet pour décrocher le job de tes rêves.<br class="hidden md:block" />
-          5 outils IA, un seul objectif.
+          {{ t('home.subtitle').split('. ')[0] }}.<br class="hidden md:block" />
+          {{ t('home.subtitle').split('. ')[1] }}
         </p>
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
@@ -290,19 +302,19 @@ function scrollTarget() {
           >
             <span class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
             <QuestionMarkCircleIcon class="w-5 h-5" />
-            Lancer le tutoriel interactif
+            {{ t('home.tutorial_btn') }}
           </button>
           <button @click="router.push('/opportunities')"
             class="flex items-center gap-2.5 px-8 py-4 bg-surface-800/70 hover:bg-surface-700/80 backdrop-blur border border-surface-700 text-white font-bold rounded-2xl transition-all hover:scale-105 active:scale-95 text-sm"
           >
             <MapPinIcon class="w-5 h-5 text-blue-400" />
-            Trouver un emploi maintenant
+            {{ t('home.find_job_btn') }}
           </button>
         </div>
 
         <!-- Stats -->
         <div class="flex items-center justify-center gap-8 flex-wrap">
-          <div v-for="s in [{v:'5',l:'Outils IA'},{v:'50+',l:'Sources'},{v:'< 30s',l:'Analyse CV'},{v:'∞',l:'Potentiel'}]" :key="s.l" class="text-center">
+          <div v-for="s in [{v:'5',l:t('home.stats.tools')},{v:'50+',l:'Sources'},{v:'< 30s',l:t('home.stats.cv_audit')},{v:'∞',l:t('home.stats.potential')}]" :key="s.l" class="text-center">
             <p class="text-2xl font-black text-white">{{ s.v }}</p>
             <p class="text-[11px] text-slate-500 uppercase tracking-wider font-bold">{{ s.l }}</p>
           </div>
@@ -315,8 +327,8 @@ function scrollTarget() {
       <!-- ══ FEATURE CARDS ══════════════════════════════════════════════════ -->
       <section>
         <div class="mb-8">
-          <h2 class="text-2xl font-black text-white mb-1">Tes 5 outils IA</h2>
-          <p class="text-slate-500 text-sm">Clique sur une card pour accéder à l'outil · Survole pour l'effet 3D</p>
+          <h2 class="text-2xl font-black text-white mb-1">{{ t('home.tools_title') }}</h2>
+          <p class="text-slate-500 text-sm">{{ t('home.tools_subtitle') }}</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -419,7 +431,7 @@ function scrollTarget() {
               <!-- CTA row -->
               <div class="flex items-center justify-between pt-1">
                 <span class="flex items-center gap-2 font-bold text-sm group-hover:gap-3 transition-all duration-300" :style="{ color:feat.color }">
-                  Accéder à {{ feat.name }}
+                  {{ t('home.features.access_prefix') }} {{ feat.name }}
                 </span>
                 <div class="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6"
                   :style="{ background:`${feat.color}15` }">
@@ -441,8 +453,8 @@ function scrollTarget() {
         :class="tutorialActive && currentStep.targetId === 'home-tips' ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-surface-950 z-[41] relative rounded-3xl' : ''"
       >
         <div class="mb-6">
-          <h2 class="text-2xl font-black text-white mb-1">Conseils Pro</h2>
-          <p class="text-slate-500 text-sm">Stratégies éprouvées pour maximiser tes chances de succès</p>
+          <h2 class="text-2xl font-black text-white mb-1">{{ t('home.pro_tips_title') }}</h2>
+          <p class="text-slate-500 text-sm">{{ t('home.pro_tips_subtitle') }}</p>
         </div>
 
         <div class="relative overflow-hidden rounded-2xl border border-indigo-500/20 p-6 mb-4"
@@ -477,18 +489,18 @@ function scrollTarget() {
       <section class="relative rounded-3xl overflow-hidden border border-surface-800 p-10 lg:p-16 text-center"
         :style="{ opacity:ready?1:0, transform:ready?'none':'translateY(24px)', transition:'all 0.7s cubic-bezier(.22,1,.36,1) 0.65s' }">
         <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at center,rgba(99,102,241,0.08),transparent 60%)" />
-        <p class="relative z-10 text-indigo-400 text-xs font-black uppercase tracking-widest mb-3">Lance-toi maintenant</p>
-        <h2 class="relative z-10 text-3xl lg:text-4xl font-black text-white mb-8">Prêt à décrocher ton prochain job ?</h2>
+        <p class="relative z-10 text-indigo-400 text-xs font-black uppercase tracking-widest mb-3">{{ t('home.cta_final_tagline') }}</p>
+        <h2 class="relative z-10 text-3xl lg:text-4xl font-black text-white mb-8">{{ t('home.cta_title') }}</h2>
         <div class="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button @click="router.push('/mentor')"
             class="flex items-center gap-2.5 px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-2xl shadow-xl shadow-violet-500/20 transition-all hover:scale-105 text-sm">
             <SparklesIcon class="w-5 h-5" />
-            Analyser mon CV
+            {{ t('home.cta_mentor') }}
           </button>
           <button @click="router.push('/opportunities')"
             class="flex items-center gap-2.5 px-8 py-4 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 font-bold rounded-2xl transition-all hover:scale-105 text-sm">
             <MapPinIcon class="w-5 h-5" />
-            Rechercher un emploi
+            {{ t('home.cta_opportunities') }}
           </button>
         </div>
       </section>

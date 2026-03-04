@@ -10,14 +10,20 @@ import './utils/firebase' // Initialize Firebase Analytics
 // and caused the app to fail loading in those regions.
 
 import { createHead } from '@unhead/vue/client'
+import i18n from './i18n'
+import Clarity from '@microsoft/clarity'
 
 // Vercel Observability — lightweight, non-blocking
 inject()
 injectSpeedInsights()
+
+// Microsoft Clarity — behavior analytics
+Clarity.init('vqnc1r3lwk')
 
 const app = createApp(App)
 const head = createHead()
 
 app.use(router)
 app.use(head)
+app.use(i18n)
 app.mount('#app')

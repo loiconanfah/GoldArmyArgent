@@ -1,0 +1,502 @@
+{
+    "nav": {
+        "home": "Accueil",
+        "dashboard": "Tableau de Bord",
+        "sniper": "Sniper",
+        "mentor": "Mentor IA",
+        "interview": "Entretien (Vocal)",
+        "crm": "CRM Candidatures",
+        "network": "Réseau",
+        "profile": "Mon Profil",
+        "admin": "Console Admin",
+        "settings": "Paramètres",
+        "logout": "Déconnexion"
+    },
+    "landing": {
+        "nav": {
+            "agents": "Agents",
+            "features": "Fonctions",
+            "pricing": "Tarifs",
+            "reviews": "Avis",
+            "cv_audit": "Audit CV",
+            "simulation": "Simulation",
+            "blog": "Blog",
+            "login": "Connexion",
+            "get_started": "Démarrer"
+        },
+        "hero": {
+            "badge": "Sniper IA 7.1 — Maintenant disponible",
+            "title_1": "Trouvez votre",
+            "title_2": "job de rêve",
+            "title_3": "avec l'IA.",
+            "description": "GoldArmy automatise chaque étape de votre recherche d'emploi — du sourcing des offres cachées à la préparation d'entretiens — propulsé par une IA de précision militaire.",
+            "cta_main": "Créer un Compte",
+            "cta_secondary": "Voir les agents",
+            "stat_precision": "précision IA",
+            "stat_hours": "économisées/mois"
+        },
+        "agents": {
+            "tagline": "Notre Arsenal IA",
+            "title": "Quatre agents. Un seul objectif : votre succès.",
+            "sniper": {
+                "name": "Sniper IA 7.1",
+                "tag": "Agent Sourcing",
+                "desc": "Notre IA parcourt le web profond, LinkedIn, Jooble, Indeed et des centaines de sites carrières pour détecter les offres cachées avant même leur publication officielle. Zéro résultats génériques, 100% précision.",
+                "features": [
+                    "Scraping multi-sources intelligent (15+ plateformes)",
+                    "Scoring d'affinité avec votre profil CV",
+                    "Alertes en temps réel sur nouvelles offres",
+                    "Contournement anti-bot automatisé"
+                ]
+            },
+            "crm": {
+                "name": "CRM Intelligent",
+                "tag": "Agent Organisation",
+                "desc": "Transformez votre recherche en machine de guerre organisée. Chaque candidature est suivie, scorée et planifiée. L'IA vous rappelle quand relancer et détecte les signaux d'intérêt.",
+                "features": [
+                    "Kanban drag & drop automatisé",
+                    "Rappels intelligents de relance",
+                    "Scoring de probabilité de succès",
+                    "Historisation complète des échanges"
+                ]
+            },
+            "network": {
+                "name": "Générateur de Réseau",
+                "tag": "Agent Social",
+                "desc": "L'IA scanne l'organigramme des entreprises cibles et rédige des messages d'accroche ultra-personnalisés pour court-circuiter le processus classique.",
+                "features": [
+                    "Analyse des décideurs clés (CTOs, RH)",
+                    "Génération de messages sur-mesure",
+                    "Carnet d'adresses réseau unifié"
+                ]
+            },
+            "mentor": {
+                "name": "Mentor IA Pro",
+                "tag": "Agent Formation",
+                "desc": "Simulez des entretiens techniques ou RH face à un recruteur intransigeant. L'IA débriefe chaque réponse et vous donne un plan d'amélioration précis et actionnable.",
+                "features": [
+                    "Entretiens techniques & RH simulés",
+                    "Débriefing détaillé post-simulation",
+                    "Suivi de progression personnalisé"
+                ]
+            }
+        },
+        "features": {
+            "title": "Sourcing IA Sniper",
+            "desc": "Offres cachées détectées avant tout le monde",
+            "cv_title": "CV & Lettre Automatique",
+            "cv_desc": "Candidatures hyper-personnalisées en 1 clic",
+            "coach_title": "Coach Entretien IA",
+            "coach_desc": "Simulations réalistes et débriefings précis"
+        },
+        "how_it_works": {
+            "tagline": "La Méthode GoldArmy",
+            "title": "Opérationnel en 3 étapes.",
+            "step1_title": "Configurez votre profil IA",
+            "step1_desc": "Importez votre CV (PDF). L'IA analyse vos compétences, votre secteur cible et vos critères (salaire, remote, localisation) pour créer votre empreinte digitale unique.",
+            "step2_title": "Activez les agents",
+            "step2_desc": "Le Sniper IA scanne 15+ sources en continu. Le CRM centralise automatiquement toutes les opportunités. Vous recevez une shortlist qualifiée directement sur votre tableau de bord.",
+            "step3_title": "Passez à l'action",
+            "step3_desc": "Générez une lettre de motivation sur-mesure en 1 clic, contactez les décideurs via le Générateur de Réseau, et préparez votre entretien avec le Mentor IA."
+        },
+        "stats": {
+            "hours": "Économisées par mois",
+            "rate": "Taux de réponse",
+            "interviews": "Entretiens décrochés",
+            "precision": "Précision IA"
+        },
+        "testimonials": {
+            "tagline": "Ils ont décroché le poste",
+            "title": "Ce qu'ils en pensent.",
+            "quote1": "GoldArmy a trouvé une offre cachée sur un petit site carrière. J'ai postulé avec la lettre générée et eu l'entretien le lendemain.",
+            "quote2": "Le Mentor IA m'a préparé à 80% des questions que j'ai eues chez le GAFAM. C'est une arme redoutable.",
+            "quote3": "Mon taux de réponse a explosé grâce au Générateur de Réseau. Je contacte directement les CTOs maintenant."
+        },
+        "pricing": {
+            "tagline": "Tarification",
+            "title": "Choisissez votre armure.",
+            "free": {
+                "name": "Gratuit",
+                "features": [
+                    "2 recherches Sniper / jour",
+                    "Analyse de 1 CV par jour",
+                    "Accès limité au CRM"
+                ]
+            },
+            "essential": {
+                "name": "Essentiel",
+                "popular": "Populaire",
+                "features": [
+                    "25 recherches Sniper / jour",
+                    "10 audits de CV complets",
+                    "10 simulations d'entretien",
+                    "CRM Illimité",
+                    "Générateur de Réseau"
+                ],
+                "cta": "Choisir Essentiel"
+            },
+            "pro": {
+                "name": "Pro",
+                "features": [
+                    "Sniper IA Illimité",
+                    "Audits CV Illimités",
+                    "Mentor IA Vocal & Illimité",
+                    "Headhunter IA Pro",
+                    "Support prioritaire 24/7"
+                ],
+                "cta": "Passer Pro"
+            },
+            "month": "/mois"
+        },
+        "cta_final": {
+            "tagline": "Rejoignez l'élite",
+            "title": "Prêt à décrocher le job de vos rêves ?",
+            "description": "Rejoignez les professionnels qui utilisent l'IA pour prendre l'avantage définitif sur le marché du travail.",
+            "button": "Créer mon compte gratuitement",
+            "footer": "Sans carte de crédit · Résiliation à tout moment"
+        },
+        "footer": {
+            "description": "L'intelligence artificielle au service de votre carrière. Ne cherchez plus d'emploi, laissez les opportunités venir à vous grâce à nos agents autonomes.",
+            "secure": "Plateforme 100% sécurisée",
+            "navigation": "Navigation",
+            "contact": "Contact",
+            "support": "Support Client",
+            "ceo": "Contacter le CEO",
+            "rights": "© 2026 GoldArmy Agent IA. Tous droits réservés.",
+            "privacy": "Confidentialité",
+            "terms": "CGU"
+        }
+    },
+    "home": {
+        "welcome": "Bonjour, {name}",
+        "welcome_prefix": "Bonjour,",
+        "subtitle": "Ton arsenal complet pour décrocher le job de tes rêves. 5 outils IA, un seul objectif.",
+        "tutorial_btn": "Lancer le tutoriel interactif",
+        "find_job_btn": "Trouver un emploi maintenant",
+        "tools_title": "Tes 5 outils IA",
+        "tools_subtitle": "Clique sur une card pour accéder à l'outil · Survole pour l'effet 3D",
+        "stats": {
+            "tools": "Outils IA",
+            "cv_audit": "Analyse CV",
+            "potential": "Potentiel"
+        },
+        "pro_tips_title": "Conseils Pro",
+        "pro_tips_subtitle": "Stratégies éprouvées pour maximiser tes chances de succès",
+        "cta_title": "Prêt à décrocher ton prochain job ?",
+        "cta_mentor": "Analyser mon CV",
+        "cta_opportunities": "Rechercher un emploi",
+        "tutorial": {
+            "step1_title": "Bienvenue sur GoldArmy !",
+            "step1_text": "Cette page te présente tous les outils disponibles. Chaque card est un outil IA — clique dessus pour y accéder.",
+            "step2_title": "Sniper Search",
+            "step2_text": "Lance ici ta recherche d'emploi ultra-précise. Donne ton profil, ta ville, et l'IA trouve les meilleures offres.",
+            "step3_title": "Mentor IA",
+            "step3_text": "Upload ton CV en PDF — l'IA l'analyse en 30 secondes, l'adapte à chaque offre et génère tes lettres.",
+            "step4_title": "Entretien Vocal",
+            "step4_text": "Simule un vrai entretien vocal. L'IA joue le recruteur et te donne un feedback instantané.",
+            "step5_title": "CRM Candidatures",
+            "step5_text": "Tableau Kanban pour toutes tes candidatures. Glisse les cartes, génère des relances en 1 clic.",
+            "step6_title": "Réseau Pro",
+            "step6_text": "L'IA trouve les RH des entreprises cibles et rédige des emails d'approche personnalisés pour toi.",
+            "step7_title": "Conseils Pro",
+            "step7_text": "Ces conseils s'actualisent automatiquement pour maximiser tes chances de succès rapidement.",
+            "step_label": "Étape {current} / {total}",
+            "footer": "L'élément est surligné · Échap pour quitter"
+        },
+        "tips": {
+            "tip1_title": "Commence par ton CV",
+            "tip1_text": "Upload ton CV dans le Mentor IA d'abord — tous les autres outils seront plus précis avec ton profil.",
+            "tip2_title": "Sniper quotidien",
+            "tip2_text": "Lance une recherche chaque matin. Les offres fraîches reçoivent 3× plus de réponses.",
+            "tip3_title": "Qualité > Quantité",
+            "tip3_text": "5 candidatures ciblées valent mieux que 50 génériques. Adapte chaque CV avec le Mentor.",
+            "tip4_title": "Relance à J+7",
+            "tip4_text": "Les candidats qui relancent ont 30% de réponses en plus. Utilise le CRM pour programmer ça.",
+            "tip5_title": "Réseau d'abord",
+            "tip5_text": "70% des emplois ne sont pas publiés. L'outil Réseau te donne accès à ce marché caché.",
+            "tip6_title": "Pratique l'entretien",
+            "tip6_text": "La confiance se construit par la répétition. Fais 3 simulations avant tout vrai entretien."
+        },
+        "features": {
+            "sniper": {
+                "name": "Sniper Search",
+                "tag": "IA Puissante",
+                "desc": "Recherche ultra-précise d'offres d'emploi. L'IA analyse 50+ sources simultanément pour trouver les opportunités parfaitement adaptées à ton profil et ta localisation.",
+                "tip": "Utilise des mots-clés précis : poste + ville + niveau d'expérience"
+            },
+            "mentor": {
+                "name": "Mentor IA",
+                "tag": "Pro",
+                "desc": "Ton coach carrière IA personnel. Analyse ton CV en 30s, identifie les lacunes, adapte chaque candidature et génère des lettres de motivation sur mesure.",
+                "tip": "Upload ton PDF — l'IA fait un audit complet en quelques secondes"
+            },
+            "interview": {
+                "name": "Entretien Vocal",
+                "tag": "Vocal IA",
+                "desc": "Simulation d'entretien en temps réel avec un recruteur IA vocal. Parle à voix haute, affine tes réponses et construis ta confiance avant le grand jour.",
+                "tip": "Fais 3 sessions d'entraînement minimum avant ton vrai entretien"
+            },
+            "crm": {
+                "name": "CRM Candidatures",
+                "tag": "Kanban",
+                "desc": "Tableau Kanban intelligent pour gérer toutes tes candidatures. Glisse-dépose entre colonnes, génère des relances automatiques, ne laisse plus passer aucune opportunité.",
+                "tip": "Génère une relance IA en 1 clic si pas de réponse après 7 jours"
+            },
+            "network": {
+                "name": "Réseau Pro",
+                "tag": "Networking",
+                "desc": "Accède au marché caché de l'emploi. Trouve les RH et décideurs clés des entreprises cibles, puis laisse l'IA rédiger des emails d'approche ultra-personnalisés.",
+                "tip": "70% des emplois ne sont pas publiés — le réseau est la clé"
+            },
+            "pro_tip": "CONSEIL PRO",
+            "access_prefix": "Accéder à"
+        }
+    },
+    "dashboard": {
+        "title": "Plateforme Or",
+        "welcome": "Organise tes recherches, Bonjour {name} 🔥",
+        "description": "Gère facilement tes candidatures, suis tes entretiens et atteins tes objectifs au même endroit.",
+        "kpis": {
+            "applied": "Candidatures envoyées",
+            "cv_analyzed": "CV Analysés",
+            "interviews": "Entretiens Décrochés",
+            "network": "Réseau (Contacts)"
+        },
+        "charts": {
+            "opportunities_title": "Croissance des Opportunités",
+            "total_ops": "Total Opportunités",
+            "status_title": "Opportunités par Statut",
+            "filter": "Filtrer"
+        },
+        "recent_activity": {
+            "title": "Activité Récente",
+            "role": "Rôle & Opportunité",
+            "status": "Statut",
+            "progress": "Progression",
+            "empty": "Aucune activité récente."
+        },
+        "stats": {
+            "total_users": "Effectif Total",
+            "active_missions": "Missions Lancées",
+            "success_rate": "Taux de Succès",
+            "system_status": "État de la Flotte"
+        }
+    },
+    "common": {
+        "loading": "Chargement...",
+        "error": "Erreur",
+        "success": "Succès",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "actions": "Actions",
+        "search": "Rechercher...",
+        "back_to_site": "Retour au site",
+        "prev": "Préc.",
+        "next": "Suivant",
+        "finish": "Terminer"
+    },
+    "auth": {
+        "login_title": "Connexion à GoldArmy",
+        "login_subtitle": "Accédez à votre console de commandement",
+        "email_label": "Adresse Email",
+        "password_label": "Mot de Passe",
+        "login_button": "Se Connecter",
+        "no_account": "Pas encore de compte ?",
+        "register_link": "S'inscrire gratuitement",
+        "remember_me": "Se souvenir de moi",
+        "forgot_password": "Mot de passe oublié ?",
+        "or_connect_with": "Ou se connecter avec",
+        "slogan": "Maîtrisez votre carrière,<br/>Atteignez votre potentiel.",
+        "invalid_credentials": "Identifiants incorrects",
+        "invalid_response": "Réponse invalide"
+    },
+    "seo": {
+        "landing": {
+            "title": "GoldArmy - Trouvez votre job de rêve avec l'IA",
+            "description": "GoldArmy automatise votre recherche d'emploi. Sniper IA, Mentor CV et simulation d'entretien pour booster votre carrière."
+        },
+        "home": {
+            "title": "Accueil | GoldArmy",
+            "description": "Votre tableau de bord personnel pour gérer vos outils IA et votre recherche d'emploi."
+        },
+        "free_cv": {
+            "title": "Audit CV IA Gratuit | Optimisation ATS | GoldArmy",
+            "description": "Scannez votre CV gratuitement avec l'IA GoldArmy. Découvrez instantanément si votre PDF est invisible pour les recruteurs et les logiciels ATS.",
+            "og_title": "Scanner ATS & Audit CV IA | GoldArmy",
+            "og_description": "Passez le test de l'ATS. Uploadez votre CV en PDF et obtenez une note sur 100 ainsi que l'erreur fatale qui bloque vos candidatures."
+        },
+        "free_interview": {
+            "title": "Simulateur Entretien IA | Entraînement Visio Gratuit | GoldArmy",
+            "description": "Entraînez-vous gratuitement aux entretiens d'embauche avec notre IA vocale. Le simulateur génère des questions pièges sur-mesure pour votre métier.",
+            "og_title": "Simulateur d'Entretien d'Embauche IA | GoldArmy",
+            "og_description": "Ne découvrez pas vos faiblesses le jour J. Passez un faux entretien en visio avec notre Recruteur IA ultra-exigeant."
+        },
+        "blog": {
+            "title": "Blog — Astuces IA & Carrière | GoldArmy AI",
+            "description": "Découvrez comment l'intelligence artificielle révolutionne la recherche d'emploi, le recrutement et l'optimisation de carrière."
+        }
+    },
+    "free_cv": {
+        "hero_badge": "Scanner IA Gratuit",
+        "hero_title": "Votre CV est-il",
+        "hero_highlight": "Invisible ?",
+        "hero_subtitle1": "Les géants de la Tech utilisent des robots (ATS) pour vous filtrer en 3 secondes. Glissez votre PDF pour découvrir votre note et la ",
+        "hero_subtitle2": " qui bloque vos entretiens.",
+        "hero_error_bold": "pire erreur",
+        "confidential": "100% Confidentiel",
+        "pdf_format": "Format PDF",
+        "upload_title": "Glissez votre PDF",
+        "upload_subtitle": "Max 5MB • Scan immédiat",
+        "upload_button": "Sélectionner un fichier",
+        "analyzing_title": "L'IA dissèque votre profil...",
+        "analyzing_step1": "Mots-clés filtrés",
+        "analyzing_step2": "Impact mesuré",
+        "analyzing_step3": "Verdict final",
+        "score_label": "Sur 100",
+        "score_good": "Plutôt solide.",
+        "score_bad": "Rejeté par l'ATS.",
+        "flaws_found": "L'IA a trouvé {count} failles critiques bloquant vos entretiens :",
+        "faille_critique": "Faille Critique",
+        "correction_title": "Correction Recommandée",
+        "locked_fails": "Failles Masquées",
+        "locked_subtitle": "Débloquez l'audit complet pour voir les détails.",
+        "locked_count_cta": "+{count} failles bloquées",
+        "cta_unlock_title": "Débloquer l'Audit Complet",
+        "cta_unlock_subtitle": "Laissez notre IA Mentor corriger ces {count} failles et générer un CV de haut niveau.",
+        "cta_unlock_button": "Corriger l'entièreté de mon CV",
+        "scan_another": "Scanner un autre PDF",
+        "bento_tagline": "Pourquoi vous échouez",
+        "bento_title1": "L'IA voit ce que ",
+        "bento_title2": "vous ignorez.",
+        "bento_feature1_title": "Le Filtrage Sémantique ATS",
+        "bento_feature1_desc": "Les RH ne lisent plus les CV. Des algorithmes scannent votre PDF pour extraire le texte. Si votre mise en page bloque l'IA (colonnes complexes, barres de niveau) ou qu'il manque des mots-clés exacts, votre score tombe à zéro.",
+        "bento_feature2_title": "L'Erreur Invisible",
+        "bento_feature2_desc": "Notre modèle LLM est entraîné sur 10,000+ refus réels. L'audit gratuit extrait de manière cash le défaut qui fait tiquer instantanément un Lead Tech.",
+        "bento_feature3_title": "Générateur de Succès",
+        "bento_feature3_desc": "Dans l'Espace Premium, laissez l'IA réécrire bullet point par bullet point vos expériences avec des métriques orientées impact.",
+        "seo_article_title": "Comment l'IA décrypte votre CV format ATS ?",
+        "seo_article_p1": "Sur le marché actuel de la Tech et de la Finance, près de 90% des grandes entreprises filtrent les candidatures via des Applicant Tracking Systems (ATS). Ces logiciels scannent et trient automatiquement les milliers de PDF reçus sans aucune intervention humaine initiale.",
+        "seo_article_p2": "L'Audit CV IA reproduit rigoureusement le jugement de la machine et d'un recruteur hyper-sélectionné. L'intelligence artificielle passe au crible l'aspect sémantique du texte, détecte la densité des mots-clés techniques, et recherche des preuves chiffrées d'impact business.",
+        "seo_article_h3": "Pourquoi 90% des candidatures finissent ignorées ?",
+        "seo_article_li1": "Paralysie Sémantique : Les CV surcodés graphiquement (deux colonnes massives, jauges SVG de compétences, polices non-standards) disloquent l'extraction de texte par la machine.",
+        "seo_article_li2": "Déficit de métriques de rendement : L'erreur numéro une identifiée par les leads. Dire \"Responsable de l'équipe\", ne vaut rien face à \"Management d'une squad de 7 devs, hausse de la vélocité de 24% sur 2 sprints\". L'IA sanctionnera immédiatement ce manque.",
+        "seo_article_li3": "Incohérence des verbes d'action : Utiliser des passifs ou des termes flous au lieu de mots d'impact comme Orchestré, Maximisé, Implémenté.",
+        "faq_title": "Foire Aux Questions (FAQ) sur le Diagnostic CV",
+        "faq_q1": "Cet audit instantané est-il 100% gratuit ?",
+        "faq_a1": "Absolument. Sans créer de compte, glissez votre PDF dans le scanner IA. Vous obtiendrez instantanément votre \"Score de survie ATS\" sur 100 ainsi que l'erreur fondamentale qui vous coûte probablement des entretiens. C'est l'équivalent d'un premier filtre par un cabinet sélectif de recrutement.",
+        "faq_q2": "Conservez-vous mon document Word ou PDF sur vos serveurs ?",
+        "faq_a2": "Sous aucun prétexte. L'analyse algorithmique est éphémère et confidentielle. L'extraction de texte est jetée instantanément après l'inférence du LLM. De plus, seul le format .pdf (protégé) est supporté pour garantir une simulation 1-pour-1 des conditions d'envoi.",
+        "faq_q3": "Que se passe-t-il si mon score est en dessous de la moyenne ?",
+        "faq_a3": "Un score en rouge (généralement sub-70) indique que les robots de tri ont de fortes chances de ne même pas le transmettre aux ressources humaines. Si c'est le cas, vous pouvez ouvrir un espace GoldArmy gratuit pour laisser l'intelligence artificielle reconstruire vos expériences de travail avec un \"Template Harvard\" indéchirable.",
+        "final_cta_title": "Rejoignez l'Élite.",
+        "final_cta_desc": "Ne laissez plus d'autres candidats moins compétents prendre votre place à cause d'un mauvais PDF.",
+        "final_cta_button": "Créer mon Espace Gratuit"
+    },
+    "free_interview": {
+        "hero_badge": "Évaluation Orale IA",
+        "hero_title_part1": "Ne découvrez pas vos",
+        "hero_title_italic": "faiblesses",
+        "hero_title_highlight": "le jour J.",
+        "hero_subtitle": "Passez une simulation d'entretien Visio ultra-réaliste. Notre IA prend le rôle d'un Lead Tech impitoyable et analyse votre voix, vos silences et vos arguments en temps réel.",
+        "job_placeholder": "Le poste visé (ex: Data Analyst)",
+        "join_button": "Rejoindre la Visio",
+        "mic_required": "Micro Requis",
+        "no_recording": "Aucun enregistrement conservé",
+        "connecting": "Connexion au recruteur...",
+        "secure_channel": "Établissement du canal sécurisé",
+        "ia_label": "IA Recruteur",
+        "you_label": "Vous",
+        "live_transcription": "Transcription en direct",
+        "waiting": "En attente...",
+        "speak_now": "Parlez maintenant...",
+        "activate_mic": "Activez le micro en bas pour répondre.",
+        "end_simulation_title": "Fin de la simulation.",
+        "end_simulation_desc": "C'était brutal, non ? GoldArmy vous permet de recommencer cette épreuve jusqu'à devenir totalement insensible au stress.",
+        "create_account": "Créer un compte Gratuit",
+        "exit_call": "Quitter l'appel",
+        "dock_talk": "Parler",
+        "dock_stop": "Stop",
+        "dock_validate": "Valider",
+        "dock_analyzing": "Analyse...",
+        "dock_exit": "Quitter",
+        "bento_tagline": "Le simulateur de stress",
+        "bento_title1": "Ne paniquez plus",
+        "bento_title2": "face aux RH.",
+        "bento_feature1_title": "Reconnaissance Intelligente",
+        "bento_feature1_desc": "Le simulateur vous écoute en temps réel avec le Web Speech API. L'IA analyse votre débit de parole, votre assurance et sanctionne le moindre balbutiement.",
+        "bento_feature2_title": "Scénarios Extrêmes",
+        "bento_feature2_desc": "L'IA génère des questions techniques ultra spécifiques à votre poste, piochées dans les bases de données d'entretiens de Google et Meta.",
+        "bento_feature3_title": "Feedback Temps Réel",
+        "bento_feature3_desc": "Recevez des critiques directes. Vous ne saurez pas que votre réponse \"manque de metrics\" si personne n'ose vous le dire en face. L'IA ose.",
+        "seo_article_h2": "Comment fonctionne notre Simulateur d'Entretien IA ?",
+        "seo_article_p1": "Préparer un entretien d'embauche devant un miroir ne suffit plus. Notre Simulateur d'Entretien IA utilise la technologie Web Speech API couplée à un Large Language Model (LLM) pour créer un environnement de stress réaliste. L'IA écoute vos réponses en temps réel, analyse la sémantique de votre discours, la richesse de votre vocabulaire technique, et l'absence d'hésitations.",
+        "seo_article_h3": "La Tech derrière la magie",
+        "seo_article_li1": "Scraping de l'Extrême : L'algorithme se base sur des milliers de questions pièges fuitées des entretiens chez Google, Meta, et Stripe pour forger son caractère d'évaluateur impitoyable.",
+        "seo_article_li2": "Analyse Sémantique Profonde : Le modèle pénalise l'utilisation de mots faibles (\"je crois\", \"peut-être\") et récompense les verbes d'action (\"j'ai architecturé\", \"j'ai maximisé\").",
+        "seo_article_li3": "Feedbacks Temps Réel : L'IA identifie instantanément si vous n'avez pas répondu à la question de fond ou si vous avez esquivé un point technique.",
+        "faq_title": "Foire Aux Questions (FAQ) sur la Simulation",
+        "faq_q1": "Dois-je allumer ma caméra pour l'essai gratuit ?",
+        "faq_a1": "Non. Pour cet essai public gratuit, seule la reconnaissance vocale de votre navigateur web est sollicitée. Vos données audios ne quittent temporairement votre appareil que sous forme de texte pour l'analyse algorithmique.",
+        "faq_q2": "Le simulateur prend-il en compte mon métier exact ?",
+        "faq_a2": "Oui. Avant de lancer l'appel, vous tapez le titre de votre poste cible (ex: \"Senior Backend Developer Python\"). Le Recruteur IA ajustera alors son lexique et générera des questions techniques d'architecture logicielle ou de management adaptées.",
+        "faq_q3": "Pourquoi la voix de l'IA semble si froide ?",
+        "faq_a3": "C'est un choix de design. L'idée est de vous placer dans la \"Zone de Panique\" temporelle. En étant froid et direct, le simulateur vous force à contrôler votre propre respiration et à structurer votre pensée sans l'empathie naturelle d'un humain pour vous rassurer.",
+        "final_cta_title": "Devenez inébranlable.",
+        "final_cta_desc": "Débloquez le simulateur sans limite de temps. Enchaînez les faux entretiens de 45 minutes et apprenez à dominer la discussion.",
+        "final_cta_button": "Démarrer l'entraînement"
+    },
+    "footer_global": {
+        "tagline": "L'Intelligence Artificielle au service de votre carrière. Déjouez les algorithmes RH et décrochez les entretiens que vous méritez.",
+        "tools_title": "Outils Gratuits",
+        "platform_title": "Plateforme",
+        "blog_link": "Le Blog",
+        "create_account": "Créer un compte",
+        "privacy": "Politique de confidentialité",
+        "terms": "C.G.V.",
+        "rights": "© {year} GoldArmy. Tous droits réservés."
+    },
+    "register": {
+        "title": "Créer un compte",
+        "subtitle": "Déjà un compte ?",
+        "login_link": "Se connecter",
+        "first_name": "Prénom",
+        "last_name": "Nom",
+        "email": "Adresse email",
+        "password": "Mot de passe",
+        "show_password": "Voir",
+        "agree_terms": "J'accepte les",
+        "terms": "Conditions Générales",
+        "and": "et la",
+        "privacy": "Politique de Confidentialité",
+        "submit": "Créer le compte",
+        "submitting": "Création...",
+        "or_register_with": "Ou s'inscrire avec",
+        "back_to_website": "Retour au site",
+        "join_elite": "Rejoignez l'élite,<br/>Redéfinissez votre carrière.",
+        "error_generic": "Erreur lors de l'inscription",
+        "error_invalid_response": "Réponse du serveur invalide. Réessaie."
+    },
+    "blog_meta": {
+        "nav_home": "Accueil",
+        "nav_blog": "Blog",
+        "hero_badge": "Insights & Stratégies",
+        "hero_title_highlight": "l'IA",
+        "hero_title_part1": "Maîtrisez",
+        "hero_title_part2": "Dominez votre carrière.",
+        "hero_subtitle": "Découvrez comment l'intelligence artificielle révolutionne la recherche d'emploi. Analyses, astuces et guides pratiques.",
+        "read_time": "Lecture {time}",
+        "read_article": "Lire l'article",
+        "back_to_blog": "Retour au blog",
+        "cta_tagline": "Passez à la vitesse supérieure",
+        "cta_title": "Ne postulez plus dans le vide.",
+        "cta_subtitle": "Arrêtez d'envoyer des CV qui finissent à la poubelle. Laissez nos Agents IA auditer votre profil et vous trouver les meilleures opportunités en quelques secondes.",
+        "cta_button": "Créer mon compte VIP",
+        "cta_footer": "Essai 100% gratuit. Sans carte de crédit.",
+        "share_linkedin": "Partager sur LinkedIn",
+        "share_twitter": "Partager sur X (Twitter)",
+        "copy_link": "Copier le lien",
+        "link_copied": "Lien copié dans le presse-papiers !",
+        "navigation": "Navigation",
+        "contact": "Contact"
+    }
+}

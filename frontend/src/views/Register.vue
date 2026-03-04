@@ -1,16 +1,28 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useHead } from '@unhead/vue'
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline'
 import { useGoogleAuth } from '@/composables/useGoogleAuth'
 import { safeJson } from '@/utils/auth'
 import { getApiUrl } from '@/config'
 
+const { t } = useI18n()
 const router = useRouter()
 const email = ref('')
 const password = ref('')
+const firstName = ref('')
+const lastName = ref('')
 const errorMsg = ref('')
 const isLoading = ref(false)
+
+useHead({
+  title: computed(() => t('register.title') + ' | GoldArmy'),
+  meta: [
+    { name: 'description', content: computed(() => t('register.subtitle') || t('register.title')) }
+  ]
+})
 
 const { googleLoading, googleError, initGoogle, googleSignIn } = useGoogleAuth()
 onMounted(() => initGoogle('google-btn-register'))
@@ -24,22 +36,24 @@ const handleRegister = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: email.value,
-        password: password.value
+        password: password.value,
+        first_name: firstName.value,
+        last_name: lastName.value
       })
     })
     
     const data = await safeJson(res)
     if (!res.ok) {
-      errorMsg.value = data?.detail || 'Erreur lors de l\'inscription'
+      errorMsg.value = data?.detail || t('register.error_generic')
     } else if (!data) {
-      errorMsg.value = 'Réponse du serveur invalide. Réessaie.'
+      errorMsg.value = t('register.error_invalid_response')
     } else {
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('user', JSON.stringify(data.user))
       router.push('/home')
     }
   } catch (err) {
-    errorMsg.value = 'Erreur de connexion au serveur.'
+    errorMsg.value = t('common.error') + ': ' + t('common.server_error')
   } finally {
     isLoading.value = false
   }
@@ -64,13 +78,13 @@ const handleRegister = async () => {
             <span class="text-xl font-display font-bold tracking-tight">GoldArmy</span>
           </div>
           <router-link to="/" class="px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-xl rounded-full text-xs font-bold transition-all flex items-center gap-2 border border-white/10 ring-1 ring-white/5">
-            Back to website <ArrowLeftIcon class="w-3 h-3 rotate-180" />
+            {{ t('register.back_to_website') }} <ArrowLeftIcon class="w-3 h-3 rotate-180" />
           </router-link>
         </div>
 
         <!-- Bottom Text Section -->
         <div class="absolute bottom-16 left-12 right-12">
-          <h2 class="text-3xl lg:text-4xl font-display font-bold text-white leading-[1.15] mb-6">Join the Elite,<br/>Redefine Your Career.</h2>
+          <h2 class="text-3xl lg:text-4xl font-display font-bold text-white leading-[1.15] mb-6" v-html="t('register.join_elite')"></h2>
           <div class="flex gap-2.5">
             <div class="w-10 h-1.5 bg-white/20 rounded-full"></div>
             <div class="w-10 h-1.5 bg-white rounded-full"></div>
@@ -82,10 +96,10 @@ const handleRegister = async () => {
       <!-- Left Panel: Elegant Form -->
       <div class="flex-1 flex flex-col justify-center px-10 sm:px-16 lg:px-24 py-12">
         <div class="mb-10 text-left">
-          <h1 class="text-4xl font-display font-bold text-white mb-3">Create account</h1>
+          <h1 class="text-4xl font-display font-bold text-white mb-3">{{ t('register.title') }}</h1>
           <p class="text-slate-400 font-medium text-sm">
-            Already have an account? 
-            <router-link to="/login" class="text-violet-400 hover:text-violet-300 font-bold transition-colors">Log in</router-link>
+            {{ t('register.subtitle') }} 
+            <router-link to="/login" class="text-violet-400 hover:text-violet-300 font-bold transition-colors">{{ t('register.login_link') }}</router-link>
           </p>
         </div>
 
@@ -96,13 +110,15 @@ const handleRegister = async () => {
         <form @submit.prevent="handleRegister" class="space-y-4">
           <div class="grid grid-cols-2 gap-3">
              <input 
+              v-model="firstName"
               type="text" 
-              placeholder="First Name"
+              :placeholder="t('register.first_name')"
               class="w-full bg-[#1c1c24] border border-[#32323f] rounded-2xl px-5 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all font-medium text-sm"
             />
             <input 
+              v-model="lastName"
               type="text" 
-              placeholder="Last Name"
+              :placeholder="t('register.last_name')"
               class="w-full bg-[#1c1c24] border border-[#32323f] rounded-2xl px-5 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all font-medium text-sm"
             />
           </div>
@@ -112,7 +128,7 @@ const handleRegister = async () => {
               v-model="email" 
               type="email" 
               required 
-              placeholder="Email address"
+              :placeholder="t('register.email')"
               class="w-full bg-[#1c1c24] border border-[#32323f] rounded-2xl px-5 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all font-medium text-sm"
             />
           </div>
@@ -122,17 +138,17 @@ const handleRegister = async () => {
               v-model="password" 
               type="password" 
               required 
-              placeholder="Password"
+              :placeholder="t('register.password')"
               class="w-full bg-[#1c1c24] border border-[#32323f] rounded-2xl px-5 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all font-medium pr-12 text-sm"
             />
              <button type="button" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-400 transition-colors p-2 text-sm uppercase font-bold tracking-widest">
-                Show
+                {{ t('register.show_password') }}
             </button>
           </div>
 
           <div class="flex items-start gap-3 pb-2 pt-1">
               <input type="checkbox" required class="mt-1 w-4.5 h-4.5 rounded border-[#32323f] bg-[#1c1c24] text-violet-500 focus:ring-violet-500/20 transition-all cursor-pointer" />
-              <span class="text-[11px] font-bold text-slate-500 leading-tight uppercase tracking-wider">I agree to the <a href="#" class="text-violet-400 hover:text-violet-300">Terms & Conditions</a> and <a href="#" class="text-violet-400 hover:text-violet-300">Privacy Policy</a></span>
+              <span class="text-[11px] font-bold text-slate-500 leading-tight uppercase tracking-wider">{{ t('register.agree_terms') }} <a href="#" class="text-violet-400 hover:text-violet-300">{{ t('register.terms') }}</a> {{ t('register.and') }} <a href="#" class="text-violet-400 hover:text-violet-300">{{ t('register.privacy') }}</a></span>
           </div>
 
           <button 
@@ -141,12 +157,12 @@ const handleRegister = async () => {
             class="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-2xl shadow-xl shadow-violet-600/10 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 h-[58px]"
           >
             <span v-if="isLoading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            <span class="text-sm uppercase tracking-widest">{{ isLoading ? 'Creating...' : 'Create Account' }}</span>
+            <span class="text-sm uppercase tracking-widest">{{ isLoading ? t('register.submitting') : t('register.submit') }}</span>
           </button>
 
           <div class="relative py-6">
             <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/[0.05]"></div></div>
-            <div class="relative flex justify-center text-[10px] uppercase tracking-[0.2em]"><span class="bg-[#25252f] px-4 font-black text-slate-600">Or register with</span></div>
+            <div class="relative flex justify-center text-[10px] uppercase tracking-[0.2em]"><span class="bg-[#25252f] px-4 font-black text-slate-600">{{ t('register.or_register_with') }}</span></div>
           </div>
 
           <div class="grid grid-cols-1 gap-4">

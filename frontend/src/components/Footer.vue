@@ -1,6 +1,8 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const currentYear = new Date().getFullYear()
 </script>
 
@@ -19,7 +21,7 @@ const currentYear = new Date().getFullYear()
             <span class="text-xl font-black tracking-tight uppercase text-white">GoldArmy</span>
           </router-link>
           <p class="text-slate-400 text-sm max-w-sm leading-relaxed mb-6">
-            L'Intelligence Artificielle au service de votre carrière. Déjouez les algorithmes RH et décrochez les entretiens que vous méritez.
+            {{ t('footer_global.tagline') }}
           </p>
           <div class="flex gap-4">
             <a href="#" class="w-10 h-10 rounded-full bg-surface-900 flex items-center justify-center text-slate-400 hover:text-white hover:bg-violet-600 transition-colors border border-white/5">
@@ -35,20 +37,20 @@ const currentYear = new Date().getFullYear()
 
         <!-- Links Group 1 -->
         <div>
-          <h4 class="text-white font-bold mb-6 tracking-wide">Outils Gratuits</h4>
+          <h4 class="text-white font-bold mb-6 tracking-wide">{{ t('footer_global.tools_title') }}</h4>
           <ul class="space-y-4">
-            <li><router-link to="/free-cv-roast" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">Audit CV IA</router-link></li>
-            <li><router-link to="/free-interview" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">Simulateur Entretien</router-link></li>
+            <li><router-link to="/free-cv-roast" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('landing.nav.cv_audit') }}</router-link></li>
+            <li><router-link to="/free-interview" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('landing.nav.simulation') }}</router-link></li>
           </ul>
         </div>
 
         <!-- Links Group 2 -->
         <div>
-          <h4 class="text-white font-bold mb-6 tracking-wide">Plateforme</h4>
+          <h4 class="text-white font-bold mb-6 tracking-wide">{{ t('footer_global.platform_title') }}</h4>
           <ul class="space-y-4">
-            <li><router-link to="/login" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">Connexion</router-link></li>
-            <li><router-link to="/register" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">Créer un compte</router-link></li>
-            <li><router-link to="/blog" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">Le Blog</router-link></li>
+            <li><router-link to="/login" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('landing.nav.login') }}</router-link></li>
+            <li><router-link to="/register" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('footer_global.create_account') }}</router-link></li>
+            <li><router-link to="/blog" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('footer_global.blog_link') }}</router-link></li>
           </ul>
         </div>
 
@@ -57,11 +59,11 @@ const currentYear = new Date().getFullYear()
       <!-- Bottom Bar -->
       <div class="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
         <p class="text-slate-500 text-xs text-center md:text-left">
-          © {{ currentYear }} GoldArmy. Tous droits réservés.
+          {{ t('footer_global.rights', { year: currentYear }) }}
         </p>
         <div class="flex items-center gap-6">
-          <a href="#" class="text-xs text-slate-500 hover:text-white transition-colors">Politique de confidentialité</a>
-          <a href="#" class="text-xs text-slate-500 hover:text-white transition-colors">C.G.V.</a>
+          <a href="#" class="text-xs text-slate-500 hover:text-white transition-colors">{{ t('footer_global.privacy') }}</a>
+          <a href="#" class="text-xs text-slate-500 hover:text-white transition-colors">{{ t('footer_global.terms') }}</a>
         </div>
       </div>
     </div>

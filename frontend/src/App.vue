@@ -1,7 +1,9 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { authFetch } from './utils/auth'
+import Clarity from '@microsoft/clarity'
 import { 
   HomeIcon, 
   MapIcon,
@@ -31,6 +33,14 @@ const isPublicRoute = computed(() => {
 const isImmersive = computed(() => route.path === '/interview')
 const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(false)
+
+const { t, locale } = useI18n()
+
+const toggleLanguage = () => {
+  const nextLocale = locale.value === 'fr' ? 'en' : 'fr'
+  locale.value = nextLocale
+  localStorage.setItem('language', nextLocale)
+}
 const userEmail = ref('Chargement...')
 
 const userTier = ref('FREE')
@@ -53,10 +63,17 @@ onMounted(async () => {
       if (json.status === 'success') {
         userTier.value = json.data.subscription_tier || 'FREE'
         userEmail.value = json.data.full_name || json.data.email.split('@')[0]
+        
+        // Identify user in Clarity
+        Clarity.identify(json.data.id || json.data.email, undefined, undefined, json.data.full_name || json.data.email)
       }
     } catch(e){}
   }
 })
+
+watch(locale, (newLocale) => {
+  document.documentElement.lang = newLocale
+}, { immediate: true })
 
 const handleLogout = () => {
     localStorage.removeItem('token')
@@ -64,16 +81,16 @@ const handleLogout = () => {
     router.push('/login')
 }
 
-const navigation = [
-  { name: 'Accueil', href: '/home', icon: SparklesIcon },
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, exact: false },
-  { name: 'Sniper', href: '/opportunities', icon: MapIcon },
-  { name: 'Mentor IA', href: '/mentor', icon: ChatBubbleBottomCenterTextIcon },
-  { name: 'Entretien (Vocal)', href: '/interview', icon: MicrophoneIcon },
-  { name: 'CRM Candidatures', href: '/crm', icon: BriefcaseIcon },
-  { name: 'Réseau', href: '/network', icon: UserGroupIcon },
-  { name: 'Mon Profil', href: '/profile', icon: UserIcon },
-]
+const navigation = computed(() => [
+  { name: t('nav.home'), href: '/home', icon: SparklesIcon },
+  { name: t('nav.dashboard'), href: '/dashboard', icon: HomeIcon, exact: false },
+  { name: t('nav.sniper'), href: '/opportunities', icon: MapIcon },
+  { name: t('nav.mentor'), href: '/mentor', icon: ChatBubbleBottomCenterTextIcon },
+  { name: t('nav.interview'), href: '/interview', icon: MicrophoneIcon },
+  { name: t('nav.crm'), href: '/crm', icon: BriefcaseIcon },
+  { name: t('nav.network'), href: '/network', icon: UserGroupIcon },
+  { name: t('nav.profile'), href: '/profile', icon: UserIcon },
+])
 </script>
 
 <template>
@@ -154,7 +171,7 @@ const navigation = [
           title="Console Admin"
         >
           <ShieldCheckIcon class="w-5 h-5 shrink-0 text-red-500" />
-          <span v-if="!isSidebarCollapsed" class="whitespace-nowrap font-black italic uppercase tracking-tighter">Console Admin</span>
+          <span v-if="!isSidebarCollapsed" class="whitespace-nowrap font-black italic uppercase tracking-tighter">{{ t('nav.admin') }}</span>
           <div v-if="currentRoute === '/admin-goldarmy'" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-red-500 rounded-r-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
         </router-link>
       </nav>
@@ -168,7 +185,7 @@ const navigation = [
           :title="isSidebarCollapsed ? 'Settings' : ''"
         >
           <Cog6ToothIcon class="w-5 h-5 shrink-0 text-slate-500 group-hover:text-slate-300" />
-          <span v-if="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-300">Settings</span>
+          <span v-if="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-300">{{ t('nav.settings') }}</span>
         </router-link>
       </div>
     </aside>
@@ -200,6 +217,16 @@ const navigation = [
 
         <!-- Right: Actions & User Profile -->
         <div class="flex items-center gap-3 sm:gap-5">
+            <!-- Language Switcher -->
+            <button 
+                @click="toggleLanguage" 
+                class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-900 border border-surface-800 hover:border-indigo-500/50 transition-all text-xs font-bold text-slate-400 hover:text-white"
+            >
+                <span :class="locale === 'fr' ? 'text-indigo-400' : ''">FR</span>
+                <span class="text-slate-700">|</span>
+                <span :class="locale === 'en' ? 'text-indigo-400' : ''">EN</span>
+            </button>
+
             <!-- Notifications -->
             <button class="relative p-2 text-slate-400 hover:text-white rounded-full hover:bg-surface-800 transition-colors">
                 <BellIcon class="w-5 h-5" />
@@ -223,9 +250,9 @@ const navigation = [
                         <span v-if="userTier === 'ADMIN'" class="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-rose-500/20">ADMIN</span>
                         <span v-else-if="userTier === 'PRO'" class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-indigo-500/20">PRO</span>
                         <span v-else-if="userTier === 'ESSENTIAL'" class="bg-gradient-to-r from-amber-400 to-gold-500 text-surface-950 text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-gold-500/20">ESSENTIEL</span>
-                        <span v-else class="bg-surface-700 text-slate-300 text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md">GRATUIT</span>
+                        <span v-else class="bg-surface-700 text-slate-300 text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md">{{ userTier === 'FREE' ? 'GRATUIT' : userTier }}</span>
                     </div>
-                    <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider leading-none">Déconnexion</p>
+                    <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider leading-none">{{ t('nav.logout') }}</p>
                 </div>
             </button>
         </div>
