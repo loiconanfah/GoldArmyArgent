@@ -283,7 +283,7 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
                 <div class="text-2xl font-black text-white">{{ t('landing.agents.sniper.name') }}</div>
               </div>
             </div>
-            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.sniper.desc').replace('avant même leur publication officielle', '<span class=\"text-violet-400 font-bold\">avant même leur publication officielle</span>')"></p>
+            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.sniper.desc').replace('avant même leur publication officielle', '<span class=\'text-violet-400 font-bold\'>avant même leur publication officielle</span>')"></p>
             <ul class="space-y-3">
               <li v-for="agent_feat in t('landing.agents.sniper.features', {returnObjects: true})" :key="agent_feat"
                   class="flex items-center gap-3 text-sm text-white/60">
