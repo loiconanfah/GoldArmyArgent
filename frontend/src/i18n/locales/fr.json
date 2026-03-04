@@ -260,7 +260,12 @@
             "applied": "Candidatures envoyées",
             "cv_analyzed": "CV Analysés",
             "interviews": "Entretiens Décrochés",
-            "network": "Réseau (Contacts)"
+            "network": "Réseau (Contacts)",
+            "recent_apps": "Candidatures récents",
+            "timeframe": "dans les 30 derniers jours",
+            "analyses": "Analyses effectuées",
+            "in_progress": "En cours",
+            "new_contacts": "Nouveaux contacts"
         },
         "charts": {
             "opportunities_title": "Croissance des Opportunités",
@@ -293,7 +298,17 @@
         "back_to_site": "Retour au site",
         "prev": "Préc.",
         "next": "Suivant",
-        "finish": "Terminer"
+        "finish": "Terminer",
+        "refresh": "Actualiser",
+        "copy": "Copier",
+        "copied": "Copié !",
+        "regenerate": "Régénérer",
+        "close": "Fermer",
+        "delete": "Supprimer",
+        "details": "Détails",
+        "confirm": "Confirmer",
+        "total": "Total",
+        "network_error": "Erreur réseau : impossible de joindre le serveur."
     },
     "auth": {
         "login_title": "Connexion à GoldArmy",
@@ -498,5 +513,346 @@
         "link_copied": "Lien copié dans le presse-papiers !",
         "navigation": "Navigation",
         "contact": "Contact"
+    },
+    "nav_admin": {
+        "title": "Console de Commandement",
+        "subtitle": "Gestion des utilisateurs et du système",
+        "user_list": "Utilisateurs",
+        "search_user": "Rechercher par nom ou email...",
+        "status": "Statut",
+        "actions": "Actions",
+        "view_details": "Inspecter",
+        "total_users": "Total Utilisateurs",
+        "active_now": "Actifs",
+        "server_load": "Charge Serveur",
+        "inspection": {
+            "title": "Inspection Profonde",
+            "back": "Retour à la liste",
+            "user_info": "Informations Utilisateur",
+            "subscription": "Abonnement",
+            "crm_history": "Historique Candidatures",
+            "cv_view": "Visualisation du CV",
+            "update_tier": "Modifier le Forfait",
+            "tier_changed": "Forfait mis à jour avec succès",
+            "no_cv": "Aucun CV uploadé pour cet utilisateur",
+            "no_applications": "Aucune candidature trouvée"
+        }
+    },
+    "opportunities": {
+        "title": "Sniper Opportunités",
+        "tagline": "Radar Actif",
+        "description": "Scraping intelligent du marché en temps réel et matching contextuel avec votre profil.",
+        "filters": {
+            "all": "Toutes les pertinentes",
+            "internships": "Stages Uniquement",
+            "juniors": "Juniors (< 2 ans)",
+            "score_80": "Score > 80%"
+        },
+        "max_results": "Résultats max:",
+        "search_placeholder": "Ex: Stage Ingénieur Logiciel...",
+        "location_placeholder": "Localisation (ex: Montréal, QC)",
+        "launch_button": "Lancer Sniper",
+        "upload_pdf_only": "Veuillez sélectionner un fichier PDF.",
+        "error_reading_pdf": "Erreur lors de l'lecture du PDF.",
+        "network_error_cv": "Erreur réseau lors de l'envoi du CV.",
+        "cv_profiled": "CV Profilé",
+        "attach_cv": "Joindre CV",
+        "parsing_profile": "Analyse du Profil en cours...",
+        "cv_ready_desc": "CV prêt à être matché. Clique pour modifier.",
+        "upload_cv_title": "Uploader votre CV (.pdf)",
+        "upload_cv_desc": "L'IA GoldArmy analysera vos compétences pour calculer un Matching Score précis pour chaque offre.",
+        "analyzing_market": "Analyse du Marché...",
+        "analyzing_market_desc": "Recherche via de multiples fournisseurs, filtrage du bruit, et calcul du matching neuronal avec votre profil CV.",
+        "no_opportunities": "Aucune opportunité détectée",
+        "no_opportunities_desc": "Renseignez vos critères de recherche ci-dessus pour lancer le Sniper.",
+        "apply": "Postuler",
+        "dead_link": "Lien Mort",
+        "adapt_cv": "Adapter CV",
+        "radar": "Radar",
+        "search_error": "Erreur de connexion avec le Serveur de Recherche GoldArmy.",
+        "adapt_error": "Erreur lors de l'adaptation du CV.",
+        "cv_intelligence_title": "Gemini 3 CV Intelligence",
+        "adapting_title": "Analyse du poste et refonte du CV en cours...",
+        "adapting_desc": "L'agent Gemini 3.1 Pro croise vos compétences avec la description.",
+        "summary_title": "Résumé & Points Forts Suggérés",
+        "projects_title": "Projets Recommandés (pour combler les lacunes)",
+        "copy_content": "Copier le Contenu",
+        "saving": "Enregistrement...",
+        "save_to_profile": "Enregistrer dans Profil",
+        "job_stage": "Emploi / Stage",
+        "recent": "Récent",
+        "no_desc": "Aucune description fournie.",
+        "adapt_cv_toast_info": "Veuillez d'abord télécharger/coller votre CV dans la section ci-dessus avant d'adapter.",
+        "radar_error": "Erreur lors de l'appel au Radar."
+    },
+    "crm_board": {
+        "title": "CRM Candidatures",
+        "add_application": "Ajouter Candidature",
+        "columns": {
+            "to_apply": "À Postuler",
+            "applied": "Candidatures Envoyées",
+            "follow_up": "Relance Requise",
+            "interview": "Entretiens"
+        },
+        "card": {
+            "view_details": "Détails",
+            "delete": "Supprimer",
+            "generate_followup": "Email Relance",
+            "applied_on": "Postulé le {date}",
+            "last_active": "Dernière act. {date}"
+        }
+    },
+    "network_osint": {
+        "title": "Réseau & OSINT",
+        "tagline": "Intelligence Réseaux Active",
+        "title_part1": "Levez les barrières du",
+        "title_part2": "Recrutement.",
+        "description": "Utilisez l'OSINT pour identifier les décideurs et générez des approches froides si percutantes qu'elles ne peuvent pas être ignorées.",
+        "tabs": {
+            "osint": "Scanner & Rédiger",
+            "headhunter": "Headhunter",
+            "contacts": "Carnet"
+        },
+        "osint_form": {
+            "title": "Osculter une Entreprise",
+            "placeholder": "Nom de l'entreprise (ex: Google, Orange...)",
+            "button": "OSCULTER",
+            "analyzing": "Analyse de la structure..."
+        },
+        "hh_form": {
+            "title": "Agent d'Infiltration (Headhunter)",
+            "placeholder": "Nom de l'entreprise cible...",
+            "button": "Traquer",
+            "hunting": "Chasse en cours...",
+            "prepare_cta": "Préparer l'approche"
+        },
+        "draft_panel": {
+            "title": "Rédaction Assistée par IA",
+            "type_label": "Type de demande",
+            "job_request": "EMPLOI",
+            "info_request": "INFO / CONTACT",
+            "partnership": "STAGE",
+            "button": "Rédiger courriel",
+            "copy": "Copier Tout",
+            "copied": "Copié !",
+            "waiting": "En attente de génération",
+            "waiting_desc": "Remplissez le nom de l'entreprise et lancez la rédaction par l'IA.",
+            "drafting": "L'IA rédige...",
+            "customizing": "Personnalisation en cours avec votre CV...",
+            "success_title": "Approche Terminée"
+        },
+        "company_required": "Veuillez saisir le nom de l'entreprise.",
+        "contacts_title_prefix": "Mon",
+        "companies_collected": "entreprises collectées",
+        "empty_contacts": "Votre carnet est vide",
+        "empty_contacts_desc": "Utilisez le Sniper pour découvrir des opportunités. L'Agent extraira automatiquement les contacts et les stockera ici pour vos approches."
+    },
+    "profile_page": {
+        "title": "Mon Espace Personnel",
+        "subtitle": "Gérez vos informations et votre arsenal de recherche.",
+        "cv_section": "Mon CV (Base de connaissance)",
+        "portfolio_section": "Mon Portfolio Professionnel",
+        "stats_section": "Statistiques de Performance",
+        "subscription_section": "Mon Abonnement",
+        "upload_cv": "Mettre à jour mon CV",
+        "download_portfolio": "Télécharger mon Portfolio (ZIP)",
+        "edit_portfolio": "Éditer mon Portfolio",
+        "portfolio_disabled": "Temporairement désactivé",
+        "since": "Inscrit depuis le {date}"
+    },
+    "settings_page": {
+        "title": "Paramètres & Facturation",
+        "tiers": {
+            "free": {
+                "desc": "Pour débuter votre conquête du marché."
+            },
+            "essential": {
+                "desc": "Le choix des vainqueurs (Conseillé)."
+            },
+            "pro": {
+                "desc": "La puissance totale pour l'élite."
+            },
+            "current": "Plan Actuel",
+            "upgrade": "Choisir {tier}"
+        },
+        "features": {
+            "sniper_search": "{count} recherches Sniper / jour",
+            "cv_audit": "{count} audits de CV (Mentor IA)",
+            "interview": "{count} entretien RH vocal",
+            "followup": "{count} relances automatiques",
+            "adaptation": "{count} adaptations de CV par IA",
+            "unlimited": "Illimité"
+        }
+    },
+    "agent_chat": {
+        "title": "Agent GoldArmy",
+        "tagline": "Orchestration, Analyse CV & Génération Web",
+        "add_cv": "Ajouter CV (PDF)",
+        "cv_context": "CV en Contexte",
+        "extracting_text": "Extraction du texte...",
+        "click_to_upload": "Cliquer pour uploader votre CV (PDF)",
+        "upload_pdf_only": "Veuillez sélectionner un fichier PDF.",
+        "error_reading_pdf": "Erreur lors de la lecture du PDF.",
+        "network_error_pdf": "Impossible de contacter le serveur pour lire le PDF.",
+        "initial_message": "Bonjour ! Je suis GoldArmy, ton Co-Pilote de Carrière. 🪖\n\nJe suis connecté et prêt. Uploade ton CV en PDF pour que je l'audite, génère ton portfolio, ou pose-moi n'importe quelle question.",
+        "portfolio_soon_title": "🚀 **Générateur de Portfolio : Bientôt disponible !**",
+        "portfolio_soon_desc": "Nous finalisons les derniers réglages pour te proposer des designs encore plus spectaculaires et une personnalisation totale.\n\nReviens très bientôt pour générer ton site web en un clic ! En attendant, je peux auditer ton CV ou t'aider pour tes recherches d'emploi.",
+        "network_error_backend": "⚠️ Erreur de connexion avec le quartier général (Backend indisponible).",
+        "loading_steps": {
+            "step_0": "Connexion au système central...",
+            "step_1": "Extraction des données du CV...",
+            "step_2": "Analyse algorithmique ATS en cours...",
+            "step_3": "Restructuration du parcours...",
+            "step_4": "Génération du rapport d'optimisation..."
+        },
+        "placeholders": {
+            "location": "Lieu...",
+            "message": "Question ou commande (Ex: Design-le comme ça...)"
+        },
+        "workspace": {
+            "app": "App",
+            "code": "Code",
+            "terminal": "Terminal",
+            "save": "Sauvegarder",
+            "saving": "Sauvegarde...",
+            "zip": "ZIP",
+            "deploy": "Déployer",
+            "soon": "Bientôt",
+            "save_success": "Portfolio sauvegardé avec succès !",
+            "save_error": "Erreur lors de la sauvegarde.",
+            "zip_error": "Erreur lors de la génération du ZIP.",
+            "generating_portfolio": "Génération de ton {0}",
+            "generating_portfolio_desc": "Gemini 3.1 analyse ton profil, définit une direction artistique sur mesure et structure ton code source. Cette étape prend quelques secondes...",
+            "no_preview": "Génère un portfolio pour voir l'aperçu ici."
+        },
+        "audit": {
+            "candidate": "Candidat",
+            "title": "Profil Professionnel",
+            "ats_report": "Rapport ATS",
+            "global_score": "Score ATS Global",
+            "good_profile": "✅ Bon profil ATS",
+            "to_improve": "⚠️ Profil à améliorer",
+            "risk_rejection": "❌ Risque de rejet ATS",
+            "categories": {
+                "keywords": "Mots-clés",
+                "impact": "Impact & Résultats",
+                "formatting": "Mise en forme",
+                "readability": "Lisibilité",
+                "relevance": "Pertinence Exp."
+            },
+            "critical_flaws": "❌ Failles Critiques",
+            "priority_actions": "🛠️ Actions Prioritaires",
+            "missing_tech": "💡 Technologies Manquantes",
+            "strengths": "✅ Points Forts",
+            "download_cv": "⬇ Télécharger le CV Corrigé (.pdf)",
+            "download_cv_rewritten": "⬇ Télécharger le CV Réécrit (.pdf)",
+            "generating_file": "Génération du fichier...",
+            "ats_friendly": "✅ ATS-friendly · Calibri 10pt · Mono-colonne · Mots-clés optimisés",
+            "rewrite_title": "CV Réécrit & Optimisé ATS",
+            "rewrite_desc": "Ton CV a été restructuré avec des verbes d'action et des mots-clés ATS."
+        },
+        "terminal": {
+            "init": "[GoldArmy] Système d'initialisation démarré...",
+            "build_success": "[Buid] Compilation du code source terminée.",
+            "listening": "[DevServer] Écoute sur port 3000",
+            "restoring": "[System] Récupération du portfolio sauvegardé...",
+            "restore_success": "[System] Portfolio restauré avec succès.",
+            "restore_error": "[Error] Aucun portfolio sauvegardé trouvé.",
+            "designing": "[IA] Début de la conception du portfolio sur mesure...",
+            "analysis": "[IA] Analyse : {0}",
+            "project_success": "[Action] Projet structuré généré avec succès.",
+            "save_db": "[System] Modifications sauvegardées en base de données."
+        }
+    },
+    "interview": {
+        "wizard": {
+            "title": "Paramètres de l'Entretien",
+            "tagline": "Configurez le contexte pour que l'IA simule l'entretien parfaitement.",
+            "company": "Entreprise cible",
+            "company_placeholder": "Ex: Google, Alan, Startup X...",
+            "job_title": "Poste visé",
+            "job_title_placeholder": "Ex: Développeur Fullstack, Product Manager...",
+            "job_details": "Description de l'offre (Détails)",
+            "job_details_placeholder": "Collez ici les missions principales de l'offre, la tech stack, ou les prérequis...",
+            "cv_title": "Votre Profil / CV Actuel",
+            "cv_placeholder": "Collez le texte brut de votre CV ou importez un PDF pour que le recruteur puisse réagir dessus...",
+            "import_pdf": "Importer un PDF",
+            "extracting": "Extraction...",
+            "recruiter_choice": "Choix du Recruteur",
+            "interview_format": "Format de l'Entretien",
+            "format_general": "Général & HR",
+            "format_technical": "Technique",
+            "test_audio": "Tester le son",
+            "launch": "Lancer la Visioconférence"
+        },
+        "ui": {
+            "hi_fi_sound": "Son Haute-Fidélité",
+            "analyst_notes": "Notes de l'Analyste",
+            "camera_off": "Caméra désactivée",
+            "me": "Moi",
+            "transcription": "Transcription",
+            "you": "VOUS",
+            "recruiter": "RECRUTEUR",
+            "mic_active": "Microphone Actif — Parlez Maintenant"
+        },
+        "scorecard": {
+            "title": "Récapitulatif de votre entretien",
+            "subtitle": "Analyse générée par l'IA GoldArmy",
+            "analyzing": "Analyse de vos réponses en cours...",
+            "analyzing_desc": "Le Mentor IA examine votre communication et votre expertise technique.",
+            "categories": {
+                "technical": "Technique",
+                "communication": "Élocution",
+                "soft_skills": "Attitude",
+                "global": "Global"
+            },
+            "strengths": "Points Forts",
+            "improvements": "Axe d'amélioration",
+            "recruiter_opinion": "L'avis du Recruteur",
+            "final_decision": "Décision finale :",
+            "back_to_dashboard": "Retour au Dashboard"
+        },
+        "recruiters": {
+            "sophie": {
+                "name": "Sophie - Tech Lead",
+                "role": "Expertise Technique"
+            },
+            "marc": {
+                "name": "Marc - HR Manager",
+                "role": "Culture & Soft Skills"
+            },
+            "alice": {
+                "name": "Alice - CEO",
+                "role": "Vision & Strategie"
+            }
+        },
+        "messages": {
+            "required_fields": "Poste, Entreprise et CV sont obligatoires.",
+            "select_pdf": "Veuillez sélectionner un fichier PDF.",
+            "extraction_error": "Erreur lors de l'extraction du PDF.",
+            "upload_error": "Erreur de connexion au serveur pour l'upload.",
+            "unsupported_speech": "Votre navigateur ne supporte pas la reconnaissance vocale. Utilisez Chrome ou Safari.",
+            "silence_detected": "Silence prolongé (10s) détecté, envoi automatique.",
+            "mic_error": "Erreur micro: {0}",
+            "connected": "Connecté au Mentor IA",
+            "analysis_failed": "L'analyse a échoué.",
+            "test_phrase": "Bonjour, je suis {0}. Je suis prête à commencer votre entretien en Haute Définition. M'entendez-vous bien ?",
+            "connection_error": "Erreur de connexion au serveur d'entretien.",
+            "no_voice": "Aucune voix système",
+            "voice_test_gen": "Génération du test HD...",
+            "hd_error": "Erreur Test HD",
+            "hd_fallback": "Le test Haute Définition a échoué. Voici la voix locale de secours.",
+            "audio_server_error": "Erreur de connexion au serveur audio.",
+            "preparing": "Préparation...",
+            "ia_speaking": "IA parle...",
+            "ready": "Prêt",
+            "ready_hd": "Prêt (HD)",
+            "hd_play_error": "Erreur lecture HD",
+            "ai_note_sentiment": {
+                "positive": "positif",
+                "neutral": "neutre",
+                "negative": "négatif"
+            }
+        }
     }
 }

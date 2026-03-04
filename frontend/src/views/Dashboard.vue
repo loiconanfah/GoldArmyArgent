@@ -81,10 +81,10 @@ const areaPath = computed(() => {
 const { t } = useI18n()
 
 const kpiStats = computed(() => [
-  { label: t('dashboard.kpis.applied'), value: kpiValues.value.applied, shortDesc: 'Candidatures récents', timeframe: 'dans les 30 derniers jours', color: 'text-indigo-400', bg: 'bg-indigo-500/10', icon: BriefcaseIcon },
-  { label: t('dashboard.kpis.cv_analyzed'), value: kpiValues.value.cv_analyzed, shortDesc: 'Analyses effectuées', timeframe: 'dans les 30 derniers jours', color: 'text-emerald-400', bg: 'bg-emerald-500/10', icon: DocumentCheckIcon },
-  { label: t('dashboard.kpis.interviews'), value: kpiValues.value.interviews, shortDesc: 'En cours', timeframe: 'dans les 30 derniers jours', color: 'text-amber-400', bg: 'bg-amber-500/10', icon: ChatBubbleLeftRightIcon },
-  { label: t('dashboard.kpis.network'), value: kpiValues.value.network, shortDesc: 'Nouveaux contacts', timeframe: 'dans les 30 derniers jours', color: 'text-rose-400', bg: 'bg-rose-500/10', icon: UserPlusIcon }
+  { label: t('dashboard.kpis.applied'), value: kpiValues.value.applied, shortDesc: t('dashboard.kpis.recent_apps') || 'Candidatures récents', timeframe: t('dashboard.kpis.timeframe') || 'dans les 30 derniers jours', color: 'text-indigo-400', bg: 'bg-indigo-500/10', icon: BriefcaseIcon },
+  { label: t('dashboard.kpis.cv_analyzed'), value: kpiValues.value.cv_analyzed, shortDesc: t('dashboard.kpis.analyses') || 'Analyses effectuées', timeframe: t('dashboard.kpis.timeframe') || 'dans les 30 derniers jours', color: 'text-emerald-400', bg: 'bg-emerald-500/10', icon: DocumentCheckIcon },
+  { label: t('dashboard.kpis.interviews'), value: kpiValues.value.interviews, shortDesc: t('dashboard.kpis.in_progress') || 'En cours', timeframe: t('dashboard.kpis.timeframe') || 'dans les 30 derniers jours', color: 'text-amber-400', bg: 'bg-amber-500/10', icon: ChatBubbleLeftRightIcon },
+  { label: t('dashboard.kpis.network'), value: kpiValues.value.network, shortDesc: t('dashboard.kpis.new_contacts') || 'Nouveaux contacts', timeframe: t('dashboard.kpis.timeframe') || 'dans les 30 derniers jours', color: 'text-rose-400', bg: 'bg-rose-500/10', icon: UserPlusIcon }
 ])
 
 const kpiValues = ref({
@@ -122,13 +122,13 @@ const fetchDashboardData = async () => {
         const json2 = await res2.json()
         if (json2.data) {
             recentActivity.value = json2.data.slice(0, 5).map(app => {
-                let statusLabel = 'À Postuler'
+                let statusLabel = t('crm_board.columns.to_apply')
                 let score = 80
                 let color = 'bg-slate-500'
                 
-                if(app.status === 'APPLIED') { statusLabel = 'Candidature Envoyée'; color = 'bg-indigo-500'; score = 91 }
-                else if(app.status === 'INTERVIEW') { statusLabel = 'Entretien Planifié'; color = 'bg-emerald-500'; score = 98 }
-                else if(app.status === 'FOLLOW_UP') { statusLabel = 'Relance Requise'; color = 'bg-amber-500'; score = 65 }
+                if(app.status === 'APPLIED') { statusLabel = t('crm_board.columns.applied'); color = 'bg-indigo-500'; score = 91 }
+                else if(app.status === 'INTERVIEW') { statusLabel = t('crm_board.columns.interview'); color = 'bg-emerald-500'; score = 98 }
+                else if(app.status === 'FOLLOW_UP') { statusLabel = t('crm_board.columns.follow_up'); color = 'bg-amber-500'; score = 65 }
                 
                 return {
                     name: app.job_title,
@@ -246,7 +246,7 @@ onMounted(() => {
               <g v-for="(pt, i) in points" :key="'pt'+i">
                 <circle :cx="pt.x" :cy="pt.y" r="5" fill="#1e293b" stroke="#6366f1" stroke-width="2.5"/>
                 <circle :cx="pt.x" :cy="pt.y" r="2.5" fill="#818cf8"/>
-                <title>{{ pt.label }}: {{ pt.count }} offres</title>
+                <title>{{ pt.label }}: {{ pt.count }} {{ t('dashboard.charts.offers') || 'offres' }}</title>
               </g>
 
               <!-- Empty state -->
@@ -266,9 +266,9 @@ onMounted(() => {
           </div>
           
           <div class="flex items-center flex-wrap gap-3 mb-8">
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-rose-500"></div><span class="text-[10px] font-bold text-slate-400">Backlog</span></div>
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-indigo-500"></div><span class="text-[10px] font-bold text-slate-400">À Faire</span></div>
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-amber-500"></div><span class="text-[10px] font-bold text-slate-400">En cours</span></div>
+              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-rose-500"></div><span class="text-[10px] font-bold text-slate-400">{{ t('crm_board.columns.to_apply') }}</span></div>
+              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-indigo-500"></div><span class="text-[10px] font-bold text-slate-400">{{ t('crm_board.columns.applied') }}</span></div>
+              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-amber-500"></div><span class="text-[10px] font-bold text-slate-400">{{ t('crm_board.columns.follow_up') }}</span></div>
           </div>
           
           <div class="flex-1 flex items-end justify-around gap-2 px-2 pb-4 border-b border-surface-800 relative z-10 w-full">
@@ -285,10 +285,10 @@ onMounted(() => {
               <div class="w-6 sm:w-8 bg-emerald-500 rounded-t relative z-10 h-[40%]"></div>
           </div>
           <div class="flex justify-around pt-3">
-              <span class="text-[9px] font-bold text-slate-500">Backlog</span>
-              <span class="text-[9px] font-bold text-slate-500">À Faire</span>
-              <span class="text-[9px] font-bold text-slate-500">En cours</span>
-              <span class="text-[9px] font-bold text-slate-500">Fait</span>
+              <span class="text-[9px] font-bold text-slate-500">{{ t('crm_board.columns.to_apply') }}</span>
+              <span class="text-[9px] font-bold text-slate-500">{{ t('crm_board.columns.applied') }}</span>
+              <span class="text-[9px] font-bold text-slate-500">{{ t('crm_board.columns.follow_up') }}</span>
+              <span class="text-[9px] font-bold text-slate-500">{{ t('crm_board.columns.interview') }}</span>
           </div>
       </div>
     </div>

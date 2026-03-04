@@ -4,6 +4,7 @@ import { toastState } from '../store/toastState'
 import { getApiUrl } from '../config'
 
 import { ref, onMounted, nextTick, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { 
   PaperAirplaneIcon, 
@@ -50,13 +51,13 @@ const currentUser = ref(null)
 const isWorkspaceOpen = ref(false)
 const activeWorkspaceTab = ref('app') // 'app', 'code', 'terminal'
 const workspaceProject = ref({
-    title: 'Nouveau Projet',
+    title: t('agent_chat.workspace.new_project') || 'Nouveau Projet',
     content: ''
 })
 const mockTerminalLogs = ref([
-    { type: 'info', text: '[GoldArmy] Système d\'initialisation démarré...' },
-    { type: 'success', text: '[Buid] Compilation du code source terminée.' },
-    { type: 'info', text: '[DevServer] Écoute sur port 3000' }
+    { type: 'info', text: t('agent_chat.terminal.init') },
+    { type: 'success', text: t('agent_chat.terminal.build_success') },
+    { type: 'info', text: t('agent_chat.terminal.listening') }
 ])
 const activeFileTab = ref('html') // 'html', 'css', 'js'
 // Session unique par onglet pour que le backend maintienne l'historique
@@ -90,7 +91,7 @@ const messages = ref([
   {
     id: 1,
     role: 'assistant',
-    content: "Bonjour ! Je suis GoldArmy, ton Co-Pilote de Carrière. 🪖\n\nJe suis connecté et prêt. Uploade ton CV en PDF pour que je l'audite, génère ton portfolio, ou pose-moi n'importe quelle question.",
+    content: t('agent_chat.initial_message'),
     timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
   }
 ])
@@ -105,11 +106,11 @@ const scrollToBottom = async () => {
 }
 
 const loadingStepsTexts = [
-    "Connexion au système central...",
-    "Extraction des données du CV...",
-    "Analyse algorithmique ATS en cours...",
-    "Restructuration du parcours...",
-    "Génération du rapport d'optimisation..."
+    t('agent_chat.loading_steps.step_0'),
+    t('agent_chat.loading_steps.step_1'),
+    t('agent_chat.loading_steps.step_2'),
+    t('agent_chat.loading_steps.step_3'),
+    t('agent_chat.loading_steps.step_4')
 ]
 
 const startLoadingAnimation = () => {
@@ -135,19 +136,19 @@ onMounted(async () => {
   // Si on vient du profil pour éditer le portfolio
   if (route.query.action === 'edit_last_portfolio') {
       try {
-          mockTerminalLogs.value.push({ type: 'info', text: '[System] Récupération du portfolio sauvegardé...' })
+          mockTerminalLogs.value.push({ type: 'info', text: t('agent_chat.terminal.restoring') })
           const res = await authFetch('/api/profile')
           const json = await res.json()
           if (json.status === 'success' && json.data.last_portfolio) {
               workspaceProject.value = {
-                  title: 'Projet Portfolio (Restauré)',
+                  title: t('agent_chat.workspace.restored_project') || 'Projet Portfolio (Restauré)',
                   ...json.data.last_portfolio
               }
               isWorkspaceOpen.value = true
               activeWorkspaceTab.value = 'app'
-              mockTerminalLogs.value.push({ type: 'success', text: '[System] Portfolio restauré avec succès.' })
+              mockTerminalLogs.value.push({ type: 'success', text: t('agent_chat.terminal.restore_success') })
           } else {
-              mockTerminalLogs.value.push({ type: 'error', text: '[Error] Aucun portfolio sauvegardé trouvé.' })
+              mockTerminalLogs.value.push({ type: 'error', text: t('agent_chat.terminal.restore_error') })
           }
       } catch (e) {
           console.error("Erreur restauration portfolio:", e)
@@ -189,7 +190,7 @@ const sendMessage = async () => {
     messages.value.push({
       id: Date.now() + 1,
       role: 'assistant',
-      content: '🚀 **Générateur de Portfolio : Bientôt disponible !**\n\nNous finalisons les derniers réglages pour te proposer des designs encore plus spectaculaires et une personnalisation totale.\n\nReviens très bientôt pour générer ton site web en un clic ! En attendant, je peux auditer ton CV ou t\'aider pour tes recherches d\'emploi.',
+      content: t('agent_chat.portfolio_soon_title') + '\n\n' + t('agent_chat.portfolio_soon_desc'),
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     })
     scrollToBottom()
@@ -230,7 +231,7 @@ const sendMessage = async () => {
       isGeneratingPortfolio.value = true
       isWorkspaceOpen.value = true
       activeWorkspaceTab.value = 'app'
-      mockTerminalLogs.value.push({ type: 'info', text: '[IA] Début de la conception du portfolio sur mesure...' })
+      mockTerminalLogs.value.push({ type: 'info', text: t('agent_chat.terminal.designing') })
   }
   
   try {
@@ -277,9 +278,9 @@ const sendMessage = async () => {
         
         // Push personality analysis to terminal only
         if (responseData.project.personality_analysis) {
-             mockTerminalLogs.value.push({ type: 'info', text: `[IA] Analyse : ${responseData.project.personality_analysis}` })
+             mockTerminalLogs.value.push({ type: 'info', text: t('agent_chat.terminal.analysis', [responseData.project.personality_analysis]) })
         }
-        mockTerminalLogs.value.push({ type: 'success', text: `[Action] Projet structuré généré avec succès.` })
+        mockTerminalLogs.value.push({ type: 'success', text: t('agent_chat.terminal.project_success') })
     }
     // Cas fallback pour l'ancien format HTML unique
     else if (assistantMsg.is_html) {
@@ -304,7 +305,7 @@ const sendMessage = async () => {
     messages.value.push({
       id: Date.now() + 2,
       role: 'assistant',
-      content: "⚠️ Erreur de connexion avec le quartier général (Backend indisponible).",
+      content: t('agent_chat.network_error_backend'),
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
       error: true
     })
@@ -320,7 +321,7 @@ const uploadCvPdf = async (event) => {
     const file = event.target.files[0]
     if (!file) return
     if (!file.name.toLowerCase().endsWith('.pdf')) {
-        toastState.addToast('Veuillez sélectionner un fichier PDF.', 'error')
+        toastState.addToast(t('agent_chat.upload_pdf_only'), 'error')
         return
     }
     isUploadingCv.value = true
@@ -338,10 +339,10 @@ const uploadCvPdf = async (event) => {
             cvText.value = data.text
             cvFilename.value = file.name
         } else {
-            toastState.addToast(data.detail || 'Erreur lors de la lecture du PDF.', 'error')
+            toastState.addToast(data.detail || t('agent_chat.error_reading_pdf'), 'error')
         }
     } catch (e) {
-        toastState.addToast('Impossible de contacter le serveur pour lire le PDF.', 'error')
+        toastState.addToast(t('agent_chat.network_error_pdf'), 'error')
     } finally {
         isUploadingCv.value = false
     }
@@ -368,12 +369,12 @@ const saveWorkspaceProject = async () => {
         })
         const json = await res.json()
         if (json.status === 'success') {
-            toastState.addToast("Portfolio sauvegardé avec succès !")
-            mockTerminalLogs.value.push({ type: 'success', text: '[System] Modifications sauvegardées en base de données.' })
+            toastState.addToast(t('agent_chat.workspace.save_success'))
+            mockTerminalLogs.value.push({ type: 'success', text: t('agent_chat.terminal.save_db') })
             iframeKey.value++ // Rafraîchir l'iframe pour voir les changements
         }
     } catch (e) {
-        toastState.addToast("Erreur lors de la sauvegarde.", "error")
+        toastState.addToast(t('agent_chat.workspace.save_error'), "error")
     } finally {
         isSaving.value = false
     }
@@ -390,7 +391,7 @@ const downloadZip = async () => {
         a.download = 'goldarmy_portfolio.zip'
         a.click()
     } catch (e) {
-        toastState.addToast('Erreur lors de la génération du ZIP.', 'error')
+        toastState.addToast(t('agent_chat.workspace.zip_error'), 'error')
     }
 }
 
@@ -460,8 +461,8 @@ const openInWorkspace = (msg) => {
     <!-- Header Minimal -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h2 class="text-2xl font-display font-black text-white tracking-tight">Agent GoldArmy</h2>
-        <p class="text-slate-400 mt-1 text-sm font-medium">Orchestration, Analyse CV &amp; Génération Web</p>
+        <h2 class="text-2xl font-display font-black text-white tracking-tight">{{ t('agent_chat.title') }}</h2>
+        <p class="text-slate-400 mt-1 text-sm font-medium">{{ t('agent_chat.tagline') }}</p>
       </div>
       
       <!-- Context Toggle Button -->
@@ -471,7 +472,7 @@ const openInWorkspace = (msg) => {
         class="px-4 py-2 rounded-xl border flex items-center gap-2 transition-all shadow-sm text-sm font-bold"
       >
           <DocumentTextIcon class="w-4 h-4" />
-          <span class="hidden sm:inline">{{ cvFilename ? cvFilename : 'Ajouter CV (PDF)' }}</span>
+          <span class="hidden sm:inline">{{ cvFilename ? cvFilename : t('agent_chat.add_cv') }}</span>
           <CheckIcon v-if="cvFilename" class="w-4 h-4 ml-1" />
       </button>
     </div>
@@ -488,10 +489,9 @@ const openInWorkspace = (msg) => {
         <div v-if="isUploading" class="mb-6 bg-surface-900 border border-surface-800 p-4 rounded-2xl shadow-sm relative z-10">
             <div class="flex justify-between items-center mb-3">
                 <h3 class="text-white font-bold text-sm tracking-wide flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 
-                    CV en Contexte
+                    {{ t('agent_chat.cv_context') }}
                 </h3>
-                <button @click="isUploading = false" class="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider">Fermer</button>
+                <button @click="isUploading = false" class="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider">{{ t('common.close') || 'Fermer' }}</button>
             </div>
 
             <!-- Uploaded state -->
@@ -509,7 +509,7 @@ const openInWorkspace = (msg) => {
                 <ArrowUpTrayIcon v-if="!isUploadingCv" class="w-7 h-7 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                 <ArrowPathIcon v-else class="w-7 h-7 text-emerald-400 animate-spin" />
                 <span class="text-sm font-semibold" :class="isUploadingCv ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-200'">
-                    {{ isUploadingCv ? 'Extraction du texte...' : 'Cliquer pour uploader votre CV (PDF)' }}
+                    {{ isUploadingCv ? t('agent_chat.extracting_text') : t('agent_chat.click_to_upload') }}
                 </span>
             </label>
         </div>
@@ -548,11 +548,11 @@ const openInWorkspace = (msg) => {
               <div class="flex items-center gap-3 p-4 bg-surface-800/60 border border-surface-700 rounded-2xl">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg">🎯</div>
                 <div>
-                  <p class="font-bold text-white text-sm m-0">{{ msg.audit.candidate_name || 'Candidat' }}</p>
-                  <p class="text-slate-400 text-xs m-0">{{ msg.audit.candidate_title || 'Profil Professionnel' }}</p>
+                  <p class="font-bold text-white text-sm m-0">{{ msg.audit.candidate_name || t('agent_chat.audit.candidate') }}</p>
+                  <p class="text-slate-400 text-xs m-0">{{ msg.audit.candidate_title || t('agent_chat.audit.title') }}</p>
                 </div>
                 <div class="ml-auto text-right">
-                  <p class="text-[10px] text-slate-500 uppercase tracking-wide">Rapport ATS</p>
+                  <p class="text-[10px] text-slate-500 uppercase tracking-wide">{{ t('agent_chat.audit.ats_report') }}</p>
                 </div>
               </div>
 
@@ -561,7 +561,7 @@ const openInWorkspace = (msg) => {
 
                 <!-- Score circulaire -->
                 <div class="p-5 bg-surface-800/60 border border-surface-700 rounded-2xl flex flex-col items-center justify-center gap-3">
-                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Score ATS Global</p>
+                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ t('agent_chat.audit.global_score') }}</p>
                   <div class="relative w-32 h-32">
                     <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
                       <circle cx="60" cy="60" r="52" fill="none" stroke="rgb(30,41,59)" stroke-width="12"/>
@@ -583,20 +583,20 @@ const openInWorkspace = (msg) => {
                   <p class="text-xs text-center font-semibold m-0"
                     :class="msg.audit.ats_score >= 75 ? 'text-green-400' : msg.audit.ats_score >= 50 ? 'text-amber-400' : 'text-red-400'"
                   >
-                    {{ msg.audit.ats_score >= 75 ? '✅ Bon profil ATS' : msg.audit.ats_score >= 50 ? '⚠️ Profil à améliorer' : '❌ Risque de rejet ATS' }}
+                    {{ msg.audit.ats_score >= 75 ? t('agent_chat.audit.good_profile') : msg.audit.ats_score >= 50 ? t('agent_chat.audit.to_improve') : t('agent_chat.audit.risk_rejection') }}
                   </p>
                 </div>
 
                 <!-- Barres de scores par catégorie -->
                 <div class="p-5 bg-surface-800/60 border border-surface-700 rounded-2xl space-y-3">
-                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Détail par catégorie</p>
+                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">{{ t('common.detail_by_category') || 'Détail par catégorie' }}</p>
                   <template v-if="msg.audit.scores">
                     <div v-for="(val, key) in {
-                      'Mots-clés': msg.audit.scores.mots_cles,
-                      'Impact & Résultats': msg.audit.scores.impact_resultats,
-                      'Mise en forme': msg.audit.scores.mise_en_forme,
-                      'Lisibilité': msg.audit.scores.lisibilite,
-                      'Pertinence Exp.': msg.audit.scores.experience_pertinence
+                      [t('agent_chat.audit.categories.keywords')]: msg.audit.scores.mots_cles,
+                      [t('agent_chat.audit.categories.impact')]: msg.audit.scores.impact_resultats,
+                      [t('agent_chat.audit.categories.formatting')]: msg.audit.scores.mise_en_forme,
+                      [t('agent_chat.audit.categories.readability')]: msg.audit.scores.lisibilite,
+                      [t('agent_chat.audit.categories.relevance')]: msg.audit.scores.experience_pertinence
                     }" :key="key" class="space-y-1">
                       <div class="flex justify-between text-[11px]">
                         <span class="text-slate-300 font-medium">{{ key }}</span>
@@ -614,102 +614,102 @@ const openInWorkspace = (msg) => {
               </div>
 
               <!-- Failles + Actions côte à côte -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- Failles critiques -->
-                <div class="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl">
-                  <p class="text-xs font-bold text-red-400 uppercase tracking-widest mb-3">❌ Failles Critiques</p>
-                  <ul class="space-y-2">
-                    <li v-for="(faille, i) in (msg.audit.failles || [])" :key="i"
-                      class="flex gap-2 text-xs text-slate-300 leading-snug"
-                    >
-                      <span class="text-red-400 shrink-0 font-bold mt-0.5">{{ i + 1 }}.</span>
-                      <span>{{ faille }}</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <!-- Actions prioritaires -->
-                <div class="p-4 bg-green-500/5 border border-green-500/20 rounded-2xl">
-                  <p class="text-xs font-bold text-green-400 uppercase tracking-widest mb-3">🛠️ Actions Prioritaires</p>
-                  <ul class="space-y-2">
-                    <li v-for="(action, i) in (msg.audit.actions || [])" :key="i"
-                      class="flex gap-2 text-xs text-slate-300 leading-snug"
-                    >
-                      <span class="text-green-400 shrink-0 font-bold mt-0.5">{{ i + 1 }}.</span>
-                      <span>{{ action }}</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <!-- Technologies manquantes + Points forts -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- Tech manquantes -->
-                <div v-if="msg.audit.tech_manquantes && msg.audit.tech_manquantes.length" class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
-                  <p class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">💡 Technologies Manquantes</p>
-                  <div class="flex flex-wrap gap-2">
-                    <span v-for="tech in msg.audit.tech_manquantes" :key="tech"
-                      class="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-bold rounded-lg"
-                    >{{ tech }}</span>
-                  </div>
-                </div>
-
-                <!-- Points forts -->
-                <div v-if="msg.audit.points_forts && msg.audit.points_forts.length" class="p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
-                  <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3">✅ Points Forts</p>
-                  <ul class="space-y-1.5">
-                    <li v-for="(pt, i) in msg.audit.points_forts" :key="i" class="flex gap-2 text-xs text-slate-300">
-                      <span class="text-indigo-400 shrink-0">•</span>
-                      <span>{{ pt }}</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <!-- Bouton téléchargement -->
-              <button
-                @click="downloadCvDocx(msg.content)"
-                :disabled="isDownloadingDocx"
-                class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
-              >
-                <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
-                <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
-                {{ isDownloadingDocx ? 'Génération du fichier...' : '⬇ Télécharger le CV Corrigé (.pdf)' }}
-              </button>
-              <p class="text-[10px] text-slate-500 text-center">✅ ATS-friendly · Calibri 10pt · Mono-colonne · Mots-clés optimisés</p>
-            </div>
-
-            <!-- Fallback audit si format non-structuré (chaîne texte) -->
-            <div v-else-if="msg.is_audit_rewrite && msg.audit && typeof msg.audit === 'string'" class="space-y-4 w-full">
-              <div class="whitespace-pre-wrap text-slate-300 pb-4 border-b border-surface-700" v-html="msg.audit.replace(/\n/g, '<br/>')"></div>
-              <button @click="downloadCvDocx(msg.content)" :disabled="isDownloadingDocx"
-                class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl font-bold transition-all">
-                <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
-                <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
-                {{ isDownloadingDocx ? 'Génération...' : '⬇ Télécharger CV Corrigé (.pdf)' }}
-              </button>
-            </div>
-
-            <!-- ══════════ CV REWRITE (sans audit dashboard) ══════════ -->
-            <div v-else-if="msg.is_cv_rewrite" class="space-y-4 w-full">
-              <div class="flex items-center gap-3 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg">✍️</div>
-                <div>
-                  <p class="font-bold text-white text-sm m-0">CV Réécrit & Optimisé ATS</p>
-                  <p class="text-slate-400 text-xs m-0">Ton CV a été restructuré avec des verbes d'action et des mots-clés ATS.</p>
-                </div>
-              </div>
-              <button
-                @click="downloadCvDocx(msg.content)"
-                :disabled="isDownloadingDocx"
-                class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
-              >
-                <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
-                <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
-                {{ isDownloadingDocx ? 'Génération du fichier...' : '⬇ Télécharger le CV Réécrit (.pdf)' }}
-              </button>
-              <p class="text-[10px] text-slate-500 text-center">✅ ATS-friendly · Calibri 10pt · Mono-colonne · Mots-clés optimisés</p>
-            </div>
+               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <!-- Failles critiques -->
+                 <div class="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl">
+                   <p class="text-xs font-bold text-red-400 uppercase tracking-widest mb-3">{{ t('agent_chat.audit.critical_flaws') }}</p>
+                   <ul class="space-y-2">
+                     <li v-for="(faille, i) in (msg.audit.failles || [])" :key="i"
+                       class="flex gap-2 text-xs text-slate-300 leading-snug"
+                     >
+                       <span class="text-red-400 shrink-0 font-bold mt-0.5">{{ i + 1 }}.</span>
+                       <span>{{ faille }}</span>
+                     </li>
+                   </ul>
+                 </div>
+ 
+                 <!-- Actions prioritaires -->
+                 <div class="p-4 bg-green-500/5 border border-green-500/20 rounded-2xl">
+                   <p class="text-xs font-bold text-green-400 uppercase tracking-widest mb-3">{{ t('agent_chat.audit.priority_actions') }}</p>
+                   <ul class="space-y-2">
+                     <li v-for="(action, i) in (msg.audit.actions || [])" :key="i"
+                       class="flex gap-2 text-xs text-slate-300 leading-snug"
+                     >
+                       <span class="text-green-400 shrink-0 font-bold mt-0.5">{{ i + 1 }}.</span>
+                       <span>{{ action }}</span>
+                     </li>
+                   </ul>
+                 </div>
+               </div>
+ 
+               <!-- Technologies manquantes + Points forts -->
+               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <!-- Tech manquantes -->
+                 <div v-if="msg.audit.tech_manquantes && msg.audit.tech_manquantes.length" class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
+                   <p class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">{{ t('agent_chat.audit.missing_tech') }}</p>
+                   <div class="flex flex-wrap gap-2">
+                     <span v-for="tech in msg.audit.tech_manquantes" :key="tech"
+                       class="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-bold rounded-lg"
+                     >{{ tech }}</span>
+                   </div>
+                 </div>
+ 
+                 <!-- Points forts -->
+                 <div v-if="msg.audit.points_forts && msg.audit.points_forts.length" class="p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
+                   <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3">{{ t('agent_chat.audit.strengths') }}</p>
+                   <ul class="space-y-1.5">
+                     <li v-for="(pt, i) in msg.audit.points_forts" :key="i" class="flex gap-2 text-xs text-slate-300">
+                       <span class="text-indigo-400 shrink-0">•</span>
+                       <span>{{ pt }}</span>
+                     </li>
+                   </ul>
+                 </div>
+               </div>
+ 
+               <!-- Bouton téléchargement -->
+               <button
+                 @click="downloadCvDocx(msg.content)"
+                 :disabled="isDownloadingDocx"
+                 class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
+               >
+                 <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
+                 <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
+                 {{ isDownloadingDocx ? t('agent_chat.audit.generating_file') : t('agent_chat.audit.download_cv') }}
+               </button>
+               <p class="text-[10px] text-slate-500 text-center">{{ t('agent_chat.audit.ats_friendly') }}</p>
+             </div>
+ 
+             <!-- Fallback audit si format non-structuré (chaîne texte) -->
+             <div v-else-if="msg.is_audit_rewrite && msg.audit && typeof msg.audit === 'string'" class="space-y-4 w-full">
+               <div class="whitespace-pre-wrap text-slate-300 pb-4 border-b border-surface-700" v-html="msg.audit.replace(/\n/g, '<br/>')"></div>
+               <button @click="downloadCvDocx(msg.content)" :disabled="isDownloadingDocx"
+                 class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl font-bold transition-all">
+                 <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
+                 <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
+                 {{ isDownloadingDocx ? (t('common.generating') || 'Génération...') : t('agent_chat.audit.download_cv') }}
+               </button>
+             </div>
+ 
+             <!-- ══════════ CV REWRITE (sans audit dashboard) ══════════ -->
+             <div v-else-if="msg.is_cv_rewrite" class="space-y-4 w-full">
+               <div class="flex items-center gap-3 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl">
+                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg">✍️</div>
+                 <div>
+                   <p class="font-bold text-white text-sm m-0">{{ t('agent_chat.audit.rewrite_title') }}</p>
+                   <p class="text-slate-400 text-xs m-0">{{ t('agent_chat.audit.rewrite_desc') }}</p>
+                 </div>
+               </div>
+               <button
+                 @click="downloadCvDocx(msg.content)"
+                 :disabled="isDownloadingDocx"
+                 class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
+               >
+                 <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
+                 <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
+                 {{ isDownloadingDocx ? t('agent_chat.audit.generating_file') : t('agent_chat.audit.download_cv_rewritten') }}
+               </button>
+               <p class="text-[10px] text-slate-500 text-center">{{ t('agent_chat.audit.ats_friendly') }}</p>
+             </div>
 
             <!-- Standard text/markdown rendering -->
             <div v-else-if="!msg.is_html && !msg.is_cv_rewrite && !msg.is_audit_rewrite" class="whitespace-pre-wrap text-slate-300" v-html="msg.content.replace(/\n/g, '<br/>')"></div>
@@ -733,7 +733,7 @@ const openInWorkspace = (msg) => {
          <div v-if="cvText" class="w-full max-w-sm bg-surface-800/50 border border-surface-700/50 rounded-2xl p-4 shadow-sm backdrop-blur-sm">
              <div class="flex items-center gap-2 mb-3">
                  <SparklesIcon class="w-4 h-4 text-gold-400 animate-pulse" />
-                 <span class="text-xs font-bold text-gold-400 uppercase tracking-widest">Traitement en cours</span>
+                 <span class="text-xs font-bold text-gold-400 uppercase tracking-widest">{{ t('common.processing') || 'Traitement en cours' }}</span>
              </div>
              <div class="space-y-3">
                  <div v-for="(stepText, index) in loadingStepsTexts" :key="index" 
@@ -766,7 +766,7 @@ const openInWorkspace = (msg) => {
            <!-- Location Field -->
            <div class="w-full sm:w-1/3 flex items-center gap-2 px-3 py-2 bg-surface-800 rounded-xl border border-surface-700">
                <span class="text-slate-400">📍</span>
-               <input v-model="inputLocation" type="text" placeholder="Lieu..." class="w-full bg-transparent border-none focus:ring-0 text-white text-xs"/>
+               <input v-model="inputLocation" type="text" :placeholder="t('agent_chat.placeholders.location')" class="w-full bg-transparent border-none focus:ring-0 text-white text-xs"/>
            </div>
             <!-- Image Upload -->
             <div class="flex items-center px-2">
@@ -785,7 +785,7 @@ const openInWorkspace = (msg) => {
                 </label>
             </div>
             <!-- Main Message -->
-            <textarea v-model="inputQuery" @keydown.enter.exact.prevent="sendMessage" class="w-full bg-transparent border-none focus:ring-0 text-white resize-none h-12 p-2 text-sm" placeholder="Question ou commande (Ex: Design-le comme ça...)"></textarea>
+            <textarea v-model="inputQuery" @keydown.enter.exact.prevent="sendMessage" class="w-full bg-transparent border-none focus:ring-0 text-white resize-none h-12 p-2 text-sm" :placeholder="t('agent_chat.placeholders.message')"></textarea>
            <!-- Send Button -->
            <button @click="sendMessage" :disabled="isLoading" class="p-3 bg-gold-500 hover:bg-gold-400 text-surface-950 rounded-xl font-bold shrink-0">
               <PaperAirplaneIcon v-if="!isLoading" class="w-5 h-5" />
@@ -803,13 +803,13 @@ const openInWorkspace = (msg) => {
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-1.5 p-1 bg-surface-900 rounded-lg border border-surface-800">
                     <button @click="activeWorkspaceTab = 'app'" :class="activeWorkspaceTab === 'app' ? 'bg-surface-700 text-white' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
-                        <GlobeAltIcon class="w-3.5 h-3.5" /> App
+                        <GlobeAltIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.app') }}
                     </button>
                     <button @click="activeWorkspaceTab = 'code'" :class="activeWorkspaceTab === 'code' ? 'bg-surface-700 text-white' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
-                        <CodeBracketIcon class="w-3.5 h-3.5" /> Code
+                        <CodeBracketIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.code') }}
                     </button>
                     <button @click="activeWorkspaceTab = 'terminal'" :class="activeWorkspaceTab === 'terminal' ? 'bg-surface-700 text-white' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
-                        <CommandLineIcon class="w-3.5 h-3.5" /> Terminal
+                        <CommandLineIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.terminal') }}
                     </button>
                 </div>
                 <div class="hidden lg:flex items-center gap-2 text-slate-500 text-[11px] font-mono">
@@ -820,7 +820,7 @@ const openInWorkspace = (msg) => {
 
             <div class="flex items-center gap-2">
                 <button @click="saveWorkspaceProject" :disabled="isSaving" class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50">
-                    <CloudArrowDownIcon class="w-3.5 h-3.5" /> Save
+                    <CloudArrowDownIcon class="w-3.5 h-3.5" /> {{ isSaving ? t('agent_chat.workspace.saving') : t('agent_chat.workspace.save') }}
                 </button>
                 <div class="h-4 w-[1px] bg-surface-800 mx-1"></div>
                 <button @click="isWorkspaceFullScreen = !isWorkspaceFullScreen" class="p-2 text-slate-400 hover:text-white transition-colors">
@@ -828,11 +828,11 @@ const openInWorkspace = (msg) => {
                     <ArrowsPointingInIcon v-else class="w-4 h-4" />
                 </button>
                 <button @click="downloadZip" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
-                    <ArrowDownTrayIcon class="w-3.5 h-3.5" /> ZIP
+                    <ArrowDownTrayIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.zip') }}
                 </button>
                 <button class="flex items-center gap-2 px-3 py-1.5 bg-surface-800 text-slate-500 text-xs font-bold rounded-lg transition-all border border-surface-700 cursor-not-allowed relative overflow-hidden group">
-                    <CloudArrowUpIcon class="w-3.5 h-3.5" /> Deploy
-                    <span class="absolute -top-1 -right-1 bg-amber-500 text-[8px] text-white px-1.5 py-0.5 rounded shadow-sm rotate-12 scale-90 group-hover:scale-100 transition-transform">Bientôt</span>
+                    <CloudArrowUpIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.deploy') }}
+                    <span class="absolute -top-1 -right-1 bg-amber-500 text-[8px] text-white px-1.5 py-0.5 rounded shadow-sm rotate-12 scale-90 group-hover:scale-100 transition-transform">{{ t('agent_chat.workspace.soon') }}</span>
                 </button>
                 <button @click="isWorkspaceOpen = false" class="p-2 text-slate-500 hover:text-rose-400 transition-colors ml-2">
                     <XMarkIcon class="w-5 h-5" />
@@ -861,9 +861,9 @@ const openInWorkspace = (msg) => {
                     <div class="w-24 h-24 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
                     <SparklesIcon class="w-8 h-8 text-indigo-400 absolute inset-0 m-auto animate-pulse" />
                 </div>
-                <h3 class="text-2xl font-display font-black text-white mb-3 tracking-tight">Génération de ton <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">Portfolio</span></h3>
+                <h3 class="text-2xl font-display font-black text-white mb-3 tracking-tight">{{ t('agent_chat.workspace.generating_portfolio', ['Portfolio']) }}</h3>
                 <p class="text-slate-400 text-sm max-w-sm leading-relaxed">
-                    Gemini 3.1 analyse ton profil, définit une direction artistique sur mesure et structure ton code source. Cette étape prend quelques secondes...
+                    {{ t('agent_chat.workspace.generating_portfolio_desc') }}
                 </p>
                 <div class="mt-10 flex gap-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0s"></div>
@@ -875,7 +875,7 @@ const openInWorkspace = (msg) => {
             <!-- APP PREVIEW (rendered via srcdoc - no backend endpoint needed) -->
             <div v-if="activeWorkspaceTab === 'app' && !computedSrcdoc && !isGeneratingPortfolio" class="flex flex-col items-center justify-center h-full bg-surface-950 text-slate-500 gap-3">
                 <GlobeAltIcon class="w-10 h-10 opacity-30" />
-                <p class="text-sm font-medium">Génère un portfolio pour voir l'aperçu ici.</p>
+                <p class="text-sm font-medium">{{ t('agent_chat.workspace.no_preview') }}</p>
             </div>
             <iframe 
                 v-else-if="activeWorkspaceTab === 'app' && computedSrcdoc"

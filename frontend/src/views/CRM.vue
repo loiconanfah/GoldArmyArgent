@@ -2,6 +2,7 @@
 import { authFetch } from '../utils/auth'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { toastState } from '../store/toastState'
 import { 
   ChartBarIcon, 
@@ -20,13 +21,14 @@ import {
   TrashIcon
 } from '@heroicons/vue/24/outline'
 
+const { t } = useI18n()
 const router = useRouter()
 
 const columns = [
-  { id: 'TO_APPLY', title: 'À Postuler', icon: EnvelopeIcon, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', accent: '#f59e0b', tagStyle: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
-  { id: 'APPLIED', title: 'Candidatures Envoyées', icon: ChartBarIcon, color: 'text-indigo-400', bg: 'bg-indigo-400/10', border: 'border-indigo-400/20', accent: '#6366f1', tagStyle: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
-  { id: 'FOLLOW_UP', title: 'Relance Requise', icon: BellAlertIcon, color: 'text-rose-400', bg: 'bg-rose-400/10', border: 'border-rose-400/20', accent: '#f43f5e', tagStyle: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
-  { id: 'INTERVIEW', title: 'Entretiens', icon: CheckBadgeIcon, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', accent: '#10b981', tagStyle: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' }
+  { id: 'TO_APPLY', title: t('crm_board.columns.to_apply'), icon: EnvelopeIcon, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', accent: '#f59e0b', tagStyle: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+  { id: 'APPLIED', title: t('crm_board.columns.applied'), icon: ChartBarIcon, color: 'text-indigo-400', bg: 'bg-indigo-400/10', border: 'border-indigo-400/20', accent: '#6366f1', tagStyle: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
+  { id: 'FOLLOW_UP', title: t('crm_board.columns.follow_up'), icon: BellAlertIcon, color: 'text-rose-400', bg: 'bg-rose-400/10', border: 'border-rose-400/20', accent: '#f43f5e', tagStyle: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+  { id: 'INTERVIEW', title: t('crm_board.columns.interview'), icon: CheckBadgeIcon, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', accent: '#10b981', tagStyle: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' }
 ]
 
 const crmCards = ref({ 'TO_APPLY': [], 'APPLIED': [], 'FOLLOW_UP': [], 'INTERVIEW': [] })
@@ -78,14 +80,14 @@ const addFromLink = async () => {
         })
         const json = await res.json()
         if (res.ok && json.status === 'success') {
-            toastState.addToast('Candidature importée avec succès !', 'success')
+            toastState.addToast(t('common.success'), 'success')
             newLinkUrl.value = ''
             await fetchCrmData() // refresh the board
         } else {
-            toastState.addToast(`Erreur: ${json.detail || json.message || "Impossible d'importer l'offre"}`, 'error')
+            toastState.addToast(`${t('common.error')}: ${json.detail || json.message || t('common.error')}`, 'error')
         }
     } catch(e) {
-        toastState.addToast("Erreur réseau: impossible de joindre le serveur.", 'error')
+        toastState.addToast(t('common.network_error'), 'error')
     } finally {
         isAddingLink.value = false
     }
@@ -133,11 +135,11 @@ const confirmDeleteCard = async () => {
     try {
         const res = await authFetch(`/api/crm/${cardId}`, { method: 'DELETE' });
         if (!res.ok) throw new Error("Failed to delete");
-        toastState.addToast("Candidature supprimée avec succès", "success");
+        toastState.addToast(t('common.success'), "success");
     } catch(err) {
         // Revert on failure
         crmCards.value[colId] = previousState;
-        toastState.addToast("Erreur lors de la suppression", "error");
+        toastState.addToast(t('common.error'), "error");
     }
 }
 
@@ -173,14 +175,14 @@ const generateFollowup = async (card) => {
             const idx = col.findIndex(c => c.id === card.id)
             if (idx !== -1) col[idx].follow_up_count = data.followUpCount
         } else {
-            const errDetail = data.detail || data.message || 'Impossible de générer l\'email'
+            const errDetail = data.detail || data.message || t('common.error')
             const errStr = typeof errDetail === 'object' ? JSON.stringify(errDetail) : errDetail
-            followupEmail.value = `❌ Erreur serveur:\n${errStr}`
+            followupEmail.value = `❌ ${t('common.error')}:\n${errStr}`
         }
     } catch(e) {
-        followupEmail.value = `❌ Erreur de connexion:\n${e.message}`
+        followupEmail.value = `❌ ${t('common.error')}:\n${e.message}`
     } finally {
-        isGeneratingFollowup.value = false
+        isAddingLink.value = false
     }
 }
 
@@ -209,13 +211,13 @@ onMounted(() => { fetchCrmData() })
             Kanban Board
           </span>
           <h1 class="text-3xl font-display font-black text-white tracking-tight">
-            Central <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">Candidatures</span>
+            Central <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">{{ t('nav.crm') }}</span>
           </h1>
-          <p class="text-slate-500 text-sm mt-1 font-medium">Glissez-déposez vos opportunités pour suivre leur pipeline.</p>
+          <p class="text-slate-500 text-sm mt-1 font-medium">{{ t('crm_board.description') || 'Glissez-déposez vos opportunités pour suivre leur pipeline.' }}</p>
         </div>
         <button @click="fetchCrmData" class="flex items-center gap-2 text-sm font-bold bg-surface-800 hover:bg-surface-700 text-slate-300 px-4 py-2.5 rounded-xl border border-surface-700 transition-colors shrink-0">
           <ArrowPathIcon class="w-4 h-4" :class="{'animate-spin': isLoading}" />
-          Actualiser
+          {{ t('common.refresh') }}
         </button>
       </div>
 
@@ -240,7 +242,7 @@ onMounted(() => { fetchCrmData() })
           >
             <ArrowPathIcon v-if="isAddingLink" class="w-4 h-4 animate-spin" />
             <SparklesIcon v-else class="w-4 h-4" />
-            {{ isAddingLink ? 'Analyse IA...' : 'Ajouter Magiquement' }}
+            {{ isAddingLink ? t('common.loading') : t('crm_board.add_application') }}
           </button>
         </form>
       </div>
@@ -251,25 +253,25 @@ onMounted(() => { fetchCrmData() })
           <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
             <BriefcaseIcon class="w-5 h-5 text-indigo-400" />
           </div>
-          <div><p class="text-2xl font-black text-white leading-none">{{ totalCards }}</p><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Total</p></div>
+          <div><p class="text-2xl font-black text-white leading-none">{{ totalCards }}</p><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{{ t('common.total') }}</p></div>
         </div>
         <div class="bg-surface-900 border border-surface-800 rounded-2xl p-4 flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center shrink-0">
             <ChartBarIcon class="w-5 h-5 text-indigo-400" />
           </div>
-          <div><p class="text-2xl font-black text-white leading-none">{{ appliedCount }}</p><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Envoyées</p></div>
+          <div><p class="text-2xl font-black text-white leading-none">{{ appliedCount }}</p><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{{ t('crm_board.columns.applied') }}</p></div>
         </div>
         <div class="bg-surface-900 border border-rose-500/10 rounded-2xl p-4 flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-rose-500/10 flex items-center justify-center shrink-0">
             <BellAlertIcon class="w-5 h-5 text-rose-400" />
           </div>
-          <div><p class="text-2xl font-black text-white leading-none">{{ followUpCount }}</p><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Relances</p></div>
+          <div><p class="text-2xl font-black text-white leading-none">{{ followUpCount }}</p><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{{ t('crm_board.columns.follow_up') }}</p></div>
         </div>
         <div class="bg-surface-900 border border-emerald-500/10 rounded-2xl p-4 flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
             <CheckBadgeIcon class="w-5 h-5 text-emerald-400" />
           </div>
-          <div><p class="text-2xl font-black text-white leading-none">{{ interviewCount }}</p><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Entretiens</p></div>
+          <div><p class="text-2xl font-black text-white leading-none">{{ interviewCount }}</p><p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{{ t('crm_board.columns.interview') }}</p></div>
         </div>
       </div>
     </div>
@@ -326,10 +328,10 @@ onMounted(() => { fetchCrmData() })
                 <!-- Card actions (Date, Link, Delete) -->
                 <div class="flex items-center gap-1.5 shrink-0 opacity-100 xl:opacity-0 xl:group-hover:opacity-100 transition-opacity">
                   <span class="text-[10px] font-bold text-slate-600 bg-surface-800 px-2 py-0.5 rounded-lg border border-surface-700 hidden sm:inline-block">{{ formatDate(card.created_at) }}</span>
-                  <a v-if="card.url" :href="card.url" target="_blank" title="Ouvrir le lien" class="text-slate-500 hover:text-indigo-400 transition-colors bg-surface-800 p-1 rounded-lg border border-surface-700" @click.stop>
+                  <a v-if="card.url" :href="card.url" target="_blank" :title="t('common.details')" class="text-slate-500 hover:text-indigo-400 transition-colors bg-surface-800 p-1 rounded-lg border border-surface-700" @click.stop>
                     <ArrowTopRightOnSquareIcon class="w-3.5 h-3.5" />
                   </a>
-                  <button @click.stop="deleteCard(card.id, col.id)" title="Supprimer l'opportunité" class="text-slate-500 hover:text-rose-400 transition-colors bg-surface-800 p-1 rounded-lg border border-surface-700">
+                  <button @click.stop="deleteCard(card.id, col.id)" :title="t('common.delete')" class="text-slate-500 hover:text-rose-400 transition-colors bg-surface-800 p-1 rounded-lg border border-surface-700">
                     <TrashIcon class="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -368,7 +370,7 @@ onMounted(() => { fetchCrmData() })
             <div v-if="!crmCards[col.id]?.length" class="h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 text-xs font-bold transition-colors"
               :class="dragOverCol === col.id ? [col.border, col.bg, col.color] : 'border-surface-800 text-slate-700'">
               <PlusIcon class="w-5 h-5" />
-              <span>{{ dragOverCol === col.id ? 'Déposer ici' : 'Aucune carte' }}</span>
+              <span>{{ dragOverCol === col.id ? t('common.confirm') : t('common.error') }}</span>
             </div>
           </div>
         </div>
@@ -424,11 +426,11 @@ onMounted(() => { fetchCrmData() })
                 <component :is="copied ? CheckIcon : ClipboardDocumentIcon" class="w-4 h-4" />
                 {{ copied ? 'Copié !' : 'Copier l\'email' }}
               </button>
-              <button @click="generateFollowup(followupCard)" class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm bg-surface-800 hover:bg-surface-700 text-slate-300 border border-surface-700 transition-all">
-                <ArrowPathIcon class="w-4 h-4" />Régénérer
+                <button @click="generateFollowup(followupCard)" class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm bg-surface-800 hover:bg-surface-700 text-slate-300 border border-surface-700 transition-all">
+                <ArrowPathIcon class="w-4 h-4" />{{ t('common.regenerate') }}
               </button>
               <button @click="closeFollowup" class="ml-auto text-sm font-bold text-slate-500 hover:text-white transition-colors px-3 py-2">
-                Fermer
+                {{ t('common.close') }}
               </button>
             </div>
           </div>
@@ -443,15 +445,15 @@ onMounted(() => { fetchCrmData() })
         <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500/20 to-rose-600/5 flex items-center justify-center mx-auto mb-4 border border-rose-500/20">
           <TrashIcon class="w-7 h-7 text-rose-500" />
         </div>
-        <h3 class="text-xl font-display font-black text-white mb-2">Supprimer l'offre ?</h3>
-        <p class="text-[13px] leading-relaxed text-slate-400 mb-6 font-medium">Cette opportunité sera effacée définitivement de votre pipeline.</p>
+        <h3 class="text-xl font-display font-black text-white mb-2">{{ t('crm_board.card.delete') }} ?</h3>
+        <p class="text-[13px] leading-relaxed text-slate-400 mb-6 font-medium">{{ t('crm_board.delete_confirm_desc') || 'Cette opportunité sera effacée définitivement de votre pipeline.' }}</p>
         <div class="flex gap-3">
           <button @click="showDeletePopup = false; itemToDelete = null" class="flex-1 py-3 px-4 rounded-xl font-bold text-sm bg-surface-800 hover:bg-surface-700 text-slate-300 border border-surface-700 transition-colors">
-            Annuler
+            {{ t('common.cancel') }}
           </button>
           <button @click="confirmDeleteCard" class="flex-1 py-3 px-4 rounded-xl font-bold text-sm bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20 transition-all flex items-center justify-center gap-2">
             <TrashIcon class="w-4 h-4" />
-            Supprimer
+            {{ t('common.delete') }}
           </button>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { authFetch } from '../utils/auth'
 import { toastState } from '../store/toastState'
 
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { 
     BriefcaseIcon, 
     FunnelIcon, 
@@ -23,6 +24,8 @@ const {
     adaptingJobId, adaptedData, loadingRadarFor
 } = toRefs(sniperState)
 
+const { t } = useI18n()
+
 const fileInput = ref(null)
 
 const triggerFileInput = () => {
@@ -34,7 +37,7 @@ const handleFileUpload = async (event) => {
     if (!file) return
     
     if (file.type !== 'application/pdf') {
-        toastState.addToast("Veuillez sélectionner un fichier PDF.", "error")
+        toastState.addToast(t('opportunities.upload_pdf_only') || "Veuillez sélectionner un fichier PDF.", "error")
         return
     }
     
@@ -60,11 +63,11 @@ const handleFileUpload = async (event) => {
                 performSearch()
             }
         } else {
-             toastState.addToast(json.detail || "Erreur lors de la lecture du PDF.", "error")
+             toastState.addToast(json.detail || t('opportunities.error_reading_pdf') || "Erreur lors de la lecture du PDF.", "error")
              selectedFileName.value = ""
         }
     } catch(e) {
-        toastState.addToast("Erreur réseau lors de l'envoi du CV.", "error")
+        toastState.addToast(t('opportunities.network_error_cv') || "Erreur réseau lors de l'envoi du CV.", "error")
         selectedFileName.value = ""
         console.error(e)
     } finally {
@@ -73,11 +76,11 @@ const handleFileUpload = async (event) => {
 }
 
 const filteredJobs = computed(() => {
-    if (filter.value === 'Toutes les pertinentes') return jobs.value;
+    if (filter.value === t('opportunities.filters.all')) return jobs.value;
     return jobs.value.filter(job => {
-        if (filter.value === 'Stages Uniquement') return job.type.toLowerCase().includes('stage') || job.title.toLowerCase().includes('stage') || job.title.toLowerCase().includes('intern')
-        if (filter.value === 'Juniors (< 2 ans)') return job.type.toLowerCase().includes('junior') || job.title.toLowerCase().includes('junior')
-        if (filter.value === 'Score > 80%') return job.matchScore > 80
+        if (filter.value === t('opportunities.filters.internships')) return job.type.toLowerCase().includes('stage') || job.title.toLowerCase().includes('stage') || job.title.toLowerCase().includes('intern')
+        if (filter.value === t('opportunities.filters.juniors')) return job.type.toLowerCase().includes('junior') || job.title.toLowerCase().includes('junior')
+        if (filter.value === t('opportunities.filters.score_80')) return job.matchScore > 80
         return true
     })
 })
@@ -101,12 +104,12 @@ const parseMarkdownJobs = (mdText) => {
             currentJob = {
                 id: Math.random().toString(36).substr(2, 9),
                 title: line.replace('### ', '').trim(),
-                company: 'Non spécifié',
-                location: 'Non spécifié',
+                company: t('common.not_specified') || 'Non spécifié',
+                location: t('common.not_specified') || 'Non spécifié',
                 matchScore: 0,
-                salary: 'Variable',
-                type: 'Emploi / Stage',
-                posted: "Récent",
+                salary: t('common.not_specified') || 'Non spécifié',
+                type: t('opportunities.job_stage') || 'Emploi / Stage',
+                posted: t('opportunities.recent') || "Récent",
                 desc: "",
                 rawUrl: ""
             }
@@ -170,19 +173,19 @@ const performSearch = async () => {
         // Map the backend fields to the UI expected fields
         jobs.value = rawJobs.map(job => ({
              id: job.id || Math.random().toString(36).substr(2, 9),
-             title: job.title || 'Non spécifié',
-             company: job.company || 'Non spécifié',
-             location: job.location || 'Non spécifié',
+             title: job.title || t('common.not_specified') || 'Non spécifié',
+             company: job.company || t('common.not_specified') || 'Non spécifié',
+             location: job.location || t('common.not_specified') || 'Non spécifié',
              matchScore: job.match_score || 0,
-             salary: job.salary || 'Non spécifié',
-             type: job.type || 'Emploi / Stage',
-             posted: job.posted_date || 'Récent',
-             desc: job.description || job.snippet || 'Aucune description fournie.',
+             salary: job.salary || t('common.not_specified') || 'Non spécifié',
+             type: job.type || t('opportunities.job_stage') || 'Emploi / Stage',
+             posted: job.posted_date || t('opportunities.recent') || 'Récent',
+             desc: job.description || job.snippet || t('opportunities.no_desc') || 'Aucune description fournie.',
              rawUrl: job.url || ''
         }))
         
     } catch(e) {
-        toastState.addToast("Erreur de connexion avec le Serveur de Recherche GoldArmy.", "error")
+        toastState.addToast(t('opportunities.search_error') || "Erreur de connexion avec le Serveur de Recherche GoldArmy.", "error")
         console.error(e)
     } finally {
         isLoading.value = false
@@ -217,12 +220,12 @@ const adaptCV = async (job) => {
         if (json.status === "success" && json.data) {
             adaptedData.value = json.data;
         } else {
-            toastState.addToast("Erreur lors de l'adaptation du CV.", "error");
+            toastState.addToast(t('opportunities.adapt_error') || "Erreur lors de l'adaptation du CV.", "error");
             showAdaptModal.value = false;
         }
     } catch(e) {
         console.error("Adapt CV Error:", e);
-        toastState.addToast("Impossible de contacter le serveur d'intelligence.", "error");
+        toastState.addToast(t('common.network_error'), "error");
         showAdaptModal.value = false;
     } finally {
         isAdaptingCV.value = false;
@@ -294,6 +297,7 @@ const addToCrmAndApply = async (job) => {
                 notes: job.desc && job.desc.length > 200 ? job.desc.substring(0, 200) + '...' : job.desc
             })
         });
+        toastState.addToast(t('common.success'), "success")
         
         // 2. Ouvrir le lien dans un nouvel onglet
         if (job.rawUrl) {
@@ -320,14 +324,14 @@ const addToCrmAndApply = async (job) => {
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-gold-500"></span>
              </span>
-             Radar Actif
+             {{ t('opportunities.tagline') }}
          </div>
          <h1 class="text-4xl md:text-5xl font-display font-black text-white tracking-tight flex items-center gap-4">
            Sniper 
-           <span class="text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-amber-600">Opportunités</span>
+           <span class="text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-amber-600">{{ t('network_osint.title_part2') || 'Opportunities' }}</span>
          </h1>
          <p class="text-slate-400 mt-2 text-lg font-medium max-w-xl">
-           Scraping intelligent du marché en temps réel et matching contextuel avec votre profil.
+           {{ t('opportunities.description') }}
          </p>
        </div>
        
@@ -338,16 +342,16 @@ const addToCrmAndApply = async (job) => {
                   <FunnelIcon class="w-4 h-4 text-gold-400" />
               </div>
               <select v-model="filter" class="bg-transparent text-white focus:outline-none focus:ring-0 cursor-pointer pr-4 font-semibold appearance-none text-sm group">
-                <option class="text-slate-900">Toutes les pertinentes</option>
-                <option class="text-slate-900">Stages Uniquement</option>
-                <option class="text-slate-900">Juniors (< 2 ans)</option>
-                <option class="text-slate-900">Score > 80%</option>
+                <option class="text-slate-900">{{ t('opportunities.filters.all') }}</option>
+                <option class="text-slate-900">{{ t('opportunities.filters.internships') }}</option>
+                <option class="text-slate-900">{{ t('opportunities.filters.juniors') }}</option>
+                <option class="text-slate-900">{{ t('opportunities.filters.score_80') }}</option>
               </select>
            </div>
            
            <!-- Limit Container (Solid) -->
            <div class="flex items-center gap-2 bg-surface-900 border border-surface-800 p-1.5 rounded-xl shadow-sm">
-              <span class="text-slate-400 ml-3 text-sm font-medium">Résultats max:</span>
+              <span class="text-slate-400 ml-3 text-sm font-medium">{{ t('opportunities.max_results') }}</span>
               <select v-model="resultLimit" @change="performSearch" class="bg-transparent text-white focus:outline-none focus:ring-0 cursor-pointer pr-4 font-bold appearance-none text-sm border-l border-surface-700/50 pl-2">
                 <option class="text-slate-900" :value="5">5</option>
                 <option class="text-slate-900" :value="10">10</option>
@@ -376,7 +380,7 @@ const addToCrmAndApply = async (job) => {
                             v-model="searchQuery"
                             @keyup.enter="performSearch"
                             type="text" 
-                            placeholder="Ex: Stage Ingénieur Logiciel..."
+                            :placeholder="t('opportunities.search_placeholder')"
                             class="w-full pl-14 pr-4 py-4 bg-transparent text-white focus:outline-none text-lg placeholder-slate-600 font-medium rounded-l-2xl z-10"
                         />
                     </div>
@@ -388,7 +392,7 @@ const addToCrmAndApply = async (job) => {
                             v-model="inputLocation"
                             @keyup.enter="performSearch"
                             type="text" 
-                            placeholder="Localisation (ex: Montréal, QC)"
+                            :placeholder="t('opportunities.location_placeholder')"
                             class="w-full pl-14 pr-4 py-4 bg-transparent text-white focus:outline-none text-lg placeholder-slate-600 font-medium rounded-r-2xl z-10"
                         />
                     </div>
@@ -405,7 +409,7 @@ const addToCrmAndApply = async (job) => {
                         <div v-if="cvText" class="absolute inset-0 bg-gradient-to-r from-emerald-400/0 via-emerald-400/20 to-emerald-400/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000"></div>
                         
                         <DocumentTextIcon class="w-6 h-6" :class="cvText ? 'text-emerald-400' : 'text-slate-400'" />
-                        <span class="hidden md:inline">{{ cvText ? 'CV Profilé' : 'Joindre CV' }}</span>
+                        <span class="hidden md:inline">{{ cvText ? t('opportunities.cv_profiled') : t('opportunities.attach_cv') }}</span>
                     </button>
                     
                     <button 
@@ -414,7 +418,7 @@ const addToCrmAndApply = async (job) => {
                         class="px-8 h-16 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-400 hover:to-amber-500 disabled:opacity-50 disabled:grayscale text-surface-950 font-black tracking-tight rounded-2xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] flex items-center justify-center min-w-[160px] group/launch"
                     >
                         <span v-if="!isLoading" class="flex items-center gap-2">
-                            Lancer Sniper
+                            {{ t('opportunities.launch_button') }}
                             <svg class="w-5 h-5 -mr-1 group-hover/launch:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </span>
                         <div v-else class="flex gap-2">
@@ -444,7 +448,7 @@ const addToCrmAndApply = async (job) => {
                         
                         <div v-if="isParsingPdf" class="flex flex-col items-center">
                             <ArrowPathIcon class="w-10 h-10 text-gold-500 animate-spin mb-4" />
-                            <p class="text-gold-400 font-bold tracking-tight">Analyse du Profil en cours...</p>
+                            <p class="text-gold-400 font-bold tracking-tight">{{ t('opportunities.parsing_profile') }}</p>
                         </div>
                         <div v-else-if="selectedFileName" class="flex flex-col items-center gap-3">
                             <div class="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
@@ -452,16 +456,16 @@ const addToCrmAndApply = async (job) => {
                             </div>
                             <div class="text-center">
                                 <p class="text-white font-bold text-lg">{{ selectedFileName }}</p>
-                                <p class="text-slate-400 text-sm mt-1">CV prêt à être matché. Clique pour modifier.</p>
+                                <p class="text-slate-400 text-sm mt-1">{{ t('opportunities.cv_ready_desc') }}</p>
                             </div>
                         </div>
                         <div v-else class="flex flex-col items-center">
                             <div class="p-5 bg-surface-800 rounded-full group-hover:bg-gold-500/10 mb-4 transition-colors ring-1 ring-surface-700 group-hover:ring-gold-500/30">
                                 <DocumentTextIcon class="w-10 h-10 text-slate-400 group-hover:text-gold-400 transition-colors" />
                             </div>
-                            <h3 class="text-white font-bold text-lg">Uploader votre CV (.pdf)</h3>
+                            <h3 class="text-white font-bold text-lg">{{ t('opportunities.upload_cv_title') }}</h3>
                             <p class="text-slate-500 text-sm mt-2 text-center max-w-sm">
-                                L'IA GoldArmy analysera vos compétences pour calculer un Matching Score précis pour chaque offre.
+                                {{ t('opportunities.upload_cv_desc') }}
                             </p>
                         </div>
                     </div>
@@ -479,9 +483,9 @@ const addToCrmAndApply = async (job) => {
                 <span class="text-2xl">🪖</span>
             </div>
         </div>
-        <h3 class="text-2xl font-display font-bold text-white mb-3 tracking-tight">Analyse du Marché...</h3>
+        <h3 class="text-2xl font-display font-bold text-white mb-3 tracking-tight">{{ t('opportunities.analyzing_market') }}</h3>
         <p class="text-slate-400 text-center max-w-md text-sm leading-relaxed">
-            Recherche via de multiples fournisseurs, filtrage du bruit, et calcul du matching neuronal avec votre profil CV.
+            {{ t('opportunities.analyzing_market_desc') }}
         </p>
     </div>
     
@@ -489,8 +493,8 @@ const addToCrmAndApply = async (job) => {
         <div class="p-6 bg-surface-800 rounded-full mb-6 ring-1 ring-surface-700">
             <BriefcaseIcon class="w-12 h-12 text-slate-500" />
         </div>
-        <h3 class="text-2xl font-display font-bold text-white mb-2 tracking-tight">Aucune opportunité détectée</h3>
-        <p class="text-slate-500 text-center">Renseignez vos critères de recherche ci-dessus pour lancer le Sniper.</p>
+        <h3 class="text-2xl font-display font-bold text-white mb-2 tracking-tight">{{ t('opportunities.no_opportunities') }}</h3>
+        <p class="text-slate-500 text-center">{{ t('opportunities.no_opportunities_desc') }}</p>
     </div>
 
     <!-- Job Cards List (Bento Box style Solid) -->
@@ -560,10 +564,10 @@ const addToCrmAndApply = async (job) => {
                 v-if="job.rawUrl" 
                 @click="addToCrmAndApply(job)"
                 class="flex-[0.4] text-center bg-white hover:bg-slate-200 text-surface-950 px-4 py-3 rounded-xl font-bold text-sm transition-colors shadow-sm focus:ring-2 focus:ring-white/50 outline-none">
-                Postuler
+                {{ t('opportunities.apply') }}
              </button>
              <button disabled class="flex-[0.4] text-center bg-surface-800 text-slate-500 px-4 py-3 rounded-xl font-bold text-sm cursor-not-allowed" v-else>
-                 Lien Mort
+                 {{ t('opportunities.dead_link') }}
              </button>
              
              <!-- AI Adapt CV Button -->
@@ -573,7 +577,7 @@ const addToCrmAndApply = async (job) => {
                 class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-gold-500/10 to-amber-500/10 hover:from-gold-500/20 hover:to-amber-500/20 disabled:opacity-50 text-gold-400 px-4 py-3 rounded-xl font-bold text-sm transition-all border border-gold-500/20 hover:border-gold-500/40 focus:ring-2 focus:ring-gold-500/50 outline-none group/adapt">
                 <ArrowPathIcon v-if="isAdaptingCV && adaptingJobId === job.id" class="w-5 h-5 animate-spin text-gold-400" />
                 <SparklesIcon v-else class="w-5 h-5 text-gold-500 group-hover/adapt:scale-110 transition-transform" />
-                <span class="hidden sm:inline">Adapter CV</span>
+                <span class="hidden sm:inline">{{ t('opportunities.adapt_cv') }}</span>
              </button>
              
              <button 
@@ -582,7 +586,7 @@ const addToCrmAndApply = async (job) => {
                 class="flex-[0.4] flex items-center justify-center gap-2 bg-surface-800 hover:bg-surface-700 disabled:opacity-50 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-colors border border-surface-700 focus:ring-2 focus:ring-gold-500/50 outline-none group/radar">
                 <ArrowPathIcon v-if="loadingRadarFor === job.id" class="w-5 h-5 animate-spin text-gold-400" />
                 <svg v-else class="w-5 h-5 text-slate-400 group-hover/radar:text-gold-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span class="hidden sm:inline">Radar</span>
+                <span class="hidden sm:inline">{{ t('opportunities.radar') }}</span>
              </button>
           </div>
        </div>
@@ -597,7 +601,7 @@ const addToCrmAndApply = async (job) => {
             <div class="px-6 py-5 border-b border-surface-800 flex items-center justify-between bg-surface-900/50">
                 <div class="flex items-center gap-3 text-gold-400">
                     <SparklesIcon class="w-6 h-6 animate-pulse" />
-                    <h3 class="text-xl font-display font-bold text-white tracking-tight">Gemini 3 CV Intelligence</h3>
+                    <h3 class="text-xl font-display font-bold text-white tracking-tight">{{ t('opportunities.cv_intelligence_title') }}</h3>
                 </div>
                 <button @click="closeAdaptModal" class="text-slate-400 hover:text-white transition-colors bg-surface-800 hover:bg-surface-700 p-2 rounded-xl">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -609,8 +613,8 @@ const addToCrmAndApply = async (job) => {
                 
                 <div v-if="isAdaptingCV" class="flex flex-col items-center justify-center py-20 text-center">
                     <ArrowPathIcon class="w-12 h-12 text-gold-500 animate-spin mb-6" />
-                    <p class="text-lg font-bold text-white mb-2">Analyse du poste et refonte du CV en cours...</p>
-                    <p class="text-slate-400 font-medium">L'agent Gemini 3.1 Pro croise vos compétences avec la description.</p>
+                    <p class="text-lg font-bold text-white mb-2">{{ t('opportunities.adapting_title') }}</p>
+                    <p class="text-slate-400 font-medium">{{ t('opportunities.adapting_desc') }}</p>
                 </div>
                 
                 <div v-else-if="adaptedData" class="space-y-8">
@@ -619,7 +623,7 @@ const addToCrmAndApply = async (job) => {
                     <div class="bg-surface-950 border border-surface-800 rounded-2xl p-6">
                         <div class="flex items-center gap-2 mb-4">
                             <DocumentTextIcon class="w-5 h-5 text-emerald-400" />
-                            <h4 class="text-lg font-bold text-white">Résumé & Points Forts Suggérés</h4>
+                            <h4 class="text-lg font-bold text-white">{{ t('opportunities.summary_title') }}</h4>
                         </div>
                         <div class="prose prose-invert max-w-none text-slate-300 prose-headings:text-white prose-a:text-gold-400 prose-strong:text-emerald-400">
                             <!-- We use pre-wrap to respect newlines currently -->
@@ -631,7 +635,7 @@ const addToCrmAndApply = async (job) => {
                     <div v-if="adaptedData.projects && adaptedData.projects.length" class="space-y-4">
                         <h4 class="text-lg font-bold text-white flex items-center gap-2">
                             <BriefcaseIcon class="w-5 h-5 text-amber-500" />
-                            Projets Recommandés (pour combler les lacunes)
+                            {{ t('opportunities.projects_title') }}
                         </h4>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -649,7 +653,7 @@ const addToCrmAndApply = async (job) => {
             <!-- Modal Footer -->
             <div class="px-6 py-5 border-t border-surface-800 flex items-center justify-between bg-surface-900/50">
                 <button @click="closeAdaptModal" class="px-6 py-3 border border-surface-700 text-slate-400 hover:text-white hover:bg-surface-800 rounded-xl font-bold transition-all">
-                    Fermer
+                    {{ t('common.close') }}
                 </button>
                 
                 <div class="flex items-center gap-3">
@@ -661,13 +665,13 @@ const addToCrmAndApply = async (job) => {
                     >
                         <CheckCircleIcon v-if="!isSavingToProfile" class="w-5 h-5" />
                         <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
-                        {{ isSavingToProfile ? 'Enregistrement...' : 'Enregistrer dans Profil' }}
+                        {{ isSavingToProfile ? t('opportunities.saving') : t('opportunities.save_to_profile') }}
                     </button>
                     
                     <button 
                         @click="copyAdaptedCV"
                         class="px-8 py-3 bg-gradient-to-r from-gold-500 to-amber-600 text-surface-950 font-bold rounded-xl shadow-lg shadow-gold-500/20 hover:scale-105 active:scale-95 transition-all">
-                        Copier le Contenu
+                        {{ t('opportunities.copy_content') }}
                     </button>
                 </div>
             </div>

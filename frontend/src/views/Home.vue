@@ -13,7 +13,7 @@ import {
   BeakerIcon, QuestionMarkCircleIcon,
 } from '@heroicons/vue/24/outline'
 
-const { t } = useI18n()
+const { t, tm } = useI18n()
 const router = useRouter()
 const ready = ref(false)
 const userName = ref(t('home.welcome', { name: '' }).replace('Bonjour, ', '').trim() || 'là')
@@ -30,7 +30,7 @@ onMounted(async () => {
   if (stored) { try { userName.value = JSON.parse(stored).email?.split('@')[0] ?? 'là' } catch {} }
   await nextTick()
   setTimeout(() => { ready.value = true }, 100)
-  tipInterval = setInterval(() => { activeTip.value = (activeTip.value + 1) % tips.length }, 4000)
+  tipInterval = setInterval(() => { activeTip.value = (activeTip.value + 1) % tips.value.length }, 4000)
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTutorial() })
 })
 onUnmounted(() => clearInterval(tipInterval))
@@ -59,7 +59,7 @@ const features = computed(() => [
     description: t('home.features.sniper.desc'),
     tip: t('home.features.sniper.tip'),
     stats: [{v:'50+',l:'Sources'},{v:'94%',l:t('landing.hero.stat_precision')},{v:'< 5s',l:'Résultats'}],
-    features: [t('landing.agents.sniper.features').find(f => f.includes('Filtres')) || 'Filtres Smart', t('landing.agents.sniper.features').find(f => f.includes('CV')) || 'Matching CV', t('landing.agents.sniper.features').find(f => f.includes('temps réel')) || 'Alertes'],
+    features: [(tm('landing.agents.sniper.features') || []).find(f => f.includes('Filtres')) || 'Filtres Smart', (tm('landing.agents.sniper.features') || []).find(f => f.includes('CV')) || 'Matching CV', (tm('landing.agents.sniper.features') || []).find(f => f.includes('temps réel')) || 'Alertes'],
     panelIcons: [
       { icon: GlobeAltIcon,      label: 'Carte',  x: '12%', y: '28%' },
       { icon: ChartBarIcon,      label: 'Stats',  x: '50%', y: '18%' },
@@ -76,7 +76,7 @@ const features = computed(() => [
     description: t('home.features.mentor.desc'),
     tip: t('home.features.mentor.tip'),
     stats: [{v:'< 30s',l:'Audit'},{v:'+40%',l:'Succès'},{v:'100%',l:'Personnalisé'}],
-    features: [t('landing.agents.mentor.features').find(f => f.includes('Audit')) || 'Audit CV', t('landing.agents.mentor.features').find(f => f.includes('Adaptation')) || 'Adaptation', t('landing.agents.mentor.features').find(f => f.includes('Lettre')) || 'Générateur Lettre'],
+    features: [(tm('landing.agents.mentor.features') || []).find(f => f.includes('Audit')) || 'Audit CV', (tm('landing.agents.mentor.features') || []).find(f => f.includes('Adaptation')) || 'Adaptation', (tm('landing.agents.mentor.features') || []).find(f => f.includes('Lettre')) || 'Générateur Lettre'],
     panelIcons: [
       { icon: DocumentTextIcon,  label: 'CV',     x: '15%', y: '25%' },
       { icon: BeakerIcon,        label: 'Analyse',x: '55%', y: '18%' },
@@ -93,7 +93,7 @@ const features = computed(() => [
     description: t('home.features.interview.desc'),
     tip: t('home.features.interview.tip'),
     stats: [{v:'10+',l:'Questions'},{v:'100%',l:'Vocal'},{v:'Live',l:'Feedback'}],
-    features: [t('landing.agents.mentor.features').find(f => f.includes('techniques')) || 'Simulations', t('landing.agents.mentor.features').find(f => f.includes('Débriefing')) || 'Feedback IA', 'Score de confiance'],
+    features: [(tm('landing.agents.mentor.features') || []).find(f => f.includes('techniques')) || 'Simulations', (tm('landing.agents.mentor.features') || []).find(f => f.includes('Débriefing')) || 'Feedback IA', 'Score de confiance'],
     panelIcons: [
       { icon: MicrophoneIcon,            label: 'Voix',   x: '50%', y: '20%' },
       { icon: ChatBubbleLeftRightIcon,   label: 'Dialog', x: '15%', y: '42%' },
@@ -110,7 +110,7 @@ const features = computed(() => [
     description: t('home.features.crm.desc'),
     tip: t('home.features.crm.tip'),
     stats: [{v:'5',l:'Colonnes'},{v:'Auto',l:'Relances'},{v:'∞',l:'Candidatures'}],
-    features: [t('landing.agents.crm.features').find(f => f.includes('Kanban')) || 'Kanban', t('landing.agents.crm.features').find(f => f.includes('relance')) || 'Relances IA', t('landing.agents.crm.features').find(f => f.includes('Historique')) || 'Historique'],
+    features: [(tm('landing.agents.crm.features') || []).find(f => f.includes('Kanban')) || 'Kanban', (tm('landing.agents.crm.features') || []).find(f => f.includes('relance')) || 'Relances IA', (tm('landing.agents.crm.features') || []).find(f => f.includes('Historique')) || 'Historique'],
     panelIcons: [
       { icon: Squares2X2Icon,    label: 'Board',  x: '50%', y: '20%' },
       { icon: ArrowRightIcon,    label: 'Avance',  x: '18%', y: '42%' },
@@ -127,7 +127,7 @@ const features = computed(() => [
     description: t('home.features.network.desc'),
     tip: t('home.features.network.tip'),
     stats: [{v:'Auto',l:'Contacts'},{v:'∞',l:'Emails IA'},{v:'70%',l:'Marché caché'}],
-    features: [t('landing.agents.network.features').find(f => f.includes('RH')) || 'RH Search', t('landing.agents.network.features').find(f => f.includes('messages')) || 'Outreach IA', t('landing.agents.network.features').find(f => f.includes('Carnet')) || 'Contacts'],
+    features: [(tm('landing.agents.network.features') || []).find(f => f.includes('RH')) || 'RH Search', (tm('landing.agents.network.features') || []).find(f => f.includes('messages')) || 'Outreach IA', (tm('landing.agents.network.features') || []).find(f => f.includes('Carnet')) || 'Contacts'],
     panelIcons: [
       { icon: UserGroupIcon,     label: 'Réseau',  x: '50%', y: '20%' },
       { icon: BuildingOfficeIcon,label: 'Société', x: '15%', y: '42%' },
@@ -138,14 +138,14 @@ const features = computed(() => [
   },
 ])
 
-const panelMousePos = ref(features.map(() => ({ x: 50, y: 50 })))
+const panelMousePos = ref(features.value.map(() => ({ x: 50, y: 50 })))
 function onPanelMove(e, idx) {
   const r = e.currentTarget.getBoundingClientRect()
   panelMousePos.value[idx] = { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }
 }
 function onPanelLeave(idx) { panelMousePos.value[idx] = { x: 50, y: 50 } }
 
-const tilts = ref(features.map(() => ({ x: 0, y: 0 })))
+const tilts = ref(features.value.map(() => ({ x: 0, y: 0 })))
 function onCardMove(e, idx) {
   const r = e.currentTarget.getBoundingClientRect()
   tilts.value[idx] = { x: ((e.clientY - r.top) / r.height - 0.5) * -10, y: ((e.clientX - r.left) / r.width - 0.5) * 10 }

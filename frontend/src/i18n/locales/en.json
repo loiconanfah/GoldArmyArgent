@@ -260,13 +260,19 @@
             "applied": "Applications Sent",
             "cv_analyzed": "CVs Analyzed",
             "interviews": "Interviews Secured",
-            "network": "Network (Contacts)"
+            "network": "Network (Contacts)",
+            "recent_apps": "Recent applications",
+            "timeframe": "in the last 30 days",
+            "analyses": "Analyses performed",
+            "in_progress": "In progress",
+            "new_contacts": "New contacts"
         },
         "charts": {
             "opportunities_title": "Opportunity Growth",
             "total_ops": "Total Opportunities",
             "status_title": "Opportunities by Status",
-            "filter": "Filter"
+            "filter": "Filter",
+            "offers": "offers"
         },
         "recent_activity": {
             "title": "Recent Activity",
@@ -293,7 +299,17 @@
         "back_to_site": "Back to website",
         "prev": "Prev.",
         "next": "Next",
-        "finish": "Finish"
+        "finish": "Finish",
+        "refresh": "Refresh",
+        "copy": "Copy",
+        "copied": "Copied !",
+        "regenerate": "Regenerate",
+        "close": "Close",
+        "delete": "Delete",
+        "details": "Details",
+        "confirm": "Confirm",
+        "total": "Total",
+        "network_error": "Network error: unable to reach the server."
     },
     "auth": {
         "login_title": "Login to GoldArmy",
@@ -498,5 +514,331 @@
         "link_copied": "Link copied to clipboard!",
         "navigation": "Navigation",
         "contact": "Contact"
+    },
+    "nav_admin": {
+        "title": "Command Center",
+        "subtitle": "User and system management",
+        "user_list": "Users",
+        "search_user": "Search by name or email...",
+        "status": "Status",
+        "actions": "Actions",
+        "view_details": "Inspect",
+        "total_users": "Total Users",
+        "active_now": "Active Now",
+        "server_load": "Server Load",
+        "inspection": {
+            "title": "Deep Inspection",
+            "back": "Back to list",
+            "user_info": "User Information",
+            "subscription": "Subscription",
+            "crm_history": "Application History",
+            "cv_view": "CV Visualization",
+            "update_tier": "Modify Plan",
+            "tier_changed": "Plan updated successfully",
+            "no_cv": "No CV uploaded for this user",
+            "no_applications": "No applications found"
+        }
+    },
+    "opportunities": {
+        "title": "Sniper Opportunities",
+        "tagline": "Active Radar",
+        "description": "Smart market scraping in real-time and contextual matching with your profile.",
+        "filters": {
+            "all": "All Relevant",
+            "internships": "Internships Only",
+            "juniors": "Juniors (< 2 years)",
+            "score_80": "Score > 80%"
+        },
+        "max_results": "Max Results:",
+        "search_placeholder": "Ex: Software Engineer Intern...",
+        "location_placeholder": "Location (ex: New York, NY)",
+        "launch_button": "Launch Sniper",
+        "upload_pdf_only": "Please select a PDF file.",
+        "error_reading_pdf": "Error reading PDF.",
+        "network_error_cv": "Network error sending CV.",
+        "cv_profiled": "CV Profiled",
+        "attach_cv": "Attach CV",
+        "parsing_profile": "Parsing Profile...",
+        "cv_ready_desc": "CV ready for matching. Click to modify.",
+        "upload_cv_title": "Upload your CV (.pdf)",
+        "upload_cv_desc": "GoldArmy AI will analyze your skills to calculate a precise Matching Score for each offer.",
+        "analyzing_market": "Analyzing Market...",
+        "analyzing_market_desc": "Searching via multiple providers, filtering noise, and calculating neural matching with your CV profile.",
+        "no_opportunities": "No opportunities detected",
+        "no_opportunities_desc": "Enter your search criteria above to launch the Sniper.",
+        "apply": "Apply",
+        "dead_link": "Dead Link",
+        "adapt_cv": "Adapt CV",
+        "radar": "Radar",
+        "search_error": "Connection error with the GoldArmy Search Server.",
+        "adapt_error": "Error while adapting CV.",
+        "cv_intelligence_title": "Gemini 3 CV Intelligence",
+        "adapting_title": "Analyzing position and rebuilding CV...",
+        "adapting_desc": "Gemini 3.1 Pro agent cross-references your skills with the description.",
+        "summary_title": "Summary & Suggested Strengths",
+        "projects_title": "Recommended Projects (to fill gaps)",
+        "copy_content": "Copy Content",
+        "saving": "Saving...",
+        "save_to_profile": "Save to Profile",
+        "job_stage": "Job / Internship",
+        "recent": "Recent",
+        "no_desc": "No description provided.",
+        "adapt_cv_toast_info": "Please upload/paste your CV in the section above before adapting.",
+        "radar_error": "Error calling Radar."
+    },
+    "crm_board": {
+        "title": "Applications CRM",
+        "add_application": "Add Application",
+        "columns": {
+            "to_apply": "To Apply",
+            "applied": "Applications Sent",
+            "follow_up": "Follow-up Required",
+            "interview": "Interviews"
+        },
+        "card": {
+            "view_details": "Details",
+            "delete": "Delete",
+            "generate_followup": "Follow-up Email",
+            "applied_on": "Applied on {date}",
+            "last_active": "Last active {date}"
+        }
+    },
+    "network_osint": {
+        "title": "Network & OSINT",
+        "tabs": {
+            "osint": "Company Enrichment",
+            "headhunter": "Headhunter",
+            "contacts": "Address Book"
+        },
+        "osint_form": {
+            "title": "Company Analysis",
+            "placeholder": "Company name (ex: Google)",
+            "button": "Start Enrichment",
+            "analyzing": "Analyzing structure..."
+        },
+        "hh_form": {
+            "title": "Find Decision Makers",
+            "placeholder": "Target company",
+            "button": "Identify CTO/HR",
+            "hunting": "Hunting in progress..."
+        },
+        "draft_panel": {
+            "title": "AI Assisted Drafting",
+            "type_label": "Email purpose",
+            "job_request": "Application / Employment",
+            "info_request": "Info contact",
+            "partnership": "Partnership / Other",
+            "button": "Generate Email",
+            "copy": "Copy",
+            "copied": "Copied!"
+        }
+    },
+    "profile_page": {
+        "title": "My Personal Space",
+        "subtitle": "Manage your information and your search arsenal.",
+        "cv_section": "My CV (Knowledge Base)",
+        "portfolio_section": "My Professional Portfolio",
+        "stats_section": "Performance Statistics",
+        "subscription_section": "My Subscription",
+        "upload_cv": "Update my CV",
+        "download_portfolio": "Download my Portfolio (ZIP)",
+        "edit_portfolio": "Edit my Portfolio",
+        "portfolio_disabled": "Temporarily disabled",
+        "since": "Member since {date}"
+    },
+    "settings_page": {
+        "title": "Settings & Billing",
+        "tiers": {
+            "free": {
+                "desc": "To start your market conquest."
+            },
+            "essential": {
+                "desc": "The choice of winners (Recommended)."
+            },
+            "pro": {
+                "desc": "Total power for the elite."
+            },
+            "current": "Current Plan",
+            "upgrade": "Choose {tier}"
+        },
+        "features": {
+            "sniper_search": "{count} Sniper searches / day",
+            "cv_audit": "{count} CV audits (AI Mentor)",
+            "interview": "{count} voice HR interview",
+            "followup": "{count} automatic follow-ups",
+            "adaptation": "{count} AI CV adaptations",
+            "unlimited": "Unlimited"
+        }
+    },
+    "agent_chat": {
+        "title": "GoldArmy Agent",
+        "tagline": "Orchestration, CV Analysis & Web Generation",
+        "add_cv": "Add CV (PDF)",
+        "cv_context": "CV in Context",
+        "extracting_text": "Extracting text...",
+        "click_to_upload": "Click to upload your CV (PDF)",
+        "upload_pdf_only": "Please select a PDF file.",
+        "error_reading_pdf": "Error reading the PDF.",
+        "network_error_pdf": "Unable to contact server to read PDF.",
+        "initial_message": "Hello! I am GoldArmy, your Career Co-Pilot. 🪖\n\nI'm connected and ready. Upload your CV in PDF for me to audit, generate your portfolio, or ask me any question.",
+        "portfolio_soon_title": "🚀 **Portfolio Generator: Coming Soon!**",
+        "portfolio_soon_desc": "We are finalizing the last adjustments to offer you even more spectacular designs and total personalization.\n\nCome back very soon to generate your website in one click! In the meantime, I can audit your CV or help you with your job searches.",
+        "network_error_backend": "⚠️ Connection error with Headquarters (Backend unavailable).",
+        "loading_steps": {
+            "step_0": "Connecting to central system...",
+            "step_1": "Extracting CV data...",
+            "step_2": "ATS algorithmic analysis in progress...",
+            "step_3": "Restructuring career path...",
+            "step_4": "Generating optimization report..."
+        },
+        "placeholders": {
+            "location": "Location...",
+            "message": "Question or command (e.g., Design it like this...)"
+        },
+        "workspace": {
+            "app": "App",
+            "code": "Code",
+            "terminal": "Terminal",
+            "save": "Save",
+            "saving": "Saving...",
+            "zip": "ZIP",
+            "deploy": "Deploy",
+            "soon": "Soon",
+            "save_success": "Portfolio saved successfully!",
+            "save_error": "Error during save.",
+            "zip_error": "Error generating ZIP.",
+            "generating_portfolio": "Generating your {0}",
+            "generating_portfolio_desc": "Gemini 3.1 analyzes your profile, defines a tailor-made artistic direction and structures your source code. This step takes a few seconds...",
+            "no_preview": "Generate a portfolio to see the preview here."
+        },
+        "audit": {
+            "candidate": "Candidate",
+            "title": "Professional Profile",
+            "ats_report": "ATS Report",
+            "global_score": "Global ATS Score",
+            "good_profile": "✅ Good ATS Profile",
+            "to_improve": "⚠️ Profile Needs Improvement",
+            "risk_rejection": "❌ ATS Rejection Risk",
+            "categories": {
+                "keywords": "Keywords",
+                "impact": "Impact & Results",
+                "formatting": "Formatting",
+                "readability": "Readability",
+                "relevance": "Exp. Relevance"
+            },
+            "critical_flaws": "❌ Critical Flaws",
+            "priority_actions": "🛠️ Priority Actions",
+            "missing_tech": "💡 Missing Technologies",
+            "strengths": "✅ Strengths",
+            "download_cv": "⬇ Download Optimized CV (.pdf)",
+            "download_cv_rewritten": "⬇ Download Rewritten CV (.pdf)",
+            "generating_file": "Generating file...",
+            "ats_friendly": "✅ ATS-friendly · Calibri 10pt · Single-column · Optimized Keywords",
+            "rewrite_title": "CV Rewritten & ATS Optimized",
+            "rewrite_desc": "Your CV has been restructured with action verbs and ATS keywords."
+        },
+        "terminal": {
+            "init": "[GoldArmy] Initialization system started...",
+            "build_success": "[Build] Source code compilation finished.",
+            "listening": "[DevServer] Listening on port 3000",
+            "restoring": "[System] Retrieving saved portfolio...",
+            "restore_success": "[System] Portfolio restored successfully.",
+            "restore_error": "[Error] No saved portfolio found.",
+            "designing": "[AI] Starting custom portfolio design...",
+            "analysis": "[AI] Analysis: {0}",
+            "project_success": "[Action] Structured project generated successfully.",
+            "save_db": "[System] Changes saved to database."
+        }
+    },
+    "interview": {
+        "wizard": {
+            "title": "Interview Settings",
+            "tagline": "Configure the context so the AI can simulate the interview perfectly.",
+            "company": "Target Company",
+            "company_placeholder": "Ex: Google, Alan, Startup X...",
+            "job_title": "Position",
+            "job_title_placeholder": "Ex: Fullstack Developer, Product Manager...",
+            "job_details": "Job Description (Details)",
+            "job_details_placeholder": "Paste the main missions, tech stack, or requirements here...",
+            "cv_title": "Your Profile / Current CV",
+            "cv_placeholder": "Paste your CV text or import a PDF for the recruiter to react to...",
+            "import_pdf": "Import PDF",
+            "extracting": "Extracting...",
+            "recruiter_choice": "Recruiter Choice",
+            "interview_format": "Interview Format",
+            "format_general": "General & HR",
+            "format_technical": "Technical",
+            "test_audio": "Test Audio",
+            "launch": "Launch Video Conference"
+        },
+        "ui": {
+            "hi_fi_sound": "Hi-Fi Sound",
+            "analyst_notes": "Analyst Notes",
+            "camera_off": "Camera Off",
+            "me": "Me",
+            "transcription": "Transcription",
+            "you": "YOU",
+            "recruiter": "RECRUITER",
+            "mic_active": "Microphone Active — Speak Now"
+        },
+        "scorecard": {
+            "title": "Interview Summary",
+            "subtitle": "Analysis generated by GoldArmy AI",
+            "analyzing": "Analyzing your answers...",
+            "analyzing_desc": "AI Mentor examines your communication and technical expertise.",
+            "categories": {
+                "technical": "Technical",
+                "communication": "Elocution",
+                "soft_skills": "Attitude",
+                "global": "Global"
+            },
+            "strengths": "Strengths",
+            "improvements": "Areas for Improvement",
+            "recruiter_opinion": "Recruiter Opinion",
+            "final_decision": "Final Decision:",
+            "back_to_dashboard": "Back to Dashboard"
+        },
+        "recruiters": {
+            "sophie": {
+                "name": "Sophie - Tech Lead",
+                "role": "Technical Expertise"
+            },
+            "marc": {
+                "name": "Marc - HR Manager",
+                "role": "Culture & Soft Skills"
+            },
+            "alice": {
+                "name": "Alice - CEO",
+                "role": "Vision & Strategy"
+            }
+        },
+        "messages": {
+            "required_fields": "Position, Company and CV are required.",
+            "select_pdf": "Please select a PDF file.",
+            "extraction_error": "Error during PDF extraction.",
+            "upload_error": "Server connection error during upload.",
+            "unsupported_speech": "Your browser does not support speech recognition. Use Chrome or Safari.",
+            "silence_detected": "Prolonged silence (10s) detected, sending automatically.",
+            "mic_error": "Mic error: {0}",
+            "connected": "Connected to AI Mentor",
+            "analysis_failed": "Analysis failed.",
+            "test_phrase": "Hello, I am {0}. I am ready to start your interview in High Definition. Do you hear me well?",
+            "connection_error": "Error connecting to interview server.",
+            "no_voice": "No system voice",
+            "voice_test_gen": "Generating HD test...",
+            "hd_error": "HD Test Error",
+            "hd_fallback": "HD test failed. Using local fallback voice.",
+            "audio_server_error": "Error connecting to audio server.",
+            "preparing": "Preparing...",
+            "ia_speaking": "AI speaking...",
+            "ready": "Ready",
+            "ready_hd": "Ready (HD)",
+            "hd_play_error": "HD Play Error",
+            "ai_note_sentiment": {
+                "positive": "positive",
+                "neutral": "neutral",
+                "negative": "negative"
+            }
+        }
     }
 }

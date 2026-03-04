@@ -41,11 +41,11 @@ const toggleLanguage = () => {
   locale.value = nextLocale
   localStorage.setItem('language', nextLocale)
 }
-const userEmail = ref('Chargement...')
-
+const userEmail = ref('')
 const userTier = ref('FREE')
 
 onMounted(async () => {
+  userEmail.value = t('common.loading')
   const userStr = localStorage.getItem('user')
   if (userStr) {
     try {
