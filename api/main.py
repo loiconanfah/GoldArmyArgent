@@ -254,10 +254,7 @@ async def get_network_contacts(current_user: dict = Depends(get_current_user)):
         from core.database import get_db
         db = get_db()
         cursor = db.contacts.find({
-            "$or": [
-                {"user_id": current_user["id"]},
-                {"user_id": 'system_user'}
-            ]
+            "user_id": current_user["id"]
         }).sort("last_updated", -1)
         rows = await cursor.to_list(length=None)
         
@@ -552,12 +549,8 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
             "user_id": current_user["id"]
         })
         
-        # 3. Réseau (Contacts totaux — user direct + système)
         network_count = await db.contacts.count_documents({
-            "$or": [
-                {"user_id": current_user["id"]},
-                {"user_id": "system_user"}
-            ]
+            "user_id": current_user["id"]
         })
         
         # 4. CV Analysés (Candidatures totales)
