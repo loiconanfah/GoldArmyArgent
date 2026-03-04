@@ -72,13 +72,21 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
           <span class="text-lg font-black tracking-tight uppercase text-white">GoldArmy</span>
         </div>
         <!-- Links -->
-        <div class="hidden md:flex items-center gap-8">
+        <div class="hidden md:flex items-center gap-6">
           <a v-for="link in ['Agents','Fonctions','Tarifs','Avis']" :key="link"
              :href="`/#${link.toLowerCase()}`"
              class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">
             {{ link }}
           </a>
-          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors">
+          <!-- Added Freemium & Blog links -->
+          <div class="h-4 w-px bg-white/10 mx-2"></div>
+          <router-link to="/free-cv-roast" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1.5">
+            <DocumentTextIcon class="w-3.5 h-3.5" /> Audit CV
+          </router-link>
+          <router-link to="/free-interview" class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5">
+            <VideoCameraIcon class="w-3.5 h-3.5" /> Simulation
+          </router-link>
+          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-400 hover:text-fuchsia-300 transition-colors">
             Blog
           </router-link>
         </div>
@@ -135,14 +143,14 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
             à la préparation d'entretiens — propulsé par une IA de précision militaire.
           </p>
 
-          <div class="flex flex-wrap items-center gap-4">
+          <div class="flex flex-col sm:flex-row flex-wrap items-center gap-4">
             <router-link to="/register"
-              class="flex items-center gap-3 bg-violet-600 hover:bg-violet-500 text-white font-black text-sm uppercase tracking-[0.2em]
+              class="w-full sm:w-auto flex justify-center items-center gap-3 bg-violet-600 hover:bg-violet-500 text-white font-black text-sm uppercase tracking-[0.2em]
                      px-8 py-4 rounded-2xl shadow-xl shadow-violet-600/30 transition-all hover:scale-[1.02] active:scale-95">
-              Commencer gratuitement <ArrowRightIcon class="w-4 h-4" />
+              Créer un Compte <ArrowRightIcon class="w-4 h-4" />
             </router-link>
             <a href="#fonctions"
-               class="flex items-center gap-2 text-sm font-bold text-white/40 hover:text-white/70 transition-colors uppercase tracking-widest">
+               class="flex justify-center items-center gap-2 text-sm font-bold text-white/40 hover:text-white/70 transition-colors uppercase tracking-widest mt-2 sm:mt-0 w-full sm:w-auto">
               Voir les agents ↓
             </a>
           </div>

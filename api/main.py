@@ -1096,6 +1096,129 @@ async def render_portfolio(user_id: str):
     
     return HTMLResponse(content=full_html)
 
+
+# --- Public Try-Before-You-Buy Endpoints ---
+
+@app.post("/api/public/mini-audit")
+async def public_mini_audit(file: UploadFile = File(...)):
+    """
+    Scanne rapidement la 1ère page d'un CV (via PyMuPDF) et renvoie un Score / 100 
+    et LA pire erreur bloquante.
+    """
+    try:
+        import fitz  # PyMuPDF
+        
+        # Read file into memory
+        file_bytes = await file.read()
+        
+        # Open with PyMuPDF
+        doc = fitz.open(stream=file_bytes, filetype="pdf")
+        if len(doc) == 0:
+            raise HTTPException(status_code=400, detail="PDF vide.")
+            
+        # N'extraire QUE la première page pour aller super vite
+        first_page_text = doc[0].get_text()
+        doc.close()
+        
+        # Tronquer à ~3000 caractères max
+        text_snippet = first_page_text[:3000]
+
+        from llm.unified_client import UnifiedLLMClient
+        llm = UnifiedLLMClient()
+        
+        prompt = f"""Tu es un recruteur Tech impitoyable mais pédagogue.
+Voici le texte extrait de la PREMIÈRE PAGE d'un CV candidat :
+---
+{text_snippet}
+---
+
+Donne un audit "Flash" hyper rapide (Mini Roast) mais très complet.
+Renvoie UNIQUEMENT un JSON avec 2 clés (pas de markdown autour) :
+- "score": Un entier sur 100 (sois sévère, moyenne observée 45-65. Ne donne >80 que si c'est parfait).
+- "flaws": Un tableau (list) de EXACTEMENT 15 objets JSON. Chaque objet doit avoir :
+    - "flaw": Une critique très courte (max 15 mots) pointant un défaut précis et bloquant (ex: 'Design terne et aucune métrique d'impact.').
+    - "correction": Une action courte et rassurante (max 15 mots) pour corriger (ex: 'Ajoutez des chiffres clés (CA, utilisateurs).').
+S'il n'y a pas 15 vrais défauts, sois extrêmement pointilleux sur la forme ou l'impact pour en trouver 15.
+"""
+        import json
+        result = await llm.chat([{"role": "user", "content": prompt}], json_mode=True)
+        
+        import re
+        cleaned = re.sub(r'```json\s*', '', result, flags=re.IGNORECASE)
+        cleaned = re.sub(r'```\s*', '', cleaned).strip()
+        
+        # Try to parse
+        match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+        if match:
+            data = json.loads(match.group(0))
+        else:
+            data = json.loads(cleaned)
+            
+        return {
+            "status": "success",
+            "score": data.get("score", 50),
+            "flaws": data.get("flaws", [
+                {"flaw": "Structure difficile à lire pour un ATS.", "correction": "Simplifiez le design et enlevez les colonnes complexes."},
+                {"flaw": "Manque de mots-clés clés.", "correction": "Ajoutez une section 'Compétences' avec des termes techniques clairs."},
+                {"flaw": "Format visuel non optimisé.", "correction": "Aérez le texte et utilisez des bullet points."}
+            ])
+        }
+        
+    except Exception as e:
+        logger.error(f"[Public API] Erreur Mini-Audit: {e}")
+        return {
+            "status": "success",
+            "score": 42,
+            "flaws": [
+                {"flaw": "Le format du fichier empêche l'IA de le lire correctement.", "correction": "Uploadez un PDF texte généré par Word ou Canva."},
+                {"flaw": "Texte potentiellement vectorisé ou image.", "correction": "Assurez-vous que le texte du PDF peut être sélectionné."},
+                {"flaw": "Veuillez réessayer avec un PDF standard.", "correction": "Si le problème persiste, contactez le support."}
+            ]
+        }
+
+class PublicInterviewRequest(BaseModel):
+    job_title: str
+    user_response: Optional[str] = None
+    context: Optional[str] = None
+
+@app.post("/api/public/interview")
+async def public_interview(req: PublicInterviewRequest):
+    """
+    Point d'entrée pour la simulation d'entretien vocal de la landing page.
+    Si user_response est None -> l'IA donne la question initiale.
+    Sinon -> l'IA donne un feedback hyper rapide.
+    """
+    try:
+        from llm.unified_client import UnifiedLLMClient
+        llm = UnifiedLLMClient()
+        
+        if not req.user_response:
+            # 1. Générer la question piège
+            prompt = f"""Tu es un recruteur expert. Tu fais passer un entretien express (1 seule question) pour le poste de : {req.job_title}.
+Pose UNE question piège, difficile ou très technique, que ce candidat rencontrerait dans la vraie vie.
+Ne dis pas bonjour la réponse doit être juste la question elle-même pour qu'elle soit lue par une synthèse vocale (ton sec et professionnel)."""
+        else:
+            # 2. Evaluer la réponse
+            prompt = f"""Tu es un recruteur expert. Tu as posé cette question pour un poste de {req.job_title} :
+Question : {req.context}
+
+Le candidat a répondu (transcription orale) :
+{req.user_response}
+
+Fais-lui un feedback cash en 2 phrases MAXIMUM ! (soit positif, soit indique pourquoi c'est mauvais).
+Ne sois pas poli, sois un coach stricte. Cette réponse sera lue par synthèse vocale."""
+
+        response_text = await llm.chat([{"role": "user", "content": prompt}], max_tokens=200)
+        
+        return {
+            "status": "success",
+            "text": response_text.replace("*", "").replace("\"", "").strip()  # Clean for TTS
+        }
+        
+    except Exception as e:
+        logger.error(f"[Public API] Erreur Interview: {e}")
+        raise HTTPException(status_code=500, detail="Erreur génération.")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -23,6 +23,16 @@ const routes = [
         component: () => import('../views/Blog.vue')
     },
     {
+        path: '/free-cv-roast',
+        name: 'FreeCVRoast',
+        component: () => import('../views/FreeCVRoast.vue')
+    },
+    {
+        path: '/free-interview',
+        name: 'FreeInterview',
+        component: () => import('../views/FreeInterview.vue')
+    },
+    {
         path: '/blog/:id',
         name: 'Article',
         component: () => import('../views/Article.vue')
