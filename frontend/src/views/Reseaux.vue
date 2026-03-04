@@ -146,9 +146,8 @@ const selectHr = (name) => {
 }
 
 const draftEmail = async () => {
-    const company = draftCompanyName.value.trim() || companyName.value.trim()
     if (!company) {
-        draftError.value = t('network_osint.company_required') || "Veuillez saisir le nom de l'entreprise."
+        draftError.value = t('network_osint.company_required')
         return
     }
     
@@ -212,13 +211,13 @@ const copyDraftEmail = async () => {
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                  </span>
-                 {{ t('network_osint.tagline') || 'Intelligence Réseaux Active' }}
+                 {{ t('network_osint.tagline') }}
             </div>
             <h1 class="text-4xl md:text-6xl font-display font-black text-white tracking-tight leading-[1.1] mb-6">
-                {{ t('network_osint.title_part1') || 'Levez les barrières du' }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">{{ t('network_osint.title_part2') || 'Recrutement.' }}</span>
+                {{ t('network_osint.title_part1') }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">{{ t('network_osint.title_part2') }}</span>
             </h1>
             <p class="text-slate-400 text-lg font-medium leading-relaxed">
-                {{ t('network_osint.description') || "Utilisez l'OSINT pour identifier les décideurs et générez des approches froides si percutantes qu'elles ne peuvent pas être ignorées." }}
+                {{ t('network_osint.description') }}
             </p>
         </div>
     </div>
@@ -283,7 +282,7 @@ const copyDraftEmail = async () => {
             </form>
 
             <div v-if="hasEnriched && hrProfiles.length > 0" class="mt-8 pt-8 border-t border-surface-800">
-                <h4 class="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6">Décideurs identifiés via OSINT</h4>
+                <h4 class="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6">{{ t('network_osint.osint_identified') }}</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div 
                         v-for="hr in hrProfiles" 
@@ -308,7 +307,7 @@ const copyDraftEmail = async () => {
                             </a>
                         </div>
                         <h5 class="text-sm font-bold text-white mb-1 group-hover/card:text-emerald-400 transition-colors">{{ hr.name }}</h5>
-                        <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed h-8">{{ hr.snippet || "Profil identifié par l'analyseur OSINT." }}</p>
+                        <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed h-8">{{ hr.snippet || t('network_osint.osint_snippet_fallback') }}</p>
                         
                         <div v-if="selectedHrName === hr.name" class="absolute top-2 right-2 flex h-2 w-2">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -318,7 +317,7 @@ const copyDraftEmail = async () => {
                 </div>
             </div>
             <div v-else-if="hasEnriched && hrProfiles.length === 0" class="mt-8 pt-8 border-t border-surface-800 text-center">
-                <p class="text-sm text-slate-500 italic">Aucun profil spécifique trouvé via OSINT. Essayez l'Agent Headhunter pour une recherche plus profonde.</p>
+                <p class="text-sm text-slate-500 italic">{{ t('network_osint.osint_empty') }}</p>
             </div>
         </div>
 
@@ -350,8 +349,8 @@ const copyDraftEmail = async () => {
                         </div>
 
                         <div class="space-y-2">
-                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ t('network_osint.draft_panel.target_label') || 'Domaine visé' }}</label>
-                            <input v-model="targetDomain" type="text" :placeholder="t('network_osint.draft_panel.target_placeholder') || 'ex: Analyste SOC, Dév Frontend...'" class="w-full bg-surface-950 border border-surface-800 text-white rounded-xl px-4 py-3 text-sm focus:border-indigo-500 transition-all font-medium outline-none" />
+                            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ t('network_osint.draft_panel.target_label') }}</label>
+                            <input v-model="targetDomain" type="text" :placeholder="t('network_osint.draft_panel.target_placeholder')" class="w-full bg-surface-950 border border-surface-800 text-white rounded-xl px-4 py-3 text-sm focus:border-indigo-500 transition-all font-medium outline-none" />
                         </div>
 
                         <button 
@@ -376,8 +375,8 @@ const copyDraftEmail = async () => {
                         <div class="w-20 h-20 rounded-full bg-surface-800 flex items-center justify-center mb-6">
                             <EnvelopeIcon class="w-10 h-10 text-slate-600" />
                         </div>
-                        <h3 class="text-xl font-bold text-slate-300">{{ t('network_osint.draft_panel.waiting') || 'En attente de génération' }}</h3>
-                        <p class="text-sm text-slate-500 max-w-xs mt-2">{{ t('network_osint.draft_panel.waiting_desc') || "Remplissez le nom de l'entreprise et lancez la rédaction par l'IA." }}</p>
+                        <h3 class="text-xl font-bold text-slate-300">{{ t('network_osint.draft_panel.waiting') }}</h3>
+                        <p class="text-sm text-slate-500 max-w-xs mt-2">{{ t('network_osint.draft_panel.waiting_desc') }}</p>
                     </div>
 
                     <div v-else-if="isDrafting" class="flex-1 flex flex-col items-center justify-center text-center">
@@ -385,8 +384,8 @@ const copyDraftEmail = async () => {
                             <div class="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
                             <div class="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
-                        <h3 class="text-xl font-bold text-white animate-pulse">{{ t('network_osint.draft_panel.drafting') || "L'IA rédige..." }}</h3>
-                        <p class="text-sm text-slate-400 mt-2">{{ t('network_osint.draft_panel.customizing') || "Personnalisation en cours avec votre CV..." }}</p>
+                        <h3 class="text-xl font-bold text-white animate-pulse">{{ t('network_osint.draft_panel.drafting') }}</h3>
+                        <p class="text-sm text-slate-400 mt-2">{{ t('network_osint.draft_panel.customizing') }}</p>
                     </div>
 
                     <div v-else-if="draftResult" class="flex flex-col h-full animate-fade-in">
@@ -396,7 +395,7 @@ const copyDraftEmail = async () => {
                                     <CheckBadgeIcon class="w-6 h-6 text-emerald-400" />
                                 </div>
                                 <div>
-                                    <h3 class="font-bold text-white tracking-tight leading-none mb-1">{{ t('network_osint.draft_panel.success_title') || 'Approche Terminée' }}</h3>
+                                    <h3 class="font-bold text-white tracking-tight leading-none mb-1">{{ t('network_osint.draft_panel.success_title') }}</h3>
                                     <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">GEMINI 2.0 FLASH // ULTRA-PERSONALIZED</p>
                                 </div>
                             </div>
@@ -461,7 +460,7 @@ const copyDraftEmail = async () => {
         <!-- Headhunter Results Grid -->
         <div v-if="hasHunted" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
             <div v-if="decisionMakers.length === 0" class="col-span-full text-center text-slate-400 py-12 bg-surface-900/50 rounded-2xl border border-surface-800 border-dashed">
-                {{ t('network_osint.hh_form.empty') || "Aucun profil de décideur n'a été clairement identifié par l'Agent IA." }}
+                {{ t('network_osint.hh_form.empty') }}
             </div>
             
             <div 
@@ -486,14 +485,14 @@ const copyDraftEmail = async () => {
                 
                 <h3 class="text-lg font-bold text-white mb-1 group-hover:text-indigo-400 transition-colors tracking-tight">{{ maker.name }}</h3>
                 <p class="text-xs font-bold text-indigo-400/70 mb-2 uppercase tracking-tight">{{ maker.role }}</p>
-                <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed h-8 mb-6 italic">{{ maker.snippet || "Stratégie d'infiltration identifiée par l'IA." }}</p>
+                <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed h-8 mb-6 italic">{{ maker.snippet || t('network_osint.osint_snippet_fallback') }}</p>
                 
                 <button 
                     @click="activeTab='osint'; companyName=hhCompanyName; selectedHrName=maker.name; requestType='emploi';"
                     class="w-full bg-surface-950 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-400 border border-surface-800 hover:border-indigo-500/50 font-black py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
                 >
                     <EnvelopeIcon class="w-4 h-4" />
-                    {{ t('network_osint.hh_form.prepare_cta') || "Préparer l'approche" }}
+                    {{ t('network_osint.hh_form.prepare_cta') }}
                 </button>
             </div>
         </div>
@@ -504,8 +503,8 @@ const copyDraftEmail = async () => {
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
             <div>
-                <h2 class="text-2xl font-bold text-white tracking-tight">{{ t('network_osint.contacts_title_prefix') || 'Mon' }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">{{ t('network_osint.tabs.contacts') }}</span></h2>
-                <p class="text-slate-500 text-sm mt-0.5 font-medium">{{ savedContacts.length }} {{ t('network_osint.companies_collected') || 'entreprises collectées' }}</p>
+                <h2 class="text-2xl font-bold text-white tracking-tight">{{ t('network_osint.contacts_title_prefix') }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">{{ t('network_osint.tabs.contacts') }}</span></h2>
+                <p class="text-slate-500 text-sm mt-0.5 font-medium">{{ savedContacts.length }} {{ t('network_osint.companies_collected') }}</p>
             </div>
             <button @click="loadContacts" class="flex items-center gap-2 px-6 py-3 text-sm font-black text-slate-400 hover:text-white bg-surface-900 rounded-2xl border border-surface-800 hover:bg-surface-800 transition-all active:scale-95">
                 <ArrowPathIcon :class="isLoadingContacts ? 'animate-spin' : ''" class="w-4 h-4" />
@@ -604,9 +603,9 @@ const copyDraftEmail = async () => {
                     <SparklesIcon class="w-10 h-10 text-indigo-400 animate-pulse" />
                 </div>
             </div>
-            <h3 class="text-2xl font-black text-white mb-3">{{ t('network_osint.loading_title') || 'Intelligence en Action' }}</h3>
+            <h3 class="text-2xl font-black text-white mb-3">{{ t('network_osint.loading_title') }}</h3>
             <p class="text-slate-400 font-medium leading-relaxed">
-                {{ t('network_osint.loading_desc') || "Gemini 2.0 Pro analyse votre CV et l'entreprise pour rédiger une approche ultra-personnalisée..." }}
+                {{ t('network_osint.loading_desc') }}
             </p>
             <div class="mt-8 flex items-center justify-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0ms"></span>

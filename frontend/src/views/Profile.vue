@@ -16,8 +16,10 @@ import {
     ShieldCheckIcon
 } from '@heroicons/vue/24/outline'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
+const { t } = useI18n()
 const isLoading = ref(true)
 const isSaving = ref(false)
 const isUploadingCv = ref(false)
@@ -48,7 +50,7 @@ const fetchProfile = async () => {
             profile.value = { ...profile.value, ...json.data }
         }
     } catch (e) {
-        toastState.addToast("Impossible de charger le profil.", "error")
+        toastState.addToast(t('profile.toast_load_error'), "error")
     } finally {
         isLoading.value = false
     }
@@ -64,12 +66,12 @@ const saveProfile = async () => {
         })
         const json = await res.json()
         if (json.status === 'success') {
-            toastState.addToast("Profil mis à jour avec succès !")
+            toastState.addToast(t('profile.toast_save_success'))
         } else {
-            toastState.addToast(json.detail || "Erreur lors de la sauvegarde.", "error")
+            toastState.addToast(json.detail || t('profile.toast_save_error'), "error")
         }
     } catch (e) {
-        toastState.addToast("Erreur de connexion au serveur.", "error")
+        toastState.addToast(t('profile.toast_connect_error'), "error")
     } finally {
         isSaving.value = false
     }
@@ -93,12 +95,12 @@ const onCvFileChange = async (event) => {
         const json = await res.json()
         if (json.status === 'success') {
             profile.value.cv_text = json.text
-            toastState.addToast("CV extrait et enregistré avec succès !")
+            toastState.addToast(t('profile.toast_cv_success'))
         } else {
-            toastState.addToast(json.detail || "Erreur lors de l'upload.", "error")
+            toastState.addToast(json.detail || t('profile.toast_cv_upload_error'), "error")
         }
     } catch (e) {
-        toastState.addToast("Erreur lors de l'envoi du CV.", "error")
+        toastState.addToast(t('profile.toast_cv_send_error'), "error")
     } finally {
         isUploadingCv.value = false
     }
@@ -122,12 +124,12 @@ const onAvatarFileChange = async (event) => {
         const json = await res.json()
         if (json.status === 'success') {
             profile.value.avatar_url = json.avatar_url
-            toastState.addToast("Photo de profil mise à jour !")
+            toastState.addToast(t('profile.toast_avatar_success'))
         } else {
-            toastState.addToast(json.detail || "Erreur de photo.", "error")
+            toastState.addToast(json.detail || t('profile.toast_avatar_error'), "error")
         }
     } catch (e) {
-        toastState.addToast("Erreur lors de l'envoi de la photo.", "error")
+        toastState.addToast(t('profile.toast_avatar_send_error'), "error")
     } finally {
         isUploadingAvatar.value = false
     }
@@ -146,7 +148,7 @@ const downloadZip = async () => {
         const res = await fetch('http://localhost:8000/api/portfolio/download-zip', {
             headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
-        if (!res.ok) throw new Error("Erreur de téléchargement")
+        if (!res.ok) throw new Error("Download error")
         const blob = await res.blob()
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -154,7 +156,7 @@ const downloadZip = async () => {
         a.download = 'goldarmy_portfolio.zip'
         a.click()
     } catch (e) {
-        toastState.addToast('Erreur lors du téléchargement du ZIP.', 'error')
+        toastState.addToast(t('profile.download_error'), 'error')
     }
 }
 
@@ -169,13 +171,13 @@ const promoteUser = async () => {
         })
         const data = await res.json()
         if (res.ok) {
-            toastState.addToast(`L'utilisateur ${adminEmailToPromote.value} est maintenant Premium !`, 'success')
+            toastState.addToast(t('profile.toast_promote_success', [adminEmailToPromote.value]), 'success')
             adminEmailToPromote.value = ''
         } else {
-            toastState.addToast(data.detail || 'Erreur promotion', 'error')
+            toastState.addToast(data.detail || t('profile.toast_promote_error'), 'error')
         }
     } catch (e) {
-        toastState.addToast('Erreur connexion admin', 'error')
+        toastState.addToast(t('profile.toast_admin_error'), 'error')
     } finally {
         isPromoting.value = false
     }
@@ -192,8 +194,8 @@ const promoteUser = async () => {
                 <ArrowLeftIcon class="w-5 h-5" />
             </button>
             <div>
-                <h1 class="text-3xl font-display font-black text-white tracking-tight">Mon <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">Profil</span></h1>
-                <p class="text-slate-400 text-sm font-medium mt-1">Gérez votre identité numérique et vos documents de carrière.</p>
+                <h1 class="text-3xl font-display font-black text-white tracking-tight">{{ $t('profile.title').split(' ')[0] }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-500">{{ $t('profile.title').split(' ').slice(1).join(' ') }}</span></h1>
+                <p class="text-slate-400 text-sm font-medium mt-1">{{ $t('profile.subtitle') }}</p>
             </div>
         </div>
         
@@ -204,7 +206,7 @@ const promoteUser = async () => {
                 class="hidden md:flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 border border-red-400/30"
             >
                 <ShieldCheckIcon class="w-4 h-4" />
-                Accès Console Admin
+                {{ $t('profile.admin_console_btn') }}
             </button>
 
             <button 
@@ -212,10 +214,10 @@ const promoteUser = async () => {
                 :disabled="isSaving"
                 class="hidden md:flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
             >
-                <span v-if="!isSaving">Enregistrer les modifications</span>
+                <span v-if="!isSaving">{{ $t('profile.save_btn') }}</span>
                 <span v-else class="flex items-center gap-2">
                     <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    Sauvegarde...
+                    {{ $t('profile.saving') }}
                 </span>
             </button>
         </div>
@@ -255,25 +257,25 @@ const promoteUser = async () => {
                         </button>
                     </div>
                     
-                    <h2 class="text-xl font-bold text-white mb-1 tracking-tight">{{ profile.full_name || 'Candidat GoldArmy' }}</h2>
+                    <h2 class="text-xl font-bold text-white mb-1 tracking-tight">{{ profile.full_name || $t('profile.candidate_fallback') }}</h2>
                     <p class="text-slate-500 text-sm mb-3 font-medium">{{ profile.email }}</p>
 
                     <!-- Profile Badge Forfait -->
                     <div class="mb-6">
-                        <span v-if="profile.subscription_tier === 'ADMIN'" class="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-rose-500/20">Admin GoldArmy</span>
-                        <span v-else-if="profile.subscription_tier === 'PRO'" class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-indigo-500/20">Membre GoldArmy Pro</span>
-                        <span v-else-if="profile.subscription_tier === 'ESSENTIAL'" class="bg-gradient-to-r from-amber-400 to-gold-500 text-surface-950 text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-gold-500/20">Membre GoldArmy Essentiel</span>
-                        <span v-else class="bg-surface-800 text-slate-400 text-[10px] uppercase font-black px-3 py-1 rounded-full border border-surface-700">Forfait Gratuit</span>
+                        <span v-if="profile.subscription_tier === 'ADMIN'" class="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-rose-500/20">{{ $t('profile.badge_admin') }}</span>
+                        <span v-else-if="profile.subscription_tier === 'PRO'" class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-indigo-500/20">{{ $t('profile.badge_pro') }}</span>
+                        <span v-else-if="profile.subscription_tier === 'ESSENTIAL'" class="bg-gradient-to-r from-amber-400 to-gold-500 text-surface-950 text-[10px] uppercase font-black px-3 py-1 rounded-full shadow-lg shadow-gold-500/20">{{ $t('profile.badge_essential') }}</span>
+                        <span v-else class="bg-surface-800 text-slate-400 text-[10px] uppercase font-black px-3 py-1 rounded-full border border-surface-700">{{ $t('profile.badge_free') }}</span>
                     </div>
                     
                     <div class="w-full space-y-3 pt-6 border-t border-surface-800">
                         <div class="flex items-center gap-3 text-slate-400 font-medium text-[13px]">
                             <div class="w-2 h-2 rounded-full" :class="profile.cv_text ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-700'"></div>
-                            {{ profile.cv_text ? 'CV Chargé' : 'Aucun CV' }}
+                            {{ profile.cv_text ? $t('profile.cv_loaded') : $t('profile.cv_empty') }}
                         </div>
                         <div class="flex items-center gap-3 text-slate-400 font-medium text-[13px]">
                             <LinkIcon class="w-4 h-4" :class="profile.portfolio_url ? 'text-indigo-400' : 'text-slate-700'" />
-                            {{ profile.portfolio_url ? 'Portfolio lié' : 'Pas de lien externe' }}
+                            {{ profile.portfolio_url ? $t('profile.portfolio_linked') : $t('profile.portfolio_none') }}
                         </div>
                     </div>
                 </div>
@@ -302,10 +304,10 @@ const promoteUser = async () => {
                     <div class="p-2 bg-indigo-500/10 rounded-xl">
                         <ShieldCheckIcon class="w-5 h-5 text-indigo-400" />
                     </div>
-                    <h3 class="text-xl font-bold text-white tracking-tight">Console Admin</h3>
+                    <h3 class="text-xl font-bold text-white tracking-tight">{{ $t('profile.admin_panel_title') }}</h3>
                 </div>
                 <div class="space-y-4">
-                    <p class="text-xs text-slate-400 font-medium leading-relaxed">Promouvoir un utilisateur au rang Premium (PRO) via son e-mail.</p>
+                    <p class="text-xs text-slate-400 font-medium leading-relaxed">{{ $t('profile.admin_promote_desc') }}</p>
                     <div class="flex gap-2">
                         <input 
                             v-model="adminEmailToPromote" 
@@ -318,7 +320,7 @@ const promoteUser = async () => {
                             :disabled="isPromoting"
                             class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-2xl transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50"
                         >
-                            {{ isPromoting ? '...' : 'PROMOUVOIR' }}
+                            {{ isPromoting ? '...' : $t('profile.promote_btn') }}
                         </button>
                     </div>
                 </div>
@@ -333,12 +335,12 @@ const promoteUser = async () => {
                     <div class="p-2 bg-indigo-500/10 rounded-xl">
                         <PencilSquareIcon class="w-5 h-5 text-indigo-400" />
                     </div>
-                    <h3 class="text-xl font-bold text-white tracking-tight">Détails Personnels</h3>
+                    <h3 class="text-xl font-bold text-white tracking-tight">{{ $t('profile.personal_details') }}</h3>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-7">
                     <div class="space-y-2.5">
-                        <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Nom Complet</label>
+                        <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ $t('profile.full_name_label') }}</label>
                         <input 
                             v-model="profile.full_name"
                             type="text" 
@@ -347,7 +349,7 @@ const promoteUser = async () => {
                         />
                     </div>
                     <div class="space-y-2.5">
-                        <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Portfolio / LinkedIn</label>
+                        <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ $t('profile.portfolio_label') }}</label>
                         <input 
                             v-model="profile.portfolio_url"
                             type="text" 
@@ -356,11 +358,11 @@ const promoteUser = async () => {
                         />
                     </div>
                     <div class="md:col-span-2 space-y-2.5">
-                        <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">Bio / Titre Professionnel</label>
+                        <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest ml-1">{{ $t('profile.bio_label') }}</label>
                         <textarea 
                             v-model="profile.bio"
                             rows="3" 
-                            placeholder="Développeur Fullstack passionné par l'IA..."
+                            :placeholder="$t('profile.bio_placeholder')"
                             class="w-full bg-surface-950 border border-surface-800 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-800 resize-none font-medium leading-relaxed"
                         ></textarea>
                     </div>
@@ -374,7 +376,7 @@ const promoteUser = async () => {
                         <div class="p-2 bg-emerald-500/10 rounded-xl">
                             <DocumentTextIcon class="w-5 h-5 text-emerald-400" />
                         </div>
-                        <h3 class="text-xl font-bold text-white tracking-tight">Mon CV Principal</h3>
+                        <h3 class="text-xl font-bold text-white tracking-tight">{{ $t('profile.cv_section_title') }}</h3>
                     </div>
                     
                     <button 
@@ -384,18 +386,18 @@ const promoteUser = async () => {
                     >
                         <CloudArrowUpIcon v-if="!isUploadingCv" class="w-4 h-4" />
                         <svg v-else class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        EXTRAIRE DEPUIS PDF
+                        {{ $t('profile.cv_extract_btn') }}
                     </button>
                 </div>
                 
-                <p class="text-sm text-slate-500 mb-6 font-medium leading-relaxed">C'est la base qu'utilisera l'IA pour le Sniper et les approches réseaux. L'extraction PDF permet de remplir ce champ automatiquement.</p>
+                <p class="text-sm text-slate-500 mb-6 font-medium leading-relaxed">{{ $t('profile.cv_desc') }}</p>
                 
                 <div class="relative group/cv">
                     <textarea 
                         v-model="profile.cv_text"
                         rows="12" 
                         class="w-full bg-surface-950 border border-surface-800 rounded-3xl px-6 py-6 text-slate-300 text-[13px] leading-relaxed focus:outline-none focus:border-emerald-500/50 transition-all font-mono custom-scrollbar"
-                        placeholder="Contenu de votre CV..."
+                        :placeholder="$t('profile.cv_placeholder')"
                     ></textarea>
                     <!-- Decorative HUD line -->
                     <div class="absolute bottom-4 right-6 text-[10px] font-mono text-slate-700 tracking-tighter pointer-events-none">
@@ -411,7 +413,7 @@ const promoteUser = async () => {
                         <div class="p-2 bg-indigo-500/10 rounded-xl">
                             <SparklesIcon class="w-5 h-5 text-indigo-400" />
                         </div>
-                        <h3 class="text-xl font-bold text-white tracking-tight">Mon Portfolio IA</h3>
+                        <h3 class="text-xl font-bold text-white tracking-tight">{{ $t('profile.portfolio_section_title') }}</h3>
                     </div>
                 </div>
 
@@ -422,13 +424,13 @@ const promoteUser = async () => {
                                 <DocumentTextIcon class="w-6 h-6 text-emerald-400" />
                             </div>
                             <div>
-                                <h4 class="font-bold text-white text-sm">Projet Web Complet</h4>
-                                <p class="text-xs text-slate-500">Prêt pour l'édition ou l'export.</p>
+                                <h4 class="font-bold text-white text-sm">{{ $t('profile.portfolio_project') }}</h4>
+                                <p class="text-xs text-slate-500">{{ $t('profile.portfolio_ready') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <button disabled class="px-5 py-2.5 bg-slate-700 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed flex items-center gap-2">
-                                Éditer (Bientôt)
+                                {{ $t('profile.portfolio_edit_soon') }}
                             </button>
                             <button @click="downloadZip" class="px-5 py-2.5 bg-surface-800 border border-surface-700 hover:border-emerald-500/50 text-emerald-400 text-xs font-bold rounded-xl transition-all">
                                 ZIP
@@ -439,9 +441,9 @@ const promoteUser = async () => {
                 </div>
 
                 <div v-else class="text-center py-12 border-2 border-dashed border-surface-800 rounded-[2rem] bg-surface-950/30">
-                    <p class="text-slate-500 text-sm mb-4">Vous n'avez pas encore généré de portfolio IA.</p>
+                    <p class="text-slate-500 text-sm mb-4">{{ $t('profile.portfolio_empty') }}</p>
                     <button disabled class="px-6 py-2 bg-slate-800 text-slate-500 font-bold rounded-xl border border-surface-800 cursor-not-allowed">
-                        Bientôt disponible →
+                        {{ $t('profile.portfolio_coming_soon') }}
                     </button>
                 </div>
             </div>
@@ -453,7 +455,7 @@ const promoteUser = async () => {
                     :disabled="isSaving"
                     class="w-full flex items-center justify-center gap-2 px-6 py-5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-2xl shadow-xl disabled:opacity-50"
                 >
-                    Enregistrer les modifications
+                    {{ $t('profile.save_btn') }}
                 </button>
             </div>
         </div>

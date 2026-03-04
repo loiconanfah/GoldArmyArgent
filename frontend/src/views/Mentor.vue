@@ -1,5 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { 
   AcademicCapIcon, 
   BoltIcon, 
@@ -8,27 +9,28 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
+const { t } = useI18n()
 
 const mentorFeatures = [
   {
-    title: 'Audit & Correction CV ATS',
-    desc: 'L\'IA audite ton CV, identifie tes failles, puis le réécrit entièrement pour passer les filtres ATS. Télécharge la version corrigée en Word (.docx), prête à envoyer.',
+    titleKey: 'mentor.features.cv_audit_title',
+    descKey: 'mentor.features.cv_audit_desc',
     icon: DocumentArrowDownIcon,
     color: 'from-indigo-500 to-purple-500',
     locked: false,
-    actionPrompt: 'Audite et réécris mon CV pour les ATS'
+    actionPromptKey: 'mentor.features.cv_audit_prompt'
   },
   {
-    title: 'Générateur de Portfolio',
-    desc: "L'Agent extrait tes compétences et génère le code source complet d'un portfolio web ultra-moderne, responsive et personnalisé.",
+    titleKey: 'mentor.features.portfolio_title',
+    descKey: 'mentor.features.portfolio_desc',
     icon: CodeBracketIcon,
     color: 'from-emerald-500 to-teal-500',
     locked: true,
-    actionPrompt: 'Génère mon portfolio web'
+    actionPromptKey: 'mentor.features.portfolio_prompt'
   },
   {
-    title: 'Simulateur d\'Entretien',
-    desc: 'L\'IA joue le rôle du CTO de ta cible et te fait passer un entretien oral ultra-réaliste pour tester tes réponses sous pression.',
+    titleKey: 'mentor.features.interview_title',
+    descKey: 'mentor.features.interview_desc',
     icon: AcademicCapIcon,
     color: 'from-blue-500 to-violet-500',
     locked: false,
@@ -40,8 +42,8 @@ const handleFeatureClick = (feature) => {
     if (!feature.locked) {
         if (feature.routeTarget) {
             router.push(feature.routeTarget)
-        } else if (feature.actionPrompt) {
-            router.push({ name: 'AgentChat', query: { prompt: feature.actionPrompt }})
+        } else if (feature.actionPromptKey) {
+            router.push({ name: 'AgentChat', query: { prompt: t(feature.actionPromptKey) }})
         }
     }
 }
@@ -56,17 +58,17 @@ const handleFeatureClick = (feature) => {
          <span class="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20">
             <AcademicCapIcon class="w-8 h-8 text-white" />
          </span>
-         Le Mentor IA
+         {{ $t('mentor.title') }}
          <span class="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs uppercase font-bold px-3 py-1 rounded-full tracking-wider ml-2">Phase 2</span>
        </h1>
-       <p class="text-slate-400 mt-2 text-lg">Prépare-toi comme un Pro. Audits, simulations, comblement de lacunes.</p>
+       <p class="text-slate-400 mt-2 text-lg">{{ $t('mentor.subtitle') }}</p>
     </div>
 
     <!-- Feature Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
        <div 
          v-for="feature in mentorFeatures" 
-         :key="feature.title"
+         :key="feature.titleKey"
          class="relative flex flex-col p-6 rounded-2xl border border-slate-700 bg-slate-800/50 backdrop-blur overflow-hidden group hover:border-slate-500 transition-colors"
        >
           <!-- Background Glow -->
@@ -75,7 +77,7 @@ const handleFeatureClick = (feature) => {
           <!-- Coming Soon Badge -->
           <div v-if="feature.locked" class="absolute top-4 right-4 z-20">
              <span class="bg-indigo-500 text-white text-[10px] font-black px-2 py-1 rounded-md shadow-lg shadow-indigo-500/20 animate-pulse">
-                BIENTÔT
+                {{ $t('mentor.coming_soon_badge') }}
              </span>
           </div>
           
@@ -83,8 +85,8 @@ const handleFeatureClick = (feature) => {
              <div :class="`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg mb-6`">
                <component :is="feature.icon" class="w-6 h-6 text-white" />
              </div>
-             <h3 class="text-xl font-bold text-white mb-3">{{ feature.title }}</h3>
-             <p class="text-slate-400 text-sm leading-relaxed mb-6">{{ feature.desc }}</p>
+             <h3 class="text-xl font-bold text-white mb-3">{{ $t(feature.titleKey) }}</h3>
+             <p class="text-slate-400 text-sm leading-relaxed mb-6">{{ $t(feature.descKey) }}</p>
           </div>
           
           <div class="relative z-10 mt-auto pt-4 border-t border-slate-700 flex justify-between items-center">
@@ -94,7 +96,7 @@ const handleFeatureClick = (feature) => {
                'px-4 py-2 font-bold rounded-lg transition-colors text-sm w-full text-center',
                feature.locked ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-100/10 text-white hover:bg-slate-100/20'
              ]">
-               {{ feature.locked ? 'Bientôt Disponible' : 'Lancer l\'outil' }}
+               {{ feature.locked ? $t('mentor.coming_soon_btn') : $t('mentor.launch_tool') }}
              </button>
           </div>
        </div>
