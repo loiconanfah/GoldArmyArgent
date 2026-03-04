@@ -194,7 +194,8 @@ const sendMessage = async () => {
             message: userMsg, 
             cv_text: cvText.value, 
             cv_filename: cvFilename.value, 
-            nb_results: 5, 
+            // Ne pas forcer nb_results si un CV est présent (évite le faux déclenchement du quota job search)
+            nb_results: cvText.value ? null : 5, 
             location: inputLocation.value,
             session_id: sessionId.value,
             image_data: selectedImage.value
@@ -202,32 +203,35 @@ const sendMessage = async () => {
     })
     const data = await res.json()
     
+    // Gère la réponse plate {status, type, content} (ex: limit_reached) ET la réponse imbriquée {status, data: {type, content}}
+    const responseData = data.data || data
+    
     const assistantMsg = {
       id: Date.now() + 2,
       role: 'assistant',
-      type: (data.data && data.data.type) || 'chat',
-      is_html: data.data && data.data.type === 'portfolio_html',
-      activeTab: data.data && data.data.type === 'portfolio_html' ? 'preview' : 'code',
-      is_cv_rewrite: data.data && data.data.type === 'cv_rewrite',
-      is_audit_rewrite: data.data && data.data.type === 'cv_audit_rewrite',
-      audit: (data.data && data.data.audit) || '',
-      content: (data.data && data.data.content) || 'Réponse vide du serveur.',
+      type: responseData.type || 'chat',
+      is_html: responseData.type === 'portfolio_html',
+      activeTab: responseData.type === 'portfolio_html' ? 'preview' : 'code',
+      is_cv_rewrite: responseData.type === 'cv_rewrite',
+      is_audit_rewrite: responseData.type === 'cv_audit_rewrite',
+      audit: responseData.audit || '',
+      content: responseData.content || 'Réponse vide du serveur.',
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     }
     
     
     // Si c'est un portfolio (Projet structuré), on l'ouvre dans le Workspace SANS message dans le chat
-    if (data.data && data.data.type === 'portfolio_project' && data.data.project) {
+    if (responseData.type === 'portfolio_project' && responseData.project) {
         workspaceProject.value = {
             title: 'Projet Portfolio',
-            ...data.data.project
+            ...responseData.project
         }
         isWorkspaceOpen.value = true
         activeWorkspaceTab.value = 'app'
         
         // Push personality analysis to terminal only
-        if (data.data.project.personality_analysis) {
-             mockTerminalLogs.value.push({ type: 'info', text: `[IA] Analyse : ${data.data.project.personality_analysis}` })
+        if (responseData.project.personality_analysis) {
+             mockTerminalLogs.value.push({ type: 'info', text: `[IA] Analyse : ${responseData.project.personality_analysis}` })
         }
         mockTerminalLogs.value.push({ type: 'success', text: `[Action] Projet structuré généré avec succès.` })
     }
@@ -638,6 +642,27 @@ const openInWorkspace = (msg) => {
                 <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
                 {{ isDownloadingDocx ? 'Génération...' : '⬇ Télécharger CV Corrigé (.pdf)' }}
               </button>
+            </div>
+
+            <!-- ══════════ CV REWRITE (sans audit dashboard) ══════════ -->
+            <div v-else-if="msg.is_cv_rewrite" class="space-y-4 w-full">
+              <div class="flex items-center gap-3 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg">✍️</div>
+                <div>
+                  <p class="font-bold text-white text-sm m-0">CV Réécrit & Optimisé ATS</p>
+                  <p class="text-slate-400 text-xs m-0">Ton CV a été restructuré avec des verbes d'action et des mots-clés ATS.</p>
+                </div>
+              </div>
+              <button
+                @click="downloadCvDocx(msg.content)"
+                :disabled="isDownloadingDocx"
+                class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
+              >
+                <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
+                <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
+                {{ isDownloadingDocx ? 'Génération du fichier...' : '⬇ Télécharger le CV Réécrit (.pdf)' }}
+              </button>
+              <p class="text-[10px] text-slate-500 text-center">✅ ATS-friendly · Calibri 10pt · Mono-colonne · Mots-clés optimisés</p>
             </div>
 
             <!-- Standard text/markdown rendering -->

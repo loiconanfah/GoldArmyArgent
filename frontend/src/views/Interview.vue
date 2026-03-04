@@ -3,8 +3,8 @@ import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { authFetch } from '../utils/auth'
 import { getWsUrl, getApiUrl } from '../config'
-import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon, ChartBarIcon, AcademicCapIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
-import { CheckIcon, UserCircleIcon, StarIcon } from '@heroicons/vue/24/solid'
+import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon, ChartBarIcon, AcademicCapIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
+import { CheckIcon, UserCircleIcon, StarIcon, VideoCameraIcon } from '@heroicons/vue/24/solid'
 
 const router = useRouter()
 

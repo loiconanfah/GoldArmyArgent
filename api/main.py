@@ -661,7 +661,12 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
     logger.info(f"📥 REQUEST /api/chat - User: {current_user['email']} | Message: {request.message[:50]}")
     try:
         # Intercept search for limit check
-        if request.nb_results or any(k in request.message.lower() for k in ["cherche", "trouve", "stage", "emploi", "job"]):
+        # Ne déclenche le check que si c'est vraiment une recherche d'emploi :
+        # - si nb_results est demandé ET qu'il n'y a pas de CV dans la requête (audit/portfolio)
+        # - ou si les mots-clés de recherche sont explicitement dans le message
+        is_job_search_intent = any(k in request.message.lower() for k in ["cherche", "trouve", "stage", "emploi", "job"])
+        is_cv_action = bool(request.cv_text) or any(k in request.message.lower() for k in ["audit", "réécris", "reecris", "portfolio", "ats", "cv"])
+        if (request.nb_results and not is_cv_action) or is_job_search_intent:
             check = await check_subscription_limit(current_user["id"], "sniper_search")
             if not check["allowed"]:
                 return {

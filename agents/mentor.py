@@ -4,6 +4,7 @@ import re
 import time
 from loguru import logger
 from core.agent_base import BaseAgent
+from llm.prompt_templates import PromptTemplates
 
 
 class MentorAgent(BaseAgent):
