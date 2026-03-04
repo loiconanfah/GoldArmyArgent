@@ -20,10 +20,10 @@ const mentorFeatures = [
   },
   {
     title: 'Générateur de Portfolio',
-    desc: 'L\'Agent extrait tes compétences et génère le code source complet d\'un portfolio web ultra-moderne, responsive et personnalisé.',
+    desc: "L'Agent extrait tes compétences et génère le code source complet d'un portfolio web ultra-moderne, responsive et personnalisé.",
     icon: CodeBracketIcon,
     color: 'from-emerald-500 to-teal-500',
-    locked: false,
+    locked: true,
     actionPrompt: 'Génère mon portfolio web'
   },
   {
@@ -71,6 +71,13 @@ const handleFeatureClick = (feature) => {
        >
           <!-- Background Glow -->
           <div :class="`absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br ${feature.color} opacity-20 rounded-full blur-3xl group-hover:opacity-30 transition-opacity`"></div>
+          
+          <!-- Coming Soon Badge -->
+          <div v-if="feature.locked" class="absolute top-4 right-4 z-20">
+             <span class="bg-indigo-500 text-white text-[10px] font-black px-2 py-1 rounded-md shadow-lg shadow-indigo-500/20 animate-pulse">
+                BIENTÔT
+             </span>
+          </div>
           
           <div class="relative z-10 flex-1">
              <div :class="`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg mb-6`">

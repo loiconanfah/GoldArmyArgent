@@ -97,6 +97,12 @@ const routes = [
         name: 'Settings',
         component: () => import('../views/Settings.vue'),
         meta: { requiresAuth: true }
+    },
+    {
+        path: '/admin-goldarmy',
+        name: 'AdminDashboard',
+        component: () => import('../views/AdminDashboard.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
     }
 ]
 
@@ -112,6 +118,13 @@ router.beforeEach((to, from, next) => {
     } else if ((to.name === 'Login' || to.name === 'Register' || to.name === 'Landing') && isAuthenticated) {
         // Redirect authenticated users to home page instead of dashboard
         next('/home')
+    } else if (to.meta.requiresAdmin) {
+        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        if (user.subscription_tier === 'ADMIN') {
+            next()
+        } else {
+            next('/dashboard') // Redirect non-admins to dashboard
+        }
     } else {
         next()
     }

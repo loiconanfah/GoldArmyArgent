@@ -91,7 +91,20 @@ class GeminiClient:
                             raise Exception(f"Erreur API Gemini {response.status}: {text[:200]}")
                             
                         data = json.loads(text)
-                        return data["candidates"][0]["content"]["parts"][0]["text"]
+                        # Gemini 'thinking' models return a ThinkingPart before the text part
+                        # We must iterate all parts to find the actual text
+                        candidates = data.get("candidates", [])
+                        if not candidates:
+                            # Safety filter ou réponse vide
+                            logger.warning(f"⚠️ Gemini zéro candidats (Safety filter?) : {text[:300]}")
+                            return ""  # Retourner vide plutôt que crasher
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        text_response = ""
+                        for part in parts:
+                            if "text" in part and part["text"]:
+                                text_response = part["text"]
+                                break
+                        return text_response
                         
             except Exception as e:
                 if attempt == max_retries - 1:
@@ -215,7 +228,16 @@ class GeminiClient:
                     raise Exception(f"Gemini API HTTP {response.status}")
                 data = await response.json()
                 try:
-                    return data["candidates"][0]["content"]["parts"][0]["text"]
+                    candidates = data.get("candidates", [])
+                    if not candidates:
+                        logger.error(f"Erreur de parsing Gemini: zéro candidats - {data}")
+                        raise Exception("Format de réponse Gemini inattendu: pas de candidats")
+                    # Thinking models: iterate parts to find actual text
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    for part in parts:
+                        if "text" in part and part["text"]:
+                            return part["text"]
+                    raise Exception("Aucun texte dans la réponse Gemini")
                 except KeyError:
                     logger.error(f"Erreur de parsing Gemini: {data}")
                     raise Exception("Format de réponse Gemini inattendu")

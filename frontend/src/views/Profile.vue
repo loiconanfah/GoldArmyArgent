@@ -197,17 +197,28 @@ const promoteUser = async () => {
             </div>
         </div>
         
-        <button 
-            @click="saveProfile"
-            :disabled="isSaving"
-            class="hidden md:flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-        >
-            <span v-if="!isSaving">Enregistrer les modifications</span>
-            <span v-else class="flex items-center gap-2">
-                <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                Sauvegarde...
-            </span>
-        </button>
+        <div class="flex items-center gap-3">
+            <button 
+                v-if="profile.subscription_tier === 'ADMIN'"
+                @click="router.push('/admin-goldarmy')"
+                class="hidden md:flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 border border-red-400/30"
+            >
+                <ShieldCheckIcon class="w-4 h-4" />
+                Accès Console Admin
+            </button>
+
+            <button 
+                @click="saveProfile"
+                :disabled="isSaving"
+                class="hidden md:flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+            >
+                <span v-if="!isSaving">Enregistrer les modifications</span>
+                <span v-else class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Sauvegarde...
+                </span>
+            </button>
+        </div>
     </div>
 
     <!-- Hidden Inputs -->
@@ -416,8 +427,8 @@ const promoteUser = async () => {
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <button @click="editPortfolio" class="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20">
-                                Éditer dans l'IDE
+                            <button disabled class="px-5 py-2.5 bg-slate-700 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed flex items-center gap-2">
+                                Éditer (Bientôt)
                             </button>
                             <button @click="downloadZip" class="px-5 py-2.5 bg-surface-800 border border-surface-700 hover:border-emerald-500/50 text-emerald-400 text-xs font-bold rounded-xl transition-all">
                                 ZIP
@@ -429,8 +440,8 @@ const promoteUser = async () => {
 
                 <div v-else class="text-center py-12 border-2 border-dashed border-surface-800 rounded-[2rem] bg-surface-950/30">
                     <p class="text-slate-500 text-sm mb-4">Vous n'avez pas encore généré de portfolio IA.</p>
-                    <button @click="router.push('/chat')" class="px-6 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 font-bold rounded-xl border border-indigo-500/20 transition-all">
-                        Générer avec GoldArmy →
+                    <button disabled class="px-6 py-2 bg-slate-800 text-slate-500 font-bold rounded-xl border border-surface-800 cursor-not-allowed">
+                        Bientôt disponible →
                     </button>
                 </div>
             </div>

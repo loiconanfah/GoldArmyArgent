@@ -17,7 +17,8 @@ import {
   ChevronRightIcon,
   MicrophoneIcon,
   UserIcon,
-  SparklesIcon
+  SparklesIcon,
+  ShieldCheckIcon
 } from '@heroicons/vue/24/outline'
 import ToastPortal from './components/ToastPortal.vue'
 
@@ -30,7 +31,7 @@ const isPublicRoute = computed(() => {
 const isImmersive = computed(() => route.path === '/interview')
 const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(false)
-const userEmail = ref('Yves D.')
+const userEmail = ref('Chargement...')
 
 const userTier = ref('FREE')
 
@@ -51,6 +52,7 @@ onMounted(async () => {
       const json = await res.json()
       if (json.status === 'success') {
         userTier.value = json.data.subscription_tier || 'FREE'
+        userEmail.value = json.data.full_name || json.data.email.split('@')[0]
       }
     } catch(e){}
   }
@@ -139,6 +141,22 @@ const navigation = [
              <span class="w-2 h-2 rounded-full bg-violet-500 block"></span>
           </div>
         </router-link>
+
+        <!-- Admin Console Link -->
+        <router-link 
+          v-if="userTier === 'ADMIN'"
+          to="/admin-goldarmy"
+          class="flex items-center rounded-xl text-sm font-semibold transition-all group relative overflow-hidden bg-red-500/5 text-red-500 hover:bg-red-500/10 border border-red-500/10"
+          :class="[
+             currentRoute === '/admin-goldarmy' ? 'bg-red-500/10 border-red-500/30' : '',
+             isSidebarCollapsed ? 'justify-center py-3 px-0' : 'gap-3 px-3 py-2.5'
+          ]"
+          title="Console Admin"
+        >
+          <ShieldCheckIcon class="w-5 h-5 shrink-0 text-red-500" />
+          <span v-if="!isSidebarCollapsed" class="whitespace-nowrap font-black italic uppercase tracking-tighter">Console Admin</span>
+          <div v-if="currentRoute === '/admin-goldarmy'" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-red-500 rounded-r-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
+        </router-link>
       </nav>
 
       <!-- Settings / Footer Nav -->
@@ -202,7 +220,8 @@ const navigation = [
                     <div class="flex items-center gap-2 mb-0.5">
                         <p class="text-[13px] font-bold text-white leading-none group-hover:text-gold-400 transition-colors">{{ userEmail }}</p>
                         <!-- Badge Forfait -->
-                        <span v-if="userTier === 'PRO'" class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-indigo-500/20">PRO</span>
+                        <span v-if="userTier === 'ADMIN'" class="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-rose-500/20">ADMIN</span>
+                        <span v-else-if="userTier === 'PRO'" class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-indigo-500/20">PRO</span>
                         <span v-else-if="userTier === 'ESSENTIAL'" class="bg-gradient-to-r from-amber-400 to-gold-500 text-surface-950 text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md shadow-lg shadow-gold-500/20">ESSENTIEL</span>
                         <span v-else class="bg-surface-700 text-slate-300 text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md">GRATUIT</span>
                     </div>

@@ -64,9 +64,26 @@ const sessionId = ref((typeof crypto !== 'undefined' && crypto.randomUUID) ? cry
 
 const iframeKey = ref(0) // Utilisé pour forcer le rafraîchissement de l'iframe
 
-const portfolioRenderUrl = computed(() => {
-    if (!currentUser.value?.id) return ''
-    return getApiUrl(`/api/portfolio/render/${currentUser.value.id}?t=${iframeKey.value}`)
+// Construit le srcdoc complet en injectant CSS et JS dans le HTML
+const computedSrcdoc = computed(() => {
+    const html = workspaceProject.value.html || ''
+    const css = workspaceProject.value.css || ''
+    const js = workspaceProject.value.js || ''
+    if (!html) return ''
+    // Injecter CSS et JS supplémentaires dans le document si pas déjà dans le HTML
+    const hasCssTag = html.includes('<style') || html.includes('<link')
+    const hasJsTag = html.includes('<script')
+    let doc = html
+    if (css && !hasCssTag) {
+        doc = doc.replace('</head>', `<style>${css}</style></head>`) || `<style>${css}</style>${doc}`
+    } else if (css) {
+        // inject before </head> anyway as extra styles
+        doc = doc.replace('</head>', `<style>${css}</style></head>`)
+    }
+    if (js && !hasJsTag) {
+        doc = doc.replace('</body>', `<script>${js}<\/script></body>`) || `${doc}<script>${js}<\/script>`
+    }
+    return doc
 })
 
 const messages = ref([
@@ -153,8 +170,37 @@ const sendMessage = async () => {
   if (!inputQuery.value.trim() && !cvText.value.trim()) return
   
   const userMsg = inputQuery.value
+  // ⚠️ Ne PAS vider inputQuery avant la garde — on le restaure si besoin
+
+  // ─── Guard Portfolio : Bientôt Disponible ──────────────────────────────
+  const isPortfolioRequest = userMsg.toLowerCase().includes('portfolio') || userMsg.toLowerCase().includes('site web')
+
+  if (isPortfolioRequest) {
+    // Afficher le message de l'utilisateur dans le chat
+    if (userMsg) {
+      messages.value.push({
+        id: Date.now(),
+        role: 'user',
+        content: userMsg,
+        timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      })
+    }
+    // Répondre avec un message d'attente (Feature en cours de dev)
+    messages.value.push({
+      id: Date.now() + 1,
+      role: 'assistant',
+      content: '🚀 **Générateur de Portfolio : Bientôt disponible !**\n\nNous finalisons les derniers réglages pour te proposer des designs encore plus spectaculaires et une personnalisation totale.\n\nReviens très bientôt pour générer ton site web en un clic ! En attendant, je peux auditer ton CV ou t\'aider pour tes recherches d\'emploi.',
+      timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    })
+    scrollToBottom()
+    inputQuery.value = ''
+    return  // Bloquer l'envoi au backend
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
+  // Maintenant on peut vider l'input
   inputQuery.value = ''
-  
+
   if (userMsg) {
       messages.value.push({
         id: Date.now(),
@@ -215,7 +261,7 @@ const sendMessage = async () => {
       is_cv_rewrite: responseData.type === 'cv_rewrite',
       is_audit_rewrite: responseData.type === 'cv_audit_rewrite',
       audit: responseData.audit || '',
-      content: responseData.content || 'Réponse vide du serveur.',
+      content: responseData.content || data.detail || data.message || '⚠️ Réponse vide du serveur. Vérifiez les logs backend.',
       timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
     }
     
@@ -826,13 +872,17 @@ const openInWorkspace = (msg) => {
                 </div>
             </div>
 
-            <!-- APP PREVIEW (Injected with CSS/JS) -->
+            <!-- APP PREVIEW (rendered via srcdoc - no backend endpoint needed) -->
+            <div v-if="activeWorkspaceTab === 'app' && !computedSrcdoc && !isGeneratingPortfolio" class="flex flex-col items-center justify-center h-full bg-surface-950 text-slate-500 gap-3">
+                <GlobeAltIcon class="w-10 h-10 opacity-30" />
+                <p class="text-sm font-medium">Génère un portfolio pour voir l'aperçu ici.</p>
+            </div>
             <iframe 
-                v-if="activeWorkspaceTab === 'app' && portfolioRenderUrl" 
-                :src="portfolioRenderUrl" 
+                v-else-if="activeWorkspaceTab === 'app' && computedSrcdoc"
+                :srcdoc="computedSrcdoc" 
                 :key="iframeKey"
                 class="w-full h-full border-none bg-white" 
-                sandbox="allow-scripts"
+                sandbox="allow-scripts allow-same-origin"
             ></iframe>
             
             <!-- CODE EDITOR (Pre) -->
@@ -849,7 +899,7 @@ const openInWorkspace = (msg) => {
                         <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> script.js
                     </button>
                 </div>
-                <div class="p-2 text-white bg-red-900text-xs select-all">Debug Keys: {{ Object.keys(workspaceProject) }} | HTML length: {{ workspaceProject.html?.length || 0 }}</div>
+
                 <!-- Editor -->
                 <div class="flex-1 overflow-hidden p-0 font-mono text-xs text-slate-300 bg-[#0d1117]">
                     <textarea 

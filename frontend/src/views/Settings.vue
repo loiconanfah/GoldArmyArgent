@@ -83,6 +83,7 @@ const tiers = [
 ]
 
 const userTier = ref('FREE')
+const profileData = ref({ full_name: '', email: '' })
 
 const fetchProfile = async () => {
   try {
@@ -90,6 +91,10 @@ const fetchProfile = async () => {
     const json = await res.json()
     if (json.status === 'success') {
       userTier.value = json.data.subscription_tier || 'FREE'
+      profileData.value = {
+        full_name: json.data.full_name || json.data.email.split('@')[0],
+        email: json.data.email
+      }
     }
   } catch (e) {
     console.error("Failed to fetch profile", e)
@@ -304,10 +309,17 @@ const displayTiers = computed(() => {
             <div class="space-y-4">
                 <div class="p-4 bg-surface-950 border border-surface-800 rounded-2xl flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-gold-500/10 flex items-center justify-center text-gold-400 font-bold">Y</div>
+                        <div class="w-10 h-10 rounded-full bg-gold-500/10 flex items-center justify-center text-gold-400 font-bold">
+                            {{ profileData.full_name.charAt(0).toUpperCase() || 'U' }}
+                        </div>
                         <div>
-                            <p class="text-sm font-bold text-white">Yves D.</p>
-                            <p class="text-[10px] text-slate-500 uppercase font-black">Utilisateur GoldArmy</p>
+                            <p class="text-sm font-bold text-white">{{ profileData.full_name || 'Utilisateur' }}</p>
+                            <p class="text-[10px] text-slate-500 uppercase font-black">
+                                {{ userTier === 'ADMIN' ? 'Administrateur GoldArmy' : 
+                                   userTier === 'PRO' ? 'Membre GoldArmy Pro' : 
+                                   userTier === 'ESSENTIAL' ? 'Membre GoldArmy Essentiel' : 
+                                   'Utilisateur GoldArmy' }}
+                            </p>
                         </div>
                     </div>
                     <button class="text-xs font-bold text-slate-400 hover:text-white transition-colors">Modifier</button>

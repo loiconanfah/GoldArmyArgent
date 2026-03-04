@@ -275,46 +275,47 @@ IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans ba
         """Generates a structured portfolio project (HTML/CSS/JS) in JSON format."""
         logger.info(f"[Mentor] Generating multi-file Portfolio project with theme: {theme}...")
         
-        prompt = f"""Tu es un Senior Web Architect & Lead UX Designer chez GoldArmy.
-Ta mission : Créer un Portfolio "GOD MODE" (Ultra-Premium, Moderne, Futuriste) basé sur ce CV :
-{cv_text[:4000]}
+        # Prompt construit par concaténation (pas de f-string) pour éviter tout conflit avec {} du JS/CSS
+        image_line = ("- INSPIRATION IMAGE : Je t'ai fourni une image de design en pièce jointe. "
+                      "IGNORE le thème ci-dessus si l'image propose une direction plus moderne ou pertinente. "
+                      "Inspire-toi FORTEMENT de ses couleurs, de son layout et de son ambiance.") if image_data else ""
 
-[DESIGN_SYSTEM_MANDATORY]
-- Thème : {theme}
-- Styles : Glassmorphism, Mesh Gradients, Bento Grid (si pertinent).
-{"- INSPIRATION IMAGE : Je t'ai fourni une image de design en pièce jointe. IGNORE le thème ci-dessus si l'image propose une direction plus moderne ou pertinente. Inspire-toi FORTEMENT de ses couleurs, de son layout et de son ambiance." if image_data else ""}
-- Typographie : Utilise Google Fonts (ex: Inter, Montserrat, Syne) via @import dans le CSS.
-- Couleurs : Palettes vibrantes et contrastées adaptées au thème.
-
-[TECHNICAL_STACK]
-- Structure : HTML5 Sémantique.
-- Styling : Tailwind CSS (via CDN) + CSS Custom pour les animations complexes (@keyframes).
-- Interactivité : JavaScript Vanille OBLIGATOIRE (Minimum 50 lignes). Implémente :
-    1. Un système de "Reveal on Scroll" via Intersection Observer pour chaque section.
-    2. Un effet de Parrelative ou de curseur personnalisé si le thème s'y prête.
-    3. Une gestion de filtrage pour les compétences ou les projets.
-    4. Un système de navigation fluide (Smooth Scroll) manuel si nécessaire.
-
-[INSTRUCTIONS_CRUCIALES]
-- Réponds UNIQUEMENT avec les balises [SECTION]. Aucun texte en dehors.
-- N'utilise PAS de blocs de code markdown (pas de ```) à l'intérieur des balises, mets le code BRUT.
-- Images : Utilise des images Unsplash (ex: https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426) pour un rendu pro.
-- JavaScript : Le code DOIT être complet, commenté et fonctionnel. INTERDICTION de cloner des éléments DOM lors du clic ou du scroll (risque de duplication).
-- Navigation : Chaque lien de la navbar (ex: href="#about") DOIT correspondre à un ID unique sur une section (ex: <section id="about">). Le JS doit gérer le smooth scroll via `element.scrollIntoView({behavior: 'smooth'})` sans modifier la structure du document. NE JAMAIS utiliser href="#" vide ou de liens relatifs (ex: /about).
-- Sécurité : Interdiction formelle d'accéder à `window.top`, `window.parent` ou de modifier `window.location`.
-
-[PERSONALITY_ANALYSIS]
-(Analyse pro ultra-courte + Choix de la direction artistique)
-
-[HTML_CODE]
-(Code HTML complet - Inclut les scripts et styles via balises standard)
-
-[CSS_CODE]
-(Animations @keyframes et styles spécifiques non-Tailwind)
-
-[JS_CODE]
-(Logique d'animation et interactions réelles. Pas de commentaire vide !)
-"""
+        prompt = (
+            "Tu es un Senior Web Architect & Lead UX Designer chez GoldArmy.\n"
+            "Ta mission : Créer un Portfolio \"GOD MODE\" (Ultra-Premium, Moderne, Futuriste) basé sur ce CV :\n"
+            + cv_text[:4000] +
+            "\n\n[DESIGN_SYSTEM_MANDATORY]\n"
+            "- Thème : " + theme + "\n"
+            "- Styles : Glassmorphism, Mesh Gradients, Bento Grid (si pertinent).\n"
+            + (image_line + "\n" if image_line else "") +
+            "- Typographie : Utilise Google Fonts (ex: Inter, Montserrat, Syne) via @import dans le CSS.\n"
+            "- Couleurs : Palettes vibrantes et contrastées adaptées au thème.\n"
+            "\n[TECHNICAL_STACK]\n"
+            "- Structure : HTML5 Sémantique.\n"
+            "- Styling : Tailwind CSS (via CDN) + CSS Custom pour les animations complexes (@keyframes).\n"
+            "- Interactivité : JavaScript Vanille OBLIGATOIRE (Minimum 50 lignes). Implémente :\n"
+            "    1. Un système de \"Reveal on Scroll\" via Intersection Observer pour chaque section.\n"
+            "    2. Un effet de parallax ou de curseur personnalisé si le thème s'y prête.\n"
+            "    3. Une gestion de filtrage pour les compétences ou les projets.\n"
+            "    4. Un système de navigation fluide (Smooth Scroll) manuel si nécessaire.\n"
+            "\n[INSTRUCTIONS_CRUCIALES]\n"
+            "- Réponds UNIQUEMENT avec les balises [SECTION]. Aucun texte en dehors.\n"
+            "- N'utilise PAS de blocs de code markdown (pas de ```) à l'intérieur des balises, mets le code BRUT.\n"
+            "- Images : Utilise des images Unsplash (ex: https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426) pour un rendu pro.\n"
+            "- JavaScript : Le code DOIT être complet, commenté et fonctionnel. INTERDICTION de cloner des éléments DOM lors du clic ou du scroll.\n"
+            "- Navigation : Chaque lien de la navbar (ex: href=\"#about\") DOIT correspondre à un ID unique sur une section. "
+            "Le JS doit gérer le smooth scroll via element.scrollIntoView({behavior: 'smooth'}) sans modifier la structure du document. "
+            "NE JAMAIS utiliser href=\"#\" vide ou de liens relatifs.\n"
+            "- Sécurité : Interdiction formelle d'accéder à window.top, window.parent ou de modifier window.location.\n"
+            "\n[PERSONALITY_ANALYSIS]\n"
+            "(Analyse pro ultra-courte + Choix de la direction artistique)\n"
+            "\n[HTML_CODE]\n"
+            "(Code HTML complet - Inclut les scripts et styles via balises standard)\n"
+            "\n[CSS_CODE]\n"
+            "(Animations @keyframes et styles spécifiques non-Tailwind)\n"
+            "\n[JS_CODE]\n"
+            "(Logique d'animation et interactions réelles. Pas de commentaire vide !)\n"
+        )
         response = await self.generate_response(prompt, max_tokens=8192, image_data=image_data)
         
         # Extraction par Regex unifiée et insensible à la casse
