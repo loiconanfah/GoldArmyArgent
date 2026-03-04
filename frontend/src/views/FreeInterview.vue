@@ -8,8 +8,10 @@ import {
   StopIcon,
   PlayIcon,
   VideoCameraIcon,
-  PhoneXMarkIcon
+  PhoneXMarkIcon,
+  SparklesIcon
 } from '@heroicons/vue/24/solid'
+import { ShieldCheckIcon } from '@heroicons/vue/24/outline'
 
 useHead({
   title: 'Simulateur Entretien IA | Entraînement Visio Gratuit | GoldArmy',
@@ -249,7 +251,7 @@ const endCall = () => {
     <main class="relative z-10 w-full flex-1 flex flex-col pt-32 pb-20 px-4 md:px-6">
         
         <!-- Simulator Container -->
-        <div class="w-full max-w-5xl mx-auto h-[80vh] min-h-[600px] max-h-[850px] border border-surface-800 rounded-[2rem] bg-surface-950/80 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] flex flex-col relative overflow-hidden">
+        <div class="w-full max-w-5xl mx-auto min-h-[80vh] border border-surface-800 rounded-[2rem] bg-surface-950/80 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] flex flex-col relative overflow-hidden">
             
             <!-- MAIN VIEWS -->
     
@@ -281,12 +283,12 @@ const endCall = () => {
             </div>
         </div>
         
-        <div class="mt-10 flex items-center justify-center gap-8 text-sm font-bold text-slate-500">
-            <div class="flex items-center gap-2">
+        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-sm font-bold text-slate-500">
+            <div class="flex items-center gap-2 bg-surface-900/50 py-2 px-5 rounded-full border border-white/5 shadow-sm">
                 <MicrophoneIcon class="w-5 h-5 text-fuchsia-400" />
                 <span>Micro Requis</span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 bg-surface-900/50 py-2 px-5 rounded-full border border-white/5 shadow-sm">
                 <ShieldCheckIcon class="w-5 h-5 text-emerald-500" />
                 <span>Aucun enregistrement conservé</span>
             </div>
