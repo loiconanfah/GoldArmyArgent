@@ -22,7 +22,7 @@ import {
   VideoCameraIcon
 } from '@heroicons/vue/24/outline'
 
-const { t } = useI18n()
+const { t, tm } = useI18n()
 const router = useRouter()
 
 useHead({
@@ -285,7 +285,7 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
             </div>
             <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.sniper.desc').replace('avant même leur publication officielle', '<span class=\'text-violet-400 font-bold\'>avant même leur publication officielle</span>')"></p>
             <ul class="space-y-3">
-              <li v-for="agent_feat in t('landing.agents.sniper.features', {returnObjects: true})" :key="agent_feat"
+              <li v-for="agent_feat in tm('landing.agents.sniper.features')" :key="agent_feat"
                   class="flex items-center gap-3 text-sm text-white/60">
                 <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" />
                 {{ agent_feat }}
@@ -307,9 +307,10 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
         <!-- Agent 2 – CRM -->
         <div class="grid lg:grid-cols-2 gap-8 items-center mb-16">
           <!-- Visual card first on desktop -->
+          <div class="bg-white/2 border border-white/5 rounded-3xl p-8 space-y-4">
             <div class="grid grid-cols-3 gap-3">
               <div v-for="col in [
-                { label: t('landing.pricing.essential.features').find(f => f.includes('CRM')) ? 'En cours' : 'Sent', count: 12, color: 'indigo' },
+                { label: tm('landing.pricing.essential.features').find(f => f.includes('CRM')) ? 'En cours' : 'Sent', count: 12, color: 'indigo' },
                 { label: 'En cours', count: 5, color: 'amber' },
                 { label: 'Entretiens', count: 3, color: 'emerald' }
               ]" :key="col.label" class="bg-white/5 border border-white/5 rounded-2xl p-4 text-center">
@@ -331,9 +332,9 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
                 <div class="text-2xl font-black text-white">{{ t('landing.agents.crm.name') }}</div>
               </div>
             </div>
-            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.crm.desc').replace('machine de guerre organisée', '<span class=\"text-purple-400 font-bold\">machine de guerre organisée</span>')"></p>
+            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.crm.desc').replace('machine de guerre organisée', '<span class=\'text-purple-400 font-bold\'>machine de guerre organisée</span>')"></p>
             <ul class="space-y-3">
-              <li v-for="agent_feat in t('landing.agents.crm.features', {returnObjects: true})" :key="agent_feat"
+              <li v-for="agent_feat in tm('landing.agents.crm.features')" :key="agent_feat"
                   class="flex items-center gap-3 text-sm text-white/60">
                 <CheckCircleIcon class="w-4 h-4 text-purple-500 shrink-0" />
                 {{ agent_feat }}
@@ -354,9 +355,9 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
                 <div class="text-2xl font-black text-white">{{ t('landing.agents.network.name') }}</div>
               </div>
             </div>
-            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.network.desc').replace('messages d\'accroche ultra-personnalisés', '<span class=\"text-emerald-400 font-bold\">messages d\'accroche ultra-personnalisés</span>')"></p>
+            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.network.desc').replace('messages d\'accroche ultra-personnalisés', '<span class=\'text-emerald-400 font-bold\'>messages d\'accroche ultra-personnalisés</span>')"></p>
             <ul class="space-y-3">
-              <li v-for="agent_feat in t('landing.agents.network.features', {returnObjects: true})" :key="agent_feat"
+              <li v-for="agent_feat in tm('landing.agents.network.features')" :key="agent_feat"
                   class="flex items-center gap-3 text-sm text-white/60">
                 <CheckCircleIcon class="w-4 h-4 text-emerald-500 shrink-0" />
                 {{ agent_feat }}
@@ -374,9 +375,9 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
                 <div class="text-2xl font-black text-white">{{ t('landing.agents.mentor.name') }}</div>
               </div>
             </div>
-            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.mentor.desc').replace('précis et actionnable', '<span class=\"text-orange-400 font-bold\">précis et actionnable</span>')"></p>
+            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.mentor.desc').replace('précis et actionnable', '<span class=\'text-orange-400 font-bold\'>précis et actionnable</span>')"></p>
             <ul class="space-y-3">
-              <li v-for="agent_feat in t('landing.agents.mentor.features', {returnObjects: true})" :key="agent_feat"
+              <li v-for="agent_feat in tm('landing.agents.mentor.features')" :key="agent_feat"
                   class="flex items-center gap-3 text-sm text-white/60">
                 <CheckCircleIcon class="w-4 h-4 text-orange-500 shrink-0" />
                 {{ agent_feat }}
@@ -470,7 +471,7 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
               <span class="text-sm text-white/30 font-bold"> {{ t('landing.pricing.month') }}</span>
             </div>
             <ul class="space-y-4 mb-10 flex-1">
-              <li v-for="item in t('landing.pricing.free.features', {returnObjects: true})" :key="item" class="flex items-center gap-3 text-sm text-white/50">
+              <li v-for="item in tm('landing.pricing.free.features')" :key="item" class="flex items-center gap-3 text-sm text-white/50">
                 <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" /> {{ item }}
               </li>
               <li v-for="item in ['Mentor IA Pro', 'Générateur de Réseau']" :key="item" class="flex items-center gap-3 text-sm text-white/20 line-through">
@@ -488,7 +489,7 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
               <span class="text-sm text-white/30 font-bold"> {{ t('landing.pricing.month') }}</span>
             </div>
             <ul class="space-y-4 mb-10 flex-1">
-              <li v-for="item in t('landing.pricing.essential.features', {returnObjects: true})" :key="item" class="flex items-center gap-3 text-sm text-white/70">
+              <li v-for="item in tm('landing.pricing.essential.features')" :key="item" class="flex items-center gap-3 text-sm text-white/70">
                 <CheckCircleIcon class="w-4 h-4 text-violet-400 shrink-0" /> {{ item }}
               </li>
             </ul>
@@ -502,7 +503,7 @@ onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
               <span class="text-sm text-white/30 font-bold"> {{ t('landing.pricing.month') }}</span>
             </div>
             <ul class="space-y-4 mb-10 flex-1">
-              <li v-for="item in t('landing.pricing.pro.features', {returnObjects: true})" :key="item" class="flex items-center gap-3 text-sm text-white/70">
+              <li v-for="item in tm('landing.pricing.pro.features')" :key="item" class="flex items-center gap-3 text-sm text-white/70">
                 <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" /> {{ item }}
               </li>
             </ul>
