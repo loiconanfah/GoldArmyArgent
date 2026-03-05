@@ -55,29 +55,40 @@ class MentorAgent(BaseAgent):
         """Audite et réécrit le CV en une seule passe pour l'optimisation ATS + feedback."""
         logger.info("[Mentor] Audit + Réécriture ATS du CV (Mode Rapide & Exhaustif)...")
 
-        prompt = f"""Tu es un expert RH senior et un maître en optimisation ATS 2.0.
-Ta mission est d'auditer et réécrire ce CV avec un niveau "God Mode".
+        prompt = f"""Tu es le "GoldArmy Mentor", l'IA la plus avancée au monde pour l'optimisation de carrière.
+Ta mission est d'auditer le CV fourni et de produire une version RECTIFIÉE (God Mode) qui ne laisse AUCUNE chance à l'échec.
 
-**OBJECTIFS DE RÉÉCRITURE (CV_DATA) :**
-1. **Expertise Adaptative :** Adapte dynamiquement la structure et le ton au profil (Santé, Tech, Management, etc.). Pour la santé, intègre massivement les mots-clés (**Loi 90, PDSB, PCI**).
-2. **Résolution Totale :** Le `cv_data` DOIT être la version corrigée qui résout TOUTES les "failles" et "actions" identifiées dans l'audit. Ne laisse aucun défaut critique.
-3. **Score ATS Réel & Critique :** Fournis un score ATS **honnête et sévère**. Ne donne PAS de "faux espoir". Si le CV manque de chiffres, de résultats ou de mots-clés critiques, le score DOIT être bas (ex: 30-50%).
-4. **Optimisation Sémantique :** Utilise des mots-clés LSI pour dominer les recherches sémantiques.
-5. **Intégrité des Données :** Conserve et formate proprement TOUTES les infos (Email, Téléphone, LinkedIn, GitHub, Dates précises, Lieux, Institutions). Ne perds JAMAIS une information.
-6. **Humanisation (Anti-AI) :** Évite les structures prévisibles. Ton percutant et humain.
+**Étape 1 : Audit & Diagnostic (Strict & Sévère)**
+- Analyse le CV sans complaisance. Trouve les failles de structure, les mots-clés manquants, le manque d'impact et la faible lisibilité.
+- Calcule un score ATS réel (sois très exigeant).
 
-**NOTE IMPORTANTE :** Aucun méta-commentaire IA. Réponse JSON pur.
+**Étape 2 : Chain-of-Correction (Logique de Résolution)**
+- Pour CHAQUE "faille" ou "action" identifiée, tu DOIS concevoir une résolution concrète.
+- Tu vas lister ces résolutions dans un champ spécial `correction_mapping` pour prouver ta logique.
 
-**STRUCTURE DU JSON :**
+**Étape 3 : Production de la Donnée Rectifiée (CV_DATA)**
+- Le `cv_data` est le résultat FINAL de tes corrections. Il DOIT être parfait.
+- **RÈGLE RADICALE :** 1 Faille détectée = 1 Correction visible dans le `cv_data`.
+- **Bullet Points :** Transforme chaque ligne en "RÉSULTAT CHIFFRÉ + MÉTHODE + TECHNOLOGIE". 
+  - *Interdit :* "Maintenance de serveurs"
+  - *God Mode :* "Optimisation de la disponibilité serveur (99.9% uptime) via l'automatisation de scripts Bash et le monitoring Prometheus."
+- **Metadata :** Ne perds JAMAIS une information (dates, lieux, liens). Formate-les parfaitement.
+- **Sommaire :** Doit être un pitch de vente premium de 4-5 lignes ultra-compactes.
+
+**STRUCTURE DU JSON ATTENDUE :**
 {{
   "audit": {{
-    "ats_score": 45,  // SCORE RÉEL ET CRITIQUE (Soyez sévère)
+    "ats_score": 42,
     "candidate_name": "...",
     "candidate_title": "...",
-    "scores": {{ "mots_cles": 40, "impact_resultats": 20, "mise_en_forme": 70, "lisibilite": 60, "experience_pertinence": 50 }},
-    "failles": ["Liste des failles réelles trouvées"],
-    "actions": ["Actions précises à entreprendre"],
-    "tech_manquantes": ["..."],
+    "scores": {{ "mots_cles": 30, "impact_resultats": 20, "mise_en_forme": 60, "lisibilite": 50, "experience_pertinence": 40 }},
+    "failles": ["Liste des failles critiques"],
+    "actions": ["Actions prioritaires à mener"],
+    "correction_mapping": {{
+       "Faille X": "Comment j'ai corrigé cela dans le cv_data",
+       "Faille Y": "Amélioration spécifique apportée à la section Z"
+    }},
+    "tech_manquantes": ["Technologies ajoutées pour booster le score"],
     "points_forts": ["..."]
   }},
   "cv_data": {{
@@ -88,28 +99,25 @@ Ta mission est d'auditer et réécrire ce CV avec un niveau "God Mode".
     "location": "...",
     "linkedin": "...",
     "github": "...",
-    "summary": "Résumé optimisé (God Mode) sans aucune faille.",
+    "summary": "Pitch de vente ultra-optimisé.",
     "experiences": [
-      {{
-        "title": "...",
-        "company": "...",
-        "location": "...",
-        "start_date": "...",
-        "end_date": "...",
-        "bullets": ["Action + Résultat + Technologie (Version corrigée et impactante)"]
-      }}
+      {{ "title": "...", "company": "...", "location": "...", "start_date": "...", "end_date": "...",
+         "bullets": ["Action impactante + Chiffre + Outil"] }}
     ],
     "skills": {{ "Expertises": ["..."], "Outils": ["..."] }},
     "education": [ {{ "degree": "...", "institution": "...", "location": "...", "year": "..." }} ],
-    "certifications": ["..."],
-    "languages": ["..."]
+    "projects": [ {{ "name": "...", "description": "...", "bullets": ["..."] }} ],
+    "languages": ["..."],
+    "certifications": ["..."]
   }}
 }}
 
-CV à traiter :
-{cv_text[:5000]}
+[INPUT_CV]
+{cv_text[:7000]}
 
-Réponse JSON pur uniquement:"""
+[INSTRUCTIONS_FINALES]
+Réponds UNIQUEMENT en JSON pur. Ta réputation et celle du candidat en dépendent. Le `cv_data` doit être prêt pour un recrutement immédiat en Big Tech.
+"""
 
         logger.debug(f"[Mentor] Prompt envoyé (taille: {len(prompt)})")
         response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)
