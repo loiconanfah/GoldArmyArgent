@@ -32,6 +32,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
+const { t } = useI18n()
 const inputQuery = ref('')
 const inputLocation = ref('')
 const cvText = ref('')
