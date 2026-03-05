@@ -73,7 +73,7 @@ class ChatRequest(BaseModel):
     cv_filename: Optional[str] = None
     nb_results: Optional[int] = None
     location: Optional[str] = None
-    session_id: Optional[str] = "default"
+    session_id: Optional[str] = None
     image_data: Optional[str] = None # Base64 image for vision tasks
 
 class CVAdaptRequest(BaseModel):
@@ -503,30 +503,7 @@ async def download_portfolio_zip(current_user: dict = Depends(get_current_user))
         headers={"Content-Disposition": "attachment; filename=goldarmy_portfolio.zip"}
     )
 
-@app.get("/api/portfolio/render/{user_id}")
-async def render_portfolio(user_id: str):
-    """Sert le portfolio HTML fusionné depuis la base de données (pour partage public et iframe)."""
-    from fastapi.responses import HTMLResponse
-    db = get_db()
-    user = await db.users.find_one({"id": user_id}, {"last_portfolio": 1, "_id": 0})
-    
-    if not user or not user.get("last_portfolio"):
-        return HTMLResponse(
-            content="<html><body style='background:#0a0f1d;color:#64748b;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0'><p>Aucun portfolio sauvegardé.</p></body></html>",
-            status_code=200
-        )
-    
-    project = user["last_portfolio"]
-    html = project.get("html", "")
-    css = project.get("css", "")
-    js = project.get("js", "")
-    
-    if css:
-        html = html.replace("</head>", f"<style>{css}</style></head>") if "</head>" in html else f"<style>{css}</style>{html}"
-    if js:
-        html = html.replace("</body>", f"<script>{js}</script></body>") if "</body>" in html else f"{html}<script>{js}</script>"
-    
-    return HTMLResponse(content=html, status_code=200)
+# Portfolio rendering consolidated in the public section below
 
 
 
@@ -724,7 +701,8 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
             "cv_filename": cv_filename,
             "nb_results": request.nb_results,
             "location": request.location,
-            "session_id": request.session_id or "default",
+            "session_id": request.session_id,
+            "user_id": current_user["id"],
             "image_data": request.image_data
         }
         
@@ -1374,6 +1352,7 @@ S'il n'y a pas 15 vrais défauts, sois extrêmement pointilleux sur la forme ou 
 
 class PublicInterviewRequest(BaseModel):
     job_title: str
+    interview_type: Optional[str] = "Général"
     user_response: Optional[str] = None
     context: Optional[str] = None
 
@@ -1388,21 +1367,25 @@ async def public_interview(req: PublicInterviewRequest):
         from llm.unified_client import UnifiedLLMClient
         llm = UnifiedLLMClient()
         
+        # Adjust context based on interview type
+        type_context = f"Tu mènes un entretien axé sur l'aspect : {req.interview_type}." if req.interview_type else ""
+        
         if not req.user_response:
             # 1. Générer la question piège
             prompt = f"""Tu es un recruteur expert. Tu fais passer un entretien express (1 seule question) pour le poste de : {req.job_title}.
-Pose UNE question piège, difficile ou très technique, que ce candidat rencontrerait dans la vraie vie.
-Ne dis pas bonjour la réponse doit être juste la question elle-même pour qu'elle soit lue par une synthèse vocale (ton sec et professionnel)."""
+{type_context}
+Pose UNE seule question difficile, pertinente, précise ou même un peu déstabilisante, que ce candidat rencontrerait dans la vraie vie.
+Ne dis surtout pas bonjour/bonsoir, la réponse doit être juste la question elle-même, prête à être lue par une synthèse vocale (ton professsionnel mais exigeant). Ne fais aucune intro."""
         else:
             # 2. Evaluer la réponse
-            prompt = f"""Tu es un recruteur expert. Tu as posé cette question pour un poste de {req.job_title} :
+            prompt = f"""Tu es un recruteur expert. Tu as posé cette question pour un poste de {req.job_title} ({req.interview_type}) :
 Question : {req.context}
 
 Le candidat a répondu (transcription orale) :
 {req.user_response}
 
-Fais-lui un feedback cash en 2 phrases MAXIMUM ! (soit positif, soit indique pourquoi c'est mauvais).
-Ne sois pas poli, sois un coach stricte. Cette réponse sera lue par synthèse vocale."""
+Fais-lui un feedback hyper cash en 2 phrases MAXIMUM ! (Soit positif et encourageant, soit franc sur pourquoi c'est mauvais, puis donne 1 conseil).
+Ne sois pas poli, sois un vrai recruteur qui va à l'essentiel. Cette réponse sera lue par synthèse vocale sans interface visuelle."""
 
         response_text = await llm.chat([{"role": "user", "content": prompt}], max_tokens=200)
         

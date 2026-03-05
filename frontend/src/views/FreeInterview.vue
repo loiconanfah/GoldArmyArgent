@@ -55,6 +55,10 @@ const question = ref('')
 const userAnswer = ref('')
 const feedback = ref(null)
 
+// NEW: Interview Type Selection
+const interviewType = ref('Général')
+const interviewTypes = ['Général', 'Technique', 'Ressources Humaines', 'Culture Fit', 'Management']
+
 // Web Speech API references
 let synthesis = null
 let recognition = null
@@ -105,13 +109,46 @@ onUnmounted(() => {
     if (recognition) recognition.stop()
 })
 
+const getBestVoice = (lang) => {
+    if (!synthesis) return null;
+    const voices = synthesis.getVoices();
+    if (!voices.length) return null;
+
+    // Filter by exact language or primary language tag (e.g. 'fr-FR' or 'fr')
+    const langVoices = voices.filter(v => v.lang.startsWith(lang) || v.lang.replace('_', '-').startsWith(lang));
+    
+    if (langVoices.length === 0) return voices[0];
+    
+    // Priority: Premium/Natural > Google > Microsoft > Default
+    const premiumKeywords = ['premium', 'natural', 'neural', 'wavenet'];
+    for (const kw of premiumKeywords) {
+        const found = langVoices.find(v => v.name.toLowerCase().includes(kw));
+        if (found) return found;
+    }
+    
+    const googleVoice = langVoices.find(v => v.name.toLowerCase().includes('google'));
+    if (googleVoice) return googleVoice;
+    
+    const msVoice = langVoices.find(v => v.name.toLowerCase().includes('microsoft'));
+    if (msVoice) return msVoice;
+    
+    return langVoices[0];
+}
+
 const speakText = (text, onEndCallback = null) => {
     if (!synthesis) return
     synthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
+    
+    const baseLang = speechLocale.value.split('-')[0]; // 'fr' or 'en'
+    const bestVoice = getBestVoice(baseLang);
+    if (bestVoice) {
+        utterance.voice = bestVoice;
+    }
+    
     utterance.lang = speechLocale.value
     utterance.rate = 1.05
-    utterance.pitch = 0.9 // Slightly deeper, more professional voice
+    utterance.pitch = 0.95 // Slightly deeper, more professional voice
     
     if (onEndCallback) {
         utterance.onend = onEndCallback
@@ -130,6 +167,7 @@ const startCall = async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 job_title: jobTitle.value,
+                interview_type: interviewType.value,
                 locale: locale.value 
             })
         })
@@ -190,6 +228,7 @@ const submitAnswer = async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 job_title: jobTitle.value,
+                interview_type: interviewType.value,
                 context: question.value,
                 user_response: userAnswer.value,
                 locale: locale.value
@@ -289,9 +328,24 @@ const endCall = () => {
             {{ t('free_interview.hero_subtitle') }}
         </p>
         
-        <div class="w-full max-w-2xl relative group">
-            <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-fuchsia-500 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-            <div class="relative bg-surface-950/80 backdrop-blur-xl border border-white/10 rounded-3xl p-2 sm:p-3 flex flex-col sm:flex-row gap-2 shadow-2xl overflow-hidden">
+        <div class="w-full max-w-2xl relative group flex flex-col items-center">
+            
+            <!-- Type Selector -->
+            <div class="flex flex-wrap justify-center gap-2 mb-8">
+                <button v-for="type in interviewTypes" :key="type"
+                        @click="interviewType = type"
+                        :class="[
+                            'px-4 py-2 rounded-xl text-sm font-bold tracking-wide transition-all border',
+                            interviewType === type 
+                                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.3)]' 
+                                : 'bg-surface-800 text-slate-400 border-white/5 hover:bg-surface-700 hover:text-white'
+                        ]">
+                    {{ type }}
+                </button>
+            </div>
+
+            <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-fuchsia-500 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200 top-20"></div>
+            <div class="relative bg-surface-950/80 backdrop-blur-xl border border-white/10 rounded-3xl p-2 sm:p-3 flex flex-col sm:flex-row gap-2 shadow-2xl overflow-hidden w-full">
                 <input v-model="jobTitle" @keyup.enter="startCall" type="text" :placeholder="t('free_interview.job_placeholder')" class="flex-1 bg-transparent px-6 py-4 text-lg font-bold text-white placeholder-slate-500 focus:outline-none text-center sm:text-left" />
                 
                 <button @click="startCall" :disabled="!jobTitle.trim()" class="bg-white text-indigo-950 disabled:opacity-50 disabled:cursor-not-allowed font-black uppercase tracking-widest py-4 px-8 rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 z-10">
@@ -330,7 +384,7 @@ const endCall = () => {
         <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 w-full relative z-10">
             
             <!-- Recruiter (AI) - Primary Focus -->
-            <div class="lg:col-span-8 bg-surface-950/60 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] relative overflow-hidden flex flex-col shadow-[0_20px_80px_-20px_rgba(79,70,229,0.3)]">
+            <div class="lg:col-span-8 bg-surface-950/40 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] relative overflow-hidden flex flex-col shadow-[0_20px_80px_-20px_rgba(79,70,229,0.15)]">
                 
                 <!-- AI Avatar Container -->
                 <div class="flex-1 flex flex-col items-center justify-center p-12 relative">
@@ -339,27 +393,28 @@ const endCall = () => {
                     
                     <div class="relative w-64 h-64">
                         <!-- Ripple effect when AI talks -->
-                        <div class="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-20 scale-150" v-if="(step === 'interviewing' && userAnswer === '') || step === 'feedback'"></div>
-                        <div class="absolute inset-0 bg-fuchsia-500 rounded-full animate-pulse opacity-10 scale-[1.2]" v-if="(step === 'interviewing' && userAnswer === '') || step === 'feedback'"></div>
+                        <div class="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-10 scale-150" v-if="(step === 'interviewing' && userAnswer === '') || step === 'feedback'"></div>
+                        <div class="absolute inset-0 bg-fuchsia-400 rounded-full animate-pulse opacity-5 scale-[1.2]" v-if="(step === 'interviewing' && userAnswer === '') || step === 'feedback'"></div>
                         
-                        <img src="/avatars/tech.png" :alt="t('free_interview.recruiter_alt')" class="w-full h-full rounded-full object-cover border-[6px] border-surface-900 relative z-10 shadow-2xl bg-[#0d1117] p-2" />
+                        <img src="/avatars/tech.png" :alt="t('free_interview.recruiter_alt')" class="w-full h-full rounded-full object-cover border-[4px] border-indigo-500/20 relative z-10 shadow-[0_0_50px_rgba(99,102,241,0.2)] bg-[#0d1117] p-2" />
                     </div>
                 </div>
                 
                 <!-- Subtitles / Feedback area HUD style -->
                 <div class="absolute bottom-6 inset-x-6 sm:bottom-8 sm:inset-x-10">
-                    <div class="bg-surface-950/80 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl relative overflow-hidden">
-                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
+                    <div class="bg-surface-900/60 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl relative overflow-hidden flex flex-col items-center text-center">
+                        <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50"></div>
                         
-                        <p class="text-xs font-black text-indigo-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_#6366f1]"></span>
+                        <p class="text-xs font-black text-indigo-300 uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_#6366f1]" v-if="(step === 'interviewing' && userAnswer === '') || step === 'feedback'"></span>
+                            <span class="w-2 h-2 rounded-full bg-slate-600" v-else></span>
                             {{ t('free_interview.recruiter_label') }}
                         </p>
                         
-                        <p class="text-lg sm:text-2xl font-medium leading-relaxed font-sans" v-if="step === 'interviewing'">
+                        <p class="text-xl sm:text-3xl xl:text-4xl font-semibold leading-relaxed font-sans text-white" v-if="step === 'interviewing'">
                             "{{ question }}"
                         </p>
-                        <p class="text-lg sm:text-2xl font-medium leading-relaxed text-rose-300 font-sans" v-else-if="step === 'feedback'">
+                        <p class="text-xl sm:text-3xl xl:text-4xl font-semibold leading-relaxed text-indigo-300 font-sans" v-else-if="step === 'feedback'">
                             "{{ feedback }}"
                         </p>
                     </div>
@@ -370,19 +425,19 @@ const endCall = () => {
             <div class="lg:col-span-4 flex flex-col gap-6">
                 
                 <!-- User Webcam Placeholder -->
-                <div class="bg-surface-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5 relative overflow-hidden flex flex-col aspect-square lg:aspect-auto lg:h-[40%]">
+                <div class="bg-surface-950/40 backdrop-blur-xl rounded-[2.5rem] border border-white/10 relative overflow-hidden flex flex-col aspect-square lg:aspect-auto lg:h-[40%] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]">
                     <div class="flex-1 flex items-center justify-center p-8 relative">
                          <!-- User speaking radar -->
-                        <div v-if="isListening" class="absolute inset-0 bg-rose-500/5 animate-pulse"></div>
-                        <div class="w-24 h-24 rounded-full bg-surface-800 flex items-center justify-center border border-white/10 shadow-xl relative z-10">
-                            <span class="text-2xl text-slate-500 font-bold">{{ t('free_interview.user_label') }}</span>
+                        <div v-if="isListening" class="absolute inset-0 bg-gradient-to-t from-rose-500/10 to-transparent animate-pulse"></div>
+                        <div class="w-24 h-24 rounded-full bg-slate-800/80 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-2xl relative z-10">
+                            <span class="text-2xl text-slate-400 font-bold uppercase tracking-widest">{{ t('free_interview.user_label') }}</span>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Live Transcription Box -->
-                <div class="bg-surface-950/60 backdrop-blur-xl rounded-[2.5rem] border border-white/5 relative flex flex-col flex-1 shadow-2xl">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 blur-[40px] pointer-events-none"></div>
+                <div class="bg-surface-950/40 backdrop-blur-xl rounded-[2.5rem] border border-white/10 relative flex flex-col flex-1 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] overflow-hidden">
+                    <div class="absolute top-0 right-0 w-48 h-48 bg-rose-500/5 blur-[50px] pointer-events-none"></div>
 
                     <div class="p-8 flex flex-col h-full justify-between relative z-10">
                         <div>
@@ -425,18 +480,18 @@ const endCall = () => {
 
         <!-- Zoom Controls Bar (Floating Dock) -->
         <div class="absolute bottom-8 inset-x-0 flex justify-center z-[60] pointer-events-none px-4">
-            <div class="bg-[#1a1a24]/90 backdrop-blur-2xl border border-white/10 p-2 sm:p-3 rounded-3xl flex items-center gap-2 sm:gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto transition-transform hover:-translate-y-1 duration-300">
+            <div class="bg-surface-900/80 backdrop-blur-3xl border border-white/10 p-3 sm:p-4 rounded-[2rem] flex items-center gap-3 sm:gap-6 shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-auto transition-transform hover:-translate-y-1 duration-300">
                 
                 <!-- Mic Toggle -->
                 <div class="flex flex-col items-center">
-                    <button @click="toggleRecording" :disabled="step !== 'interviewing'" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-lg" :class="isListening ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'bg-surface-800 text-slate-300 hover:bg-surface-700 hover:text-white border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed'">
-                        <MicrophoneIcon class="w-6 h-6 sm:w-7 sm:h-7" v-if="!isListening" />
-                        <StopIcon class="w-6 h-6 sm:w-7 sm:h-7" v-else />
+                    <button @click="toggleRecording" :disabled="step !== 'interviewing'" class="w-16 h-16 sm:w-20 sm:h-20 rounded-[1.5rem] flex items-center justify-center transition-all duration-300 shadow-xl" :class="isListening ? 'bg-rose-500 text-white hover:bg-rose-600 border border-rose-400 shadow-[0_0_30px_rgba(244,63,94,0.4)] scale-105' : 'bg-surface-800 text-slate-300 hover:bg-surface-700 hover:text-white border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed'">
+                        <MicrophoneIcon class="w-7 h-7 sm:w-8 sm:h-8" v-if="!isListening" />
+                        <StopIcon class="w-7 h-7 sm:w-8 sm:h-8" v-else />
                     </button>
-                    <span class="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest hidden sm:block">{{ isListening ? t('free_interview.stop_label') : t('free_interview.speak_label') }}</span>
+                    <span class="text-xs font-bold mt-3 uppercase tracking-widest hidden sm:block transition-colors" :class="isListening ? 'text-rose-400' : 'text-slate-500'">{{ isListening ? t('free_interview.stop_label') : t('free_interview.speak_label') }}</span>
                 </div>
 
-                <div class="w-px h-10 bg-white/10 mx-2"></div>
+                <div class="w-px h-12 bg-white/10 mx-2"></div>
 
                 <!-- Submit Answer -->
                 <div class="flex flex-col items-center">

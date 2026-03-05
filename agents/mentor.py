@@ -128,12 +128,6 @@ RÉPONSE JSON UNIQUEMENT:"""
             
         logger.debug(f"[Mentor] Réponse brute reçue (taille: {len(response)})")
         
-        # Log de secours dans un fichier local pour être sûr de voir le contenu
-        with open("mentor_debug.log", "a", encoding="utf-8") as f:
-            f.write(f"\n--- {time.ctime()} ---\n")
-            f.write(f"PROMPT: {prompt[:200]}...\n")
-            f.write(f"RESPONSE: {response}\n")
-            f.write("-" * 50 + "\n")
         try:
             # Chercher le premier '{' et le dernier '}'
             start_index = response.find('{')
