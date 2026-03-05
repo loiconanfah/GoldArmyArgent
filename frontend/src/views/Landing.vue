@@ -78,7 +78,7 @@ onMounted(async () => {
     const lineWords = root.querySelectorAll('#agents .line-split-word')
     gsap.set(revealContent, { opacity: 0, y: 28 })
     gsap.set(fadeIn, { opacity: 0, y: 20 })
-    gsap.set(revealCard, { opacity: 0, y: 40 })
+    gsap.set(revealCard, { opacity: 0, y: 56 })
     gsap.set(lineWords, { opacity: 0, y: 14 })
     if (revealContent.length) {
       gsap.to(revealContent, {
@@ -101,13 +101,19 @@ onMounted(async () => {
       })
     }
     if (revealCard.length) {
-      gsap.to(revealCard, {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        ease: 'power2.out',
-        stagger: 0.12,
-        scrollTrigger: { trigger: cardsScroll || section || root, ...defaultTrigger }
+      revealCard.forEach((card) => {
+        gsap.to(card, {
+          opacity: 1,
+          y: 0,
+          duration: 0.85,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 88%',
+            end: 'top 55%',
+            toggleActions: 'play none none none'
+          }
+        })
       })
     }
     if (lineWords.length) {
@@ -259,75 +265,98 @@ function closeNav() {
                   <span :class="stickyWordClass(i)">{{ word }}</span>{{ i !== stickyTitleWords.length - 1 ? ' ' : '' }}
                 </template>
               </h2>
-              <p class="fsize-body-large">{{ t('landing.agents_intro.paragraph') }}</p>
+              <p line-split="true" class="fsize-body-large">{{ t('landing.agents_intro.paragraph') }}</p>
               <div fade-in="true" class="reveal-content-wrap">
-                <router-link to="/register" class="button-arrow w-inline-block">
+                <router-link
+                  to="/register"
+                  button-arrow=""
+                  aria-label="view more"
+                  data-wf--arrow-button--variant="light"
+                  class="button-arrow w-inline-block">
                   <div class="btn-bg-arrow">
-                    <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
-                    <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon" btn-arrow-left=""><path :d="arrowPath" fill="currentColor"/></svg>
+                    <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                    <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow-left="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
                   </div>
                   <div class="btn-text-mask">
-                    <div class="button-arrow-text">{{ t('landing.sticky.cta_trial') }}</div>
-                    <div class="button-arrow-text">{{ t('landing.sticky.cta_trial') }}</div>
+                    <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_trial') }}</div>
+                    <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_trial') }}</div>
                   </div>
                 </router-link>
               </div>
             </div>
             <div class="home1-cards-scroll">
-              <div reveal-card="true" class="big-card-home1 first">
-                <div class="updates-banner">updates available</div>
+              <div card="true" reveal-card="true" class="big-card-home1 first">
+                <div card="true" class="updates-banner">updates available</div>
                 <div class="big-card-img-wrapper">
-                  <img src="/images/sniper.png" loading="lazy" :alt="t('landing.sticky.card1_title')" class="big-card--home1-img" />
+                  <img src="/images/sniper.png" loading="lazy" card="true" :alt="t('landing.sticky.card1_title')" class="big-card--home1-img" />
                 </div>
                 <div class="big-card-text">
-                  <p>{{ t('landing.sticky.card1_category') }}</p>
-                  <h3 class="fsize-s">{{ t('landing.sticky.card1_title') }}</h3>
-                  <p>{{ t('landing.sticky.card1_desc') }}</p>
-                  <router-link to="/opportunities" class="button-arrow w-inline-block">
+                  <p line-split="true">{{ t('landing.sticky.card1_category') }}</p>
+                  <h3 line-split="true" class="fsize-s">{{ t('landing.sticky.card1_title') }}</h3>
+                  <p line-split="true">{{ t('landing.sticky.card1_desc') }}</p>
+                  <router-link
+                    to="/opportunities"
+                    button-arrow=""
+                    aria-label="view more"
+                    data-wf--arrow-button--variant="light"
+                    class="button-arrow w-inline-block">
                     <div class="btn-bg-arrow">
-                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow-left="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
                     </div>
                     <div class="btn-text-mask">
-                      <div class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
-                      <div class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
+                      <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
+                      <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
                     </div>
                   </router-link>
                 </div>
               </div>
               <div reveal-card="true" class="big-card-home1 dark">
                 <div class="big-card-img-wrapper">
-                  <img src="/images/simulateur.png" loading="lazy" :alt="t('landing.sticky.card2_title')" class="big-card--home1-img" />
+                  <img src="/images/simulateur.png" loading="lazy" card="true" :alt="t('landing.sticky.card2_title')" class="big-card--home1-img" />
                 </div>
                 <div class="big-card-text">
-                  <p>{{ t('landing.sticky.card2_category') }}</p>
-                  <h3 class="fsize-s">{{ t('landing.sticky.card2_title') }}</h3>
-                  <p>{{ t('landing.sticky.card2_desc') }}</p>
-                  <router-link to="/mentor" class="button-arrow w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310 w-inline-block">
+                  <p line-split="true">{{ t('landing.sticky.card2_category') }}</p>
+                  <h3 line-split="true" class="fsize-s">{{ t('landing.sticky.card2_title') }}</h3>
+                  <p line-split="true">{{ t('landing.sticky.card2_desc') }}</p>
+                  <router-link
+                    to="/mentor"
+                    button-arrow=""
+                    aria-label="view more"
+                    data-wf--arrow-button--variant="dark"
+                    class="button-arrow w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310 w-inline-block">
                     <div class="btn-bg-arrow w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">
-                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow-left="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
                     </div>
                     <div class="btn-text-mask">
-                      <div class="button-arrow-text w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">{{ t('landing.sticky.cta_explore') }}</div>
-                      <div class="button-arrow-text w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">{{ t('landing.sticky.cta_explore') }}</div>
+                      <div button-text="" class="button-arrow-text w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">{{ t('landing.sticky.cta_explore') }}</div>
+                      <div button-text="" class="button-arrow-text w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">{{ t('landing.sticky.cta_explore') }}</div>
                     </div>
                   </router-link>
                 </div>
               </div>
               <div reveal-card="true" class="big-card-home1 last">
                 <div class="big-card-img-wrapper">
-                  <img src="/images/crmcandidat.png" loading="lazy" :alt="t('landing.sticky.card3_title')" class="big-card--home1-img" />
+                  <img src="/images/crmcandidat.png" loading="lazy" card="true" :alt="t('landing.sticky.card3_title')" class="big-card--home1-img" />
                 </div>
                 <div class="big-card-text">
-                  <p>{{ t('landing.sticky.card3_category') }}</p>
-                  <h3 class="fsize-s">{{ t('landing.sticky.card3_title') }}</h3>
-                  <p>{{ t('landing.sticky.card3_desc') }}</p>
-                  <router-link to="/crm" class="button-arrow w-inline-block">
+                  <p line-split="true">{{ t('landing.sticky.card3_category') }}</p>
+                  <h3 line-split="true" class="fsize-s">{{ t('landing.sticky.card3_title') }}</h3>
+                  <p line-split="true">{{ t('landing.sticky.card3_desc') }}</p>
+                  <router-link
+                    to="/crm"
+                    button-arrow=""
+                    aria-label="view more"
+                    data-wf--arrow-button--variant="light"
+                    class="button-arrow w-inline-block">
                     <div class="btn-bg-arrow">
-                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow-left="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
                     </div>
                     <div class="btn-text-mask">
-                      <div class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
-                      <div class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
+                      <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
+                      <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
                     </div>
                   </router-link>
                 </div>
@@ -802,12 +831,13 @@ function closeNav() {
 </template>
 
 <style scoped>
+/* overflow-x: clip so position:sticky works in #agents (overflow-x: hidden breaks it) */
 .page-wrapper {
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 .main {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 .desktop-only { display: none; }
 @media (min-width: 992px) {
