@@ -41,6 +41,9 @@ function stickyWordClass(i) {
     ? ['line-split-word', 'tertiary-color-emphasis']
     : ['line-split-word']
 }
+function stickyWordSpace(i) {
+  return i !== stickyTitleWords.value.length - 1 ? ' ' : ''
+}
 
 const faqItems = computed(() => [
   { q: t('landing.faq_items.q1'), a: t('landing.faq_items.a1') },
@@ -71,17 +74,20 @@ onMounted(async () => {
     const section = root.querySelector('#agents')
     const stickyCol = root.querySelector('.home1-left-sticky')
     const cardsScroll = root.querySelector('.home1-cards-scroll')
+    const threecolSection = root.querySelector('.home1-3col')
     const defaultTrigger = { start: 'top 85%', toggleActions: 'play none none none' }
-    const revealContent = root.querySelectorAll('[reveal-content="true"]')
-    const fadeIn = root.querySelectorAll('[fade-in="true"]')
+    const revealContentAgents = section ? section.querySelectorAll('[reveal-content="true"]') : []
+    const fadeInAgents = section ? section.querySelectorAll('[fade-in="true"]') : []
+    const revealContentThreecol = threecolSection ? threecolSection.querySelectorAll('[reveal-content="true"]') : []
+    const fadeInThreecol = threecolSection ? threecolSection.querySelectorAll('[fade-in="true"]') : []
     const revealCard = root.querySelectorAll('[reveal-card="true"]')
     const lineWords = root.querySelectorAll('#agents .line-split-word')
-    gsap.set(revealContent, { opacity: 0, y: 28 })
-    gsap.set(fadeIn, { opacity: 0, y: 20 })
+    gsap.set([...revealContentAgents, ...revealContentThreecol], { opacity: 0, y: 28 })
+    gsap.set([...fadeInAgents, ...fadeInThreecol], { opacity: 0, y: 20 })
     gsap.set(revealCard, { opacity: 0, y: 56 })
     gsap.set(lineWords, { opacity: 0, y: 14 })
-    if (revealContent.length) {
-      gsap.to(revealContent, {
+    if (revealContentAgents.length) {
+      gsap.to(revealContentAgents, {
         opacity: 1,
         y: 0,
         duration: 0.7,
@@ -90,14 +96,34 @@ onMounted(async () => {
         scrollTrigger: { trigger: section || root, ...defaultTrigger }
       })
     }
-    if (fadeIn.length) {
-      gsap.to(fadeIn, {
+    if (fadeInAgents.length) {
+      gsap.to(fadeInAgents, {
         opacity: 1,
         y: 0,
         duration: 0.5,
         ease: 'power2.out',
         stagger: 0.06,
         scrollTrigger: { trigger: section || root, ...defaultTrigger }
+      })
+    }
+    if (revealContentThreecol.length) {
+      gsap.to(revealContentThreecol, {
+        opacity: 1,
+        y: 0,
+        duration: 0.7,
+        ease: 'power2.out',
+        stagger: 0.08,
+        scrollTrigger: { trigger: threecolSection || root, ...defaultTrigger }
+      })
+    }
+    if (fadeInThreecol.length) {
+      gsap.to(fadeInThreecol, {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: 'power2.out',
+        stagger: 0.06,
+        scrollTrigger: { trigger: threecolSection || root, ...defaultTrigger }
       })
     }
     /* Reveal all 3 cards when section enters view (so 3rd card is never stuck at opacity 0) */
@@ -125,6 +151,7 @@ onMounted(async () => {
         scrollTrigger: { trigger: stickyCol || section || root, ...defaultTrigger }
       })
     }
+    ScrollTrigger.refresh()
   }, root)
 })
 
@@ -262,8 +289,13 @@ function closeNav() {
           <div class="w-layout-grid home1-2cols">
             <div reveal-content="true" class="home1-left-sticky">
               <h2 class="line-split-heading">
-                <template v-for="(word, i) in stickyTitleWords" :key="i">
-                  <span :class="stickyWordClass(i)">{{ word }}</span>{{ i !== stickyTitleWords.length - 1 ? ' ' : '' }}
+                <template v-if="stickyTitleWords.length">
+                  <template v-for="(word, i) in stickyTitleWords" :key="i">
+                    <span :class="stickyWordClass(i)">{{ word }}</span>{{ stickyWordSpace(i) }}
+                  </template>
+                </template>
+                <template v-else>
+                  {{ t('landing.agents_intro.title_prefix') }} <span class="tertiary-color-emphasis">{{ t('landing.agents_intro.title_suffix') }}</span>
                 </template>
               </h2>
               <p line-split="true" class="fsize-body-large">{{ t('landing.agents_intro.paragraph') }}</p>
@@ -367,15 +399,15 @@ function closeNav() {
         </div>
       </section>
 
-      <!-- HOME1 3COL - GoldArmy -->
+      <!-- HOME1 3COL - GoldArmy (structure identique home: reveal-content, line-split, fade-in) -->
       <section class="section home1-3col">
         <div class="w-layout-blockcontainer container w-container">
-          <div class="_3cols-heading">
-            <h3 class="center-align">{{ t('landing.threecol.title') }} <br /><span class="tertiary-color-emphasis">{{ t('landing.threecol.title_emphasis') }}</span></h3>
-            <p class="fsize-body-large center-align">{{ t('landing.threecol.paragraph') }}</p>
+          <div reveal-content="true" class="_3cols-heading">
+            <h3 line-split="true" class="center-align">{{ t('landing.threecol.title') }} <br /><span class="tertiary-color-emphasis">{{ t('landing.threecol.title_emphasis') }}</span></h3>
+            <p line-split="true" class="fsize-body-large center-align">{{ t('landing.threecol.paragraph') }}</p>
           </div>
-          <div class="w-layout-grid home1-3cols">
-            <div class="card-item-home1">
+          <div reveal-content="true" class="w-layout-grid home1-3cols">
+            <div fade-in="true" class="card-item-home1">
               <div class="card-item-img-wrap">
                 <img src="/images/sniper.png" loading="lazy" :alt="t('landing.threecol.card1_title')" class="img-card-home1" />
               </div>
@@ -385,7 +417,7 @@ function closeNav() {
                 <p>{{ t('landing.threecol.card1_desc') }}</p>
               </div>
             </div>
-            <div class="card-item-home1">
+            <div fade-in="true" class="card-item-home1">
               <div class="card-item-img-wrap">
                 <img src="/images/crmcandidat.png" loading="lazy" :alt="t('landing.threecol.card2_title')" class="img-card-home1" />
               </div>
@@ -395,7 +427,7 @@ function closeNav() {
                 <p>{{ t('landing.threecol.card2_desc') }}</p>
               </div>
             </div>
-            <div class="card-item-home1">
+            <div fade-in="true" class="card-item-home1">
               <div class="card-item-img-wrap">
                 <img src="/images/simulateur.png" loading="lazy" :alt="t('landing.threecol.card3_title')" class="img-card-home1" />
               </div>
@@ -944,6 +976,74 @@ function closeNav() {
 .page-wrapper :deep(.w-layout-grid),
 .page-wrapper :deep(.w-layout-blockcontainer) {
   box-sizing: border-box;
+}
+
+/* Section "Recherche d'emploi intelligente" – responsive comme maquette mobile */
+.page-wrapper :deep(.home1-3col ._3cols-heading) {
+  text-align: center;
+}
+.page-wrapper :deep(.home1-3col ._3cols-heading .center-align) {
+  text-align: center;
+}
+@media screen and (max-width: 767px) {
+  .page-wrapper :deep(.home1-3col ._3cols-heading) {
+    padding-bottom: var(--_size---paddingsize--small, 1.5rem);
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 100%;
+  }
+  .page-wrapper :deep(.home1-3col .home1-3cols) {
+    grid-template-columns: 1fr;
+    grid-row-gap: var(--_size---paddingsize--medium, 2rem);
+  }
+  .page-wrapper :deep(.home1-3col .card-item-home1) {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    grid-row-gap: var(--_size---paddingsize--small, 1rem);
+    text-align: left;
+  }
+  .page-wrapper :deep(.home1-3col .card-item-img-wrap) {
+    width: 100%;
+    order: 1;
+    border-radius: var(--radius--xs, 0.5rem);
+    overflow: hidden;
+    background-color: var(--_theme---background--secondarybackground, #f5f5f5);
+  }
+  .page-wrapper :deep(.home1-3col .card-text-content-home1) {
+    order: 2;
+    text-align: left;
+    padding-top: var(--_size---paddingsize--tiny, 0.75rem);
+  }
+  .page-wrapper :deep(.home1-3col .card-text-content-home1 > div:first-child) {
+    font-size: var(--_size---fonts--xxs, 0.75rem);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--_theme---textcolor--tertiarytext, #6b6b7b);
+    margin-bottom: 0.25rem;
+  }
+  .page-wrapper :deep(.home1-3col .card-text-content-home1 h4) {
+    text-align: left;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+  .page-wrapper :deep(.home1-3col .card-text-content-home1 p) {
+    text-align: left;
+    color: var(--_theme---textcolor--secondarytext, #666);
+    margin-bottom: 0;
+    line-height: 1.5;
+  }
+}
+@media screen and (max-width: 479px) {
+  .page-wrapper :deep(.home1-3col ._3cols-heading) {
+    padding-bottom: var(--_size---paddingsize--tiny, 1rem);
+  }
+  .page-wrapper :deep(.home1-3col .home1-3cols) {
+    grid-row-gap: var(--_size---paddingsize--small, 1.25rem);
+  }
+  .page-wrapper :deep(.home1-3col .card-text-content-home1) {
+    padding-top: var(--_size---paddingsize--tiny, 0.5rem);
+  }
 }
 
 /* Ensure all 3 cards in home1-sticky are visible (no collapse, scrollable on mobile) */
