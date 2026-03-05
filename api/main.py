@@ -123,6 +123,11 @@ class PromoteUserRequest(BaseModel):
 def read_root():
     return {"status": "ok", "message": "GoldArmy Agent V2 API is running"}
 
+@app.get("/11e1c9334650482a8036bf554489f586.txt")
+async def get_indexnow_key():
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse("11e1c9334650482a8036bf554489f586")
+
 @app.post("/api/parse-pdf")
 async def parse_pdf(file: UploadFile = File(...)):
     """
