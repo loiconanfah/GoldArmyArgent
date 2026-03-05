@@ -397,18 +397,19 @@ const downloadZip = async () => {
 }
 
 const CV_THEMES = [
-    { id: 'midnight', name: 'Midnight Pro (Sidebar Gauche)', colors: ['#1e293b', '#38bdf8'] },
-    { id: 'emerald', name: 'Emerald Leader (Sidebar Gauche)', colors: ['#064e3b', '#10b981'] },
-    { id: 'modern', name: 'Modern Startup (Sidebar Droite)', colors: ['#4c1d95', '#8b5cf6'] },
-    { id: 'minimal', name: 'Executive Minimal (Une Colonne)', colors: ['#ffffff', '#0f172a'] },
-    { id: 'bold', name: 'Creative Bold (Grille Bento)', colors: ['#000000', '#f43f5e'] },
-    { id: 'banker', name: 'Trustworthy Banker (Bandeau Top)', colors: ['#1e3a8a', '#1e40af'] },
-    { id: 'tech', name: 'Tech Terminal (Style Code)', colors: ['#000000', '#22c55e'] },
-    { id: 'classic', name: 'Classic Academic (Minimal Centré)', colors: ['#ffffff', '#451a03'] },
-    { id: 'vibrant', name: 'Vibrant Energy (Deux Colonnes)', colors: ['#991b1b', '#ea580c'] },
-    { id: 'luxury', name: 'Elegant Luxury (Compact Pro)', colors: ['#000000', '#ca8a04'] }
+    { id: 'midnight', name: 'Midnight Pro', layout: 'sidebar-left', colors: ['#1e293b', '#38bdf8'] },
+    { id: 'emerald', name: 'Emerald Leader', layout: 'sidebar-left', colors: ['#064e3b', '#10b981'] },
+    { id: 'modern', name: 'Modern Startup', layout: 'sidebar-right', colors: ['#4c1d95', '#8b5cf6'] },
+    { id: 'minimal', name: 'Executive Minimal', layout: 'classic', colors: ['#ffffff', '#0f172a'] },
+    { id: 'bold', name: 'Creative Bold', layout: 'grid', colors: ['#000000', '#f43f5e'] },
+    { id: 'banker', name: 'Trustworthy Banker', layout: 'top-band', colors: ['#1e3a8a', '#1e40af'] },
+    { id: 'tech', name: 'Tech Terminal', layout: 'terminal', colors: ['#000000', '#22c55e'] },
+    { id: 'classic', name: 'Classic Academic', layout: 'centered', colors: ['#ffffff', '#451a03'] },
+    { id: 'vibrant', name: 'Vibrant Energy', layout: 'split', colors: ['#991b1b', '#ea580c'] },
+    { id: 'luxury', name: 'Elegant Luxury', layout: 'compact', colors: ['#000000', '#ca8a04'] }
 ]
 const selectedTheme = ref('midnight')
+const hoveredTheme = ref(null)
 
 const isDownloadingDocx = ref(false)
 const downloadCvDocx = async (cvJsonString) => {
@@ -684,29 +685,113 @@ const openInWorkspace = (msg) => {
                  </div>
                </div>
  
-               <!-- Sélecteur de Thème -->
-               <div class="p-4 bg-surface-900/50 border border-surface-700/50 rounded-2xl">
-                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">SÉLECTIONNE TON DESIGN PREMIUM</p>
-                 <div class="grid grid-cols-5 gap-2">
-                   <button 
-                     v-for="theme in CV_THEMES" 
-                     :key="theme.id"
-                     @click="selectedTheme = theme.id"
-                     :title="theme.name"
-                     class="group relative h-10 rounded-lg border transition-all overflow-hidden"
-                     :class="selectedTheme === theme.id ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-surface-700 hover:border-surface-600'"
-                   >
-                     <div class="absolute inset-0 flex">
-                       <div class="w-1/2 h-full" :style="{ backgroundColor: theme.colors[0] }"></div>
-                       <div class="w-1/2 h-full" :style="{ backgroundColor: theme.colors[1] }"></div>
+                <!-- Sélecteur de Thème avec Preview -->
+                <div class="p-4 bg-surface-900/50 border border-surface-700/50 rounded-2xl">
+                  <div class="flex flex-col sm:flex-row gap-4">
+                     <!-- Preview Miniature Dynamic -->
+                     <div class="w-full sm:w-24 h-32 bg-surface-800 rounded-lg border border-surface-700 overflow-hidden shrink-0 shadow-inner relative group">
+                         <div class="absolute inset-0 transition-all duration-300" :style="{ backgroundColor: (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) === '#ffffff' ? '#f8fafc' : (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) }">
+                             <!-- Layout: Sidebar Left -->
+                             <div v-if="CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.layout === 'sidebar-left'" class="h-full flex">
+                                 <div class="w-1/3 h-full opacity-50" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0] }"></div>
+                                 <div class="flex-1 p-2 space-y-1">
+                                     <div class="h-1 w-3/4 rounded-full" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                                     <div class="h-0.5 w-1/2 bg-slate-400 rounded-full opacity-30"></div>
+                                     <div class="pt-2 space-y-1">
+                                         <div class="h-0.5 w-full bg-slate-400 rounded-full opacity-20"></div>
+                                         <div class="h-0.5 w-full bg-slate-400 rounded-full opacity-20"></div>
+                                     </div>
+                                 </div>
+                             </div>
+                             <!-- Layout: Sidebar Right -->
+                             <div v-else-if="CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.layout === 'sidebar-right'" class="h-full flex flex-row-reverse">
+                                 <div class="w-1/3 h-full opacity-50" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0] }"></div>
+                                 <div class="flex-1 p-2 space-y-1">
+                                     <div class="h-1 w-3/4 rounded-full" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                                     <div class="pt-2 space-y-1">
+                                         <div class="h-0.5 w-full bg-slate-400 rounded-full opacity-20"></div>
+                                     </div>
+                                 </div>
+                             </div>
+                             <!-- Layout: Top Band -->
+                             <div v-else-if="CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.layout === 'top-band'" class="h-full flex flex-col">
+                                 <div class="h-1/4 w-full opacity-50" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0] }"></div>
+                                 <div class="flex-1 p-2 space-y-1">
+                                     <div class="h-1 w-1/2 mx-auto rounded-full" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                                     <div class="pt-2 space-y-1">
+                                         <div class="h-0.5 w-full bg-slate-400 rounded-full opacity-20"></div>
+                                     </div>
+                                 </div>
+                             </div>
+                             <!-- Layout: Centered -->
+                             <div v-else-if="CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.layout === 'centered'" class="h-full flex flex-col items-center p-2 space-y-2">
+                                 <div class="h-1.5 w-1/2 rounded-full" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                                 <div class="h-0.5 w-3/4 bg-slate-400 rounded-full opacity-20"></div>
+                                 <div class="w-full space-y-1">
+                                     <div class="h-0.5 w-full bg-slate-400 rounded-full opacity-20"></div>
+                                     <div class="h-0.5 w-full bg-slate-400 rounded-full opacity-20"></div>
+                                 </div>
+                             </div>
+                             <!-- Layout: Terminal -->
+                             <div v-else-if="CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.layout === 'terminal'" class="h-full bg-black p-2 font-mono text-[4px] space-y-1">
+                                 <div class="text-[6px]" :style="{ color: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }">> ROOT@RESUME: ~</div>
+                                 <div class="text-white opacity-40">Loading skills...</div>
+                                 <div :style="{ color: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }">DONE.</div>
+                             </div>
+                             <!-- Layout: Split -->
+                             <div v-else-if="CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.layout === 'split'" class="h-full flex divide-x divide-white/10">
+                                 <div class="w-1/2 h-full opacity-50 p-2 space-y-1" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0] }">
+                                     <div class="h-0.5 w-full bg-white opacity-30 rounded-full"></div>
+                                 </div>
+                                 <div class="w-1/2 h-full p-2 space-y-1">
+                                     <div class="h-0.5 w-full bg-slate-400 opacity-20 rounded-full"></div>
+                                 </div>
+                             </div>
+                             <!-- Layout: Grid -->
+                             <div v-else-if="CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.layout === 'grid'" class="h-full p-2 grid grid-cols-2 gap-1">
+                                 <div class="h-8 bg-slate-400/10 rounded-sm"></div>
+                                 <div class="h-8 bg-slate-400/10 rounded-sm"></div>
+                                 <div class="col-span-2 h-12 bg-slate-400/10 rounded-sm"></div>
+                             </div>
+                             <!-- Layout: Classic / Default -->
+                             <div v-else class="h-full p-3 space-y-2">
+                                 <div class="h-1.5 w-2/3 rounded-full" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                                 <div class="space-y-1">
+                                     <div class="h-0.5 w-full bg-slate-400 rounded-full opacity-20"></div>
+                                     <div class="h-0.5 w-full bg-slate-400 rounded-full opacity-20"></div>
+                                     <div class="h-0.5 w-full bg-slate-400 rounded-full opacity-20"></div>
+                                 </div>
+                             </div>
+                         </div>
                      </div>
-                     <div v-if="selectedTheme === theme.id" class="absolute inset-0 bg-gold-500/10 flex items-center justify-center">
-                       <CheckIcon class="w-4 h-4 text-white drop-shadow-md" />
+
+                     <!-- Grille de sélection -->
+                     <div class="flex-1">
+                         <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">SÉLECTIONNE TON DESIGN PREMIUM</p>
+                         <div class="grid grid-cols-5 gap-2">
+                             <button 
+                                 v-for="theme in CV_THEMES" 
+                                 :key="theme.id"
+                                 @click="selectedTheme = theme.id"
+                                 @mouseenter="hoveredTheme = theme.id"
+                                 @mouseleave="hoveredTheme = null"
+                                 :title="theme.name"
+                                 class="group relative h-10 rounded-lg border transition-all overflow-hidden"
+                                 :class="selectedTheme === theme.id ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-surface-700 hover:border-surface-600'"
+                             >
+                                 <div class="absolute inset-0 flex">
+                                     <div class="w-1/2 h-full" :style="{ backgroundColor: theme.colors[0] }"></div>
+                                     <div class="w-1/2 h-full" :style="{ backgroundColor: theme.colors[1] }"></div>
+                                 </div>
+                                 <div v-if="selectedTheme === theme.id" class="absolute inset-0 bg-gold-500/10 flex items-center justify-center">
+                                     <CheckIcon class="w-4 h-4 text-white drop-shadow-md" />
+                                 </div>
+                             </button>
+                         </div>
+                         <p class="text-[11px] text-center text-slate-400 mt-2 font-bold">{{ CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.name }}</p>
                      </div>
-                   </button>
-                 </div>
-                 <p class="text-[11px] text-center text-slate-400 mt-2 font-bold">{{ CV_THEMES.find(t => t.id === selectedTheme)?.name }}</p>
-               </div>
+                  </div>
+                </div>
 
                <!-- Bouton téléchargement -->
                <button

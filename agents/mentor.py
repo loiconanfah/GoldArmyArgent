@@ -60,9 +60,11 @@ Ta mission est d'auditer et réécrire ce CV avec un niveau "God Mode".
 
 **OBJECTIFS DE RÉÉCRITURE (CV_DATA) :**
 1. **Expertise Adaptative :** Adapte dynamiquement la structure et le ton au profil (Santé, Tech, Management, etc.). Pour la santé, intègre massivement les mots-clés (**Loi 90, PDSB, PCI**).
-2. **Score ATS Réel & Critique :** Fournis un score ATS **honnête et sévère**. Ne donne PAS de "faux espoir". Si le CV manque de chiffres, de résultats ou de mots-clés critiques, le score DOIT être bas (ex: 30-50%). Sois impitoyable sur la qualité pour forcer l'excellence.
-3. **Optimisation Sémantique :** Utilise des mots-clés LSI pour dominer les recherches sémantiques.
-4. **Humanisation (Anti-AI) :** Évite les structures prévisibles. Ton percutant et humain.
+2. **Résolution Totale :** Le `cv_data` DOIT être la version corrigée qui résout TOUTES les "failles" et "actions" identifiées dans l'audit. Ne laisse aucun défaut critique.
+3. **Score ATS Réel & Critique :** Fournis un score ATS **honnête et sévère**. Ne donne PAS de "faux espoir". Si le CV manque de chiffres, de résultats ou de mots-clés critiques, le score DOIT être bas (ex: 30-50%).
+4. **Optimisation Sémantique :** Utilise des mots-clés LSI pour dominer les recherches sémantiques.
+5. **Intégrité des Données :** Conserve et formate proprement TOUTES les infos (Email, Téléphone, LinkedIn, GitHub, Dates précises, Lieux, Institutions). Ne perds JAMAIS une information.
+6. **Humanisation (Anti-AI) :** Évite les structures prévisibles. Ton percutant et humain.
 
 **NOTE IMPORTANTE :** Aucun méta-commentaire IA. Réponse JSON pur.
 
@@ -73,8 +75,8 @@ Ta mission est d'auditer et réécrire ce CV avec un niveau "God Mode".
     "candidate_name": "...",
     "candidate_title": "...",
     "scores": {{ "mots_cles": 40, "impact_resultats": 20, "mise_en_forme": 70, "lisibilite": 60, "experience_pertinence": 50 }},
-    "failles": ["Failles réelles"],
-    "actions": ["Actions correctrices"],
+    "failles": ["Liste des failles réelles trouvées"],
+    "actions": ["Actions précises à entreprendre"],
     "tech_manquantes": ["..."],
     "points_forts": ["..."]
   }},
@@ -86,7 +88,7 @@ Ta mission est d'auditer et réécrire ce CV avec un niveau "God Mode".
     "location": "...",
     "linkedin": "...",
     "github": "...",
-    "summary": "Résumé adapté au profil.",
+    "summary": "Résumé optimisé (God Mode) sans aucune faille.",
     "experiences": [
       {{
         "title": "...",
@@ -94,10 +96,10 @@ Ta mission est d'auditer et réécrire ce CV avec un niveau "God Mode".
         "location": "...",
         "start_date": "...",
         "end_date": "...",
-        "bullets": ["Impact et résultats réels"]
+        "bullets": ["Action + Résultat + Technologie (Version corrigée et impactante)"]
       }}
     ],
-    "skills": {{ "Langages/Expertises": ["..."], "Outils/Certifs": ["..."] }},
+    "skills": {{ "Expertises": ["..."], "Outils": ["..."] }},
     "education": [ {{ "degree": "...", "institution": "...", "location": "...", "year": "..." }} ],
     "certifications": ["..."],
     "languages": ["..."]

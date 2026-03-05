@@ -102,19 +102,20 @@ def _get_styles(c):
     
     return {
         "SB": {
-            "heading": ParagraphStyle("sb_h", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=11, textColor=white if is_dark_sb else black, spaceBefore=15),
-            "label": ParagraphStyle("sb_l", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=9.5, textColor=c["ACCENT"], spaceBefore=6),
-            "body": ParagraphStyle("sb_b", parent=base["Normal"], fontName=c["FONT"], fontSize=9, textColor=c["SIDEBAR_TEXT"]),
-            "bullet": ParagraphStyle("sb_bul", parent=base["Normal"], fontName=c["FONT"], fontSize=9, textColor=c["SIDEBAR_TEXT"], leftIndent=12, bulletColor=c["ACCENT"])
+            "heading": ParagraphStyle("sb_h", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=11, textColor=white if is_dark_sb else black, spaceBefore=15, spaceAfter=6, textTransform="uppercase"),
+            "label": ParagraphStyle("sb_l", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=9.5, textColor=c["ACCENT"], spaceBefore=8, spaceAfter=2),
+            "body": ParagraphStyle("sb_b", parent=base["Normal"], fontName=c["FONT"], fontSize=9, leading=12, textColor=c["SIDEBAR_TEXT"], spaceAfter=2),
+            "bullet": ParagraphStyle("sb_bul", parent=base["Normal"], fontName=c["FONT"], fontSize=9, leading=12, textColor=c["SIDEBAR_TEXT"], leftIndent=12, firstLineIndent=-12, bulletColor=c["ACCENT"], spaceAfter=2)
         },
         "M": {
-            "name": ParagraphStyle("name", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=26, textColor=c["ACCENT"]),
-            "contact": ParagraphStyle("contact", parent=base["Normal"], fontName=c["FONT"], fontSize=9.5, textColor=c["MAIN_TEXT"], spaceAfter=15),
-            "section_head": ParagraphStyle("s_head", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=12, textColor=c["MAIN_TITLE"], spaceBefore=16, spaceAfter=4),
-            "job_title": ParagraphStyle("j_title", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=11, textColor=c["MAIN_TITLE"], spaceBefore=10),
-            "job_meta": ParagraphStyle("j_meta", parent=base["Normal"], fontName=c["FONT"], fontSize=9.5, textColor=c["ACCENT"]),
-            "body": ParagraphStyle("body", parent=base["Normal"], fontName=c["FONT"], fontSize=10, textColor=c["MAIN_TEXT"]),
-            "bullet": ParagraphStyle("bullet", parent=base["Normal"], fontName=c["FONT"], fontSize=10, textColor=c["MAIN_TEXT"], leftIndent=15, bulletColor=c["ACCENT"])
+            "name": ParagraphStyle("name", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=28, leading=32, textColor=c["ACCENT"], spaceBefore=0, spaceAfter=4, textTransform="uppercase"),
+            "title": ParagraphStyle("title", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=14, leading=18, textColor=c["MAIN_TITLE"], spaceAfter=8),
+            "contact": ParagraphStyle("contact", parent=base["Normal"], fontName=c["FONT"], fontSize=9, leading=14, textColor=c["MAIN_TEXT"], spaceAfter=12),
+            "section_head": ParagraphStyle("s_head", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=12, leading=16, textColor=c["MAIN_TITLE"], spaceBefore=18, spaceAfter=6, textTransform="uppercase"),
+            "job_title": ParagraphStyle("j_title", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=11, leading=14, textColor=c["MAIN_TITLE"], spaceBefore=12, spaceAfter=2),
+            "job_meta": ParagraphStyle("j_meta", parent=base["Normal"], fontName=c["FONT"], fontSize=9, leading=12, textColor=c["ACCENT"], spaceAfter=6),
+            "body": ParagraphStyle("body", parent=base["Normal"], fontName=c["FONT"], fontSize=10, leading=14, textColor=c["MAIN_TEXT"], spaceBefore=2, spaceAfter=2),
+            "bullet": ParagraphStyle("bullet", parent=base["Normal"], fontName=c["FONT"], fontSize=9.5, leading=13, textColor=c["MAIN_TEXT"], leftIndent=15, firstLineIndent=-10, bulletColor=c["ACCENT"], spaceBefore=2, spaceAfter=2)
         }
     }
 
@@ -132,10 +133,8 @@ def _render_modern_sidebar(cv_data, doc, story, styles, colors):
     on_page = lambda canvas, d: canvas.rect(0, 0, SIDEBAR_W, PAGE_HEIGHT, fill=1, stroke=0) if canvas.setFillColor(colors["SIDEBAR_BG"]) is None else None
     doc.addPageTemplates([PageTemplate(id='Layout', frames=[frame_left, frame_right], onPage=on_page)])
     
-    # Left Content
     _add_sidebar_content(cv_data, story, S, colors)
     story.append(FrameBreak())
-    # Right Content
     _add_main_content(cv_data, story, M, colors)
 
 def _render_reverse_sidebar(cv_data, doc, story, styles, colors):
@@ -157,82 +156,108 @@ def _render_reverse_sidebar(cv_data, doc, story, styles, colors):
 def _render_classic_single(cv_data, doc, story, styles, colors):
     """Layout: Single Column Classic."""
     M = styles["M"]
-    frame = Frame(inch/2, inch/2, LETTER[0]-inch, LETTER[1]-inch)
+    frame = Frame(inch/2, inch/2, LETTER[0]-inch, LETTER[1]-inch, leftPadding=36, rightPadding=36, topPadding=48, bottomPadding=48)
     doc.addPageTemplates([PageTemplate(id='Layout', frames=[frame])])
     
     _add_main_content(cv_data, story, M, colors)
-    story.append(Spacer(1, 20))
-    _add_sidebar_content(cv_data, story, M, colors) # Reuse main styles for single col
+    story.append(Spacer(1, 15))
+    _add_sidebar_content(cv_data, story, M, colors, horizontal=True)
 
 def _render_executive_band(cv_data, doc, story, styles, colors):
     """Layout: Top Header Band."""
     M = styles["M"]
-    header_h = 140
-    frame_top = Frame(0, LETTER[1]-header_h, LETTER[0], header_h, topPadding=40)
-    frame_bottom = Frame(inch/2, inch/2, LETTER[0]-inch, LETTER[1]-header_h-inch/2)
+    header_h = 160
+    frame_top = Frame(0, LETTER[1]-header_h, LETTER[0], header_h, leftPadding=48, rightPadding=48, topPadding=40)
+    frame_bottom = Frame(inch/2, inch/2, LETTER[0]-inch, LETTER[1]-header_h-inch/2, leftPadding=48, rightPadding=48, topPadding=20)
     
     on_page = lambda canvas, d: canvas.rect(0, LETTER[1]-header_h, LETTER[0], header_h, fill=1, stroke=0) if canvas.setFillColor(colors["SIDEBAR_BG"]) is None else None
     doc.addPageTemplates([PageTemplate(id='Layout', frames=[frame_top, frame_bottom], onPage=on_page)])
     
-    # Header
-    name_style = ParagraphStyle("exec_name", parent=M["name"], textColor=white if _is_dark(colors["SIDEBAR_BG"]) else black, alignment=TA_CENTER)
-    story.append(Paragraph(cv_data.get("full_name", ""), name_style))
+    is_dark = _is_dark(colors["SIDEBAR_BG"])
+    h_styles = {
+        "name": ParagraphStyle("h_name", parent=M["name"], textColor=white if is_dark else black, alignment=TA_CENTER),
+        "title": ParagraphStyle("h_title", parent=M["title"] if "title" in M else M["job_title"], textColor=white if is_dark else colors["ACCENT"], alignment=TA_CENTER),
+        "contact": ParagraphStyle("h_contact", parent=M["contact"], textColor=white if is_dark else black, alignment=TA_CENTER)
+    }
+    
+    story.append(Paragraph(cv_data.get("full_name", ""), h_styles["name"]))
+    if cv_data.get("title"): story.append(Paragraph(cv_data["title"], h_styles["title"]))
+    contact_parts = [cv_data.get(f) for f in ["email", "phone", "location", "linkedin", "github"] if cv_data.get(f)]
+    if contact_parts: story.append(Paragraph("  •  ".join(contact_parts), h_styles["contact"]))
+    
     story.append(FrameBreak())
     _add_main_content(cv_data, story, M, colors, skip_header=True)
+    story.append(Spacer(1, 15))
+    _add_sidebar_content(cv_data, story, M, colors, horizontal=True)
 
 def _render_terminal_code(cv_data, doc, story, styles, colors):
     """Layout: Tech Terminal."""
     M = styles["M"]
-    frame = Frame(40, 40, LETTER[0]-80, LETTER[1]-80)
+    frame = Frame(50, 50, LETTER[0]-100, LETTER[1]-100)
     on_page = lambda canvas, d: canvas.rect(0, 0, LETTER[0], LETTER[1], fill=1, stroke=0) if canvas.setFillColor(black) is None else None
     doc.addPageTemplates([PageTemplate(id='Layout', frames=[frame], onPage=on_page)])
     
-    story.append(Paragraph(f"> INIT CANDIDATE: {cv_data.get('full_name', '')}", M["name"]))
+    t_style = ParagraphStyle("term", parent=M["name"], fontName="Courier-Bold", fontSize=20, textColor=colors["ACCENT"])
+    story.append(Paragraph(f"> INIT CANDIDATE --NAME '{cv_data.get('full_name', '').upper()}'", t_style))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors["ACCENT"], spaceBefore=8, spaceAfter=16))
     _add_main_content(cv_data, story, M, colors, skip_header=True)
+    _add_sidebar_content(cv_data, story, M, colors, horizontal=True)
 
 def _render_grid_bento(cv_data, doc, story, styles, colors):
     """Layout: Grid/Bento Boxes."""
-    M = styles["M"]
-    # For Bento, we'll use a 2-column layout with boxes (simulated by spacing/HRs)
-    _render_modern_sidebar(cv_data, doc, story, styles, colors)
+    _render_classic_single(cv_data, doc, story, styles, colors)
 
 def _render_centered_minimal(cv_data, doc, story, styles, colors):
     """Layout: Centered Minimal."""
     M = styles["M"]
-    centered_name = ParagraphStyle("center", parent=M["name"], alignment=TA_CENTER)
     frame = Frame(inch, inch, LETTER[0]-2*inch, LETTER[1]-2*inch)
     doc.addPageTemplates([PageTemplate(id='Layout', frames=[frame])])
     
-    story.append(Paragraph(cv_data.get("full_name", ""), centered_name))
+    h_styles = {
+        "name": ParagraphStyle("c_name", parent=M["name"], alignment=TA_CENTER),
+        "title": ParagraphStyle("c_title", parent=M["title"] if "title" in M else M["job_title"], alignment=TA_CENTER),
+        "contact": ParagraphStyle("c_contact", parent=M["contact"], alignment=TA_CENTER)
+    }
+    story.append(Paragraph(cv_data.get("full_name", ""), h_styles["name"]))
+    if cv_data.get("title"): story.append(Paragraph(cv_data["title"], h_styles["title"]))
+    contact_parts = [cv_data.get(f) for f in ["email", "phone", "location", "linkedin", "github"] if cv_data.get(f)]
+    if contact_parts: story.append(Paragraph("  |  ".join(contact_parts), h_styles["contact"]))
+    
     _add_main_content(cv_data, story, M, colors, skip_header=True)
+    story.append(Spacer(1, 15))
+    _add_sidebar_content(cv_data, story, M, colors, horizontal=True)
 
 def _render_split_equal(cv_data, doc, story, styles, colors):
     """Layout: Split Equal 50/50."""
     S, M = styles["SB"], styles["M"]
-    frame_l = Frame(0, 0, LETTER[0]/2, LETTER[1], leftPadding=30, rightPadding=20)
-    frame_r = Frame(LETTER[0]/2, 0, LETTER[0]/2, LETTER[1], leftPadding=20, rightPadding=30)
+    frame_l = Frame(0, 0, LETTER[0]/2, LETTER[1], leftPadding=40, rightPadding=20, topPadding=48, bottomPadding=48)
+    frame_r = Frame(LETTER[0]/2, 0, LETTER[0]/2, LETTER[1], leftPadding=20, rightPadding=40, topPadding=48, bottomPadding=48)
     doc.addPageTemplates([PageTemplate(id='Layout', frames=[frame_l, frame_r])])
+    
+    story.append(Paragraph(cv_data.get("full_name", "Candidat"), M["name"]))
+    if cv_data.get("title"): story.append(Paragraph(cv_data["title"], M["title"] if "title" in M else M["job_title"]))
     _add_sidebar_content(cv_data, story, S, colors)
     story.append(FrameBreak())
-    _add_main_content(cv_data, story, M, colors)
+    _add_main_content(cv_data, story, M, colors, skip_header=True)
 
 def _render_compact_tight(cv_data, doc, story, styles, colors):
     """Layout: Compact Tight spacing."""
-    # Similar to classic but with reduced Spacers
     _render_classic_single(cv_data, doc, story, styles, colors)
 
 def _render_accent_frame(cv_data, doc, story, styles, colors):
     """Layout: Geometric Frame."""
-    on_page = lambda canvas, d: [canvas.setStrokeColor(colors["ACCENT"]), canvas.setLineWidth(5), canvas.rect(20, 20, LETTER[0]-40, LETTER[1]-40)]
+    on_page = lambda canvas, d: [canvas.setStrokeColor(colors["ACCENT"]), canvas.setLineWidth(3), canvas.rect(30, 30, LETTER[0]-60, LETTER[1]-60)]
     _render_classic_single(cv_data, doc, story, styles, colors)
 
 # ── Content Helpers ──────────────────────────────────────────────────
 
-def _add_sidebar_content(cv_data, story, S, colors):
+def _add_sidebar_content(cv_data, story, S, colors, horizontal=False):
     skills = cv_data.get("skills", {})
     if skills:
         title_style = S.get("heading") or S.get("section_head")
         story.append(Paragraph("COMPÉTENCES", title_style))
+        if not horizontal:
+            story.append(HRFlowable(width="100%", thickness=1, color=colors["ACCENT"], spaceAfter=8, spaceBefore=2))
         for cat, items in skills.items():
             story.append(Paragraph(cat, S["label"] if "label" in S else S["job_title"]))
             vals = ", ".join(items) if isinstance(items, list) else str(items)
@@ -243,36 +268,61 @@ def _add_sidebar_content(cv_data, story, S, colors):
         if items:
             title_style = S.get("heading") or S.get("section_head")
             story.append(Paragraph(section, title_style))
+            if not horizontal:
+                story.append(HRFlowable(width="100%", thickness=1, color=colors["ACCENT"], spaceAfter=8, spaceBefore=2))
             for item in items:
                 story.append(Paragraph(f"<bullet>•</bullet>{item}", S["bullet"]))
 
 def _add_main_content(cv_data, story, M, colors, skip_header=False):
     if not skip_header:
         story.append(Paragraph(cv_data.get("full_name", "Candidat"), M["name"]))
-        title = cv_data.get("title", "")
-        if title: story.append(Paragraph(title, M["body"]))
-        
-        contact = "  |  ".join([v for v in [cv_data.get(f) for f in ["email", "phone", "location"]] if v])
-        if contact: story.append(Paragraph(contact, M["contact"]))
+        if cv_data.get("title"): story.append(Paragraph(cv_data["title"], M["title"] if "title" in M else M["job_title"]))
+        contact_parts = []
+        for f in ["email", "phone", "location", "linkedin", "github"]:
+            v = cv_data.get(f, "")
+            if v and v.lower() not in ["", "n/a", "null", "none"]:
+                contact_parts.append(v)
+        if contact_parts:
+            story.append(Paragraph("  |  ".join(contact_parts), M["contact"]))
 
     if cv_data.get("summary"):
-        story.append(Paragraph("PROFIL", M["section_head"]))
+        story.append(Paragraph("PROFIL PROFESSIONNEL", M["section_head"]))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors["LINE"], spaceAfter=8, spaceBefore=2))
         story.append(Paragraph(cv_data["summary"], M["body"]))
 
     exps = cv_data.get("experiences", [])
     if exps:
-        story.append(Paragraph("EXPÉRIENCES", M["section_head"]))
+        story.append(Paragraph("EXPÉRIENCES PROFESSIONNELLES", M["section_head"]))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors["LINE"], spaceAfter=8, spaceBefore=2))
         for exp in exps:
-            title = f"{exp.get('title', '')} @ {exp.get('company', '')}"
+            title = f"{exp.get('title', '')}"
+            if exp.get("company"): title += f" <font color='#64748b'>—</font> {exp['company']}"
             story.append(Paragraph(title, M["job_title"]))
+            
+            meta = []
+            dates = f"{exp.get('start_date', '')} – {exp.get('end_date', 'Présent')}" if exp.get('start_date') else ""
+            if dates: meta.append(dates)
+            if exp.get("location"): meta.append(exp["location"])
+            if meta: story.append(Paragraph(" | ".join(meta), M["job_meta"]))
+            
             for b in exp.get("bullets", []):
                 story.append(Paragraph(f"<bullet>•</bullet>{b}", M["bullet"]))
+            story.append(Spacer(1, 4))
 
     edus = cv_data.get("education", [])
     if edus:
         story.append(Paragraph("FORMATION", M["section_head"]))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors["LINE"], spaceAfter=8, spaceBefore=2))
         for edu in edus:
-            story.append(Paragraph(edu.get("degree", ""), M["job_title"]))
+            degree = edu.get("degree", "Diplôme")
+            if edu.get("institution"): degree += f" <font color='#64748b'>—</font> {edu['institution']}"
+            story.append(Paragraph(degree, M["job_title"]))
+            
+            meta = []
+            if edu.get("location"): meta.append(edu["location"])
+            if edu.get("year"): meta.append(edu["year"])
+            if meta: story.append(Paragraph(" | ".join(meta), M["job_meta"]))
+        story.append(Spacer(1, 4))
 
 # ── Dispatcher ──────────────────────────────────────────────────────
 
