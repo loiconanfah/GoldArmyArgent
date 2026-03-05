@@ -150,8 +150,9 @@ async def parse_pdf(file: UploadFile = File(...)):
 
 
 class CvRewriteRequest(BaseModel):
-    cv_json: str  # JSON string du CV structuré
+    cv_json: Any  # Accepte dict ou string JSON
     filename: Optional[str] = "CV_ATS_Optimise"
+    theme_id: Optional[str] = "midnight"
 
 
 @app.post("/api/generate-cv-pdf")
@@ -182,7 +183,7 @@ async def generate_cv_pdf_endpoint(request: CvRewriteRequest):
         else:
             cv_data = {}
             
-        pdf_bytes = generate_cv_pdf(cv_data)
+        pdf_bytes = generate_cv_pdf(cv_data, theme_id=request.theme_id or "midnight")
 
         filename = (request.filename or "CV_ATS_Optimise").replace(" ", "_").strip()
         if not filename.endswith(".pdf"):

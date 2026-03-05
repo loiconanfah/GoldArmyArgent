@@ -55,22 +55,28 @@ class MentorAgent(BaseAgent):
         """Audite et réécrit le CV en une seule passe pour l'optimisation ATS + feedback."""
         logger.info("[Mentor] Audit + Réécriture ATS du CV (Mode Rapide & Exhaustif)...")
 
-        prompt = f"""Tu es un expert RH senior et optimiseur ATS.
-Ta mission est d'auditer et réécrire ce CV.
-POUR ALLER VITE : Sois très bref dans tes textes d'audit (max 1 ligne par point).
-POUR LE CANDIDAT : NE SUPPRIME AUCUNE EXPÉRIENCE dans le JSON "cv_data". Tu DOIS garder 100% de l'historique complet, reformule juste les puces en "Verbe d'action + Résultat". Il est INTERDIT de raccourcir ou tronquer la carrière du candidat.
+        prompt = f"""Tu es un expert RH senior et un maître en optimisation ATS 2.0.
+Ta mission est d'auditer et réécrire ce CV avec un niveau "God Mode".
 
-**Renvoie UNIQUEMENT ce JSON valide (sans markdown) :**
+**OBJECTIFS DE RÉÉCRITURE (CV_DATA) :**
+1. **Expertise Adaptative :** Adapte dynamiquement la structure et le ton au profil (Santé, Tech, Management, etc.). Pour la santé, intègre massivement les mots-clés (**Loi 90, PDSB, PCI**).
+2. **Score ATS Réel & Critique :** Fournis un score ATS **honnête et sévère**. Ne donne PAS de "faux espoir". Si le CV manque de chiffres, de résultats ou de mots-clés critiques, le score DOIT être bas (ex: 30-50%). Sois impitoyable sur la qualité pour forcer l'excellence.
+3. **Optimisation Sémantique :** Utilise des mots-clés LSI pour dominer les recherches sémantiques.
+4. **Humanisation (Anti-AI) :** Évite les structures prévisibles. Ton percutant et humain.
+
+**NOTE IMPORTANTE :** Aucun méta-commentaire IA. Réponse JSON pur.
+
+**STRUCTURE DU JSON :**
 {{
   "audit": {{
-    "ats_score": 72,
-    "candidate_name": "Yvan Loic Nanfah",
-    "candidate_title": "Développeur",
-    "scores": {{ "mots_cles": 65, "impact_resultats": 45, "mise_en_forme": 80, "lisibilite": 70, "experience_pertinence": 75 }},
-    "failles": ["Aucun résultat chiffré", "Résumé manquant"],
-    "actions": ["Ajouter des métriques de succès", "Créer un résumé technique"],
-    "tech_manquantes": ["Docker", "Kubernetes"],
-    "points_forts": ["Stack C# solide"]
+    "ats_score": 45,  // SCORE RÉEL ET CRITIQUE (Soyez sévère)
+    "candidate_name": "...",
+    "candidate_title": "...",
+    "scores": {{ "mots_cles": 40, "impact_resultats": 20, "mise_en_forme": 70, "lisibilite": 60, "experience_pertinence": 50 }},
+    "failles": ["Failles réelles"],
+    "actions": ["Actions correctrices"],
+    "tech_manquantes": ["..."],
+    "points_forts": ["..."]
   }},
   "cv_data": {{
     "full_name": "...",
@@ -80,45 +86,28 @@ POUR LE CANDIDAT : NE SUPPRIME AUCUNE EXPÉRIENCE dans le JSON "cv_data". Tu DOI
     "location": "...",
     "linkedin": "...",
     "github": "...",
-    "summary": "Résumé de 3 lignes maxi pour l'ATS.",
+    "summary": "Résumé adapté au profil.",
     "experiences": [
       {{
-        "title": "Titre exact",
-        "company": "Entreprise",
-        "location": "Lieu",
-        "start_date": "MM/YYYY",
-        "end_date": "Mois YYYY ou Présent",
-        "bullets": [
-          "Verbe d'action + résultat quantifié",
-          "Technologie + impact"
-        ]
-      }}
-    ],
-    "skills": {{
-      "Langages": ["C#"],
-      "Outils": ["Git"]
-    }},
-    "education": [
-      {{
-        "degree": "...",
-        "institution": "...",
+        "title": "...",
+        "company": "...",
         "location": "...",
-        "year": "..."
+        "start_date": "...",
+        "end_date": "...",
+        "bullets": ["Impact et résultats réels"]
       }}
     ],
+    "skills": {{ "Langages/Expertises": ["..."], "Outils/Certifs": ["..."] }},
+    "education": [ {{ "degree": "...", "institution": "...", "location": "...", "year": "..." }} ],
     "certifications": ["..."],
     "languages": ["..."]
   }}
 }}
 
-**Règles absolues :**
-1. INCLUS TOUTES LES EXPÉRIENCES du CV source sans exception. Ne coupe rien.
-2. Les "failles" et "actions" doivent faire 5 à 10 mots maximum pour économiser des tokens.
-
 CV à traiter :
 {cv_text[:5000]}
 
-RÉPONSE JSON UNIQUEMENT:"""
+Réponse JSON pur uniquement:"""
 
         logger.debug(f"[Mentor] Prompt envoyé (taille: {len(prompt)})")
         response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)

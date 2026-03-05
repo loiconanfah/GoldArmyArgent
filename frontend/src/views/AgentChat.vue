@@ -396,11 +396,24 @@ const downloadZip = async () => {
     }
 }
 
+const CV_THEMES = [
+    { id: 'midnight', name: 'Midnight Pro', colors: ['#1e293b', '#38bdf8'] },
+    { id: 'emerald', name: 'Emerald Leader', colors: ['#064e3b', '#10b981'] },
+    { id: 'modern', name: 'Modern Startup', colors: ['#4c1d95', '#8b5cf6'] },
+    { id: 'minimal', name: 'Executive Minimal', colors: ['#f8fafc', '#0f172a'] },
+    { id: 'bold', name: 'Creative Bold', colors: ['#000000', '#f43f5e'] },
+    { id: 'banker', name: 'Trustworthy Banker', colors: ['#1e3a8a', '#1e40af'] },
+    { id: 'tech', name: 'Tech God Mode', colors: ['#000000', '#22c55e'] },
+    { id: 'classic', name: 'Classic Academic', colors: ['#451a03', '#92400e'] },
+    { id: 'vibrant', name: 'Vibrant Energy', colors: ['#991b1b', '#ea580c'] },
+    { id: 'luxury', name: 'Elegant Luxury', colors: ['#000000', '#ca8a04'] }
+]
+const selectedTheme = ref('midnight')
+
 const isDownloadingDocx = ref(false)
 const downloadCvDocx = async (cvJsonString) => {
     isDownloadingDocx.value = true
     try {
-        // Extraire le nom pour le nom de fichier
         let filename = 'CV_ATS_Optimise'
         try {
             const parsed = JSON.parse(cvJsonString)
@@ -411,12 +424,16 @@ const downloadCvDocx = async (cvJsonString) => {
 
         const res = await authFetch('/api/generate-cv-pdf', {
             method: 'POST',
-            body: JSON.stringify({ cv_json: cvJsonString, filename })
+            body: JSON.stringify({ 
+                cv_json: cvJsonString, 
+                filename,
+                theme_id: selectedTheme.value
+            })
         })
 
         if (!res.ok) {
             const err = await res.json()
-            toastState.addToast(`Erreur: ${err.detail || 'Impossible de générer le DOCX'}`, 'error')
+            toastState.addToast(`Erreur: ${err.detail || 'Impossible de générer le CV'}`, 'error')
             return
         }
 
@@ -667,6 +684,30 @@ const openInWorkspace = (msg) => {
                  </div>
                </div>
  
+               <!-- Sélecteur de Thème -->
+               <div class="p-4 bg-surface-900/50 border border-surface-700/50 rounded-2xl">
+                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">SÉLECTIONNE TON DESIGN PREMIUM</p>
+                 <div class="grid grid-cols-5 gap-2">
+                   <button 
+                     v-for="theme in CV_THEMES" 
+                     :key="theme.id"
+                     @click="selectedTheme = theme.id"
+                     :title="theme.name"
+                     class="group relative h-10 rounded-lg border transition-all overflow-hidden"
+                     :class="selectedTheme === theme.id ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-surface-700 hover:border-surface-600'"
+                   >
+                     <div class="absolute inset-0 flex">
+                       <div class="w-1/2 h-full" :style="{ backgroundColor: theme.colors[0] }"></div>
+                       <div class="w-1/2 h-full" :style="{ backgroundColor: theme.colors[1] }"></div>
+                     </div>
+                     <div v-if="selectedTheme === theme.id" class="absolute inset-0 bg-gold-500/10 flex items-center justify-center">
+                       <CheckIcon class="w-4 h-4 text-white drop-shadow-md" />
+                     </div>
+                   </button>
+                 </div>
+                 <p class="text-[11px] text-center text-slate-400 mt-2 font-bold">{{ CV_THEMES.find(t => t.id === selectedTheme)?.name }}</p>
+               </div>
+
                <!-- Bouton téléchargement -->
                <button
                  @click="downloadCvDocx(msg.content)"
