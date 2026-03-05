@@ -397,16 +397,16 @@ const downloadZip = async () => {
 }
 
 const CV_THEMES = [
-    { id: 'midnight', name: 'Midnight Pro', colors: ['#1e293b', '#38bdf8'] },
-    { id: 'emerald', name: 'Emerald Leader', colors: ['#064e3b', '#10b981'] },
-    { id: 'modern', name: 'Modern Startup', colors: ['#4c1d95', '#8b5cf6'] },
-    { id: 'minimal', name: 'Executive Minimal', colors: ['#f8fafc', '#0f172a'] },
-    { id: 'bold', name: 'Creative Bold', colors: ['#000000', '#f43f5e'] },
-    { id: 'banker', name: 'Trustworthy Banker', colors: ['#1e3a8a', '#1e40af'] },
-    { id: 'tech', name: 'Tech God Mode', colors: ['#000000', '#22c55e'] },
-    { id: 'classic', name: 'Classic Academic', colors: ['#451a03', '#92400e'] },
-    { id: 'vibrant', name: 'Vibrant Energy', colors: ['#991b1b', '#ea580c'] },
-    { id: 'luxury', name: 'Elegant Luxury', colors: ['#000000', '#ca8a04'] }
+    { id: 'midnight', name: 'Midnight Pro (Sidebar Gauche)', colors: ['#1e293b', '#38bdf8'] },
+    { id: 'emerald', name: 'Emerald Leader (Sidebar Gauche)', colors: ['#064e3b', '#10b981'] },
+    { id: 'modern', name: 'Modern Startup (Sidebar Droite)', colors: ['#4c1d95', '#8b5cf6'] },
+    { id: 'minimal', name: 'Executive Minimal (Une Colonne)', colors: ['#ffffff', '#0f172a'] },
+    { id: 'bold', name: 'Creative Bold (Grille Bento)', colors: ['#000000', '#f43f5e'] },
+    { id: 'banker', name: 'Trustworthy Banker (Bandeau Top)', colors: ['#1e3a8a', '#1e40af'] },
+    { id: 'tech', name: 'Tech Terminal (Style Code)', colors: ['#000000', '#22c55e'] },
+    { id: 'classic', name: 'Classic Academic (Minimal Centré)', colors: ['#ffffff', '#451a03'] },
+    { id: 'vibrant', name: 'Vibrant Energy (Deux Colonnes)', colors: ['#991b1b', '#ea580c'] },
+    { id: 'luxury', name: 'Elegant Luxury (Compact Pro)', colors: ['#000000', '#ca8a04'] }
 ]
 const selectedTheme = ref('midnight')
 
