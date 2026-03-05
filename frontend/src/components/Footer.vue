@@ -229,16 +229,17 @@ const currentYear = new Date().getFullYear()
   }
 }
 
+/* 479px: align with home (2-col links, full-width logo) */
 @media screen and (max-width: 479px) {
   .landing-footer {
-    padding-top: 1.5rem;
+    padding-top: var(--_size---paddingsize--small, 1.5rem);
   }
   .footer-links-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
   }
   .footer-list-wrapper.three-cols {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
   .logo-footer {
     width: 100%;
@@ -247,6 +248,7 @@ const currentYear = new Date().getFullYear()
   .footer-bottom {
     gap: 1.5rem;
     grid-template-columns: 1fr;
+    padding-bottom: var(--_size---paddingsize--small, 1.5rem);
   }
   .footer-legal {
     flex-direction: column;

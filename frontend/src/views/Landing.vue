@@ -65,9 +65,9 @@ onMounted(async () => {
   document.head.appendChild(link)
   document.documentElement.classList.add('w-mod-ix3')
   await nextTick()
+  const root = rootRef.value
+  if (!root) return
   gsapCtx = gsap.context(() => {
-    const root = rootRef.value
-    if (!root) return
     const section = root.querySelector('#agents')
     const stickyCol = root.querySelector('.home1-left-sticky')
     const cardsScroll = root.querySelector('.home1-cards-scroll')
@@ -126,7 +126,7 @@ onMounted(async () => {
         scrollTrigger: { trigger: stickyCol || section || root, ...defaultTrigger }
       })
     }
-  }, rootRef)
+  }, root)
 })
 
 onUnmounted(() => {
@@ -154,17 +154,19 @@ function closeNav() {
                 <img src="/logo.png" alt="GoldArmy" class="logo-nav" loading="eager" />
               </router-link>
             </div>
-            <nav class="nav-menu w-nav-menu" :class="{ 'w--open': navOpen }">
-              <a href="#agents" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.features') }}</a>
-              <a href="#agents" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.agents') }}</a>
-              <a href="#pricing" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.pricing') }}</a>
-              <a href="#avis" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.reviews') }}</a>
-              <router-link to="/free-cv-roast" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.cv_audit') }}</router-link>
-              <router-link to="/free-interview" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.simulation') }}</router-link>
-              <a href="#blog" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.blog') }}</a>
-              <div class="nav-right-sign-cta-wrap">
-                <router-link to="/login" class="menu-sign-btn w-nav-link" @click="closeNav">{{ t('landing.nav.login') }}</router-link>
-                <router-link to="/register" class="btn-menu" @click="closeNav">{{ t('landing.nav.get_started') }}</router-link>
+            <nav class="nav-menu w-nav-menu" :class="{ 'w--open': navOpen }" role="navigation">
+              <div class="default-nav-links big-menu">
+                <a href="#agents" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.features') }}</a>
+                <a href="#agents" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.agents') }}</a>
+                <a href="#pricing" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.pricing') }}</a>
+                <a href="#avis" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.reviews') }}</a>
+                <router-link to="/free-cv-roast" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.cv_audit') }}</router-link>
+                <router-link to="/free-interview" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.simulation') }}</router-link>
+                <a href="#blog" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.blog') }}</a>
+                <div class="nav-right-sign-cta-wrap">
+                  <router-link to="/login" class="menu-sign-btn w-nav-link" @click="closeNav">{{ t('landing.nav.login') }}</router-link>
+                  <router-link to="/register" class="btn-menu" @click="closeNav">{{ t('landing.nav.get_started') }}</router-link>
+                </div>
               </div>
             </nav>
             <div class="nav-right">
@@ -845,23 +847,28 @@ function closeNav() {
   .nav-menu .nav-right-sign-cta-wrap { display: none; }
 }
 
-/* Mobile: show nav menu when burger open (override orvimo display:none) */
+/* Mobile nav: align with home (orvimo .nav-menu + .w--open overlay) */
 @media screen and (max-width: 991px) {
   .page-wrapper .nav-menu.w--open {
     display: flex !important;
     flex-direction: column;
     padding-top: 5rem;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-left: var(--_size---paddingsize--tiny, 1.5rem);
+    padding-right: var(--_size---paddingsize--tiny, 1.5rem);
+    padding-bottom: var(--_size---paddingsize--extrasmall, 1.5rem);
     top: 0;
     left: 0;
     right: 0;
+    bottom: 0;
+    height: 110vh;
     position: fixed;
-    z-index: 100;
+    z-index: 500;
+    overflow: auto;
+    background-color: var(--_theme---background--primarybackground);
   }
   .page-wrapper .nav-container {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -881,30 +888,20 @@ function closeNav() {
   opacity: 0;
 }
 
-/* Responsive: containers and sections */
+/* Responsive: containers (use design variables like home) */
 .page-wrapper :deep(.w-container),
 .page-wrapper :deep(.container) {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
-@media screen and (max-width: 991px) {
-  .page-wrapper :deep(.w-container),
-  .page-wrapper :deep(.container) {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
+
+/* 767px: hero + sections like home */
 @media screen and (max-width: 767px) {
-  .page-wrapper :deep(.container),
-  .page-wrapper :deep(.w-container) {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
   .page-wrapper :deep(.hero-content) {
     height: auto;
-    min-height: 70vh;
-    padding-top: 6rem;
+    min-height: 60vh;
+    padding-top: var(--_size---paddingsize--large, 3rem);
   }
   .page-wrapper :deep(.hero-heading) {
     font-size: clamp(1.75rem, 5vw, 2.5rem);
@@ -916,11 +913,15 @@ function closeNav() {
     height: auto;
   }
 }
+
+/* 479px: like home (smaller fonts, tighter spacing) */
 @media screen and (max-width: 479px) {
-  .page-wrapper :deep(.container),
-  .page-wrapper :deep(.w-container) {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+  .page-wrapper {
+    overflow: hidden;
+  }
+  .page-wrapper :deep(.hero-content) {
+    padding-top: var(--_size---paddingsize--large, 2rem);
+    min-height: 50vh;
   }
   .page-wrapper :deep(.hero-heading) {
     font-size: clamp(1.5rem, 4vw, 2rem);
