@@ -100,20 +100,19 @@ onMounted(async () => {
         scrollTrigger: { trigger: section || root, ...defaultTrigger }
       })
     }
+    /* Reveal all 3 cards when section enters view (so 3rd card is never stuck at opacity 0) */
     if (revealCard.length) {
-      revealCard.forEach((card) => {
-        gsap.to(card, {
-          opacity: 1,
-          y: 0,
-          duration: 0.85,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: card,
-            start: 'top 88%',
-            end: 'top 55%',
-            toggleActions: 'play none none none'
-          }
-        })
+      gsap.to(revealCard, {
+        opacity: 1,
+        y: 0,
+        duration: 0.85,
+        stagger: 0.12,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: section || cardsScroll || root,
+          start: 'top 88%',
+          toggleActions: 'play none none none'
+        }
       })
     }
     if (lineWords.length) {
@@ -945,5 +944,19 @@ function closeNav() {
 .page-wrapper :deep(.w-layout-grid),
 .page-wrapper :deep(.w-layout-blockcontainer) {
   box-sizing: border-box;
+}
+
+/* Ensure all 3 cards in home1-sticky are visible (no collapse, scrollable on mobile) */
+.page-wrapper :deep(.home1-cards-scroll) {
+  display: flex;
+}
+.page-wrapper :deep(.home1-cards-scroll .big-card-home1) {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+@media screen and (max-width: 991px) {
+  .page-wrapper :deep(.home1-cards-scroll .big-card-home1) {
+    min-width: min(320px, 85vw);
+  }
 }
 </style>
