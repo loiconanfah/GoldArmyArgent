@@ -20,62 +20,62 @@ from reportlab.platypus import (
 THEMES = {
     "midnight": {
         "name": "Midnight Pro", "layout": "modern_sidebar",
-        "sidebar_bg": "#1e293b", "accent": "#38bdf8", "text_sidebar": "#f8fafc",
-        "text_main": "#334155", "title_main": "#0f172a", "line": "#e2e8f0",
+        "sidebar_bg": "#0f172a", "accent": "#38bdf8", "text_sidebar": "#f8fafc",
+        "text_main": "#1e293b", "title_main": "#0f172a", "line": "#cbd5e1",
         "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
     },
     "emerald": {
         "name": "Emerald Leader", "layout": "modern_sidebar",
         "sidebar_bg": "#064e3b", "accent": "#10b981", "text_sidebar": "#ecfdf5",
-        "text_main": "#1f2937", "title_main": "#064e3b", "line": "#d1fae5",
+        "text_main": "#1e293b", "title_main": "#064e3b", "line": "#d1fae5",
         "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
     },
     "modern": {
         "name": "Modern Startup", "layout": "reverse_sidebar",
-        "sidebar_bg": "#4c1d95", "accent": "#8b5cf6", "text_sidebar": "#f5f3ff",
-        "text_main": "#1e293b", "title_main": "#4c1d95", "line": "#ede9fe",
+        "sidebar_bg": "#2e1065", "accent": "#8b5cf6", "text_sidebar": "#f5f3ff",
+        "text_main": "#1e293b", "title_main": "#2e1065", "line": "#ddd6fe",
         "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
     },
     "minimal": {
         "name": "Executive Minimal", "layout": "classic_single",
-        "sidebar_bg": "#ffffff", "accent": "#0f172a", "text_sidebar": "#334155",
-        "text_main": "#334155", "title_main": "#000000", "line": "#f1f5f9",
+        "sidebar_bg": "#ffffff", "accent": "#0f172a", "text_sidebar": "#1e293b",
+        "text_main": "#1e293b", "title_main": "#000000", "line": "#e2e8f0",
         "font_main": "Times-Roman", "font_bold": "Times-Bold"
     },
     "bold": {
         "name": "Creative Bold", "layout": "grid_bento",
-        "sidebar_bg": "#000000", "accent": "#f43f5e", "text_sidebar": "#ffffff",
-        "text_main": "#000000", "title_main": "#000000", "line": "#ffe4e6",
+        "sidebar_bg": "#000000", "accent": "#e11d48", "text_sidebar": "#ffffff",
+        "text_main": "#0f172a", "title_main": "#000000", "line": "#fda4af",
         "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
     },
     "banker": {
         "name": "Trustworthy Banker", "layout": "executive_band",
-        "sidebar_bg": "#1e3a8a", "accent": "#1e40af", "text_sidebar": "#ffffff",
-        "text_main": "#000000", "title_main": "#1e3a8a", "line": "#dbeafe",
+        "sidebar_bg": "#172554", "accent": "#2563eb", "text_sidebar": "#ffffff",
+        "text_main": "#0f172a", "title_main": "#1e3a8a", "line": "#bfdbfe",
         "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
     },
     "tech": {
         "name": "Tech God Mode", "layout": "terminal_code",
-        "sidebar_bg": "#000000", "accent": "#22c55e", "text_sidebar": "#22c55e",
-        "text_main": "#dcfce7", "title_main": "#22c55e", "line": "#166534",
+        "sidebar_bg": "#000000", "accent": "#22c55e", "text_sidebar": "#4ade80",
+        "text_main": "#f0fdf4", "title_main": "#4ade80", "line": "#166534",
         "font_main": "Courier", "font_bold": "Courier-Bold"
     },
     "classic": {
         "name": "Classic Academic", "layout": "centered_minimal",
-        "sidebar_bg": "#ffffff", "accent": "#451a03", "text_sidebar": "#451a03",
-        "text_main": "#451a03", "title_main": "#451a03", "line": "#ffedd5",
+        "sidebar_bg": "#ffffff", "accent": "#2d1a12", "text_sidebar": "#2d1a12",
+        "text_main": "#2d1a12", "title_main": "#1a0f0a", "line": "#f5ebe0",
         "font_main": "Times-Roman", "font_bold": "Times-Bold"
     },
     "vibrant": {
         "name": "Vibrant Energy", "layout": "split_equal",
-        "sidebar_bg": "#991b1b", "accent": "#ea580c", "text_sidebar": "#fef2f2",
-        "text_main": "#450a0a", "title_main": "#991b1b", "line": "#fee2e2",
+        "sidebar_bg": "#7f1d1d", "accent": "#ea580c", "text_sidebar": "#fef2f2",
+        "text_main": "#450a0a", "title_main": "#7f1d1d", "line": "#fecaca",
         "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
     },
     "luxury": {
         "name": "Elegant Luxury", "layout": "compact_tight",
-        "sidebar_bg": "#000000", "accent": "#ca8a04", "text_sidebar": "#fefce8",
-        "text_main": "#1c1917", "title_main": "#000000", "line": "#fef9c3",
+        "sidebar_bg": "#000000", "accent": "#b45309", "text_sidebar": "#fffbeb",
+        "text_main": "#1c1917", "title_main": "#000000", "line": "#fde68a",
         "font_main": "Times-Roman", "font_bold": "Times-Bold"
     }
 }
@@ -94,28 +94,32 @@ def _get_colors(theme_id="midnight"):
     }
 
 def _is_dark(color):
-    return (color.red * 0.299 + color.green * 0.587 + color.blue * 0.114) < 0.5
+    """WCAG Helper: returns True if color is dark (light text needed)."""
+    return (color.red * 0.299 + color.green * 0.587 + color.blue * 0.114) < 0.6
 
 def _get_styles(c):
     base = getSampleStyleSheet()
     is_dark_sb = _is_dark(c["SIDEBAR_BG"])
     
+    # elite Typography standard
+    BODY_LEADING = 1.55 
+    
     return {
         "SB": {
-            "heading": ParagraphStyle("sb_h", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=12, textColor=white if is_dark_sb else black, spaceBefore=18, spaceAfter=8, textTransform="uppercase", leading=14),
-            "label": ParagraphStyle("sb_l", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=10, textColor=c["ACCENT"], spaceBefore=10, spaceAfter=4),
-            "body": ParagraphStyle("sb_b", parent=base["Normal"], fontName=c["FONT"], fontSize=9.5, leading=13, textColor=c["SIDEBAR_TEXT"], spaceAfter=2),
-            "bullet": ParagraphStyle("sb_bul", parent=base["Normal"], fontName=c["FONT"], fontSize=9.5, leading=13, textColor=c["SIDEBAR_TEXT"], leftIndent=12, firstLineIndent=-12, bulletColor=c["ACCENT"], spaceAfter=2)
+            "heading": ParagraphStyle("sb_h", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=13, textColor=white if is_dark_sb else black, spaceBefore=20, spaceAfter=8, textTransform="uppercase", leading=16, letterSpacing=1.2),
+            "label": ParagraphStyle("sb_l", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=10.5, textColor=c["ACCENT"], spaceBefore=12, spaceAfter=5),
+            "body": ParagraphStyle("sb_b", parent=base["Normal"], fontName=c["FONT"], fontSize=9.5, leading=9.5 * BODY_LEADING, textColor=c["SIDEBAR_TEXT"], spaceAfter=3, letterSpacing=0.1),
+            "bullet": ParagraphStyle("sb_bul", parent=base["Normal"], fontName=c["FONT"], fontSize=9.5, leading=9.5 * BODY_LEADING, textColor=c["SIDEBAR_TEXT"], leftIndent=12, firstLineIndent=-12, bulletColor=c["ACCENT"], spaceAfter=3)
         },
         "M": {
-            "name": ParagraphStyle("name", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=32, leading=36, textColor=c["ACCENT"], spaceBefore=0, spaceAfter=6, textTransform="uppercase"),
-            "title": ParagraphStyle("title", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=16, leading=20, textColor=c["MAIN_TITLE"], spaceAfter=10),
-            "contact": ParagraphStyle("contact", parent=base["Normal"], fontName=c["FONT"], fontSize=9.5, leading=14, textColor=c["MAIN_TEXT"], spaceAfter=15),
-            "section_head": ParagraphStyle("s_head", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=13, leading=18, textColor=c["MAIN_TITLE"], spaceBefore=22, spaceAfter=8, textTransform="uppercase"),
-            "job_title": ParagraphStyle("j_title", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=11.5, leading=15, textColor=c["MAIN_TITLE"], spaceBefore=14, spaceAfter=3),
-            "job_meta": ParagraphStyle("j_meta", parent=base["Normal"], fontName=c["FONT"], fontSize=9.5, leading=13, textColor=c["ACCENT"], spaceAfter=8),
-            "body": ParagraphStyle("body", parent=base["Normal"], fontName=c["FONT"], fontSize=10.5, leading=15, textColor=c["MAIN_TEXT"], spaceBefore=3, spaceAfter=3),
-            "bullet": ParagraphStyle("bullet", parent=base["Normal"], fontName=c["FONT"], fontSize=10, leading=14, textColor=c["MAIN_TEXT"], leftIndent=18, firstLineIndent=-12, bulletColor=c["ACCENT"], spaceBefore=3, spaceAfter=3)
+            "name": ParagraphStyle("name", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=34, leading=38, textColor=c["ACCENT"], spaceBefore=0, spaceAfter=8, textTransform="uppercase", letterSpacing=1.5),
+            "title": ParagraphStyle("title", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=17, leading=22, textColor=c["MAIN_TITLE"], spaceAfter=12, letterSpacing=0.8),
+            "contact": ParagraphStyle("contact", parent=base["Normal"], fontName=c["FONT"], fontSize=10, leading=15, textColor=c["MAIN_TEXT"], spaceAfter=18, letterSpacing=0.2),
+            "section_head": ParagraphStyle("s_head", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=13.5, leading=20, textColor=white if _is_dark(c["MAIN_TITLE"]) else black, backColor=c["MAIN_TITLE"], spaceBefore=24, spaceAfter=10, textTransform="uppercase", leftIndent=-6, rightIndent=-6, borderPadding=5, letterSpacing=1.8),
+            "job_title": ParagraphStyle("j_title", parent=base["Normal"], fontName=c["FONT_BOLD"], fontSize=12, leading=16, textColor=c["MAIN_TITLE"], spaceBefore=16, spaceAfter=4, letterSpacing=0.3),
+            "job_meta": ParagraphStyle("j_meta", parent=base["Normal"], fontName=c["FONT"], fontSize=10, leading=14, textColor=c["ACCENT"], spaceAfter=10, italic=True),
+            "body": ParagraphStyle("body", parent=base["Normal"], fontName=c["FONT"], fontSize=10.5, leading=10.5 * BODY_LEADING, textColor=c["MAIN_TEXT"], spaceBefore=4, spaceAfter=4, letterSpacing=0.1),
+            "bullet": ParagraphStyle("bullet", parent=base["Normal"], fontName=c["FONT"], fontSize=10.5, leading=10.5 * BODY_LEADING, textColor=c["MAIN_TEXT"], leftIndent=18, firstLineIndent=-12, bulletColor=c["ACCENT"], spaceBefore=4, spaceAfter=4, letterSpacing=0.1)
         }
     }
 
@@ -161,7 +165,7 @@ def _render_classic_single(cv_data, doc, story, styles, colors):
     
     _add_main_content(cv_data, story, M, colors)
     story.append(Spacer(1, 15))
-    _add_sidebar_content(cv_data, story, M, colors, horizontal=True)
+    _add_sidebar_content(cv_data, story, M, colors)
 
 def _render_executive_band(cv_data, doc, story, styles, colors):
     """Layout: Top Header Band."""
@@ -188,7 +192,7 @@ def _render_executive_band(cv_data, doc, story, styles, colors):
     story.append(FrameBreak())
     _add_main_content(cv_data, story, M, colors, skip_header=True)
     story.append(Spacer(1, 15))
-    _add_sidebar_content(cv_data, story, M, colors, horizontal=True)
+    _add_sidebar_content(cv_data, story, M, colors)
 
 def _render_terminal_code(cv_data, doc, story, styles, colors):
     """Layout: Tech Terminal."""
@@ -204,7 +208,7 @@ def _render_terminal_code(cv_data, doc, story, styles, colors):
     # Custom terminal content helper for immersive look
     _add_main_content(cv_data, story, M, colors, skip_header=True, prefix="[SYSTEM] ")
     story.append(Paragraph("> FETCHING SKILLS...", ParagraphStyle("t_s", parent=M["body"], textColor=white, fontName="Courier")))
-    _add_sidebar_content(cv_data, story, M, colors, horizontal=True)
+    _add_sidebar_content(cv_data, story, M, colors)
 
 def _render_grid_bento(cv_data, doc, story, styles, colors):
     """Layout: Grid/Bento Boxes (2 columns throughout)."""
@@ -236,7 +240,7 @@ def _render_centered_minimal(cv_data, doc, story, styles, colors):
     
     _add_main_content(cv_data, story, M, colors, skip_header=True)
     story.append(Spacer(1, 15))
-    _add_sidebar_content(cv_data, story, M, colors, horizontal=True)
+    _add_sidebar_content(cv_data, story, M, colors)
 
 def _render_split_equal(cv_data, doc, story, styles, colors):
     """Layout: Split Equal 50/50."""
@@ -259,102 +263,207 @@ def _render_compact_tight(cv_data, doc, story, styles, colors):
     doc.addPageTemplates([PageTemplate(id='Layout', frames=[frame])])
     _add_main_content(cv_data, story, M, colors)
     story.append(Spacer(1, 10))
-    _add_sidebar_content(cv_data, story, M, colors, horizontal=True)
+    _add_sidebar_content(cv_data, story, M, colors)
 
 def _render_accent_frame(cv_data, doc, story, styles, colors):
     """Layout: Geometric Frame."""
     on_page = lambda canvas, d: [canvas.setStrokeColor(colors["ACCENT"]), canvas.setLineWidth(3), canvas.rect(30, 30, LETTER[0]-60, LETTER[1]-60)]
     _render_classic_single(cv_data, doc, story, styles, colors)
 
-# ── Content Helpers ──────────────────────────────────────────────────
+# ── Content Helpers & Robustness ─────────────────────────────────────
 
-def _add_sidebar_content(cv_data, story, S, colors, horizontal=False):
+def _format_item(item: Any) -> str:
+    """Formats a list item, handling potential dicts (e.g., from LLM)."""
+    if isinstance(item, dict):
+        # Handle Languages
+        if "language" in item:
+            lang = item.get("language", "")
+            prof = item.get("proficiency", "") or item.get("level", "")
+            return f"<b>{lang}</b>" + (f" — {prof}" if prof else "")
+        # Handle Certifications
+        if "name" in item:
+            name = item.get("name", "")
+            issuer = item.get("issuer", "") or item.get("organization", "")
+            year = item.get("year", "") or item.get("date", "")
+            res = f"<b>{name}</b>"
+            if issuer: res += f" ({issuer})"
+            if year: res += f" — {year}"
+            return res
+        return str(item)
+    return str(item)
+
+def _add_section_header(story, title, style, colors, is_first=False):
+    """Adds a section header with spacing adjustment for top-frame items."""
+    header_style = ParagraphStyle(
+        f"sh_{title}", parent=style,
+        spaceBefore=0 if is_first else style.spaceBefore,
+        # Polish: Use a cleaner style with a left accent border instead of raw box in some themes
+        borderPadding=5,
+        leftIndent=0
+    )
+    story.append(Paragraph(title, header_style))
+    # Optional HR for some themes
+    if title not in ["PROFIL PROFESSIONNEL"]:
+         story.append(HRFlowable(width="100%", thickness=0.8, color=colors["LINE"], spaceAfter=8, spaceBefore=2))
+
+def _add_sidebar_content(cv_data, story, S, colors):
+    # Summary (only if it fits better here or if layout is compact)
+    # Skills
     skills = cv_data.get("skills", {})
     if skills:
         title_style = S.get("heading") or S.get("section_head")
         story.append(Paragraph("COMPÉTENCES", title_style))
-        if not horizontal:
-            story.append(HRFlowable(width="100%", thickness=1, color=colors["ACCENT"], spaceAfter=8, spaceBefore=2))
+        story.append(HRFlowable(width="100%", thickness=1.5, color=colors["ACCENT"], spaceAfter=10, spaceBefore=4))
         
         for cat, items in skills.items():
-            story.append(Paragraph(cat, S["label"] if "label" in S else S["job_title"]))
+            label_style = S.get("label") or S.get("job_title")
+            story.append(Paragraph(cat.upper(), label_style))
             vals = ", ".join(items) if isinstance(items, list) else str(items)
             story.append(Paragraph(vals, S["body"]))
+            story.append(Spacer(1, 4))
     
     for section, key in [("LANGUES", "languages"), ("CERTIFICATIONS", "certifications")]:
         items = cv_data.get(key, [])
         if items:
             title_style = S.get("heading") or S.get("section_head")
             story.append(Paragraph(section, title_style))
-            if not horizontal:
-                story.append(HRFlowable(width="100%", thickness=1, color=colors["ACCENT"], spaceAfter=8, spaceBefore=2))
+            story.append(HRFlowable(width="100%", thickness=1.5, color=colors["ACCENT"], spaceAfter=10, spaceBefore=4))
             for item in items:
-                story.append(Paragraph(f"<bullet>•</bullet>{item}", S["bullet"]))
+                formatted = _format_item(item)
+                story.append(Paragraph(f"<bullet>•</bullet>{formatted}", S["bullet"]))
+            story.append(Spacer(1, 6))
 
-def _add_main_content(cv_data, story, M, colors, skip_header=False, prefix=""):
-    def P(text, style):
+def _add_main_content(cv_data, story, M, colors, skip_header=False, prefix="", show_skills=True):
+    def P(text, style, is_first=False):
+        if is_first:
+            style = ParagraphStyle(f"{style.name}_first", parent=style, spaceBefore=0)
         return Paragraph(f"{prefix}{text}" if prefix else text, style)
 
     if not skip_header:
-        story.append(P(cv_data.get("full_name", "Candidat"), M["name"]))
-        if cv_data.get("title"): story.append(P(cv_data["title"], M["title"] if "title" in M else M["job_title"]))
+        story.append(P(cv_data.get("full_name", "Candidat").upper(), M["name"], is_first=True))
+        if cv_data.get("title"): story.append(P(cv_data["title"], M["title"]))
+        
         contact_parts = []
         for f in ["email", "phone", "location", "linkedin", "github"]:
             v = cv_data.get(f, "")
             if v and v.lower() not in ["", "n/a", "null", "none"]:
                 contact_parts.append(v)
+        
         if contact_parts:
-            story.append(P("  |  ".join(contact_parts), M["contact"]))
+            story.append(P(" <font color='#94a3b8'>|</font> ".join(contact_parts), M["contact"]))
 
     if cv_data.get("summary"):
-        story.append(P("PROFIL PROFESSIONNEL", M["section_head"]))
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors["LINE"], spaceAfter=8, spaceBefore=2))
+        _add_section_header(story, "PROFIL PROFESSIONNEL", M["section_head"], colors, is_first=skip_header)
         story.append(P(cv_data["summary"], M["body"]))
+        story.append(Spacer(1, 10))
 
     exps = cv_data.get("experiences", [])
     if exps:
-        story.append(P("EXPÉRIENCES PROFESSIONNELLES", M["section_head"]))
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors["LINE"], spaceAfter=8, spaceBefore=2))
+        _add_section_header(story, "EXPÉRIENCES PROFESSIONNELLES", M["section_head"], colors)
         for exp in exps:
-            title = f"{exp.get('title', '')}"
-            if exp.get("company"): title += f" <font color='#64748b'>—</font> {exp['company']}"
+            title = f"<b>{exp.get('title', '')}</b>"
+            if exp.get("company"): title += f" <font color='#64748b' size='11'> @ {exp['company']}</font>"
             story.append(P(title, M["job_title"]))
             
             meta = []
-            dates = f"{exp.get('start_date', '')} – {exp.get('end_date', 'Présent')}" if exp.get('start_date') else ""
+            dates = f"{exp.get('start_date', '')} — {exp.get('end_date', 'Présent')}" if exp.get('start_date') else ""
             if dates: meta.append(dates)
             if exp.get("location"): meta.append(exp["location"])
-            if meta: story.append(P(" | ".join(meta), M["job_meta"]))
+            if meta: story.append(P(" <font color='#94a3b8'>•</font> ".join(meta), M["job_meta"]))
             
             for b in exp.get("bullets", []):
                 story.append(P(f"<bullet>•</bullet>{b}", M["bullet"]))
-            story.append(Spacer(1, 4))
-
-    edus = cv_data.get("education", [])
-    if edus:
-        story.append(P("FORMATION", M["section_head"]))
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors["LINE"], spaceAfter=8, spaceBefore=2))
-        for edu in edus:
-            degree = edu.get("degree", "Diplôme")
-            if edu.get("institution"): degree += f" <font color='#64748b'>—</font> {edu['institution']}"
-            story.append(P(degree, M["job_title"]))
-            
-            meta = []
-            if edu.get("location"): meta.append(edu["location"])
-            if edu.get("year"): meta.append(edu["year"])
-            if meta: story.append(P(" | ".join(meta), M["job_meta"]))
-        story.append(Spacer(1, 4))
+            story.append(Spacer(1, 8))
 
     projs = cv_data.get("projects", [])
     if projs:
-        story.append(P("PROJETS & RÉALISATIONS", M["section_head"]))
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors["LINE"], spaceAfter=8, spaceBefore=2))
+        _add_section_header(story, "PROJETS & RÉALISATIONS", M["section_head"], colors)
         for proj in projs:
-            story.append(P(proj.get("name", "Projet"), M["job_title"]))
+            story.append(P(f"<b>{proj.get('name', 'Projet')}</b>", M["job_title"]))
             if proj.get("description"): story.append(P(proj["description"], M["body"]))
             for b in proj.get("bullets", []):
                 story.append(P(f"<bullet>•</bullet>{b}", M["bullet"]))
-        story.append(Spacer(1, 4))
+            story.append(Spacer(1, 8))
+
+    if show_skills:
+        _add_skills_section_inline(cv_data, story, M, colors)
+
+    educs = cv_data.get("education", [])
+    if educs:
+        _add_section_header(story, "FORMATION", M["section_head"], colors)
+        for edu in educs:
+            title = f"<b>{edu.get('degree', '')}</b>"
+            if edu.get("institution"): title += f" <font color='#64748b' size='11'> — {edu['institution']}</font>"
+            story.append(P(title, M["job_title"]))
+            meta = [edu.get(f) for f in ["year", "location"] if edu.get(f)]
+            if meta: story.append(P(" | ".join(meta), M["job_meta"]))
+            story.append(Spacer(1, 6))
+
+def _add_skills_section_inline(cv_data, story, M, colors):
+    skills = cv_data.get("skills", {})
+    if skills:
+        _add_section_header(story, "COMPÉTENCES & EXPERTISES", M["section_head"], colors)
+        for cat, items in skills.items():
+            story.append(Paragraph(cat.upper(), M["job_title"]))
+            vals = ", ".join(items) if isinstance(items, list) else str(items)
+            story.append(Paragraph(vals, M["body"]))
+            story.append(Spacer(1, 4))
+
+# ── Layout Rendering Functions ──────────────────────────────────────────
+
+def _render_modern_sidebar(cv_data, doc, story, styles, colors):
+    """Layout: Left Sidebar."""
+    S, M = styles["SB"], styles["M"]
+    PAGE_WIDTH, PAGE_HEIGHT = LETTER
+    SIDEBAR_W = PAGE_WIDTH * 0.32
+    TOP_PAD = 24
+    
+    # Page 1: Sidebar + Main
+    f1_left = Frame(0, 0, SIDEBAR_W, PAGE_HEIGHT, leftPadding=24, rightPadding=18, topPadding=TOP_PAD, bottomPadding=36, id='sb_p1')
+    f1_right = Frame(SIDEBAR_W, 0, PAGE_WIDTH - SIDEBAR_W, PAGE_HEIGHT, leftPadding=24, rightPadding=36, topPadding=TOP_PAD, bottomPadding=36, id='main_p1')
+    
+    # Page 2+: Sidebar Background only, Main Frame stays right
+    f2_right = Frame(SIDEBAR_W, 0, PAGE_WIDTH - SIDEBAR_W, PAGE_HEIGHT, leftPadding=24, rightPadding=36, topPadding=TOP_PAD, bottomPadding=36, id='main_p2')
+    
+    on_page = lambda canvas, d: canvas.rect(0, 0, SIDEBAR_W, PAGE_HEIGHT, fill=1, stroke=0) if canvas.setFillColor(colors["SIDEBAR_BG"]) is None else None
+    
+    doc.addPageTemplates([
+        PageTemplate(id='FirstPage', frames=[f1_left, f1_right], onPage=on_page),
+        PageTemplate(id='SubsequentPages', frames=[f2_right], onPage=on_page)
+    ])
+    
+    _add_sidebar_content(cv_data, story, S, colors)
+    story.append(FrameBreak())
+    # Crucial: Page 2 should switch to 'SubsequentPages' layout
+    story.append(NextPageTemplate('SubsequentPages'))
+    # No duplicate skills in main for sidebar layouts!
+    _add_main_content(cv_data, story, M, colors, show_skills=False)
+
+def _render_reverse_sidebar(cv_data, doc, story, styles, colors):
+    """Layout: Right Sidebar."""
+    S, M = styles["SB"], styles["M"]
+    PAGE_WIDTH, PAGE_HEIGHT = LETTER
+    SIDEBAR_W = PAGE_WIDTH * 0.32
+    TOP_PAD = 24
+    
+    # Page 1: Main + Sidebar
+    f1_main = Frame(0, 0, PAGE_WIDTH - SIDEBAR_W, PAGE_HEIGHT, leftPadding=36, rightPadding=24, topPadding=TOP_PAD, bottomPadding=36, id='main_p1')
+    f1_sb = Frame(PAGE_WIDTH - SIDEBAR_W, 0, SIDEBAR_W, PAGE_HEIGHT, leftPadding=18, rightPadding=24, topPadding=TOP_PAD, bottomPadding=36, id='sb_p1')
+    
+    # Page 2+: Main Frame stays left
+    f2_main = Frame(0, 0, PAGE_WIDTH - SIDEBAR_W, PAGE_HEIGHT, leftPadding=36, rightPadding=24, topPadding=TOP_PAD, bottomPadding=36, id='main_p2')
+    
+    on_page = lambda canvas, d: canvas.rect(PAGE_WIDTH - SIDEBAR_W, 0, SIDEBAR_W, PAGE_HEIGHT, fill=1, stroke=0) if canvas.setFillColor(colors["SIDEBAR_BG"]) is None else None
+    
+    doc.addPageTemplates([
+        PageTemplate(id='FirstPage', frames=[f1_main, f1_sb], onPage=on_page),
+        PageTemplate(id='SubsequentPages', frames=[f2_main], onPage=on_page)
+    ])
+    
+    _add_main_content(cv_data, story, M, colors, show_skills=False)
+    story.append(NextPageTemplate('SubsequentPages'))
+    story.append(FrameBreak())
+    _add_sidebar_content(cv_data, story, S, colors)
 
 # ── Dispatcher ──────────────────────────────────────────────────────
 

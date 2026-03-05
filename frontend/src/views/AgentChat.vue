@@ -61,6 +61,8 @@ const mockTerminalLogs = ref([
     { type: 'info', text: t('agent_chat.terminal.listening') }
 ])
 const activeFileTab = ref('html') // 'html', 'css', 'js'
+const showAuditModal = ref(false)
+const hasStoredCv = computed(() => !!currentUser.value?.cv_text)
 // Session unique par onglet pour que le backend maintienne l'historique
 const sessionId = ref((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `session_${Date.now()}`)
 
@@ -129,34 +131,7 @@ const stopLoadingAnimation = () => {
 }
 
 onMounted(async () => {
-  if (route.query.prompt) {
-    inputQuery.value = route.query.prompt
-    sendMessage()
-  }
-  
-  // Si on vient du profil pour éditer le portfolio
-  if (route.query.action === 'edit_last_portfolio') {
-      try {
-          mockTerminalLogs.value.push({ type: 'info', text: t('agent_chat.terminal.restoring') })
-          const res = await authFetch('/api/profile')
-          const json = await res.json()
-          if (json.status === 'success' && json.data.last_portfolio) {
-              workspaceProject.value = {
-                  title: t('agent_chat.workspace.restored_project') || 'Projet Portfolio (Restauré)',
-                  ...json.data.last_portfolio
-              }
-              isWorkspaceOpen.value = true
-              activeWorkspaceTab.value = 'app'
-              mockTerminalLogs.value.push({ type: 'success', text: t('agent_chat.terminal.restore_success') })
-          } else {
-              mockTerminalLogs.value.push({ type: 'error', text: t('agent_chat.terminal.restore_error') })
-          }
-      } catch (e) {
-          console.error("Erreur restauration portfolio:", e)
-      }
-    }
-
-  // Fetch current user info for Admin/Premium checks
+  // 1. Charger le profil utilisateur en priorité
   try {
       const res = await authFetch('/api/profile')
       if (res.ok) {
@@ -166,7 +141,49 @@ onMounted(async () => {
   } catch (e) {
       console.error("Erreur chargement profil:", e)
   }
+
+  // 2. Gérer les actions et prompts venant de l'URL
+  if (route.query.action === 'cv_audit') {
+      openAuditFlow()
+  } else if (route.query.prompt) {
+      inputQuery.value = route.query.prompt
+      sendMessage()
+  }
+  
+  // 3. Cas spécifique : Restauration d'un portfolio
+  if (route.query.action === 'edit_last_portfolio') {
+      if (currentUser.value?.last_portfolio) {
+          workspaceProject.value = {
+              title: t('agent_chat.workspace.restored_project') || 'Projet Portfolio (Restauré)',
+              ...currentUser.value.last_portfolio
+          }
+          isWorkspaceOpen.value = true
+          activeWorkspaceTab.value = 'app'
+          mockTerminalLogs.value.push({ type: 'success', text: t('agent_chat.terminal.restore_success') })
+      } else {
+          mockTerminalLogs.value.push({ type: 'error', text: t('agent_chat.terminal.restore_error') })
+      }
+  }
 })
+
+const openAuditFlow = () => {
+    if (hasStoredCv.value && !cvFilename.value) {
+        showAuditModal.value = true
+    } else {
+        isUploading.value = true
+    }
+}
+
+const useStoredCv = () => {
+    if (currentUser.value?.cv_text) {
+        cvText.value = currentUser.value.cv_text
+        cvFilename.value = t('agent_chat.cv_from_profile') || 'CV de mon profil'
+        showAuditModal.value = false
+        // Trigger audit automatically if user wants, or just close and let them send
+        inputQuery.value = "Audite mon CV s'il te plaît."
+        sendMessage()
+    }
+}
 
 const sendMessage = async () => {
   if (!inputQuery.value.trim() && !cvText.value.trim()) return
@@ -339,6 +356,11 @@ const uploadCvPdf = async (event) => {
         if (data.status === 'success' && data.text) {
             cvText.value = data.text
             cvFilename.value = file.name
+            
+            // AUTOMATION: Lancer l'audit directement après l'upload
+            isUploading.value = false
+            inputQuery.value = t('agent_chat.audit_modal.auto_audit_prompt') || "Audite mon CV s'il te plaît."
+            sendMessage()
         } else {
             toastState.addToast(data.detail || t('agent_chat.error_reading_pdf'), 'error')
         }
@@ -486,7 +508,7 @@ const openInWorkspace = (msg) => {
       
       <!-- Context Toggle Button -->
       <button 
-        @click="isUploading = !isUploading" 
+        @click="openAuditFlow" 
         :class="cvFilename ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-surface-800 text-slate-300 hover:text-white border-surface-700 hover:border-surface-600'" 
         class="px-4 py-2 rounded-xl border flex items-center gap-2 transition-all shadow-sm text-sm font-bold"
       >
@@ -596,7 +618,20 @@ const openInWorkspace = (msg) => {
                       <span class="text-3xl font-black"
                         :class="msg.audit.ats_score >= 75 ? 'text-green-400' : msg.audit.ats_score >= 50 ? 'text-amber-400' : 'text-red-400'"
                       >{{ msg.audit.ats_score || 0 }}</span>
-                      <span class="text-slate-500 text-xs font-bold">/100</span>
+                      <div class="flex items-center gap-1">
+                          <span class="text-slate-500 text-[10px] font-bold">/100</span>
+                          <span v-if="msg.audit.original_ats_score && msg.audit.original_ats_score !== msg.audit.ats_score" 
+                                class="text-[9px] font-black text-slate-500 uppercase opacity-50">Draft</span>
+                      </div>
+                      
+                      <!-- Badge de Progression -->
+                      <div v-if="msg.audit.original_ats_score && msg.audit.original_ats_score !== msg.audit.ats_score" 
+                           class="mt-1 px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 text-[9px] font-black rounded-full flex items-center gap-1 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-2 h-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd" />
+                        </svg>
+                        AVANT: {{ msg.audit.original_ats_score }}
+                      </div>
                     </div>
                   </div>
                   <p class="text-xs text-center font-semibold m-0"
@@ -636,9 +671,11 @@ const openInWorkspace = (msg) => {
                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  <!-- Failles critiques -->
                  <div class="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl">
-                   <p class="text-xs font-bold text-red-400 uppercase tracking-widest mb-3">{{ t('agent_chat.audit.critical_flaws') }}</p>
+                   <p class="text-xs font-bold text-red-400 uppercase tracking-widest mb-3">
+                        {{ msg.audit.original_failles ? (t('agent_chat.audit.initial_flaws') || 'Défauts Initiaux') : t('agent_chat.audit.critical_flaws') }}
+                    </p>
                    <ul class="space-y-2">
-                     <li v-for="(faille, i) in (msg.audit.failles || [])" :key="i"
+                     <li v-for="(faille, i) in (msg.audit.original_failles || msg.audit.failles || [])" :key="i"
                        class="flex gap-2 text-xs text-slate-300 leading-snug"
                      >
                        <span class="text-red-400 shrink-0 font-bold mt-0.5">{{ i + 1 }}.</span>
@@ -684,6 +721,48 @@ const openInWorkspace = (msg) => {
                    </ul>
                  </div>
                </div>
+ 
+                <!-- ══════════ IMPACT DES TRANSFORMATIONS (Interactive) ══════════ -->
+                <div v-if="msg.audit.correction_mapping && Object.keys(msg.audit.correction_mapping).length" class="space-y-3">
+                   <div class="flex items-center justify-between mb-2">
+                       <div class="flex items-center gap-2">
+                           <span class="p-1 bg-gold-500/20 rounded text-gold-400"><SparklesIcon class="w-4 h-4" /></span>
+                           <h4 class="text-sm font-black text-white uppercase tracking-wider m-0">{{ t('agent_chat.audit.transformations_impact') || 'Impact des Transformations' }}</h4>
+                       </div>
+                       <div v-if="msg.audit.original_failles" class="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-full">
+                           God Mode Active
+                       </div>
+                   </div>
+                   
+                   <div class="grid grid-cols-1 gap-3">
+                       <div v-for="(solution, flaw) in msg.audit.correction_mapping" :key="flaw" 
+                            class="group relative overflow-hidden bg-surface-900/40 border border-surface-800 rounded-2xl p-4 hover:border-gold-500/30 transition-all duration-300">
+                            
+                            <!-- Progress line -->
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-red-500 via-gold-500 to-emerald-500 opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                            
+                            <div class="flex flex-col md:flex-row gap-4">
+                                <div class="flex-1 space-y-1">
+                                    <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-500/70">
+                                        <XMarkIcon class="w-3 h-3" /> {{ t('agent_chat.audit.flaw') || 'Défaut' }}
+                                    </div>
+                                    <p class="text-xs text-slate-400 font-medium leading-relaxed m-0 italic">{{ flaw }}</p>
+                                </div>
+                                
+                                <div class="hidden md:flex items-center justify-center shrink-0">
+                                    <ChevronRightIcon class="w-5 h-5 text-gold-500/40 group-hover:text-gold-500 transition-colors" />
+                                </div>
+                                
+                                <div class="flex-1 space-y-1">
+                                    <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                                        <CheckCircleIcon class="w-3 h-3" /> {{ t('agent_chat.audit.impact') || 'Impact' }}
+                                    </div>
+                                    <p class="text-xs text-white font-bold leading-relaxed m-0">{{ solution }}</p>
+                                </div>
+                            </div>
+                       </div>
+                   </div>
+                </div>
  
                 <!-- Sélecteur de Thème avec Preview -->
                 <div class="p-4 bg-surface-900/50 border border-surface-700/50 rounded-2xl">
@@ -1060,6 +1139,57 @@ const openInWorkspace = (msg) => {
             </div>
         </div>
     </div>
+
+    <!-- MODAL: CHOIX AUDIT CV -->
+    <transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-4 scale-95"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-4 scale-95"
+    >
+        <div v-if="showAuditModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <div class="bg-surface-900 border border-surface-700 w-full max-w-md rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+                <!-- Glossy overlay -->
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none"></div>
+                
+                <div class="relative z-10 flex flex-col items-center text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-6">
+                        <DocumentTextIcon class="w-8 h-8 text-white" />
+                    </div>
+                    <h3 class="text-2xl font-black text-white mb-2 tracking-tight">{{ t('agent_chat.audit_modal.title') }}</h3>
+                    <p class="text-slate-400 text-sm mb-8 leading-relaxed">{{ t('agent_chat.audit_modal.desc') }}</p>
+                    
+                    <div class="w-full space-y-3">
+                        <button 
+                            @click="useStoredCv"
+                            class="group w-full flex items-center justify-between p-4 bg-surface-800 hover:bg-surface-700 border border-surface-700 hover:border-indigo-500/50 rounded-2xl transition-all"
+                        >
+                            <div class="text-left">
+                                <p class="font-bold text-white text-sm m-0">{{ t('agent_chat.audit_modal.use_stored') }}</p>
+                                <p class="text-slate-500 text-[10px] m-0">{{ t('agent_chat.audit_modal.recommended') }}</p>
+                            </div>
+                            <div class="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase tracking-widest rounded-full border border-indigo-500/30 group-hover:bg-indigo-500 group-hover:text-white transition-colors">VIP</div>
+                        </button>
+                        
+                        <button 
+                            @click="() => { showAuditModal = false; isUploading = true; }"
+                            class="w-full flex items-center justify-between p-4 bg-surface-800/40 hover:bg-surface-800 border border-surface-800 hover:border-surface-600 rounded-2xl transition-all"
+                        >
+                            <div class="text-left">
+                                <p class="font-bold text-slate-300 text-sm m-0">{{ t('agent_chat.audit_modal.upload_new') }}</p>
+                                <p class="text-slate-500 text-[10px] m-0">Format PDF uniquement</p>
+                            </div>
+                            <ArrowUpTrayIcon class="w-5 h-5 text-slate-500" />
+                        </button>
+                    </div>
+                    
+                    <button @click="showAuditModal = false" class="mt-8 text-slate-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors">{{ t('common.cancel') }}</button>
+                </div>
+            </div>
+        </div>
+    </transition>
   </div>
 </template>
 

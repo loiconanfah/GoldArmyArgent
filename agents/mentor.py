@@ -52,122 +52,105 @@ class MentorAgent(BaseAgent):
         return {"status": "success", "message": "Action non supportée directement."}
 
     async def _audit_and_rewrite_cv(self, cv_text: str) -> Dict[str, Any]:
-        """Audite et réécrit le CV en une seule passe pour l'optimisation ATS + feedback."""
-        logger.info("[Mentor] Audit + Réécriture ATS du CV (Mode Rapide & Exhaustif)...")
+        """Audite et réécrit le CV en 3 passes internes pour garantir un score ATS > 80."""
+        logger.info("[Mentor] Démarrage de l'Optimisation Multi-Passes (Triple Check)...")
+        
+        current_cv_data = {}
+        last_audit = {}
+        original_ats_score = 0
+        original_failles = []
+        iterations = 3
+        
+        for i in range(1, iterations + 1):
+            logger.info(f"[Mentor] Passe {i}/{iterations} en cours...")
+            
+            # Ajustement du prompt selon l'itération
+            phase_instruction = ""
+            context_data = ""
+            
+            if i == 1:
+                phase_instruction = "PHASE 1 : Diagnostic & Premier Draft. Trouve toutes les failles et propose une version rectifiée complète."
+                context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
+            elif i == 2:
+                phase_instruction = "PHASE 2 : Critique Interne & Enrichissement Tech. Analyse ton propre draft précédent, trouve ce qui manque pour atteindre 80, et injecte plus de profondeur technique et de résultats chiffrés."
+                context_data = f"[PREVIOUS_DRAFT_JSON]\n{json.dumps(current_cv_data, ensure_ascii=False)}"
+            else:
+                phase_instruction = f"PHASE 3 : Polissage Final & Score 80+. Voici les failles initiales identifiées : {original_failles}. Tu DOIS impérativement mapper ces failles spécifiques dans ton 'correction_mapping' final pour montrer comment elles ont été résolues."
+                context_data = f"[PREVIOUS_DRAFT_JSON]\n{json.dumps(current_cv_data, ensure_ascii=False)}"
 
-        prompt = f"""Tu es le "GoldArmy Mentor", l'IA la plus avancée au monde pour l'optimisation de carrière.
-Ta mission est d'auditer le CV fourni et de produire une version RECTIFIÉE (God Mode) qui ne laisse AUCUNE chance à l'échec.
+            prompt = f"""Tu es le \"GoldArmy Mentor\" en mode Optimisation Itérative (Triple Pass).
+{phase_instruction}
 
-**Étape 1 : Audit & Diagnostic (Strict & Sévère)**
-- Analyse le CV sans complaisance. Trouve les failles de structure, les mots-clés manquants, le manque d'impact et la faible lisibilité.
-- Calcule un score ATS réel (sois très exigeant).
+**RÈGLES D'OR :**
+1. **Chain-of-Correction :** Chaque faille identifiée doit avoir une résolution directe dans le `cv_data`. Remplis `correction_mapping` avec des paires explicitant le changement (ex: "Résumé trop court" -> "Résumé étendu avec KPIs").
+2. **Score Target :** Le but final est d'atteindre un score ATS de 80+.
+3. **Zéro Perte :** Conserve précieusement tous les contacts, liens, dates et lieux.
+4. **ORDRE DES SECTIONS :** Tu DOIS structurer le JSON `cv_data` dans cet ordre logique : Profil/Summary -> Experiences -> Projects -> Skills -> Education -> Languages/Certifications.
 
-**Étape 2 : Chain-of-Correction (Logique de Résolution)**
-- Pour CHAQUE "faille" ou "action" identifiée, tu DOIS concevoir une résolution concrète.
-- Tu vas lister ces résolutions dans un champ spécial `correction_mapping` pour prouver ta logique.
-
-**Étape 3 : Production de la Donnée Rectifiée (CV_DATA)**
-- Le `cv_data` est le résultat FINAL de tes corrections. Il DOIT être parfait.
-- **RÈGLE RADICALE :** 1 Faille détectée = 1 Correction visible dans le `cv_data`.
-- **Bullet Points :** Transforme chaque ligne en "RÉSULTAT CHIFFRÉ + MÉTHODE + TECHNOLOGIE". 
-  - *Interdit :* "Maintenance de serveurs"
-  - *God Mode :* "Optimisation de la disponibilité serveur (99.9% uptime) via l'automatisation de scripts Bash et le monitoring Prometheus."
-- **Metadata :** Ne perds JAMAIS une information (dates, lieux, liens). Formate-les parfaitement.
-- **Sommaire :** Doit être un pitch de vente premium de 4-5 lignes ultra-compactes.
-
-**STRUCTURE DU JSON ATTENDUE :**
+**STRUCTURE DU JSON :**
 {{
   "audit": {{
-    "ats_score": 42,
+    "ats_score": 0,
     "candidate_name": "...",
     "candidate_title": "...",
-    "scores": {{ "mots_cles": 30, "impact_resultats": 20, "mise_en_forme": 60, "lisibilite": 50, "experience_pertinence": 40 }},
-    "failles": ["Liste des failles critiques"],
-    "actions": ["Actions prioritaires à mener"],
-    "correction_mapping": {{
-       "Faille X": "Comment j'ai corrigé cela dans le cv_data",
-       "Faille Y": "Amélioration spécifique apportée à la section Z"
-    }},
-    "tech_manquantes": ["Technologies ajoutées pour booster le score"],
-    "points_forts": ["..."]
+    "scores": {{ "mots_cles": 0, "impact_resultats": 0, "mise_en_forme": 0, "lisibilite": 0, "experience_pertinence": 0 }},
+    "failles": ["Failles restant à corriger"],
+    "correction_mapping": {{ "Faille identifiée": "Solution précise appliquée dans le nouveau CV" }},
+    "tech_manquantes": ["Technologies ajoutées"]
   }},
   "cv_data": {{
-    "full_name": "...",
-    "title": "...",
-    "email": "...",
-    "phone": "...",
-    "location": "...",
-    "linkedin": "...",
-    "github": "...",
-    "summary": "Pitch de vente ultra-optimisé.",
-    "experiences": [
-      {{ "title": "...", "company": "...", "location": "...", "start_date": "...", "end_date": "...",
-         "bullets": ["Action impactante + Chiffre + Outil"] }}
-    ],
-    "skills": {{ "Expertises": ["..."], "Outils": ["..."] }},
-    "education": [ {{ "degree": "...", "institution": "...", "location": "...", "year": "..." }} ],
-    "projects": [ {{ "name": "...", "description": "...", "bullets": ["..."] }} ],
-    "languages": ["..."],
-    "certifications": ["..."]
+    "full_name": "...", "title": "...", "email": "...", "phone": "...", "location": "...", "linkedin": "...", "github": "...",
+    "summary": "...",
+    "experiences": [ {{ "title": "...", "company": "...", "location": "...", "start_date": "...", "end_date": "...", "bullets": ["..."] }} ],
+    "projects": [ {{ "name": "...", "description": "...", "bullets": [] }} ],
+    "skills": {{ "Expertises": [], "Outils": [] }},
+    "education": [], "languages": [], "certifications": []
   }}
 }}
 
-[INPUT_CV]
-{cv_text[:7000]}
+{context_data}
 
-[INSTRUCTIONS_FINALES]
-Réponds UNIQUEMENT en JSON pur. Ta réputation et celle du candidat en dépendent. Le `cv_data` doit être prêt pour un recrutement immédiat en Big Tech.
+Réponds UNIQUEMENT en JSON pur.
 """
+            response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)
+            
+            try:
+                # Extraction & Parsing
+                start_index = response.find('{')
+                end_index = response.rfind('}')
+                if start_index != -1 and end_index != -1:
+                    cleaned = response[start_index:end_index+1]
+                else:
+                    cleaned = response
 
-        logger.debug(f"[Mentor] Prompt envoyé (taille: {len(prompt)})")
-        response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)
-        
-        if not response:
-            raise Exception("L'API Gemini n'a retourné aucune réponse (Surcharge serveur 503 probable).")
-            
-        logger.debug(f"[Mentor] Réponse brute reçue (taille: {len(response)})")
-        
-        try:
-            # Chercher le premier '{' et le dernier '}'
-            start_index = response.find('{')
-            end_index = response.rfind('}')
-            
-            if start_index != -1 and end_index != -1 and end_index > start_index:
-                cleaned_response = response[start_index:end_index+1]
-            else:
-                cleaned_response = response.strip()
-                # Retirer les backticks markdown si présents
-                cleaned_response = re.sub(r'```json\s*', '', cleaned_response)
-                cleaned_response = re.sub(r'```\s*', '', cleaned_response)
-
-            parsed = json.loads(cleaned_response)
-            audit_data = parsed.get("audit", {})
-            cv_data = parsed.get("cv_data", {})
-            
-            # Ensure cv_data is a dict before dumping
-            if isinstance(cv_data, str):
-                try: cv_data = json.loads(cv_data)
-                except: cv_data = {}
+                parsed = json.loads(cleaned)
+                last_audit = parsed.get("audit", {})
+                current_cv_data = parsed.get("cv_data", current_cv_data)
                 
-            cv_json = json.dumps(cv_data, ensure_ascii=False)
+                # Capturer le score et les failles initiales dès la première passe
+                if i == 1:
+                    original_ats_score = last_audit.get("ats_score", 0)
+                    original_failles = last_audit.get("failles", [])
+                
+                logger.debug(f"[Mentor] Passe {i} terminée. Score ATS: {last_audit.get('ats_score')}")
+                
+            except Exception as e:
+                logger.error(f"[Mentor] Erreur parsing passe {i}: {e}")
+                if i == 1:
+                    return {"status": "error", "type": "chat", "content": "Désolé, l'optimisation a échoué au premier cycle."}
 
-            logger.success("[Mentor] Audit JSON décodé avec succès.")
-            return {
-                "status": "success",
-                "type": "cv_audit_rewrite",
-                "audit": audit_data,   # dict avec ats_score, scores, failles, actions...
-                "content": cv_json,    # JSON string du CV réécrit (pour download)
-            }
-        except Exception as e:
-            logger.error(f"[Mentor] Échec critique du parsing JSON: {e}")
-            logger.debug(f"[Mentor] Début de la réponse problématique: {response[:200]}...")
-            
-            # Fallback Chat mais avec un message d'explication
-            return {
-                "status": "success",
-                "type": "chat",
-                "content": f"⚠️ Désolé, l'analyse détaillée a rencontré une erreur technique de formatage. \n\nVoici néanmoins l'analyse brute générée :\n\n{response}"
-            }
+        # Finalisation
+        last_audit["original_ats_score"] = original_ats_score
+        last_audit["original_failles"] = original_failles
+        cv_json = json.dumps(current_cv_data, ensure_ascii=False)
+        logger.success(f"[Mentor] Optimisation terminée. Score final: {last_audit.get('ats_score')} (Initial: {original_ats_score})")
+        
+        return {
+            "status": "success",
+            "type": "cv_audit_rewrite",
+            "audit": last_audit,
+            "content": cv_json,
+        }
 
     async def _rewrite_cv(self, cv_text: str) -> Dict[str, Any]:
         """Rewrites the CV with ATS-optimized formatting and returns structured JSON."""
@@ -291,6 +274,7 @@ IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans ba
             "    2. Un effet de parallax ou de curseur personnalisé si le thème s'y prête.\n"
             "    3. Une gestion de filtrage pour les compétences ou les projets.\n"
             "    4. Un système de navigation fluide (Smooth Scroll) manuel si nécessaire.\n"
+            "    5. Le Smooth scroll via element.scrollIntoView({behavior: 'smooth'}) sans modifier la structure du document.\n"
             "\n[INSTRUCTIONS_CRUCIALES]\n"
             "- Réponds UNIQUEMENT avec les balises [SECTION]. Aucun texte en dehors.\n"
             "- N'utilise PAS de blocs de code markdown (pas de ```) à l'intérieur des balises, mets le code BRUT.\n"

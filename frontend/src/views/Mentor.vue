@@ -43,7 +43,11 @@ const handleFeatureClick = (feature) => {
         if (feature.routeTarget) {
             router.push(feature.routeTarget)
         } else if (feature.actionPromptKey) {
-            router.push({ name: 'AgentChat', query: { prompt: t(feature.actionPromptKey) }})
+            const query = { prompt: t(feature.actionPromptKey) }
+            if (feature.titleKey.includes('cv_audit')) {
+                query.action = 'cv_audit'
+            }
+            router.push({ name: 'AgentChat', query })
         }
     }
 }

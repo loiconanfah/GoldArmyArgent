@@ -698,7 +698,16 @@
         "tagline": "Orchestration, Analyse CV & Génération Web",
         "add_cv": "Ajouter CV (PDF)",
         "cv_context": "CV en Contexte",
+        "cv_from_profile": "CV de mon profil",
         "extracting_text": "Extraction du texte...",
+        "audit_modal": {
+            "title": "Audit CV de Choc",
+            "desc": "Prêt pour une optimisation de niveau militaire ? Choisissez votre stratégie.",
+            "use_stored": "Utiliser le CV du profil",
+            "recommended": "Recommandé — Gain de temps",
+            "upload_new": "Uploader un nouveau (PDF)",
+            "auto_audit_prompt": "Audite mon CV s'il te plaît."
+        },
         "click_to_upload": "Cliquer pour uploader votre CV (PDF)",
         "upload_pdf_only": "Veuillez sélectionner un fichier PDF.",
         "error_reading_pdf": "Erreur lors de la lecture du PDF.",
@@ -750,6 +759,7 @@
                 "relevance": "Pertinence Exp."
             },
             "critical_flaws": "❌ Failles Critiques",
+            "initial_flaws": "Défauts Initiaux",
             "priority_actions": "🛠️ Actions Prioritaires",
             "missing_tech": "💡 Technologies Manquantes",
             "strengths": "✅ Points Forts",
