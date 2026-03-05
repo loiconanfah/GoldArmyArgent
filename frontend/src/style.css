@@ -17,16 +17,16 @@
   }
 
   .dark {
-    --bg-primary: #0f172a;
-    --bg-secondary: #020617;
+    --bg-primary: #0a0a12;
+    --bg-secondary: #05050a;
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
     --accent-primary: #8b5cf6;
     --accent-secondary: #7c3aed;
     --border-color: rgba(255, 255, 255, 0.05);
-    --glass-bg: rgba(15, 23, 42, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --shadow-color: rgba(0, 0, 0, 0.5);
+    --glass-bg: rgba(15, 23, 42, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --shadow-color: rgba(0, 0, 0, 0.8);
   }
 
   html,
@@ -35,6 +35,7 @@
     background-color: var(--bg-primary);
     color: var(--text-primary);
     scroll-behavior: smooth;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   #app {
@@ -57,7 +58,7 @@
 
   .glass-panel {
     background: var(--glass-bg);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
     border: 1px solid var(--glass-border);
     box-shadow: 0 25px 50px -12px var(--shadow-color);
   }
@@ -66,16 +67,52 @@
     text-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
   }
 
+  .text-glow-gold {
+    text-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
+  }
+
   .bg-mesh {
-    background-image: radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.05) 0, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.05) 0, transparent 50%);
+    background-image: radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.08) 0, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.08) 0, transparent 50%);
   }
 
-  .hover-rotate-3d {
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  .animate-blob {
+    animation: blob 7s infinite;
   }
 
-  .hover-rotate-3d:hover {
-    transform: rotateX(5deg) rotateY(10deg) scale(1.02);
+  .animate-spin-slow {
+    animation: spin 12s linear infinite;
+  }
+
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .mask-radial-faded {
+    mask-image: radial-gradient(circle, black 40%, transparent 80%);
   }
 }

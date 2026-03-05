@@ -22,18 +22,107 @@
             "simulation": "Simulation",
             "blog": "Blog",
             "login": "Connexion",
-            "get_started": "Démarrer"
+            "get_started": "Essai gratuit"
         },
         "hero": {
             "badge": "Sniper IA 7.1 — Maintenant disponible",
+            "title_full": "Là où le workflow rencontre l'excellence.",
             "title_1": "Trouvez votre",
             "title_2": "job de rêve",
             "title_3": "avec l'IA.",
             "description": "GoldArmy automatise chaque étape de votre recherche d'emploi — du sourcing des offres cachées à la préparation d'entretiens — propulsé par une IA de précision militaire.",
-            "cta_main": "Créer un Compte",
+            "cta_main": "Essai gratuit",
             "cta_secondary": "Voir les agents",
             "stat_precision": "précision IA",
             "stat_hours": "économisées/mois"
+        },
+        "problem": {
+            "tagline": "Une automatisation qui simplifie les tâches.",
+            "title": "Workflow IA sans effort",
+            "old_way_title": "L'Ancienne Méthode",
+            "old_1": "Des heures de scroll manuel",
+            "old_2": "Candidatures génériques ignorées par les ATS",
+            "old_3": "Ghosté par les recruteurs",
+            "new_way_title": "La Nouvelle Méthode",
+            "new_1": "Chasse de tête IA autonome",
+            "new_2": "99% de compatibilité ATS",
+            "new_3": "Accès direct aux décideurs"
+        },
+        "slideshow": {
+            "title": "Votre recherche d'emploi.",
+            "title_emphasis": "Propulsée par l'IA."
+        },
+        "logos": {
+            "prefix": "Ils nous font confiance",
+            "suffix": "les meilleurs innovateurs."
+        },
+        "agents_intro": {
+            "title_prefix": "Pour les bâtisseurs, vendeurs et rêveurs",
+            "title_suffix": "de l'ère IA.",
+            "paragraph": "Pour les développeurs, ingénieurs, marketeurs ou équipes commerciales, le temps est précieux. GoldArmy™ IA booste la productivité en supprimant les frictions et en automatisant votre recherche d'emploi."
+        },
+        "dev": {
+            "title": "S'intègre à",
+            "title_emphasis": "votre recherche d'emploi.",
+            "feature1_label": "Sourcing intelligent",
+            "feature1_desc": "L'IA scanne 50+ job boards et sources cachées, score les offres selon votre CV et vous alerte en temps réel.",
+            "feature2_label": "CV & lettres",
+            "feature2_desc": "Audit en 30 s, lettres de motivation sur mesure et candidatures optimisées ATS—le tout propulsé par l'IA.",
+            "feature3_label": "Suivi & relances",
+            "feature3_desc": "Kanban des candidatures, rappels intelligents et probabilité de succès—ne perdez plus une opportunité.",
+            "feature4_label": "Prépa IA",
+            "feature4_desc": "Simulations d'entretien vocal et débriefing pour être prêt aux tours techniques et RH.",
+            "card_title": "Un tableau de bord. Tous vos outils.",
+            "card_paragraph": "GoldArmy réunit sourcing, CRM et préparation aux entretiens. Définissez vos objectifs une fois, l'IA s'occupe du reste—de la recherche d'offres au jour J.",
+            "cta": "Essai gratuit"
+        },
+        "threecol": {
+            "title": "Recherche d'emploi intelligente.",
+            "title_emphasis": "Une seule plateforme.",
+            "paragraph": "Du sourcing des offres cachées au suivi des candidatures et à la préparation aux entretiens—tout dans un tableau de bord, avec une IA qui s'adapte à votre profil et vos objectifs.",
+            "card1_category": "Sourcing",
+            "card1_title": "Des offres qui vous correspondent",
+            "card1_desc": "Définissez vos critères une fois. Le Sniper scanne 50+ sources, score chaque offre selon votre CV et vous alerte en temps réel. Fini le scroll manuel.",
+            "card2_category": "Suivi",
+            "card2_title": "Dashboard & CRM",
+            "card2_desc": "Suivez chaque candidature en Kanban, relances intelligentes et probabilité de succès—tout au même endroit.",
+            "card3_category": "Préparation",
+            "card3_title": "Mentor & entretiens vocaux",
+            "card3_desc": "Audit CV en 30 s, lettres sur mesure et simulations d'entretien vocal réalistes avec débriefing IA. Prêt pour le jour J."
+        },
+        "sticky": {
+            "cta_trial": "Essai gratuit",
+            "cta_explore": "Découvrir",
+            "card1_category": "Sourcing",
+            "card1_title": "Sniper Search",
+            "card1_desc": "L'IA scanne 50+ job boards et sources cachées, score chaque offre selon votre CV et vous alerte en temps réel. Fini le scroll manuel.",
+            "card2_category": "Coach",
+            "card2_title": "Mentor & Entretien",
+            "card2_desc": "Audit CV en 30 s, lettres de motivation sur mesure et simulations d'entretien vocal avec débriefing IA. Préparez-vous comme un pro.",
+            "card3_category": "Suivi & Réseau",
+            "card3_title": "CRM & Réseau",
+            "card3_desc": "Kanban des candidatures, relances intelligentes et outreach direct vers les RH et décideurs. Tout votre parcours au même endroit."
+        },
+        "faq_title": "Questions fréquentes",
+        "cta": {
+            "title": "Réservez une démo. Débloquez votre workflow.",
+            "line1": "Prêt à décrocher",
+            "line2": "votre prochain",
+            "line3": "poste ?",
+            "subtitle": "Découvrez comment GoldArmy élève votre recherche d'emploi instantanément.",
+            "button": "Essai gratuit"
+        },
+        "faq_items": {
+            "q1": "Comment fonctionne l'abonnement ?",
+            "a1": "GoldArmy propose un tier gratuit pour commencer, puis les formules Essential (9,99 €/mois) et Pro (19,99 €/mois). Chaque formule débloque plus d'agents actifs, de recherches, d'audits CV et de simulations d'entretien. Vous pouvez changer ou résilier à tout moment depuis votre compte.",
+            "q2": "Qu'est-ce que j'ai avec chaque formule ?",
+            "a2": "Le gratuit inclut un agent actif et l'audit CV. Essential donne 3 agents et plus de recherches et d'audits par mois. Pro débloque les agents illimités et toutes les fonctionnalités—sourcing, CRM, prospection réseau et prépa entretien vocal. Toutes les formules sont hébergées par GoldArmy ; le self-hosting est disponible en Pro.",
+            "q3": "Puis-je tester avant de payer ?",
+            "a3": "Oui. Commencez par le plan gratuit—sans carte bancaire. Vous avez accès à un agent (Sniper ou Mentor) pour voir comment GoldArmy trouve les offres et vous prépare aux entretiens. Passez à une formule payante quand vous voulez.",
+            "q4": "Proposez-vous des offres pour équipes ou entreprises ?",
+            "a4": "Oui. Notre formule Enterprise s'adresse aux organisations qui ont besoin de quotas sur mesure, de support dédié ou de self-hosting. Contactez-nous pour un devis et discuter de vos besoins. Nous pouvons adapter GoldArmy pour les équipes recrutement et les centres de carrière.",
+            "q5": "Puis-je changer de formule (upgrade ou downgrade) ?",
+            "a5": "Oui. Vous pouvez modifier votre formule à tout moment depuis les paramètres de votre compte. Les upgrades sont immédiats ; les downgrades s'appliquent au prochain cycle de facturation. Sans engagement—résiliez quand vous voulez."
         },
         "agents": {
             "tagline": "Notre Arsenal IA",
@@ -50,121 +139,139 @@
                 ]
             },
             "crm": {
-                "name": "CRM Intelligent",
-                "tag": "Agent Organisation",
-                "desc": "Transformez votre recherche en machine de guerre organisée. Chaque candidature est suivie, scorée et planifiée. L'IA vous rappelle quand relancer et détecte les signaux d'intérêt.",
-                "features": [
-                    "Kanban drag & drop automatisé",
-                    "Rappels intelligents de relance",
-                    "Scoring de probabilité de succès",
-                    "Historisation complète des échanges"
-                ]
+                "name": "Carnet Candidatures",
+                "tag": "CRM & Suivi",
+                "desc": "Centralisez vos candidatures, suivez les relances et scorez vos chances avec l'IA. Chaque candidature est suivie, scorée et planifiée."
             },
             "network": {
-                "name": "Générateur de Réseau",
-                "tag": "Agent Social",
-                "desc": "L'IA scanne l'organigramme des entreprises cibles et rédige des messages d'accroche ultra-personnalisés pour court-circuiter le processus classique.",
-                "features": [
-                    "Analyse des décideurs clés (CTOs, RH)",
-                    "Génération de messages sur-mesure",
-                    "Carnet d'adresses réseau unifié"
-                ]
+                "name": "Agent Réseau",
+                "tag": "Réseau",
+                "desc": "L'IA identifie les décideurs clés (CTO, RH) des entreprises cibles et rédige des messages personnalisés pour contourner les processus classiques."
             },
             "mentor": {
                 "name": "Mentor IA Pro",
-                "tag": "Agent Formation",
-                "desc": "Simulez des entretiens techniques ou RH face à un recruteur intransigeant. L'IA débriefe chaque réponse et vous donne un plan d'amélioration précis et actionnable.",
-                "features": [
-                    "Entretiens techniques & RH simulés",
-                    "Débriefing détaillé post-simulation",
-                    "Suivi de progression personnalisé"
-                ]
+                "tag": "Entraînement",
+                "desc": "Simulez des entretiens techniques ou RH face à un recruteur exigeant. L'IA débriefe chaque réponse et vous donne un plan d'amélioration actionnable."
             }
         },
-        "features": {
-            "title": "Sourcing IA Sniper",
-            "desc": "Offres cachées détectées avant tout le monde",
-            "cv_title": "CV & Lettre Automatique",
-            "cv_desc": "Candidatures hyper-personnalisées en 1 clic",
-            "coach_title": "Coach Entretien IA",
-            "coach_desc": "Simulations réalistes et débriefings précis"
-        },
-        "how_it_works": {
-            "tagline": "La Méthode GoldArmy",
-            "title": "Opérationnel en 3 étapes.",
-            "step1_title": "Configurez votre profil IA",
-            "step1_desc": "Importez votre CV (PDF). L'IA analyse vos compétences, votre secteur cible et vos critères (salaire, remote, localisation) pour créer votre empreinte digitale unique.",
-            "step2_title": "Activez les agents",
-            "step2_desc": "Le Sniper IA scanne 15+ sources en continu. Le CRM centralise automatiquement toutes les opportunités. Vous recevez une shortlist qualifiée directement sur votre tableau de bord.",
-            "step3_title": "Passez à l'action",
-            "step3_desc": "Générez une lettre de motivation sur-mesure en 1 clic, contactez les décideurs via le Générateur de Réseau, et préparez votre entretien avec le Mentor IA."
-        },
-        "stats": {
-            "hours": "Économisées par mois",
-            "rate": "Taux de réponse",
-            "interviews": "Entretiens décrochés",
-            "precision": "Précision IA"
+        "key_figures": {
+            "title": "Adoré par ceux qui",
+            "title_emphasis": "avancent vite.",
+            "paragraph": "Candidats, reconvertis et ambitieux utilisent GoldArmy pour dénicher les offres cachées, cartonner en entretien et décrocher leur prochain poste—propulsé par une IA qui travaille pour eux.",
+            "card1_number": "50",
+            "card1_label_1": "sources",
+            "card1_label_2": "scannées",
+            "card1_title": "Sourcing en pilote auto.",
+            "card1_desc": "Offres matchées à votre CV en temps réel.",
+            "card2_number": "94%",
+            "card2_label_1": "précision",
+            "card2_label_2": "match",
+            "card2_title": "Pertinence qui paie",
+            "card2_desc": "Uniquement les opportunités qui vous correspondent.",
+            "card3_number": "120",
+            "card3_label_1": "heures",
+            "card3_label_2": "économisées/mois",
+            "card3_title": "Du temps pour l'essentiel.",
+            "card3_desc": "Moins de scroll, plus d'entretiens."
         },
         "testimonials": {
             "tagline": "Ils ont décroché le poste",
             "title": "Ce qu'ils en pensent.",
+            "heading": "Adoré par ceux qui",
+            "heading_emphasis": "avancent vite.",
+            "paragraph": "Candidats et career builders utilisent GoldArmy pour trouver des offres, se préparer aux entretiens et décrocher leur prochain poste.",
             "quote1": "GoldArmy a trouvé une offre cachée sur un petit site carrière. J'ai postulé avec la lettre générée et eu l'entretien le lendemain.",
-            "quote2": "Le Mentor IA m'a préparé à 80% des questions que j'ai eues chez le GAFAM. C'est une arme redoutable.",
-            "quote3": "Mon taux de réponse a explosé grâce au Générateur de Réseau. Je contacte directement les CTOs maintenant."
+            "author1": "Alex — Ingénieur logiciel",
+            "quote2": "Le Mentor IA m'a préparé à 80% des questions que j'ai eues en entretien FAANG. Ça change tout.",
+            "author2": "Sam — Product Manager",
+            "quote3": "Mon taux de réponse a explosé grâce au Générateur de Réseau. Je contacte directement les CTOs maintenant.",
+            "author3": "Jordan — DevRel"
+        },
+        "blog": {
+            "header_title": "Blog",
+            "header_subtitle": "Conseils carrière et recherche d'emploi",
+            "featured_category": "Recherche d'emploi",
+            "featured_title": "Comment l'IA transforme la recherche d'emploi",
+            "featured_summary": "Des offres cachées à la préparation aux entretiens—comment GoldArmy vous aide à décrocher plus vite.",
+            "featured_date": "26 décembre 2025",
+            "item1_category": "Conseils",
+            "item1_title": "Comment se démarquer avec un CV qui passe les ATS",
+            "item1_summary": "Optimisez votre CV pour les logiciels de recrutement et obtenez plus de réponses grâce à l'audit et à la réécriture IA.",
+            "item2_category": "Stratégie",
+            "item2_title": "Sourcer les jobs cachés : au-delà de LinkedIn et Indeed",
+            "item2_summary": "Où trouver les postes non publiés et comment l'agent Sniper remonte les offres qui matchent votre profil.",
+            "item3_category": "Entretien",
+            "item3_title": "Préparez-vous aux entretiens techniques et RH avec l'IA",
+            "item3_summary": "Simulez de vrais entretiens, obtenez un débriefing instantané et présentez-vous prêt pour les questions clés.",
+            "item_date": "26 décembre 2025"
         },
         "pricing": {
             "tagline": "Tarification",
-            "title": "Choisissez votre armure.",
+            "title": "Tarifs.",
+            "paragraph": "Commencez gratuit, évoluez à votre rythme. Chaque formule inclut le Sniper, le Mentor, le CRM et la prépa entretien. Choisissez l'offre qui correspond à votre recherche.",
+            "picture_heading": "Évoluez sans limite",
+            "picture_paragraph": "Débloquez plus de recherches, d'audits CV et d'entretiens selon vos besoins. Sans engagement, résiliez quand vous voulez.",
+            "plan1_title": "Gratuit",
+            "plan1_desc": "Idéal pour tester GoldArmy et décrocher vos premières offres.",
+            "plan1_price": "Gratuit",
+            "plan1_period_annual": "",
+            "plan1_period_monthly": "pour toujours",
+            "plan1_info_figure": "1",
+            "plan1_info_1": "agent actif",
+            "plan1_info_2": "audit CV inclus",
+            "plan1_cta": "Commencer",
+            "plan1_subtext": "Sans carte bancaire",
+            "plan1_hosted": "Hébergé par GoldArmy",
+            "plan2_title": "Essential",
+            "plan2_desc": "Pour les candidats sérieux qui veulent plus de recherches et de prépa.",
+            "plan2_price": "9,99 €",
+            "plan2_period_annual": "/mois, facturé à l'année",
+            "plan2_period_monthly": "/mois, facturé au mois",
+            "plan2_info_figure": "3",
+            "plan2_info_1": "agents actifs",
+            "plan2_info_2": "plus de recherches et d'audits",
+            "plan2_cta": "Essai gratuit",
+            "plan2_subtext": "Sans carte bancaire",
+            "plan2_hosted": "Hébergé par GoldArmy",
+            "plan3_title": "Pro",
+            "plan3_desc": "Puissance illimitée pour une recherche à temps plein et le réseau.",
+            "plan3_price": "19,99 €",
+            "plan3_period_annual": "/mois, facturé à l'année",
+            "plan3_period_monthly": "/mois, facturé au mois",
+            "plan3_info_figure": "∞",
+            "plan3_info_1": "agents illimités",
+            "plan3_info_2": "toutes les fonctionnalités",
+            "plan3_cta": "Essai gratuit",
+            "plan3_subtext": "Sans carte bancaire",
+            "plan3_hosted": "Option self-hosted",
+            "plan4_title": "Enterprise",
+            "plan4_desc": "Pour les équipes et organisations avec des besoins sur mesure.",
+            "plan4_price": "Nous contacter",
+            "plan4_info_1": "quotas sur mesure",
+            "plan4_info_2": "support dédié",
+            "plan4_cta": "Contacter les ventes",
+            "plan4_hosted": "Hébergé ou self-hosted",
             "free": {
-                "name": "Gratuit",
+                "name": "Freemium",
                 "features": [
-                    "2 recherches Sniper / jour",
-                    "Analyse de 1 CV par jour",
-                    "Accès limité au CRM"
+                    "Audit CV Gratuit",
+                    "1 Agent actif"
                 ]
             },
-            "essential": {
-                "name": "Essentiel",
-                "popular": "Populaire",
-                "features": [
-                    "25 recherches Sniper / jour",
-                    "10 audits de CV complets",
-                    "10 simulations d'entretien",
-                    "CRM Illimité",
-                    "Générateur de Réseau"
-                ],
-                "cta": "Choisir Essentiel"
-            },
             "pro": {
-                "name": "Pro",
+                "name": "Pro IA",
                 "features": [
-                    "Sniper IA Illimité",
-                    "Audits CV Illimités",
-                    "Mentor IA Vocal & Illimité",
-                    "Headhunter IA Pro",
-                    "Support prioritaire 24/7"
+                    "Recherche Autopilotée Illimitée",
+                    "Suivi CRM Intelligent",
+                    "Système de Prospection Globale"
                 ],
                 "cta": "Passer Pro"
             },
             "month": "/mois"
         },
-        "cta_final": {
-            "tagline": "Rejoignez l'élite",
-            "title": "Prêt à décrocher le job de vos rêves ?",
-            "description": "Rejoignez les professionnels qui utilisent l'IA pour prendre l'avantage définitif sur le marché du travail.",
-            "button": "Créer mon compte gratuitement",
-            "footer": "Sans carte de crédit · Résiliation à tout moment"
-        },
         "footer": {
             "description": "L'intelligence artificielle au service de votre carrière. Ne cherchez plus d'emploi, laissez les opportunités venir à vous grâce à nos agents autonomes.",
-            "secure": "Plateforme 100% sécurisée",
-            "navigation": "Navigation",
-            "contact": "Contact",
-            "support": "Support Client",
-            "ceo": "Contacter le CEO",
-            "rights": "© 2026 GoldArmy Agent IA. Tous droits réservés.",
-            "privacy": "Confidentialité",
-            "terms": "CGU"
+            "rights": "© 2024 GoldArmy. Tous droits réservés."
         }
     },
     "home": {
@@ -462,9 +569,10 @@
     },
     "footer_global": {
         "tagline": "L'Intelligence Artificielle au service de votre carrière. Déjouez les algorithmes RH et décrochez les entretiens que vous méritez.",
-        "tools_title": "Outils Gratuits",
-        "platform_title": "Plateforme",
-        "blog_link": "Le Blog",
+        "product_title": "Produit",
+        "tools_title": "Outils gratuits",
+        "platform_title": "Compte",
+        "blog_link": "Blog",
         "create_account": "Créer un compte",
         "privacy": "Politique de confidentialité",
         "terms": "C.G.V.",

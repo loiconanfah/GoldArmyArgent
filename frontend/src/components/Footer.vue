@@ -7,65 +7,257 @@ const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <footer class="bg-[#0a0a12] border-t border-white/5 pt-16 pb-8 relative z-20 overflow-hidden">
-    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-violet-900/20 via-[#0a0a12] to-transparent pointer-events-none"></div>
-    <div class="max-w-7xl mx-auto px-6 relative z-10">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 mb-16">
-        
-        <!-- Brand -->
-        <div class="col-span-1 md:col-span-2">
-          <router-link to="/" class="flex items-center gap-3 mb-6">
-            <div class="w-8 h-8 rounded-xl overflow-hidden border border-violet-500/30">
-              <img src="/logo.png" alt="Logo GoldArmy" class="w-full h-full object-cover" />
-            </div>
-            <span class="text-xl font-black tracking-tight uppercase text-white">GoldArmy</span>
-          </router-link>
-          <p class="text-slate-400 text-sm max-w-sm leading-relaxed mb-6">
-            {{ t('footer_global.tagline') }}
-          </p>
-          <div class="flex gap-4">
-            <a href="#" class="w-10 h-10 rounded-full bg-surface-900 flex items-center justify-center text-slate-400 hover:text-white hover:bg-violet-600 transition-colors border border-white/5">
-              <!-- X / Twitter Icon -->
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.007 4.56H5.117z"></path></svg>
-            </a>
-            <a href="#" class="w-10 h-10 rounded-full bg-surface-900 flex items-center justify-center text-slate-400 hover:text-white hover:bg-violet-600 transition-colors border border-white/5">
-              <!-- LinkedIn Icon -->
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M19.812 5.418c.861.23 1.538.907 1.768 1.768C21.998 8.746 22 12 22 12s0 3.254-.42 4.814a2.504 2.504 0 01-1.768 1.768c-1.56.419-7.812.419-7.812.419s-6.252 0-7.812-.419a2.505 2.505 0 01-1.768-1.768C2 15.254 2 12 2 12s0-3.254.42-4.814zM8.5 15.518V8.482L14.436 12 8.5 15.518z" clip-rule="evenodd"></path></svg>
-            </a>
+  <footer class="footer landing-footer" role="contentinfo">
+    <div class="footer-content-wrapper">
+      <div class="w-layout-grid footer-links-grid">
+        <!-- Product -->
+        <div class="footer-links-list-wrapper">
+          <div class="footer-links-heading">{{ t('footer_global.product_title') }}</div>
+          <div class="footer-list-wrapper">
+            <ul role="list" class="footer-links-list">
+              <li class="footer-list-item">
+                <a href="#agents" class="footer-link-item">{{ t('landing.nav.features') }}</a>
+              </li>
+              <li class="footer-list-item">
+                <a href="#agents" class="footer-link-item">{{ t('landing.nav.agents') }}</a>
+              </li>
+              <li class="footer-list-item">
+                <a href="#pricing" class="footer-link-item">{{ t('landing.nav.pricing') }}</a>
+              </li>
+              <li class="footer-list-item">
+                <a href="#avis" class="footer-link-item">{{ t('landing.nav.reviews') }}</a>
+              </li>
+              <li class="footer-list-item">
+                <a href="#blog" class="footer-link-item">{{ t('landing.nav.blog') }}</a>
+              </li>
+            </ul>
           </div>
         </div>
-
-        <!-- Links Group 1 -->
-        <div>
-          <h4 class="text-white font-bold mb-6 tracking-wide">{{ t('footer_global.tools_title') }}</h4>
-          <ul class="space-y-4">
-            <li><router-link to="/free-cv-roast" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('landing.nav.cv_audit') }}</router-link></li>
-            <li><router-link to="/free-interview" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('landing.nav.simulation') }}</router-link></li>
-          </ul>
+        <!-- Free Tools -->
+        <div class="footer-links-list-wrapper">
+          <div class="footer-links-heading">{{ t('footer_global.tools_title') }}</div>
+          <div class="footer-list-wrapper">
+            <ul role="list" class="footer-links-list">
+              <li class="footer-list-item">
+                <router-link to="/free-cv-roast" class="footer-link-item">{{ t('landing.nav.cv_audit') }}</router-link>
+              </li>
+              <li class="footer-list-item">
+                <router-link to="/free-interview" class="footer-link-item">{{ t('landing.nav.simulation') }}</router-link>
+              </li>
+            </ul>
+          </div>
         </div>
-
-        <!-- Links Group 2 -->
-        <div>
-          <h4 class="text-white font-bold mb-6 tracking-wide">{{ t('footer_global.platform_title') }}</h4>
-          <ul class="space-y-4">
-            <li><router-link to="/login" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('landing.nav.login') }}</router-link></li>
-            <li><router-link to="/register" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('footer_global.create_account') }}</router-link></li>
-            <li><router-link to="/blog" class="text-sm text-slate-400 hover:text-violet-400 transition-colors">{{ t('footer_global.blog_link') }}</router-link></li>
-          </ul>
+        <!-- Account -->
+        <div class="footer-links-list-wrapper">
+          <div class="footer-links-heading">{{ t('footer_global.platform_title') }}</div>
+          <div class="footer-list-wrapper">
+            <ul role="list" class="footer-links-list">
+              <li class="footer-list-item">
+                <router-link to="/login" class="footer-link-item">{{ t('landing.nav.login') }}</router-link>
+              </li>
+              <li class="footer-list-item">
+                <router-link to="/register" class="footer-link-item">{{ t('footer_global.create_account') }}</router-link>
+              </li>
+              <li class="footer-list-item">
+                <router-link to="/blog" class="footer-link-item">{{ t('footer_global.blog_link') }}</router-link>
+              </li>
+            </ul>
+          </div>
         </div>
-
       </div>
 
-      <!-- Bottom Bar -->
-      <div class="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-        <p class="text-slate-500 text-xs text-center md:text-left">
-          {{ t('footer_global.rights', { year: currentYear }) }}
-        </p>
-        <div class="flex items-center gap-6">
-          <a href="#" class="text-xs text-slate-500 hover:text-white transition-colors">{{ t('footer_global.privacy') }}</a>
-          <a href="#" class="text-xs text-slate-500 hover:text-white transition-colors">{{ t('footer_global.terms') }}</a>
+      <div class="w-layout-grid footer-bottom">
+        <div class="footer-logo-wrapper">
+          <router-link to="/" class="footer-logo-link" aria-label="GoldArmy Home">
+            <img src="/logo.png" alt="GoldArmy" loading="lazy" class="logo-footer" />
+          </router-link>
+          <p class="footer-tagline">{{ t('landing.footer.description') }}</p>
+        </div>
+        <div class="footer-legal">
+          <p class="footer-copyright">{{ t('footer_global.rights', { year: currentYear }) }}</p>
+          <div class="footer-legal-links">
+            <a href="#" class="footer-link-item">{{ t('footer_global.privacy') }}</a>
+            <a href="#" class="footer-link-item">{{ t('footer_global.terms') }}</a>
+          </div>
         </div>
       </div>
     </div>
   </footer>
 </template>
+
+<style scoped>
+/* Fallback when orvimo-landing.css is not loaded (e.g. other pages) */
+.landing-footer {
+  padding-top: var(--_size---paddingsize--large, 3rem);
+  background-color: var(--_theme---background--secondarybackground, #0f0f18);
+  color: var(--_theme---textcolor--primarytext, #f1f1f4);
+  font-size: var(--_textstyle---fontsize, 1rem);
+  line-height: 1.5;
+  position: relative;
+  bottom: 0;
+}
+
+.footer-content-wrapper {
+  max-width: var(--_size---site--maxwidth, 75rem);
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--_size---site--sitepadding, 1.5rem);
+  padding-right: var(--_size---site--sitepadding, 1.5rem);
+  box-sizing: border-box;
+}
+
+.footer-links-grid {
+  display: grid;
+  grid-template-columns: 0.25fr 0.25fr 1fr;
+  gap: 2rem;
+  padding-bottom: var(--_size---paddingsize--small, 1.5rem);
+}
+
+.footer-links-heading {
+  font-size: var(--_size---fonts--xxs, 0.75rem);
+  text-transform: uppercase;
+  color: var(--_theme---textcolor--tertiarytext, #6b6b7b);
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.footer-links-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-list-item {
+  margin-bottom: 0.5rem;
+}
+
+.footer-link-item {
+  color: var(--_theme---textcolor--primarytext, #f1f1f4);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  transition: opacity 0.2s ease;
+}
+
+.footer-link-item:hover {
+  opacity: 0.8;
+}
+
+.footer-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  align-items: end;
+}
+
+.footer-logo-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.footer-logo-link {
+  display: inline-block;
+}
+
+.logo-footer {
+  width: 70%;
+  max-width: 140px;
+  height: auto;
+  display: block;
+}
+
+.footer-tagline {
+  font-size: 0.875rem;
+  color: var(--_theme---textcolor--secondarytext, #a1a1aa);
+  max-width: 28rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem 1.5rem;
+}
+
+.footer-copyright {
+  font-size: 0.75rem;
+  color: var(--_theme---textcolor--tertiarytext, #6b6b7b);
+  margin: 0;
+}
+
+.footer-legal-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.footer-legal-links .footer-link-item {
+  font-size: 0.75rem;
+  color: var(--_theme---textcolor--tertiarytext, #6b6b7b);
+}
+
+.footer-legal-links .footer-link-item:hover {
+  color: var(--_theme---textcolor--primarytext, #f1f1f4);
+}
+
+@media screen and (max-width: 991px) {
+  .footer-links-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .footer-bottom {
+    grid-template-columns: 1fr;
+    grid-auto-flow: dense;
+    gap: 2.5rem;
+  }
+  .logo-footer {
+    width: 60%;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .footer-links-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .footer-legal {
+    justify-content: flex-start;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .landing-footer {
+    padding-top: 1.5rem;
+  }
+  .footer-links-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .footer-list-wrapper.three-cols {
+    grid-template-columns: 1fr;
+  }
+  .logo-footer {
+    width: 100%;
+    max-width: 120px;
+  }
+  .footer-bottom {
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+  }
+  .footer-legal {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Prevent footer from causing horizontal scroll */
+.landing-footer {
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+</style>

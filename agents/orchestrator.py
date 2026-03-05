@@ -19,38 +19,34 @@ MAX_HISTORY = 20  # nb de messages (user + assistant)
 SESSION_TTL = 1800  # 30 minutes
 
 
-def _get_history(user_id: str, session_id: str) -> List[Dict[str, str]]:
-    """Retourne l'historique d'une session isolée par utilisateur, crée la session si inexistante."""
+def _get_history(session_id: str) -> List[Dict[str, str]]:
+    """Retourne l'historique d'une session, crée la session si inexistante."""
     now = time.time()
     # Nettoyage des sessions expirées
     expired = [sid for sid, s in _CONVERSATION_STORE.items() if now - s["last_access"] > SESSION_TTL]
     for sid in expired:
         del _CONVERSATION_STORE[sid]
 
-    # La clé est composée du user_id et du session_id pour une isolation stricte
-    composite_key = f"{user_id}:{session_id}"
-
-    if composite_key not in _CONVERSATION_STORE:
-        _CONVERSATION_STORE[composite_key] = {
+    if session_id not in _CONVERSATION_STORE:
+        _CONVERSATION_STORE[session_id] = {
             "history": [],
             "last_access": now
         }
-    _CONVERSATION_STORE[composite_key]["last_access"] = now
-    return _CONVERSATION_STORE[composite_key]["history"]
+    _CONVERSATION_STORE[session_id]["last_access"] = now
+    return _CONVERSATION_STORE[session_id]["history"]
 
 
-def _add_to_history(user_id: str, session_id: str, role: str, content: str):
-    """Ajoute un message à l'historique isolé par utilisateur, taille limitée."""
-    history = _get_history(user_id, session_id)
+def _add_to_history(session_id: str, role: str, content: str):
+    """Ajoute un message à l'historique, taille limitée."""
+    history = _get_history(session_id)
     history.append({"role": role, "content": content})
     # Trim: garder les MAX_HISTORY derniers messages
     if len(history) > MAX_HISTORY:
-        # Toujours garder le system prompt s'il existe (si on décide d'en ajouter un dans l'historique)
+        # Toujours garder le system prompt s'il existe
         system_msgs = [m for m in history if m["role"] == "system"]
         other_msgs = [m for m in history if m["role"] != "system"]
         trimmed = other_msgs[-(MAX_HISTORY - len(system_msgs)):]
-        composite_key = f"{user_id}:{session_id}"
-        _CONVERSATION_STORE[composite_key]["history"] = system_msgs + trimmed
+        _CONVERSATION_STORE[session_id]["history"] = system_msgs + trimmed
 
 
 class OrchestratorAgent:
@@ -83,22 +79,13 @@ class OrchestratorAgent:
     async def think(self, user_input: Dict[str, Any]) -> Dict[str, Any]:
         """Analyzes intention and orchestrates work."""
         query = user_input.get("query", "")
-        # user_id est obligatoire pour l'isolation (injecté par main.py)
-        user_id = user_input.get("user_id")
-        
-        if not user_id:
-             logger.error("[Orchestrator] CRITICAL: No user_id provided to think()")
-             # On utilise un fallback temporaire mais on log l'erreur
-             user_id = "ANONYMOUS"
+        logger.info(f"[Orchestrator] Received task: {str(query)[:80]}...")
 
-        logger.info(f"[Orchestrator] Received task for user {user_id}: {str(query)[:80]}...")
+        # Récupérer ou créer un session_id
+        session_id = user_input.get("session_id", "default")
 
-        # Récupérer ou créer un session_id (par défaut aléatoire pour éviter collision "default")
-        import uuid
-        session_id = user_input.get("session_id") or str(uuid.uuid4())
-
-        # Charger historique (Isolé par user_id)
-        history = _get_history(user_id, session_id)
+        # Charger historique
+        history = _get_history(session_id)
 
         # 1. Analyze intention
         intention = await self._route_request(user_input)
@@ -132,8 +119,8 @@ class OrchestratorAgent:
             }
             # Mémoriser l'échange
             if query:
-                _add_to_history(user_id, session_id, "user", query)
-            _add_to_history(user_id, session_id, "assistant", f"[Recherche d'emploi executée pour: {query}]")
+                _add_to_history(session_id, "user", query)
+            _add_to_history(session_id, "assistant", f"[Recherche d'emploi executée pour: {query}]")
             return response
 
         elif intention["action"] in ["audit_cv", "generate_portfolio", "rewrite_cv"]:
@@ -142,19 +129,18 @@ class OrchestratorAgent:
             result = await self.mentor.think(user_input)
             # Mémoriser
             if query:
-                _add_to_history(user_id, session_id, "user", query)
+                _add_to_history(session_id, "user", query)
             content = result.get("content", "")
             if content and result.get("type") not in ["cv_rewrite"]:  # ne pas stocker le JSON entier en mémoire
-                _add_to_history(user_id, session_id, "assistant", str(content)[:500])
+                _add_to_history(session_id, "assistant", str(content)[:500])
             return result
 
         else:
             # Mode conversation générale — utiliser l'historique comme contexte
-            return await self._general_chat(user_id, session_id, query, user_input, history)
+            return await self._general_chat(session_id, query, user_input, history)
 
     async def _general_chat(
         self,
-        user_id: str,
         session_id: str,
         query: str,
         user_input: Dict[str, Any],
@@ -192,8 +178,8 @@ class OrchestratorAgent:
 
             # Mémoriser l'échange
             if query:
-                _add_to_history(user_id, session_id, "user", query)
-            _add_to_history(user_id, session_id, "assistant", response_text[:500])
+                _add_to_history(session_id, "user", query)
+            _add_to_history(session_id, "assistant", response_text[:500])
 
             return {
                 "status": "success",

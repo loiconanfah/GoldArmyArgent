@@ -73,7 +73,7 @@ class ChatRequest(BaseModel):
     cv_filename: Optional[str] = None
     nb_results: Optional[int] = None
     location: Optional[str] = None
-    session_id: Optional[str] = None
+    session_id: Optional[str] = "default"
     image_data: Optional[str] = None # Base64 image for vision tasks
 
 class CVAdaptRequest(BaseModel):
@@ -123,11 +123,6 @@ class PromoteUserRequest(BaseModel):
 def read_root():
     return {"status": "ok", "message": "GoldArmy Agent V2 API is running"}
 
-@app.get("/11e1c9334650482a8036bf554489f586.txt")
-async def get_indexnow_key():
-    from fastapi.responses import PlainTextResponse
-    return PlainTextResponse("11e1c9334650482a8036bf554489f586")
-
 @app.post("/api/parse-pdf")
 async def parse_pdf(file: UploadFile = File(...)):
     """
@@ -155,9 +150,8 @@ async def parse_pdf(file: UploadFile = File(...)):
 
 
 class CvRewriteRequest(BaseModel):
-    cv_json: Any  # Accepte dict ou string JSON
+    cv_json: str  # JSON string du CV structuré
     filename: Optional[str] = "CV_ATS_Optimise"
-    theme_id: Optional[str] = "midnight"
 
 
 @app.post("/api/generate-cv-pdf")
@@ -188,7 +182,7 @@ async def generate_cv_pdf_endpoint(request: CvRewriteRequest):
         else:
             cv_data = {}
             
-        pdf_bytes = generate_cv_pdf(cv_data, theme_id=request.theme_id or "midnight")
+        pdf_bytes = generate_cv_pdf(cv_data)
 
         filename = (request.filename or "CV_ATS_Optimise").replace(" ", "_").strip()
         if not filename.endswith(".pdf"):
@@ -260,7 +254,10 @@ async def get_network_contacts(current_user: dict = Depends(get_current_user)):
         from core.database import get_db
         db = get_db()
         cursor = db.contacts.find({
-            "user_id": current_user["id"]
+            "$or": [
+                {"user_id": current_user["id"]},
+                {"user_id": 'system_user'}
+            ]
         }).sort("last_updated", -1)
         rows = await cursor.to_list(length=None)
         
@@ -509,10 +506,6 @@ async def download_portfolio_zip(current_user: dict = Depends(get_current_user))
         headers={"Content-Disposition": "attachment; filename=goldarmy_portfolio.zip"}
     )
 
-# Portfolio rendering consolidated in the public section below
-
-
-
 @app.get("/api/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     """Récupère les statistiques réelles pour le Dashboard depuis MongoDB Atlas."""
@@ -532,8 +525,12 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
             "user_id": current_user["id"]
         })
         
+        # 3. Réseau (Contacts totaux — user direct + système)
         network_count = await db.contacts.count_documents({
-            "user_id": current_user["id"]
+            "$or": [
+                {"user_id": current_user["id"]},
+                {"user_id": "system_user"}
+            ]
         })
         
         # 4. CV Analysés (Candidatures totales)
@@ -664,12 +661,7 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
     logger.info(f"📥 REQUEST /api/chat - User: {current_user['email']} | Message: {request.message[:50]}")
     try:
         # Intercept search for limit check
-        # Ne déclenche le check que si c'est vraiment une recherche d'emploi :
-        # - si nb_results est demandé ET qu'il n'y a pas de CV dans la requête (audit/portfolio)
-        # - ou si les mots-clés de recherche sont explicitement dans le message
-        is_job_search_intent = any(k in request.message.lower() for k in ["cherche", "trouve", "stage", "emploi", "job"])
-        is_cv_action = bool(request.cv_text) or any(k in request.message.lower() for k in ["audit", "réécris", "reecris", "portfolio", "ats", "cv"])
-        if (request.nb_results and not is_cv_action) or is_job_search_intent:
+        if request.nb_results or any(k in request.message.lower() for k in ["cherche", "trouve", "stage", "emploi", "job"]):
             check = await check_subscription_limit(current_user["id"], "sniper_search")
             if not check["allowed"]:
                 return {
@@ -691,24 +683,13 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
                 cv_filename = "CV_Profil_Sauvegarde.pdf"
                 logger.info(f"Using stored CV for user {current_user['id']}")
 
-        # Guard portfolio : CV obligatoire (côté backend également)
-        is_portfolio_request = any(k in request.message.lower() for k in ["portfolio", "site web"])
-        if is_portfolio_request and not cv_text:
-            return {
-                "status": "error",
-                "type": "chat",
-                "content": "📄 **Un CV est obligatoire pour générer ton portfolio.**\n\nUploade ton PDF via le bouton **'Ajouter CV (PDF)'**, puis relance la génération."
-            }
-
-
         task = {
             "query": request.message,
             "cv_text": cv_text,
             "cv_filename": cv_filename,
             "nb_results": request.nb_results,
             "location": request.location,
-            "session_id": request.session_id,
-            "user_id": current_user["id"],
+            "session_id": request.session_id or "default",
             "image_data": request.image_data
         }
         
@@ -787,150 +768,83 @@ async def add_crm_from_link(request: CRMLinkRequest, current_user: dict = Depend
         from loguru import logger
         logger.info(f"[CRM] Scraping de l'URL: {request.url}")
         
-        # 1. Tenter le scraping HTTP avec un vrai User-Agent navigateur
-        html_content = ""
-        http_error = None
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+        # 1. Scraper le contenu de la page
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml",
                 "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Accept-Encoding": "gzip, deflate, br",
-                "DNT": "1",
-                "Upgrade-Insecure-Requests": "1",
             }
-            try:
-                resp = await client.get(request.url, headers=headers)
-                resp.raise_for_status()
-                html_content = resp.text
-            except Exception as e:
-                http_error = str(e)
-                logger.warning(f"[CRM] Erreur HTTP ({e}), on tente l'extraction depuis l'URL seule")
+            resp = await client.get(request.url, headers=headers)
+            resp.raise_for_status()
+            html_content = resp.text
 
+        # 2. Nettoyer basiquement le HTML et extraire les métadonnées pour Gemini (utile pour les sites JS)
         from bs4 import BeautifulSoup
-        import json as json_lib
-        import re
+        soup = BeautifulSoup(html_content, "html.parser")
+        
+        # Extraire le title et les metas OG pour aider l'IA (très utile si le body est vide car rendu en JS)
+        page_title = soup.title.string if soup.title else ""
+        og_title_tag = soup.find("meta", attrs={"property": "og:title"})
+        og_title = og_title_tag["content"] if og_title_tag else ""
+        meta_desc_tag = soup.find("meta", attrs={"name": "description"})
+        meta_desc = meta_desc_tag["content"] if meta_desc_tag else ""
+        
+        # Nettoyer le script/style
+        for script in soup(["script", "style", "nav", "footer", "header", "noscript"]):
+            script.decompose()
+        text_content = soup.get_text(separator=" ", strip=True)
+        # Tronquer à 15000 caractères pour le LLM
+        text_snippet = text_content[:15000]
 
-        job_title = ""
-        company_name = ""
-        job_summary = ""
+        # 3. Extraction via LLM
+        from llm.unified_client import UnifiedLLMClient
+        import json
+        llm = UnifiedLLMClient()
+        prompt = f"""Tu es un assistant expert en recrutement.
+Voici les métadonnées et le texte extrait d'une page web d'offre d'emploi :
 
-        if html_content:
-            soup = BeautifulSoup(html_content, "html.parser")
-
-            # ── COUCHE 1 : JSON-LD (schema.org/JobPosting) ─────────────────────
-            # La plupart des job boards (Indeed, HelloWork, Glassdoor, Pôle Emploi)
-            # embedent des données structurées AVANT le rendu JS — c'est la source la plus fiable
-            for script_tag in soup.find_all("script", {"type": "application/ld+json"}):
-                try:
-                    ld_data = json_lib.loads(script_tag.string or "")
-                    # Peut être une liste ou un dict
-                    items = ld_data if isinstance(ld_data, list) else [ld_data]
-                    for item in items:
-                        schema_type = item.get("@type", "")
-                        if schema_type in ("JobPosting", "jobPosting") or "job" in schema_type.lower():
-                            job_title = job_title or str(item.get("title", item.get("name", ""))).strip()
-                            # hiringOrganization peut être un dict ou une string
-                            org = item.get("hiringOrganization", {})
-                            company_name = company_name or str(org.get("name", "") if isinstance(org, dict) else org).strip()
-                            desc_raw = item.get("description", "")
-                            if desc_raw and not job_summary:
-                                # Nettoyer le HTML de la description
-                                desc_soup = BeautifulSoup(str(desc_raw), "html.parser")
-                                job_summary = desc_soup.get_text(separator=" ", strip=True)[:500]
-                            logger.info(f"[CRM] JSON-LD trouvé : '{job_title}' @ '{company_name}'")
-                            break
-                    if job_title and company_name:
-                        break
-                except Exception:
-                    pass
-
-            # ── COUCHE 2 : Métadonnées OG / meta standard ─────────────────────
-            page_title = (soup.title.string or "").strip() if soup.title else ""
-            og_title = (soup.find("meta", {"property": "og:title"}) or {}).get("content", "")
-            og_site = (soup.find("meta", {"property": "og:site_name"}) or {}).get("content", "")
-            meta_desc = (soup.find("meta", {"name": "description"}) or {}).get("content", "")
-
-            # ── COUCHE 3 : Texte brut du corps (JS sites seront vides) ─────────
-            for tag in soup(["script", "style", "nav", "footer", "header", "noscript"]):
-                tag.decompose()
-            body_text = soup.get_text(separator=" ", strip=True)[:12000]
-        else:
-            page_title = og_title = og_site = meta_desc = body_text = ""
-
-        # Si JSON-LD a tout donné, pas besoin du LLM
-        if job_title and company_name:
-            logger.info(f"[CRM] Extraction directe JSON-LD → '{job_title}' @ '{company_name}' (pas de LLM)")
-        else:
-            # ── LLM Fallback : toujours passer l'URL comme contexte ─────────────
-            from llm.unified_client import UnifiedLLMClient
-            llm = UnifiedLLMClient()
-
-            # Heuristiques URL pour les sites connus
-            url_hint = ""
-            url_lower = request.url.lower()
-            if "linkedin.com/jobs" in url_lower:
-                url_hint = "C'est une offre LinkedIn. Le titre et l'entreprise sont souvent dans le title de la page."
-            elif "indeed.com" in url_lower or "ca.indeed" in url_lower:
-                url_hint = "C'est une offre Indeed. Cherche le titre dans la balise <title> ou h1."
-            elif "glassdoor" in url_lower:
-                url_hint = "C'est une offre Glassdoor."
-            elif "jobillico" in url_lower:
-                url_hint = "C'est une offre Jobillico (Canada)."
-            elif "hellowork" in url_lower:
-                url_hint = "C'est une offre HelloWork (France)."
-            elif "pole-emploi" in url_lower or "francetravail" in url_lower:
-                url_hint = "C'est une offre France Travail / Pôle Emploi."
-
-            prompt = f"""Tu es un expert en recrutement. Extrais les informations d'une offre d'emploi.
-
-URL de l'offre : {request.url}
-{url_hint}
-
-[MÉTADONNÉES HTML]
+[METADONNEES SEO]
 Titre de la page : {page_title}
 OG Title : {og_title}
-OG Site : {og_site}
-Meta Description : {meta_desc}
+Description : {meta_desc}
 
 [CONTENU DU CORPS]
-{body_text if body_text.strip() else "(Page rendue en JavaScript côté client - corps vide, utilise les métadonnées et l'URL)"}
+{text_snippet}
 
-Règles :
-- Si le corps est vide (site JS), déduis quand même le maximum depuis l'URL et les métadonnées
-- Ne mets JAMAIS "Inconnu" ou "Non identifié" si tu peux déduire quelque chose de l'URL ou du titre
-- job_summary : 1-2 phrases max résumant le poste
-
-Renvoie UNIQUEMENT ce JSON brut (sans markdown) :
-{{"job_title": "...", "company_name": "...", "job_summary": "..."}}"""
-
-            logger.info(f"[CRM] Appel LLM pour extraction (body={len(body_text)} chars)...")
-            result_text = await llm.chat([{"role": "user", "content": prompt}], json_mode=True)
+Renvoie UNIQUEMENT un JSON avec les clés :
+- "job_title" (le titre explicite du poste, ex: "Développeur Full Stack")
+- "company_name" (le nom de l'entreprise qui recrute)
+- "job_summary" (un résumé concis de l'offre en 2-3 phrases max, incluant les technos/mots-clés principaux ou les missions clés)
+Ne rajoute PAS de balises markdown comme ```json, renvoie uniquement l'objet JSON brut."""
+        
+        logger.info(f"[CRM] Appel LLM pour extraction d'offre...")
+        result_text = await llm.chat([{"role": "user", "content": prompt}], json_mode=True)
+        
+        extracted = {}
+        try:
+            import re
+            cleaned_result = re.sub(r'```json\s*', '', result_text, flags=re.IGNORECASE)
+            cleaned_result = re.sub(r'```\s*', '', cleaned_result).strip()
             
-            try:
-                cleaned = re.sub(r'```json\s*', '', result_text, flags=re.IGNORECASE)
-                cleaned = re.sub(r'```\s*', '', cleaned).strip()
-                json_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
-                extracted = json_lib.loads(json_match.group(0) if json_match else cleaned)
-                job_title = job_title or str(extracted.get("job_title", "")).strip()
-                company_name = company_name or str(extracted.get("company_name", "")).strip()
-                job_summary = job_summary or str(extracted.get("job_summary", "")).strip()
-            except Exception as parse_error:
-                logger.error(f"[CRM] Erreur parsing JSON LLM: {parse_error} - Raw: {result_text[:200]}")
-
-        # Normaliser les valeurs vides
-        if not job_title or job_title.lower() in ("none", "inconnu", "non identifié"):
-            job_title = "Poste non identifié"
-        if not company_name or company_name.lower() in ("none", "inconnu", "non identifié"):
-            company_name = "Entreprise non identifiée"
-        if not job_summary:
-            job_summary = "Ajouté via lien externe."
-
-        logger.info(f"[CRM] Résultat final: '{job_title}' @ '{company_name}'")
-
-
-
-
+            json_match = re.search(r'\{.*\}', cleaned_result, re.DOTALL)
+            if json_match:
+                extracted = json.loads(json_match.group(0))
+            else:
+                extracted = json.loads(cleaned_result)
+        except Exception as parse_error:
+            logger.error(f"[CRM] Erreur parsing JSON: {parse_error} - Raw: {result_text}")
+            extracted = {}
+            
+        job_title = str(extracted.get("job_title", "")).strip()
+        company_name = str(extracted.get("company_name", "")).strip()
+        job_summary = str(extracted.get("job_summary", "")).strip()
+        
+        if not job_title or job_title.lower() == "none" or job_title.lower() == "inconnu": job_title = "Poste non identifié"
+        if not company_name or company_name.lower() == "none" or company_name.lower() == "inconnu": company_name = "Entreprise non identifiée"
+        if not job_summary: job_summary = "Ajouté via le lien externe (aucune description extraite)."
+            
+        logger.info(f"[CRM] Link Extrait: '{job_title}' chez '{company_name}'")
 
         # 4. Insertion dans MongoDB
         db = get_db()
@@ -1124,100 +1038,6 @@ async def admin_promote_user(req: PromoteUserRequest, current_user: dict = Depen
     logger.info(f"👑 Admin {current_user['email']} a promu {req.email} au tier {req.tier}")
     return {"status": "success", "message": f"Utilisateur {req.email} promu au tier {req.tier} avec succès."}
 
-@app.get("/api/admin/users")
-async def admin_list_users(current_user: dict = Depends(get_current_user)):
-    """Récupère la liste de tous les utilisateurs pour l'administration."""
-    if current_user.get("subscription_tier") != "ADMIN":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs.")
-    
-    from core.database import get_db
-    db = get_db()
-    users_cursor = db.users.find({}, {"password": 0}) # Exclure les mots de passe
-    users = await users_cursor.to_list(length=1000)
-    
-    logger.info(f"🔍 Admin fetch: {len(users)} utilisateurs trouvés en base '{db.name}'")
-    
-    # Transformer les ObjectId en string pour le JSON
-    for user in users:
-        if "_id" in user:
-            user["_id"] = str(user["_id"])
-            
-    return {"status": "success", "data": users}
-
-@app.get("/api/admin/stats")
-async def admin_stats(current_user: dict = Depends(get_current_user)):
-    """Récupère les statistiques globales de la plateforme."""
-    if current_user.get("subscription_tier") != "ADMIN":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs.")
-    
-    from core.database import get_db
-    db = get_db()
-    
-    total_users = await db.users.count_documents({})
-    pro_users = await db.users.count_documents({"subscription_tier": "PRO"})
-    essential_users = await db.users.count_documents({"subscription_tier": "ESSENTIAL"})
-    free_users = await db.users.count_documents({"subscription_tier": {"$in": ["FREE", None]}})
-    
-    total_apps = await db.applications.count_documents({})
-    
-    return {
-        "status": "success",
-        "data": {
-            "total_users": total_users,
-            "tiers": {
-                "pro": pro_users,
-                "essential": essential_users,
-                "free": free_users
-            },
-            "total_applications": total_apps,
-            "system_status": "operational",
-            "admin_email": current_user.get("email")
-        }
-    }
-
-@app.get("/api/admin/user/{user_id}")
-async def admin_get_user_details(user_id: str, current_user: dict = Depends(get_current_user)):
-    """Récupère tous les détails d'un utilisateur (Profil + CV + CRM) pour l'admin."""
-    if current_user.get("subscription_tier") != "ADMIN":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs.")
-    
-    from core.database import get_db
-    db = get_db()
-    
-    # Récupérer le profil complet
-    user = await db.users.find_one({"id": user_id}, {"password": 0})
-    if not user:
-        # Essayer aussi par l'ID MongoDB si user_id est un ObjectId string
-        from bson import ObjectId
-        try:
-            user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
-        except:
-            pass
-            
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
-    
-    # Transformer ObjectId
-    if "_id" in user:
-        user["_id"] = str(user["_id"])
-        
-    # Récupérer les candidatures CRM
-    # Note: On utilise l'ID interne de l'utilisateur stocké dans les candidatures
-    apps_cursor = db.applications.find({"user_id": user.get("id") or str(user.get("_id"))})
-    apps = await apps_cursor.to_list(length=500)
-    
-    for app in apps:
-        if "_id" in app:
-            app["_id"] = str(app["_id"])
-            
-    return {
-        "status": "success",
-        "data": {
-            "profile": user,
-            "applications": apps
-        }
-    }
-
 @app.get("/api/portfolio/render/{user_id}")
 async def render_portfolio(user_id: str):
     """Sert le contenu HTML du portfolio pour une iframe."""
@@ -1358,7 +1178,6 @@ S'il n'y a pas 15 vrais défauts, sois extrêmement pointilleux sur la forme ou 
 
 class PublicInterviewRequest(BaseModel):
     job_title: str
-    interview_type: Optional[str] = "Général"
     user_response: Optional[str] = None
     context: Optional[str] = None
 
@@ -1373,25 +1192,21 @@ async def public_interview(req: PublicInterviewRequest):
         from llm.unified_client import UnifiedLLMClient
         llm = UnifiedLLMClient()
         
-        # Adjust context based on interview type
-        type_context = f"Tu mènes un entretien axé sur l'aspect : {req.interview_type}." if req.interview_type else ""
-        
         if not req.user_response:
             # 1. Générer la question piège
             prompt = f"""Tu es un recruteur expert. Tu fais passer un entretien express (1 seule question) pour le poste de : {req.job_title}.
-{type_context}
-Pose UNE seule question difficile, pertinente, précise ou même un peu déstabilisante, que ce candidat rencontrerait dans la vraie vie.
-Ne dis surtout pas bonjour/bonsoir, la réponse doit être juste la question elle-même, prête à être lue par une synthèse vocale (ton professsionnel mais exigeant). Ne fais aucune intro."""
+Pose UNE question piège, difficile ou très technique, que ce candidat rencontrerait dans la vraie vie.
+Ne dis pas bonjour la réponse doit être juste la question elle-même pour qu'elle soit lue par une synthèse vocale (ton sec et professionnel)."""
         else:
             # 2. Evaluer la réponse
-            prompt = f"""Tu es un recruteur expert. Tu as posé cette question pour un poste de {req.job_title} ({req.interview_type}) :
+            prompt = f"""Tu es un recruteur expert. Tu as posé cette question pour un poste de {req.job_title} :
 Question : {req.context}
 
 Le candidat a répondu (transcription orale) :
 {req.user_response}
 
-Fais-lui un feedback hyper cash en 2 phrases MAXIMUM ! (Soit positif et encourageant, soit franc sur pourquoi c'est mauvais, puis donne 1 conseil).
-Ne sois pas poli, sois un vrai recruteur qui va à l'essentiel. Cette réponse sera lue par synthèse vocale sans interface visuelle."""
+Fais-lui un feedback cash en 2 phrases MAXIMUM ! (soit positif, soit indique pourquoi c'est mauvais).
+Ne sois pas poli, sois un coach stricte. Cette réponse sera lue par synthèse vocale."""
 
         response_text = await llm.chat([{"role": "user", "content": prompt}], max_tokens=200)
         

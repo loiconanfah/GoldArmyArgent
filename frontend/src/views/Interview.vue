@@ -5,10 +5,8 @@ import { authFetch } from '../utils/auth'
 import { getWsUrl, getApiUrl } from '../config'
 import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon, ChartBarIcon, AcademicCapIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { CheckIcon, UserCircleIcon, StarIcon, VideoCameraIcon } from '@heroicons/vue/24/solid'
-import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
-const { t } = useI18n()
 
 // Phase states
 const isInterviewStarted = ref(false)
@@ -24,9 +22,9 @@ const config = ref({
 })
 
 const recruiters = [
-    { id: 'tech', name: t('interview.recruiters.sophie.name'), role: t('interview.recruiters.sophie.role'), img: '/avatars/tech.png' },
-    { id: 'hr', name: t('interview.recruiters.marc.name'), role: t('interview.recruiters.marc.role'), img: '/avatars/hr.png' },
-    { id: 'ceo', name: t('interview.recruiters.alice.name'), role: t('interview.recruiters.alice.role'), img: '/avatars/ceo.png' }
+    { id: 'tech', name: 'Sophie - Tech Lead', role: 'Expertise Technique', img: '/avatars/tech.png' },
+    { id: 'hr', name: 'Marc - HR Manager', role: 'Culture & Soft Skills', img: '/avatars/hr.png' },
+    { id: 'ceo', name: 'Alice - CEO', role: 'Vision & Strategie', img: '/avatars/ceo.png' }
 ]
 
 const currentRecruiter = computed(() => recruiters.find(r => r.id === config.value.recruiterId))
@@ -50,24 +48,24 @@ const showChat = ref(true) // Transcription visible par défaut pour lire l'entr
 const showScorecard = ref(false)
 const isAnalyzing = ref(false)
 const scorecard = ref(null)
-const ttsStatus = ref(t('interview.messages.preparing')) // Diagnostic status
+const ttsStatus = ref('Initialisation...') // Diagnostic status
 const lastTtsError = ref(null)
 const pendingFinish = ref(false)
 
 // Visual audio pulse simulation
 const audioLevel = ref(0)
-const audioInterval = ref(null)
+let audioInterval = null
 
 let recognition = null;
 let currentSynthesis = null;
 let currentHDAudio = null; // Une seule piste HD à la fois (évite la voix en double)
-let cachedVoices = []; // Voix mémorisées dès le chargement de la page
+let cachedVoices = []; // ✅ Voix mémorisées dès le chargement de la page
 let pendingUtteranceText = null; // Texte en attente si les voix ne sont pas prêtes
-let accumulatedTranscript = ''; // Evite que la phrase soit coupée entre deux respirations
+let accumulatedTranscript = ''; // ✅ Evite que la phrase soit coupée entre deux respirations
 
 const startInterview = async () => {
     if (!config.value.jobTitle || !config.value.company || !config.value.cv) {
-        errorMsg.value = t('interview.messages.required_fields')
+        errorMsg.value = "Poste, Entreprise et CV sont obligatoires."
         return
     }
 
@@ -116,7 +114,7 @@ const handleFileUpload = async (event) => {
     if (!file) return
     
     if (file.type !== 'application/pdf') {
-        errorMsg.value = t('interview.messages.select_pdf')
+        errorMsg.value = "Veuillez sélectionner un fichier PDF."
         return
     }
     
@@ -135,10 +133,10 @@ const handleFileUpload = async (event) => {
         if (result.status === 'success') {
             config.value.cv = result.text
         } else {
-            errorMsg.value = result.detail || t('interview.messages.extraction_error')
+            errorMsg.value = result.detail || "Erreur lors de l'extraction du PDF."
         }
     } catch (e) {
-        errorMsg.value = t('interview.messages.upload_error')
+        errorMsg.value = "Erreur de connexion au serveur pour l'upload."
     } finally {
         isUploadingCV.value = false
         if (fileInput.value) fileInput.value.value = '' // Reset input
@@ -148,7 +146,7 @@ const handleFileUpload = async (event) => {
 const initSpeechRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        errorMsg.value = t('interview.messages.unsupported_speech')
+        errorMsg.value = "Votre navigateur ne supporte pas la reconnaissance vocale. Utilisez Chrome ou Safari."
         return false;
     }
     
@@ -227,7 +225,7 @@ const initSpeechRecognition = () => {
             return
         }
         console.error("Speech recognition error", event.error)
-        errorMsg.value = t('interview.messages.mic_error', [event.error])
+        errorMsg.value = "Erreur micro: " + event.error
     }
     return true
 }
@@ -305,7 +303,7 @@ const connectWebSocket = () => {
             console.log("WebSocket Interview fermé")
         }
     } catch (e) {
-        errorMsg.value = t('interview.messages.connection_error')
+        errorMsg.value = "Erreur de connexion au serveur d'entretien."
     }
 }
 
@@ -325,7 +323,7 @@ const sendMessageToAI = (text) => {
 const getVoice = () => {
     const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices()
     if (voices.length === 0) {
-        ttsStatus.value = t('interview.messages.no_voice')
+        ttsStatus.value = "Aucune voix système"
         return null
     }
     
@@ -346,12 +344,12 @@ const getVoice = () => {
 }
 
 const testAudio = async () => {
-    ttsStatus.value = t('interview.messages.voice_test_gen')
+    ttsStatus.value = "Génération du test HD..."
     try {
         const response = await authFetch('/api/interview/test-voice', {
             method: 'POST',
             body: JSON.stringify({
-                text: t('interview.messages.test_phrase', [currentRecruiter.value.name]),
+                text: `Bonjour, je suis ${currentRecruiter.value.name}. Je suis prête à commencer votre entretien en Haute Définition. M'entendez-vous bien ?`,
                 recruiterId: config.value.recruiterId
             })
         })
@@ -359,14 +357,14 @@ const testAudio = async () => {
         if (result.status === 'success') {
             playHDAudio(result.audio)
         } else {
-            ttsStatus.value = t('interview.messages.hd_error')
-            // Fallback to local TTS for diagnostics
-            speakText(t('interview.messages.hd_fallback'))
+            ttsStatus.value = "Erreur Test HD"
+            // Fallback sur TTS local pour diagnostic
+            speakText("Le test Haute Définition a échoué. Voici la voix locale de secours.")
         }
     } catch (e) {
         console.error("Test Voice Error:", e)
-        ttsStatus.value = t('interview.messages.audio_server_error')
-        speakText(t('interview.messages.audio_server_error'))
+        ttsStatus.value = "Erreur connexion"
+        speakText("Erreur de connexion au serveur audio.")
     }
 }
 
@@ -387,7 +385,7 @@ const playHDAudio = (base64Data) => {
     }
     window.speechSynthesis.cancel() // TTS local coupé pour n'avoir qu'une seule voix
 
-    ttsStatus.value = t('interview.messages.ready_hd')
+    ttsStatus.value = "Lecture audio HD..."
     try {
         const audio = new Audio(`data:audio/mp3;base64,${base64Data}`)
         currentHDAudio = audio
@@ -402,7 +400,7 @@ const playHDAudio = (base64Data) => {
             currentHDAudio = null
             isSpeaking.value = false
             stopAudioPulse()
-            ttsStatus.value = t('interview.messages.ready_hd')
+            ttsStatus.value = "Prêt (HD)"
             setTimeout(() => {
                 if (pendingFinish.value) {
                     finishInterview()
@@ -418,7 +416,7 @@ const playHDAudio = (base64Data) => {
         audio.onerror = (e) => {
             currentHDAudio = null
             console.error("HD Audio error:", e)
-            ttsStatus.value = t('interview.messages.hd_play_error')
+            ttsStatus.value = "Erreur Audio HD"
             isSpeaking.value = false
         }
 
@@ -426,7 +424,7 @@ const playHDAudio = (base64Data) => {
     } catch (err) {
         currentHDAudio = null
         console.error("Failed to play HD Audio:", err)
-        ttsStatus.value = t('interview.messages.hd_play_error')
+        ttsStatus.value = "Erreur lecture HD"
     }
 }
 
@@ -434,7 +432,7 @@ let retryCount = 0;
 const speakText = (text) => {
     if (!window.speechSynthesis || !text?.trim()) return
     
-    ttsStatus.value = t('interview.messages.preparing')
+    ttsStatus.value = "Préparation..."
     
     // HACK CRITIQUE : On cancel d'abord
     window.speechSynthesis.cancel()
@@ -451,7 +449,7 @@ const speakText = (text) => {
         if (voice) utterance.voice = voice
         
         utterance.onstart = () => {
-            ttsStatus.value = t('interview.messages.ia_speaking')
+            ttsStatus.value = "IA parle..."
             isSpeaking.value = true
             startAudioPulse()
             retryCount = 0
@@ -459,7 +457,7 @@ const speakText = (text) => {
         }
         
         utterance.onend = () => {
-            ttsStatus.value = t('interview.messages.ready')
+            ttsStatus.value = "Prêt"
             isSpeaking.value = false
             stopAudioPulse()
             setTimeout(() => {
@@ -586,7 +584,7 @@ const finishInterview = async () => {
         if (result.status === 'success') {
             scorecard.value = result.analysis
         } else {
-            errorMsg.value = t('interview.messages.analysis_failed')
+            errorMsg.value = "L'analyse a échoué."
         }
     } catch (e) {
         console.error("Analysis error:", e)
@@ -610,43 +608,43 @@ onUnmounted(() => {
             <ArrowLeftIcon class="w-5 h-5" />
         </button>
         <div>
-            <h1 class="text-3xl font-display font-bold text-white tracking-tight">{{ $t('interview.wizard.title') }}</h1>
-            <p class="text-slate-400 mt-1">{{ $t('interview.wizard.tagline') }}</p>
+            <h1 class="text-3xl font-display font-bold text-white tracking-tight">Paramètres de l'Entretien</h1>
+            <p class="text-slate-400 mt-1">Configurez le contexte pour que l'IA simule l'entretien parfaitement.</p>
         </div>
      </div>
 
      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
          <div class="space-y-5">
              <div>
-                <label class="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><BuildingOfficeIcon class="w-4 h-4" /> {{ $t('interview.wizard.company') }} <span class="text-rose-500">*</span></label>
-                <input v-model="config.company" type="text" :placeholder="$t('interview.wizard.company_placeholder')" class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                <label class="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><BuildingOfficeIcon class="w-4 h-4" /> Entreprise cible <span class="text-rose-500">*</span></label>
+                <input v-model="config.company" type="text" placeholder="Ex: Google, Alan, Startup X..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
              </div>
              <div>
-                <label class="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><BriefcaseIcon class="w-4 h-4" /> {{ $t('interview.wizard.job_title') }} <span class="text-rose-500">*</span></label>
-                <input v-model="config.jobTitle" type="text" :placeholder="$t('interview.wizard.job_title_placeholder')" class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+                <label class="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><BriefcaseIcon class="w-4 h-4" /> Poste visé <span class="text-rose-500">*</span></label>
+                <input v-model="config.jobTitle" type="text" placeholder="Ex: Développeur Fullstack, Product Manager..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
              </div>
              <div>
-                <label class="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><DocumentTextIcon class="w-4 h-4" /> {{ $t('interview.wizard.job_details') }}</label>
-                <textarea v-model="config.jobDetails" rows="4" :placeholder="$t('interview.wizard.job_details_placeholder')" class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"></textarea>
+                <label class="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><DocumentTextIcon class="w-4 h-4" /> Description de l'offre (Détails)</label>
+                <textarea v-model="config.jobDetails" rows="4" placeholder="Collez ici les missions principales de l'offre, la tech stack, ou les prérequis..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"></textarea>
              </div>
          </div>
          
          <div class="space-y-5">
              <div>
                 <div class="flex items-center justify-between mb-2">
-                    <label class="block text-sm font-bold text-slate-300">{{ $t('interview.wizard.cv_title') }}</label>
+                    <label class="block text-sm font-bold text-slate-300">Votre Profil / CV Actuel</label>
                     <button @click="$refs.fileInput.click()" class="text-xs font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition-colors flex items-center gap-2">
                         <span v-if="isUploadingCV" class="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></span>
                         <DocumentTextIcon v-else class="w-3.5 h-3.5" />
-                        {{ isUploadingCV ? $t('interview.wizard.extracting') : $t('interview.wizard.import_pdf') }}
+                        {{ isUploadingCV ? 'Extraction...' : 'Importer un PDF' }}
                     </button>
                     <input type="file" accept=".pdf" class="hidden" ref="fileInput" @change="handleFileUpload">
                 </div>
-                <textarea v-model="config.cv" rows="5" :placeholder="$t('interview.wizard.cv_placeholder')" class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"></textarea>
+                <textarea v-model="config.cv" rows="5" placeholder="Collez le texte brut de votre CV ou importez un PDF pour que le recruteur puisse réagir dessus..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"></textarea>
              </div>
              
               <div>
-                  <label class="block text-sm font-bold text-slate-300 mb-3">{{ $t('interview.wizard.recruiter_choice') }}</label>
+                  <label class="block text-sm font-bold text-slate-300 mb-3">Choix du Recruteur</label>
                   <div class="grid grid-cols-3 gap-3">
                       <button v-for="r in recruiters" :key="r.id" 
                          @click="config.recruiterId = r.id" 
@@ -662,15 +660,15 @@ onUnmounted(() => {
               </div>
 
               <div>
-                  <label class="block text-sm font-bold text-slate-300 mb-3">{{ $t('interview.wizard.interview_format') }}</label>
+                  <label class="block text-sm font-bold text-slate-300 mb-3">Format de l'Entretien</label>
                   <div class="grid grid-cols-2 gap-3">
                       <button @click="config.interviewType = 'general'" :class="config.interviewType === 'general' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-surface-900 border-surface-700 text-slate-400 hover:border-surface-600'" class="p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all">
                          <span v-if="config.interviewType === 'general'" class="absolute top-2 right-2"><CheckIcon class="w-4 h-4 text-indigo-400" /></span>
-                         <span class="font-bold relative text-sm">{{ $t('interview.wizard.format_general') }}</span>
+                         <span class="font-bold relative text-sm">Général & HR</span>
                       </button>
                       <button @click="config.interviewType = 'technical'" :class="config.interviewType === 'technical' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'bg-surface-900 border-surface-700 text-slate-400 hover:border-surface-600'" class="p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all">
                          <span v-if="config.interviewType === 'technical'" class="absolute top-2 right-2"><CheckIcon class="w-4 h-4 text-rose-400" /></span>
-                         <span class="font-bold relative text-sm">{{ $t('interview.wizard.format_technical') }}</span>
+                         <span class="font-bold relative text-sm">Technique</span>
                       </button>
                   </div>
               </div>
@@ -685,12 +683,12 @@ onUnmounted(() => {
           <div class="flex items-center gap-4">
               <button @click="testAudio" class="px-4 py-2 bg-surface-800 hover:bg-surface-700 text-indigo-400 text-xs font-bold rounded-lg border border-indigo-500/20 flex items-center gap-2 transition-all">
                   <SpeakerWaveIcon class="w-4 h-4" />
-                  {{ $t('interview.wizard.test_audio') }}
+                  Tester le son
               </button>
               <span v-if="ttsStatus" class="text-[10px] text-slate-500 uppercase font-medium">{{ ttsStatus }}</span>
           </div>
           <button @click="startInterview" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold rounded-xl shadow-xl shadow-indigo-500/20 flex items-center gap-3 transition-all hover:scale-[1.05] active:scale-95">
-              {{ $t('interview.wizard.launch') }}
+              Lancer la Visioconférence
               <VideoCameraIcon class="w-5 h-5" />
           </button>
       </div>
@@ -735,7 +733,7 @@ onUnmounted(() => {
           <div class="flex items-center gap-3">
               <div v-if="ttsStatus" class="bg-black/40 backdrop-blur-xl border border-white/5 px-3 py-1.5 rounded-xl hidden md:flex items-center gap-2">
                   <SpeakerWaveIcon class="w-3 h-3 text-indigo-400" />
-                  <span class="text-[9px] font-bold text-indigo-200 uppercase tracking-widest">{{ ttsStatus.includes('HD') ? $t('interview.ui.hi_fi_sound') : ttsStatus }}</span>
+                  <span class="text-[9px] font-bold text-indigo-200 uppercase tracking-widest">{{ ttsStatus.includes('HD') ? 'Son Haute-Fidélité' : ttsStatus }}</span>
               </div>
               <div class="bg-indigo-500/20 backdrop-blur-xl border border-indigo-500/30 px-4 py-2 rounded-2xl flex items-center gap-3">
                   <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
@@ -757,11 +755,11 @@ onUnmounted(() => {
                 <div class="relative z-10">
                     <div class="flex items-center gap-2 mb-2">
                         <SparklesIcon class="w-4 h-4 text-gold-400" />
-                        <span class="text-[10px] uppercase font-black tracking-widest text-slate-400">{{ $t('interview.ui.analyst_notes') }}</span>
+                        <span class="text-[10px] uppercase font-black tracking-widest text-slate-400">Notes de l'Analyste</span>
                     </div>
                     <p class="text-sm font-bold text-white leading-relaxed">{{ analystNote.tip }}</p>
                     <div class="mt-3 flex items-center justify-between">
-                        <div class="text-[9px] bg-indigo-500/20 border border-indigo-500/30 px-3 py-1 rounded-full text-indigo-300 uppercase font-black tracking-tighter">{{ $t(`interview.messages.ai_note_sentiment.${analystNote.sentiment}`) }}</div>
+                        <div class="text-[9px] bg-indigo-500/20 border border-indigo-500/30 px-3 py-1 rounded-full text-indigo-300 uppercase font-black tracking-tighter">{{ analystNote.sentiment }}</div>
                         <div class="w-1.5 h-1.5 rounded-full" :class="analystNote.sentiment === 'positif' ? 'bg-emerald-500' : 'bg-amber-500'"></div>
                     </div>
                 </div>
@@ -775,23 +773,23 @@ onUnmounted(() => {
           <video ref="userVideo" autoplay playsinline muted class="w-full h-full object-cover grayscale-[0.3]"></video>
           <div v-if="!stream" class="absolute inset-0 flex items-center justify-center bg-surface-950 flex-col gap-2">
               <VideoCameraSlashIcon class="w-8 h-8 text-slate-700" />
-              <span class="text-[10px] text-slate-500 uppercase font-bold">{{ $t('interview.ui.camera_off') }}</span>
+              <span class="text-[10px] text-slate-500 uppercase font-bold">Caméra désactivée</span>
           </div>
           <div class="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur px-2 py-1 rounded-lg">
               <UserIcon class="w-3 h-3 text-slate-300" />
-               <span class="text-[9px] font-bold text-white uppercase">{{ $t('interview.ui.me') }}</span>
+              <span class="text-[9px] font-bold text-white uppercase">Moi</span>
           </div>
       </div>
 
       <!-- TRANSCRIPTION DRAWER (Toggleable) -->
       <div v-if="showChat" class="absolute left-6 bottom-32 w-80 max-h-[40%] bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl z-40 flex flex-col overflow-hidden animate-fade-in-up">
           <div class="p-4 border-b border-white/5 flex items-center justify-between">
-              <span class="text-xs font-black uppercase text-slate-400">{{ $t('interview.ui.transcription') }}</span>
+              <span class="text-xs font-black uppercase text-slate-400">Transcription</span>
               <button @click="showChat = false" class="p-1 hover:bg-white/10 rounded-lg text-slate-400"><XMarkIcon class="w-4 h-4" /></button>
           </div>
           <div class="flex-1 overflow-y-auto p-4 space-y-4 text-sm scroll-smooth" ref="chatContainer">
               <div v-for="msg in conversation" :key="msg.id" :class="msg.role === 'user' ? 'text-indigo-200' : 'text-slate-300'">
-                  <span class="font-bold text-[10px] block opacity-50">{{ msg.role === 'user' ? $t('interview.ui.you') : $t('interview.ui.recruiter') }}</span>
+                  <span class="font-bold text-[10px] block opacity-50">{{ msg.role === 'user' ? 'VOUS' : 'RECRUTEUR' }}</span>
                   {{ msg.content }}
               </div>
               <div v-if="transcript" class="text-pink-300 italic opacity-60">{{ transcript }}...</div>
@@ -857,8 +855,8 @@ onUnmounted(() => {
                           <ChartBarIcon class="w-6 h-6 text-white" />
                       </div>
                       <div>
-                          <h2 class="text-2xl font-display font-bold text-white tracking-tight">{{ $t('interview.scorecard.title') }}</h2>
-                          <p class="text-sm text-slate-400">{{ $t('interview.scorecard.subtitle') }}</p>
+                          <h2 class="text-2xl font-display font-bold text-white tracking-tight">Récapitulatif de votre entretien</h2>
+                          <p class="text-sm text-slate-400">Analyse générée par l'IA GoldArmy</p>
                       </div>
                   </div>
                   <button v-if="!isAnalyzing" @click="stopInterview" class="p-2 text-slate-500 hover:text-white transition-colors">
@@ -874,8 +872,8 @@ onUnmounted(() => {
                           <div class="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
                           <div class="absolute inset-0 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                       </div>
-                      <p class="text-lg font-bold text-white animate-pulse">{{ $t('interview.scorecard.analyzing') }}</p>
-                      <p class="text-sm text-slate-400 max-w-xs text-center">{{ $t('interview.scorecard.analyzing_desc') }}</p>
+                      <p class="text-lg font-bold text-white animate-pulse">Analyse de vos réponses en cours...</p>
+                      <p class="text-sm text-slate-400 max-w-xs text-center">Le Mentor IA examine votre communication et votre expertise technique.</p>
                   </div>
 
                   <!-- Results State -->
@@ -883,7 +881,7 @@ onUnmounted(() => {
                       <!-- Hero Score -->
                       <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                           <div v-for="(val, cat) in scorecard.scores" :key="cat" class="bg-white/5 border border-white/10 p-6 rounded-3xl flex flex-col items-center gap-3">
-                              <span class="text-[10px] uppercase font-black tracking-widest text-slate-500">{{ cat === 'technical' ? $t('interview.scorecard.categories.technical') : cat === 'communication' ? $t('interview.scorecard.categories.communication') : cat === 'soft_skills' ? $t('interview.scorecard.categories.soft_skills') : $t('interview.scorecard.categories.global') }}</span>
+                              <span class="text-[10px] uppercase font-black tracking-widest text-slate-500">{{ cat === 'technical' ? 'Technique' : cat === 'communication' ? 'Élocution' : cat === 'soft_skills' ? 'Attitude' : 'Global' }}</span>
                               <div class="relative flex items-center justify-center">
                                   <svg class="w-20 h-20">
                                       <circle class="text-white/5" stroke-width="6" stroke="currentColor" fill="transparent" r="34" cx="40" cy="40"/>
@@ -895,11 +893,11 @@ onUnmounted(() => {
                       </div>
 
                       <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                          <!-- Strengths -->
+                          <!-- Points Forts -->
                           <div class="space-y-4">
                               <h3 class="text-sm font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
                                   <CheckCircleIcon class="w-5 h-5" />
-                                  {{ $t('interview.scorecard.strengths') }}
+                                  Points Forts
                               </h3>
                               <ul class="space-y-3">
                                   <li v-for="p in scorecard.feedback.points_forts" :key="p" class="flex gap-3 text-sm text-slate-300">
@@ -909,11 +907,11 @@ onUnmounted(() => {
                               </ul>
                           </div>
 
-                          <!-- Improvements -->
+                          <!-- Points à améliorer -->
                           <div class="space-y-4">
                               <h3 class="text-sm font-black uppercase tracking-widest text-amber-400 flex items-center gap-2">
                                   <AcademicCapIcon class="w-5 h-5" />
-                                  {{ $t('interview.scorecard.improvements') }}
+                                  Axe d'amélioration
                               </h3>
                               <ul class="space-y-3">
                                   <li v-for="p in scorecard.feedback.points_amelioration" :key="p" class="flex gap-3 text-sm text-slate-300">
@@ -931,11 +929,11 @@ onUnmounted(() => {
                           </div>
                           <div class="flex items-center gap-3">
                               <StarIcon class="w-6 h-6 text-indigo-400" />
-                              <h3 class="text-lg font-bold text-white">{{ $t('interview.scorecard.recruiter_opinion') }}</h3>
+                              <h3 class="text-lg font-bold text-white">L'avis du Recruteur</h3>
                           </div>
                           <p class="text-slate-300 text-sm leading-relaxed relative z-10">{{ scorecard.feedback.conseils }}</p>
                           <div class="pt-4 flex items-center justify-between border-t border-white/5">
-                              <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">{{ $t('interview.scorecard.final_decision') }}</span>
+                              <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Décision finale :</span>
                               <span :class="scorecard.decision.includes('Favorable') ? 'text-emerald-400' : 'text-amber-400'" class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 font-black text-xs">
                                   {{ scorecard.decision }}
                               </span>
@@ -947,7 +945,7 @@ onUnmounted(() => {
               <!-- Footer -->
               <div class="p-8 bg-black/20 flex justify-end gap-4">
                   <button @click="stopInterview" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:scale-105 active:scale-95 text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-500/20">
-                      {{ $t('interview.scorecard.back_to_dashboard') }}
+                      Retour au Dashboard
                   </button>
               </div>
           </div>
@@ -955,7 +953,7 @@ onUnmounted(() => {
 
       <!-- Live status text -->
       <div v-if="isListening" class="absolute bottom-32 left-1/2 -translate-x-1/2 text-pink-400 font-black uppercase tracking-[0.3em] text-xs animate-pulse z-10 drop-shadow-lg">
-          {{ $t('interview.ui.mic_active') }}
+          Microphone Actif — Parlez Maintenant
       </div>
    </div>
   </div>

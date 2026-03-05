@@ -15,6 +15,11 @@ import {
 
 const { t, tm } = useI18n()
 const router = useRouter()
+
+function agentFeatures(key) {
+  const v = tm(key)
+  return Array.isArray(v) ? v : []
+}
 const ready = ref(false)
 const userName = ref(t('home.welcome', { name: '' }).replace('Bonjour, ', '').trim() || 'là')
 
@@ -59,7 +64,7 @@ const features = computed(() => [
     description: t('home.features.sniper.desc'),
     tip: t('home.features.sniper.tip'),
     stats: [{v:'50+',l:'Sources'},{v:'94%',l:t('landing.hero.stat_precision')},{v:'< 5s',l:'Résultats'}],
-    features: [(tm('landing.agents.sniper.features') || []).find(f => f.includes('Filtres')) || 'Filtres Smart', (tm('landing.agents.sniper.features') || []).find(f => f.includes('CV')) || 'Matching CV', (tm('landing.agents.sniper.features') || []).find(f => f.includes('temps réel')) || 'Alertes'],
+    features: [agentFeatures('landing.agents.sniper.features').find(f => f.includes('Filtres')) || 'Filtres Smart', agentFeatures('landing.agents.sniper.features').find(f => f.includes('CV')) || 'Matching CV', agentFeatures('landing.agents.sniper.features').find(f => f.includes('temps réel')) || 'Alertes'],
     panelIcons: [
       { icon: GlobeAltIcon,      label: 'Carte',  x: '12%', y: '28%' },
       { icon: ChartBarIcon,      label: 'Stats',  x: '50%', y: '18%' },
@@ -76,7 +81,7 @@ const features = computed(() => [
     description: t('home.features.mentor.desc'),
     tip: t('home.features.mentor.tip'),
     stats: [{v:'< 30s',l:'Audit'},{v:'+40%',l:'Succès'},{v:'100%',l:'Personnalisé'}],
-    features: [(tm('landing.agents.mentor.features') || []).find(f => f.includes('Audit')) || 'Audit CV', (tm('landing.agents.mentor.features') || []).find(f => f.includes('Adaptation')) || 'Adaptation', (tm('landing.agents.mentor.features') || []).find(f => f.includes('Lettre')) || 'Générateur Lettre'],
+    features: [agentFeatures('landing.agents.mentor.features').find(f => f.includes('Audit')) || 'Audit CV', agentFeatures('landing.agents.mentor.features').find(f => f.includes('Adaptation')) || 'Adaptation', agentFeatures('landing.agents.mentor.features').find(f => f.includes('Lettre')) || 'Générateur Lettre'],
     panelIcons: [
       { icon: DocumentTextIcon,  label: 'CV',     x: '15%', y: '25%' },
       { icon: BeakerIcon,        label: 'Analyse',x: '55%', y: '18%' },
@@ -93,7 +98,7 @@ const features = computed(() => [
     description: t('home.features.interview.desc'),
     tip: t('home.features.interview.tip'),
     stats: [{v:'10+',l:'Questions'},{v:'100%',l:'Vocal'},{v:'Live',l:'Feedback'}],
-    features: [(tm('landing.agents.mentor.features') || []).find(f => f.includes('techniques')) || 'Simulations', (tm('landing.agents.mentor.features') || []).find(f => f.includes('Débriefing')) || 'Feedback IA', 'Score de confiance'],
+    features: [agentFeatures('landing.agents.mentor.features').find(f => f.includes('techniques')) || 'Simulations', agentFeatures('landing.agents.mentor.features').find(f => f.includes('Débriefing')) || 'Feedback IA', 'Score de confiance'],
     panelIcons: [
       { icon: MicrophoneIcon,            label: 'Voix',   x: '50%', y: '20%' },
       { icon: ChatBubbleLeftRightIcon,   label: 'Dialog', x: '15%', y: '42%' },
@@ -110,7 +115,7 @@ const features = computed(() => [
     description: t('home.features.crm.desc'),
     tip: t('home.features.crm.tip'),
     stats: [{v:'5',l:'Colonnes'},{v:'Auto',l:'Relances'},{v:'∞',l:'Candidatures'}],
-    features: [(tm('landing.agents.crm.features') || []).find(f => f.includes('Kanban')) || 'Kanban', (tm('landing.agents.crm.features') || []).find(f => f.includes('relance')) || 'Relances IA', (tm('landing.agents.crm.features') || []).find(f => f.includes('Historique')) || 'Historique'],
+    features: [agentFeatures('landing.agents.crm.features').find(f => f.includes('Kanban')) || 'Kanban', agentFeatures('landing.agents.crm.features').find(f => f.includes('relance')) || 'Relances IA', agentFeatures('landing.agents.crm.features').find(f => f.includes('Historique')) || 'Historique'],
     panelIcons: [
       { icon: Squares2X2Icon,    label: 'Board',  x: '50%', y: '20%' },
       { icon: ArrowRightIcon,    label: 'Avance',  x: '18%', y: '42%' },
@@ -127,7 +132,7 @@ const features = computed(() => [
     description: t('home.features.network.desc'),
     tip: t('home.features.network.tip'),
     stats: [{v:'Auto',l:'Contacts'},{v:'∞',l:'Emails IA'},{v:'70%',l:'Marché caché'}],
-    features: [(tm('landing.agents.network.features') || []).find(f => f.includes('RH')) || 'RH Search', (tm('landing.agents.network.features') || []).find(f => f.includes('messages')) || 'Outreach IA', (tm('landing.agents.network.features') || []).find(f => f.includes('Carnet')) || 'Contacts'],
+    features: [agentFeatures('landing.agents.network.features').find(f => f.includes('RH')) || 'RH Search', agentFeatures('landing.agents.network.features').find(f => f.includes('messages')) || 'Outreach IA', agentFeatures('landing.agents.network.features').find(f => f.includes('Carnet')) || 'Contacts'],
     panelIcons: [
       { icon: UserGroupIcon,     label: 'Réseau',  x: '50%', y: '20%' },
       { icon: BuildingOfficeIcon,label: 'Société', x: '15%', y: '42%' },

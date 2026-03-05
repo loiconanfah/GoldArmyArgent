@@ -1,616 +1,918 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
-import {
-  RocketLaunchIcon,
-  ChartBarIcon,
-  BriefcaseIcon,
-  CpuChipIcon,
-  CheckCircleIcon,
-  XMarkIcon,
-  ArrowRightIcon,
-  SparklesIcon,
-  ShieldCheckIcon,
-  BoltIcon,
-  UserGroupIcon,
-  DocumentTextIcon,
-  MagnifyingGlassIcon,
-  ChatBubbleLeftEllipsisIcon,
-  ChevronRightIcon,
-  VideoCameraIcon
-} from '@heroicons/vue/24/outline'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import Footer from '../components/Footer.vue'
 
-const { t, tm } = useI18n()
-const router = useRouter()
+gsap.registerPlugin(ScrollTrigger)
+
+const { t } = useI18n()
 
 useHead({
   title: computed(() => t('seo.landing.title')),
   meta: [
     { name: 'description', content: computed(() => t('seo.landing.description')) },
     { property: 'og:title', content: computed(() => t('seo.landing.title')) },
-    { property: 'og:description', content: computed(() => t('seo.landing.description')) },
-    { property: 'og:image', content: '/og-banner.png' },
-    { name: 'twitter:card', content: 'summary_large_image' }
+    { property: 'og:type', content: 'website' }
   ]
 })
 
-// Parallax mouse effect
-const mouseX = ref(0)
-const mouseY = ref(0)
-const handleMouseMove = (e) => {
-  mouseX.value = (e.clientX / window.innerWidth - 0.5) * 30
-  mouseY.value = (e.clientY / window.innerHeight - 0.5) * 30
+const navOpen = ref(false)
+const rootRef = ref(null)
+
+const arrowPath = 'M6.64774 0.127319C6.8175 -0.0424396 7.09266 -0.0424396 7.26242 0.127319L12.9678 5.83267C12.9972 5.8621 13.0199 5.89563 13.0391 5.9303C13.0604 5.96873 13.0777 6.00981 13.0866 6.05426C13.0979 6.11054 13.0978 6.16861 13.0866 6.22491C13.0778 6.26941 13.0604 6.31038 13.0391 6.34886C13.0198 6.38377 12.9974 6.41774 12.9678 6.44735L7.26242 12.1527C7.09267 12.3224 6.81749 12.3224 6.64774 12.1527C6.47799 11.9829 6.478 11.7078 6.64774 11.538L11.611 6.5747H0.434693C0.194629 6.5747 1.76984e-05 6.38007 0 6.14001C0 5.89993 0.194618 5.70531 0.434693 5.70531H11.611L6.64774 0.742002C6.47799 0.572249 6.478 0.297078 6.64774 0.127319Z'
+
+const openFaqIndex = ref(null)
+
+const stickyTitleWords = computed(() => {
+  const prefix = t('landing.agents_intro.title_prefix')
+  const suffix = t('landing.agents_intro.title_suffix')
+  const full = `${prefix} ${suffix}`.trim()
+  return full ? full.split(/\s+/) : []
+})
+const stickyTitlePrefixLength = computed(() => {
+  const prefix = t('landing.agents_intro.title_prefix')
+  return prefix ? prefix.trim().split(/\s+/).length : 0
+})
+function stickyWordClass(i) {
+  return i >= stickyTitlePrefixLength.value
+    ? ['line-split-word', 'tertiary-color-emphasis']
+    : ['line-split-word']
 }
 
-const testimonials = computed(() => [
-  {
-    quote: t('landing.testimonials.quote1'),
-    name: 'Marc R.',
-    role: 'Développeur Fullstack',
-    color: 'from-violet-500 to-purple-500',
-    initials: 'MR'
-  },
-  {
-    quote: t('landing.testimonials.quote2'),
-    name: 'Sophie L.',
-    role: 'Data Scientist',
-    color: 'from-emerald-500 to-teal-500',
-    initials: 'SL'
-  },
-  {
-    quote: t('landing.testimonials.quote3'),
-    name: 'Julien D.',
-    role: 'Product Manager',
-    color: 'from-orange-500 to-amber-500',
-    initials: 'JD'
-  }
+const faqItems = computed(() => [
+  { q: t('landing.faq_items.q1'), a: t('landing.faq_items.a1') },
+  { q: t('landing.faq_items.q2'), a: t('landing.faq_items.a2') },
+  { q: t('landing.faq_items.q3'), a: t('landing.faq_items.a3') },
+  { q: t('landing.faq_items.q4'), a: t('landing.faq_items.a4') },
+  { q: t('landing.faq_items.q5'), a: t('landing.faq_items.a5') }
 ])
-onMounted(() => window.addEventListener('mousemove', handleMouseMove))
-onUnmounted(() => window.removeEventListener('mousemove', handleMouseMove))
+
+watch(navOpen, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+  document.body.style.touchAction = open ? 'none' : ''
+})
+
+let gsapCtx
+
+onMounted(async () => {
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = '/orvimo-landing.css'
+  link.id = 'orvimo-landing-css'
+  document.head.appendChild(link)
+  document.documentElement.classList.add('w-mod-ix3')
+  await nextTick()
+  gsapCtx = gsap.context(() => {
+    const root = rootRef.value
+    if (!root) return
+    const section = root.querySelector('#agents')
+    const stickyCol = root.querySelector('.home1-left-sticky')
+    const cardsScroll = root.querySelector('.home1-cards-scroll')
+    const defaultTrigger = { start: 'top 85%', toggleActions: 'play none none none' }
+    const revealContent = root.querySelectorAll('[reveal-content="true"]')
+    const fadeIn = root.querySelectorAll('[fade-in="true"]')
+    const revealCard = root.querySelectorAll('[reveal-card="true"]')
+    const lineWords = root.querySelectorAll('#agents .line-split-word')
+    gsap.set(revealContent, { opacity: 0, y: 28 })
+    gsap.set(fadeIn, { opacity: 0, y: 20 })
+    gsap.set(revealCard, { opacity: 0, y: 40 })
+    gsap.set(lineWords, { opacity: 0, y: 14 })
+    if (revealContent.length) {
+      gsap.to(revealContent, {
+        opacity: 1,
+        y: 0,
+        duration: 0.7,
+        ease: 'power2.out',
+        stagger: 0.08,
+        scrollTrigger: { trigger: section || root, ...defaultTrigger }
+      })
+    }
+    if (fadeIn.length) {
+      gsap.to(fadeIn, {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: 'power2.out',
+        stagger: 0.06,
+        scrollTrigger: { trigger: section || root, ...defaultTrigger }
+      })
+    }
+    if (revealCard.length) {
+      gsap.to(revealCard, {
+        opacity: 1,
+        y: 0,
+        duration: 0.6,
+        ease: 'power2.out',
+        stagger: 0.12,
+        scrollTrigger: { trigger: cardsScroll || section || root, ...defaultTrigger }
+      })
+    }
+    if (lineWords.length) {
+      gsap.to(lineWords, {
+        opacity: 1,
+        y: 0,
+        duration: 0.4,
+        stagger: 0.03,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: stickyCol || section || root, ...defaultTrigger }
+      })
+    }
+  }, rootRef)
+})
+
+onUnmounted(() => {
+  gsapCtx?.revert()
+  document.body.style.overflow = ''
+  document.body.style.touchAction = ''
+  document.getElementById('orvimo-landing-css')?.remove()
+  document.documentElement.classList.remove('w-mod-ix3')
+})
+
+function closeNav() {
+  navOpen.value = false
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0a12] text-white font-sans overflow-x-hidden selection:bg-violet-500/30">
-
-    <!-- ─── NAVBAR ─── -->
-    <nav class="fixed top-6 inset-x-0 z-[100] px-6">
-      <div class="max-w-7xl mx-auto flex items-center justify-between
-                  bg-white/5 backdrop-blur-2xl border border-white/10
-                  rounded-2xl px-6 py-4 shadow-2xl shadow-black/40">
-        <!-- Logo -->
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl overflow-hidden border border-violet-500/30 shadow-[0_0_20px_rgba(124,58,237,0.4)]">
-            <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
-          </div>
-          <span class="text-lg font-black tracking-tight uppercase text-white">GoldArmy</span>
-        </div>
-        <!-- Links -->
-        <div class="hidden md:flex items-center gap-6">
-          <a v-for="link in [
-               { name: t('landing.nav.agents'), id: 'agents' },
-               { name: t('landing.nav.features'), id: 'fonctions' },
-               { name: t('landing.nav.pricing'), id: 'tarifs' },
-               { name: t('landing.nav.reviews'), id: 'avis' }
-             ]" :key="link.id"
-             :href="`/#${link.id}`"
-             class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">
-            {{ link.name }}
-          </a>
-          <!-- Added Freemium & Blog links -->
-          <div class="h-4 w-px bg-white/10 mx-2"></div>
-          <router-link to="/free-cv-roast" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1.5">
-            <DocumentTextIcon class="w-3.5 h-3.5" /> {{ t('landing.nav.cv_audit') }}
-          </router-link>
-          <router-link to="/free-interview" class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5">
-            <VideoCameraIcon class="w-3.5 h-3.5" /> {{ t('landing.nav.simulation') }}
-          </router-link>
-          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-400 hover:text-fuchsia-300 transition-colors">
-            {{ t('landing.nav.blog') }}
-          </router-link>
-        </div>
-        <!-- CTA -->
-        <div class="flex items-center gap-3">
-          <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-            {{ t('landing.nav.login') }}
-          </router-link>
-          <router-link to="/register"
-            class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
-                   px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
-                   transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
-            {{ t('landing.nav.get_started') }} →
-          </router-link>
-        </div>
-      </div>
-    </nav>
-
-    <!-- ─── HERO ─── -->
-    <section class="relative min-h-screen flex items-center overflow-hidden">
-      <!-- Grid overlay -->
-      <div class="absolute inset-0 opacity-10"
-           style="background-image: linear-gradient(rgba(124,58,237,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.3) 1px, transparent 1px); background-size: 60px 60px;">
-      </div>
-
-      <!-- Glow blobs -->
-      <div class="absolute top-0 right-[20%] w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none"></div>
-      <div class="absolute bottom-0 left-[10%] w-[400px] h-[400px] bg-indigo-600/15 rounded-full blur-[100px] pointer-events-none"></div>
-
-      <div class="relative max-w-7xl mx-auto px-6 pt-40 pb-20 grid lg:grid-cols-2 gap-16 items-center">
-        <!-- Left text -->
-        <div class="relative z-10">
-          <!-- Badge -->
-          <div class="inline-flex items-center gap-2.5 mb-8 px-4 py-2 rounded-full
-                      bg-violet-500/10 border border-violet-500/20 text-violet-300 text-[10px] font-black uppercase tracking-[0.3em]">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-              <span class="relative block h-2 w-2 rounded-full bg-violet-400"></span>
-            </span>
-            { {{ t('landing.hero.badge') }} }
-          </div>
-
-          <h1 class="text-6xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter mb-8">
-            <span class="text-white">{{ t('landing.hero.title_1') }}<br/></span>
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400">
-              {{ t('landing.hero.title_2') }}
-            </span>
-            <br/>
-            <span class="text-white/30">{{ t('landing.hero.title_3') }}</span>
-          </h1>
-
-          <p class="text-lg text-white/50 leading-relaxed max-w-md mb-10">
-            {{ t('landing.hero.description') }}
-          </p>
-
-          <div class="flex flex-col sm:flex-row flex-wrap items-center gap-4">
-            <router-link to="/register"
-              class="w-full sm:w-auto flex justify-center items-center gap-3 bg-violet-600 hover:bg-violet-500 text-white font-black text-sm uppercase tracking-[0.2em]
-                     px-8 py-4 rounded-2xl shadow-xl shadow-violet-600/30 transition-all hover:scale-[1.02] active:scale-95">
-              {{ t('landing.hero.cta_main') }} <ArrowRightIcon class="w-4 h-4" />
-            </router-link>
-            <a href="#fonctions"
-               class="flex justify-center items-center gap-2 text-sm font-bold text-white/40 hover:text-white/70 transition-colors uppercase tracking-widest mt-2 sm:mt-0 w-full sm:w-auto">
-              {{ t('landing.hero.cta_secondary') }} ↓
-            </a>
-          </div>
-
-          <!-- Trust bar -->
-          <div class="mt-12 flex flex-wrap gap-6">
-            <div v-for="t_item in [
-              { n: '98.5%', l: t('landing.hero.stat_precision') },
-              { n: '40h', l: t('landing.hero.stat_hours') }
-            ]" :key="t_item.l" class="flex flex-col">
-              <span class="text-2xl font-black text-white">{{ t_item.n }}</span>
-              <span class="text-[10px] font-bold uppercase tracking-widest text-white/30">{{ t_item.l }}</span>
+  <div ref="rootRef" class="page-wrapper">
+    <!-- NAVIGATION - identique home.html -->
+    <div class="navigation">
+      <header class="navbar w-nav" role="banner" data-collapse="medium" data-animation="default">
+        <div class="nav-wrapper">
+          <div class="nav-container">
+            <div class="nav-left">
+              <router-link to="/" class="brand-logo w-nav-brand" aria-current="page">
+                <img src="/logo.png" alt="GoldArmy" class="logo-nav" loading="eager" />
+              </router-link>
             </div>
-          </div>
-        </div>
-
-        <!-- Right 3D visual -->
-        <div class="relative hidden lg:flex items-center justify-center">
-          <!-- Floating cube clusters (CSS only) -->
-          <div class="relative w-[460px] h-[460px]"
-               :style="`transform: perspective(1000px) rotateX(${mouseY * -0.3}deg) rotateY(${mouseX * 0.3}deg)`">
-
-            <!-- Main glowing orb -->
-            <div class="absolute inset-0 flex items-center justify-center">
-              <div class="w-64 h-64 rounded-full bg-violet-600/20 blur-3xl animate-pulse"></div>
-            </div>
-
-            <!-- Floating cube 1 -->
-            <div class="absolute top-[5%] right-[15%] w-20 h-20 rounded-2xl border border-violet-400/30
-                        bg-violet-600/10 backdrop-blur-xl shadow-[0_0_40px_rgba(124,58,237,0.3)]
-                        animate-float-slow flex items-center justify-center">
-              <RocketLaunchIcon class="w-8 h-8 text-violet-400" />
-            </div>
-            <!-- Floating cube 2 -->
-            <div class="absolute top-[30%] right-[5%] w-14 h-14 rounded-xl border border-indigo-400/30
-                        bg-indigo-600/10 backdrop-blur-xl shadow-[0_0_30px_rgba(99,102,241,0.3)]
-                        animate-float-medium flex items-center justify-center">
-              <BoltIcon class="w-6 h-6 text-indigo-400" />
-            </div>
-            <!-- Floating cube 3 -->
-            <div class="absolute bottom-[20%] right-[10%] w-16 h-16 rounded-2xl border border-purple-400/30
-                        bg-purple-600/10 backdrop-blur-xl shadow-[0_0_30px_rgba(168,85,247,0.3)]
-                        animate-float-fast flex items-center justify-center">
-              <SparklesIcon class="w-7 h-7 text-purple-400" />
-            </div>
-            <!-- Floating cube 4 -->
-            <div class="absolute top-[10%] left-[10%] w-12 h-12 rounded-xl border border-violet-400/20
-                        bg-white/5 backdrop-blur-xl animate-float-medium"></div>
-            <!-- Floating cube 5 -->
-            <div class="absolute bottom-[10%] left-[15%] w-10 h-10 rounded-lg border border-indigo-400/20
-                        bg-white/5 backdrop-blur-xl animate-float-slow"></div>
-            <!-- Floating cube 6 - Large central -->
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                        w-48 h-48 rounded-3xl border border-violet-400/20
-                        bg-gradient-to-br from-violet-600/20 to-indigo-600/10
-                        backdrop-blur-xl shadow-[0_0_80px_rgba(124,58,237,0.2)]
-                        flex items-center justify-center">
-              <div class="text-center">
-                <div class="text-4xl font-black text-white tracking-tighter">IA</div>
-                <div class="text-[10px] font-black text-violet-400 uppercase tracking-[0.4em] mt-1">SNIPER</div>
+            <nav class="nav-menu w-nav-menu" :class="{ 'w--open': navOpen }">
+              <a href="#agents" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.features') }}</a>
+              <a href="#agents" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.agents') }}</a>
+              <a href="#pricing" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.pricing') }}</a>
+              <a href="#avis" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.reviews') }}</a>
+              <router-link to="/free-cv-roast" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.cv_audit') }}</router-link>
+              <router-link to="/free-interview" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.simulation') }}</router-link>
+              <a href="#blog" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.blog') }}</a>
+              <div class="nav-right-sign-cta-wrap">
+                <router-link to="/login" class="menu-sign-btn w-nav-link" @click="closeNav">{{ t('landing.nav.login') }}</router-link>
+                <router-link to="/register" class="btn-menu" @click="closeNav">{{ t('landing.nav.get_started') }}</router-link>
               </div>
-            </div>
-
-            <!-- Scatter mini cubes -->
-            <div class="absolute top-[60%] left-[5%] w-8 h-8 rounded-lg border border-violet-500/20 bg-violet-600/10 animate-float-fast"></div>
-            <div class="absolute top-[20%] left-[30%] w-6 h-6 rounded-md border border-indigo-500/20 bg-indigo-600/10 animate-float-slow"></div>
-            <div class="absolute bottom-[5%] right-[30%] w-10 h-10 rounded-xl border border-purple-500/20 bg-purple-600/10 animate-float-medium"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bottom mini features bar -->
-      <div class="absolute bottom-0 inset-x-0 border-t border-white/5">
-        <div class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div v-for="f_item in [
-            { icon: MagnifyingGlassIcon, title: t('landing.features.title'), desc: t('landing.features.desc') },
-            { icon: DocumentTextIcon, title: t('landing.features.cv_title'), desc: t('landing.features.cv_desc') },
-            { icon: ChatBubbleLeftEllipsisIcon, title: t('landing.features.coach_title'), desc: t('landing.features.coach_desc') },
-          ]" :key="f_item.title" class="flex items-center gap-4 p-4 rounded-xl bg-white/3 hover:bg-white/5 transition-colors border border-white/5">
-            <div class="w-10 h-10 rounded-xl bg-violet-600/20 border border-violet-500/20 flex items-center justify-center shrink-0">
-              <component :is="f_item.icon" class="w-5 h-5 text-violet-400" />
-            </div>
-            <div>
-              <div class="text-sm font-black text-white">{{ f_item.title }}</div>
-              <div class="text-[11px] text-white/40 font-medium mt-0.5">{{ f_item.desc }}</div>
+            </nav>
+            <div class="nav-right">
+              <router-link to="/login" class="menu-sign-btn w-nav-link desktop-only">{{ t('landing.nav.login') }}</router-link>
+              <router-link to="/register" class="btn-menu desktop-only">{{ t('landing.nav.get_started') }}</router-link>
+              <button type="button" class="burger w-nav-button" aria-label="Menu" :class="{ 'w--open': navOpen }" :aria-expanded="navOpen" @click="navOpen = !navOpen">
+                <div class="icon-wrapper">
+                  <div class="burger-icon">
+                    <div class="line1"></div>
+                    <div class="line2"></div>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </header>
+    </div>
 
-    <!-- ─── AGENTS SECTION ─── -->
-    <section id="agents" class="relative py-40 overflow-hidden">
-      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(124,58,237,0.05)_0%,transparent_70%)]"></div>
-
-      <div class="relative max-w-7xl mx-auto px-6">
-        <div class="text-center mb-20">
-          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">{{ t('landing.agents.tagline') }}</p>
-          <h2 class="text-5xl md:text-6xl font-black tracking-tighter leading-none" v-html="t('landing.agents.title').replace('. ', '.<br/>').replace(': ', ':<br/>')"></h2>
-        </div>
-
-        <!-- Agent 1 – Sniper IA -->
-        <div class="grid lg:grid-cols-2 gap-8 items-center mb-16">
-          <div class="bg-white/3 border border-white/8 rounded-3xl p-10 hover:border-violet-500/30 transition-all group">
-            <div class="flex items-center gap-4 mb-8">
-              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-600/30">
-                <RocketLaunchIcon class="w-7 h-7 text-white" />
+    <main class="main">
+      <!-- HERO 1 -->
+      <section class="section hero-1">
+        <div class="hero-content">
+          <div class="w-layout-grid hero1-grid">
+            <div class="hero-left-col">
+              <div class="hero-text-wrap">
+                <h1 class="hero-heading">{{ t('landing.hero.title_1') }} <span class="tertiary-color-emphasis">{{ t('landing.hero.title_2') }}</span> {{ t('landing.hero.title_3') }}</h1>
+                <p class="hero-paragraph">{{ t('landing.hero.description') }}</p>
               </div>
-              <div>
-                <div class="text-[10px] font-black uppercase tracking-widest text-violet-400 mb-0.5">{{ t('landing.agents.sniper.tag') }}</div>
-                <div class="text-2xl font-black text-white">{{ t('landing.agents.sniper.name') }}</div>
-              </div>
+              <router-link to="/register" class="button-arrow w-inline-block" aria-label="CTA">
+                <div class="btn-bg-arrow">
+                  <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                  <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon" btn-arrow-left=""><path :d="arrowPath" fill="currentColor"/></svg>
+                </div>
+                <div class="btn-text-mask">
+                  <div class="button-arrow-text">{{ t('landing.hero.cta_main') }}</div>
+                  <div class="button-arrow-text">{{ t('landing.hero.cta_main') }}</div>
+                </div>
+              </router-link>
             </div>
-            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.sniper.desc').replace('avant même leur publication officielle', '<span class=\'text-violet-400 font-bold\'>avant même leur publication officielle</span>')"></p>
-            <ul class="space-y-3">
-              <li v-for="agent_feat in tm('landing.agents.sniper.features')" :key="agent_feat"
-                  class="flex items-center gap-3 text-sm text-white/60">
-                <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" />
-                {{ agent_feat }}
-              </li>
-            </ul>
-          </div>
-          <!-- Visual card -->
-          <div class="bg-white/2 border border-white/5 rounded-3xl p-8 space-y-4">
-            <div class="h-8 w-1/2 bg-white/5 rounded-lg"></div>
-            <div v-for="m in [{ p: '98%', c: 'violet', t: 'Senior Dev React @ Criteo' }, { p: '76%', c: 'indigo', t: 'Fullstack Engineer @ Qonto' }, { p: '61%', c: 'purple', t: 'Lead Frontend @ BlaBlaCar' }]" :key="m.t"
-                 class="flex items-center gap-4 p-4 bg-white/3 border border-white/5 rounded-2xl hover:bg-white/5 transition-all">
-              <div :class="`text-${m.c}-400 font-black text-lg w-14 shrink-0`">{{ m.p }}</div>
-              <div class="text-sm font-bold text-white/70">{{ m.t }}</div>
-              <div :class="`ml-auto text-[10px] font-black uppercase tracking-widest text-${m.c}-400 bg-${m.c}-500/10 px-2 py-1 rounded-full`">Match</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Agent 2 – CRM -->
-        <div class="grid lg:grid-cols-2 gap-8 items-center mb-16">
-          <!-- Visual card first on desktop -->
-          <div class="bg-white/2 border border-white/5 rounded-3xl p-8 space-y-4">
-            <div class="grid grid-cols-3 gap-3">
-              <div v-for="col in [
-                { label: tm('landing.pricing.essential.features').find(f => f.includes('CRM')) ? 'En cours' : 'Sent', count: 12, color: 'indigo' },
-                { label: 'En cours', count: 5, color: 'amber' },
-                { label: 'Entretiens', count: 3, color: 'emerald' }
-              ]" :key="col.label" class="bg-white/5 border border-white/5 rounded-2xl p-4 text-center">
-                <div :class="`text-3xl font-black text-${col.color}-400 mb-1`">{{ col.count }}</div>
-                <div class="text-[10px] text-white/40 font-bold uppercase tracking-widest">{{ col.label }}</div>
-              </div>
-            </div>
-            <div class="space-y-2">
-              <div v-for="i in 4" :key="i" class="h-12 bg-white/3 border border-white/5 rounded-xl"></div>
-            </div>
-          </div>
-          <div class="lg:order-2 bg-white/3 border border-white/8 rounded-3xl p-10 hover:border-purple-500/30 transition-all">
-            <div class="flex items-center gap-4 mb-8">
-              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-600/30">
-                <ChartBarIcon class="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <div class="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-0.5">{{ t('landing.agents.crm.tag') }}</div>
-                <div class="text-2xl font-black text-white">{{ t('landing.agents.crm.name') }}</div>
-              </div>
-            </div>
-            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.crm.desc').replace('machine de guerre organisée', '<span class=\'text-purple-400 font-bold\'>machine de guerre organisée</span>')"></p>
-            <ul class="space-y-3">
-              <li v-for="agent_feat in tm('landing.agents.crm.features')" :key="agent_feat"
-                  class="flex items-center gap-3 text-sm text-white/60">
-                <CheckCircleIcon class="w-4 h-4 text-purple-500 shrink-0" />
-                {{ agent_feat }}
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Agent 3 & 4 grid -->
-        <div class="grid md:grid-cols-2 gap-8">
-          <div class="bg-white/3 border border-white/8 rounded-3xl p-10 hover:border-emerald-500/30 transition-all">
-            <div class="flex items-center gap-4 mb-8">
-              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-600/30">
-                <UserGroupIcon class="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <div class="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-0.5">{{ t('landing.agents.network.tag') }}</div>
-                <div class="text-2xl font-black text-white">{{ t('landing.agents.network.name') }}</div>
-              </div>
-            </div>
-            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.network.desc').replace('messages d\'accroche ultra-personnalisés', '<span class=\'text-emerald-400 font-bold\'>messages d\'accroche ultra-personnalisés</span>')"></p>
-            <ul class="space-y-3">
-              <li v-for="agent_feat in tm('landing.agents.network.features')" :key="agent_feat"
-                  class="flex items-center gap-3 text-sm text-white/60">
-                <CheckCircleIcon class="w-4 h-4 text-emerald-500 shrink-0" />
-                {{ agent_feat }}
-              </li>
-            </ul>
-          </div>
-
-          <div class="bg-white/3 border border-white/8 rounded-3xl p-10 hover:border-orange-500/30 transition-all">
-            <div class="flex items-center gap-4 mb-8">
-              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-600/30">
-                <CpuChipIcon class="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <div class="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-0.5">{{ t('landing.agents.mentor.tag') }}</div>
-                <div class="text-2xl font-black text-white">{{ t('landing.agents.mentor.name') }}</div>
-              </div>
-            </div>
-            <p class="text-white/50 leading-relaxed mb-8" v-html="t('landing.agents.mentor.desc').replace('précis et actionnable', '<span class=\'text-orange-400 font-bold\'>précis et actionnable</span>')"></p>
-            <ul class="space-y-3">
-              <li v-for="agent_feat in tm('landing.agents.mentor.features')" :key="agent_feat"
-                  class="flex items-center gap-3 text-sm text-white/60">
-                <CheckCircleIcon class="w-4 h-4 text-orange-500 shrink-0" />
-                {{ agent_feat }}
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─── HOW IT WORKS ─── -->
-    <section id="fonctions" class="py-32 border-y border-white/5 bg-white/[0.01]">
-      <div class="max-w-7xl mx-auto px-6">
-        <div class="text-center mb-20">
-          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">{{ t('landing.how_it_works.tagline') }}</p>
-          <h2 class="text-5xl font-black tracking-tighter">{{ t('landing.how_it_works.title') }}</h2>
-        </div>
-        <div class="grid md:grid-cols-3 gap-6">
-          <div v-for="(step, idx) in [
-            { n: '01', title: t('landing.how_it_works.step1_title'), desc: t('landing.how_it_works.step1_desc'), icon: DocumentTextIcon },
-            { n: '02', title: t('landing.how_it_works.step2_title'), desc: t('landing.how_it_works.step2_desc'), icon: BoltIcon },
-            { n: '03', title: t('landing.how_it_works.step3_title'), desc: t('landing.how_it_works.step3_desc'), icon: RocketLaunchIcon },
-          ]" :key="step.n"
-          class="relative p-8 rounded-3xl bg-white/3 border border-white/8 hover:border-violet-500/20 transition-all group overflow-hidden">
-            <div class="absolute top-6 right-6 text-7xl font-black text-white/3 group-hover:text-white/5 transition-colors leading-none">{{ step.n }}</div>
-            <div class="w-12 h-12 rounded-2xl bg-violet-600/20 border border-violet-500/20 flex items-center justify-center mb-8">
-              <component :is="step.icon" class="w-6 h-6 text-violet-400" />
-            </div>
-            <h3 class="text-xl font-black text-white mb-4">{{ step.title }}</h3>
-            <p class="text-sm text-white/50 leading-relaxed">{{ step.desc }}</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─── STATS ─── -->
-    <section class="py-32">
-      <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div v-for="s in [
-          { val: '40h', label: t('landing.stats.hours'), color: 'violet' },
-          { val: '+300%', label: t('landing.stats.rate'), color: 'indigo' },
-          { val: '5/sem', label: t('landing.stats.interviews'), color: 'purple' },
-          { val: '98.5%', label: t('landing.stats.precision'), color: 'pink' }
-        ]" :key="s.label"
-        class="p-8 rounded-3xl bg-white/3 border border-white/8 text-center hover:bg-white/5 transition-all">
-          <div :class="`text-4xl font-black text-${s.color}-400 mb-2`">{{ s.val }}</div>
-          <div class="text-[10px] font-black uppercase tracking-widest text-white/30">{{ s.label }}</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─── TESTIMONIALS ─── -->
-    <section id="avis" class="py-32 border-y border-white/5 bg-white/[0.01]">
-      <div class="max-w-7xl mx-auto px-6">
-        <div class="text-center mb-20">
-          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">{{ t('landing.testimonials.tagline') }}</p>
-          <h2 class="text-5xl font-black tracking-tighter">{{ t('landing.testimonials.title') }}</h2>
-        </div>
-        <div class="grid md:grid-cols-3 gap-6">
-          <div v-for="t in testimonials" :key="t.name"
-               class="p-8 rounded-3xl bg-white/3 border border-white/8 hover:border-violet-500/20 transition-all flex flex-col gap-6 group">
-            <div class="flex gap-1">
-              <span v-for="i in 5" :key="i" class="text-violet-400 text-sm group-hover:scale-110 transition-transform inline-block">★</span>
-            </div>
-            <p class="text-sm text-white/60 italic leading-relaxed flex-1">"{{ t.quote }}"</p>
-            <div class="flex items-center gap-3 border-t border-white/5 pt-6">
-              <div :class="`w-10 h-10 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-white font-black text-xs shadow-lg`">{{ t.initials }}</div>
-              <div>
-                <div class="text-sm font-black text-white">{{ t.name }}</div>
-                <div class="text-[10px] text-white/30 font-bold uppercase tracking-widest">{{ t.role }}</div>
+            <div class="hero1-background">
+              <div class="gradient-wrapper">
+                <div class="yellow-gradient" gradient="true"></div>
+                <div class="blue-gradient" gradient="true"></div>
+                <div class="orange-gradient" gradient="true"></div>
+                <div class="light" gradient="true"></div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- ─── PRICING ─── -->
-    <section id="tarifs" class="py-32">
-      <div class="max-w-7xl mx-auto px-6">
-        <div class="text-center mb-20">
-          <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-4">{{ t('landing.pricing.tagline') }}</p>
-          <h2 class="text-5xl font-black tracking-tighter">{{ t('landing.pricing.title') }}</h2>
+      <!-- SLIDESHOW - App capture GoldArmy -->
+      <section class="section slideshow">
+        <div class="offset-separator">
+          <div class="offset-top"></div>
+          <div class="offset-bottom"></div>
         </div>
-        <div class="grid lg:grid-cols-3 gap-6 items-stretch">
-          <!-- FREE -->
-          <div class="p-10 rounded-3xl bg-white/3 border border-white/8 flex flex-col">
-            <div class="text-sm font-black uppercase tracking-[0.3em] text-white/40 mb-8">{{ t('landing.pricing.free.name') }}</div>
-            <div class="mb-8">
-              <span class="text-6xl font-black text-white">0€</span>
-              <span class="text-sm text-white/30 font-bold"> {{ t('landing.pricing.month') }}</span>
-            </div>
-            <ul class="space-y-4 mb-10 flex-1">
-              <li v-for="item in tm('landing.pricing.free.features')" :key="item" class="flex items-center gap-3 text-sm text-white/50">
-                <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" /> {{ item }}
-              </li>
-              <li v-for="item in ['Mentor IA Pro', 'Générateur de Réseau']" :key="item" class="flex items-center gap-3 text-sm text-white/20 line-through">
-                <XMarkIcon class="w-4 h-4 shrink-0" /> {{ item }}
-              </li>
-            </ul>
-            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl border border-white/10 font-black text-sm uppercase tracking-widest text-white/50 hover:bg-white/5 hover:text-white transition-all">{{ t('landing.nav.get_started') }}</router-link>
-          </div>
-          <!-- ESSENTIAL — popular -->
-          <div class="relative p-10 rounded-3xl border-2 border-violet-500 bg-gradient-to-b from-violet-600/10 to-transparent shadow-2xl shadow-violet-600/20 flex flex-col">
-            <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest px-5 py-1.5 rounded-full shadow-lg shadow-violet-600/30">{{ t('landing.pricing.essential.popular') }}</div>
-            <div class="text-sm font-black uppercase tracking-[0.3em] text-violet-400 mb-8">{{ t('landing.pricing.essential.name') }}</div>
-            <div class="mb-8">
-              <span class="text-6xl font-black text-white">9.99€</span>
-              <span class="text-sm text-white/30 font-bold"> {{ t('landing.pricing.month') }}</span>
-            </div>
-            <ul class="space-y-4 mb-10 flex-1">
-              <li v-for="item in tm('landing.pricing.essential.features')" :key="item" class="flex items-center gap-3 text-sm text-white/70">
-                <CheckCircleIcon class="w-4 h-4 text-violet-400 shrink-0" /> {{ item }}
-              </li>
-            </ul>
-            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl bg-violet-600 hover:bg-violet-500 font-black text-sm uppercase tracking-widest text-white shadow-xl shadow-violet-600/30 hover:scale-[1.01] active:scale-95 transition-all">{{ t('landing.pricing.essential.cta') }}</router-link>
-          </div>
-          <!-- PRO -->
-          <div class="p-10 rounded-3xl bg-white/3 border border-white/8 flex flex-col">
-            <div class="text-sm font-black uppercase tracking-[0.3em] text-white/40 mb-8">{{ t('landing.pricing.pro.name') }}</div>
-            <div class="mb-8">
-              <span class="text-6xl font-black text-white">19.99€</span>
-              <span class="text-sm text-white/30 font-bold"> {{ t('landing.pricing.month') }}</span>
-            </div>
-            <ul class="space-y-4 mb-10 flex-1">
-              <li v-for="item in tm('landing.pricing.pro.features')" :key="item" class="flex items-center gap-3 text-sm text-white/70">
-                <CheckCircleIcon class="w-4 h-4 text-violet-500 shrink-0" /> {{ item }}
-              </li>
-            </ul>
-            <router-link to="/register" class="block w-full py-4 text-center rounded-2xl border border-white/10 font-black text-sm uppercase tracking-widest text-white/50 hover:bg-white/5 hover:text-white transition-all">{{ t('landing.pricing.pro.cta') }}</router-link>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─── CTA FINAL ─── -->
-    <section class="py-32">
-      <div class="max-w-4xl mx-auto px-6 text-center">
-        <div class="relative rounded-[3rem] border border-violet-500/20 bg-gradient-to-b from-violet-600/10 to-transparent p-20 overflow-hidden">
-          <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-80 bg-violet-600/20 blur-[100px] rounded-full pointer-events-none"></div>
-          <div class="relative z-10">
-            <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-6">{{ t('landing.cta_final.tagline') }}</p>
-            <h2 class="text-5xl md:text-6xl font-black tracking-tighter leading-none mb-8" v-html="t('landing.cta_final.title').replace('?', '?<br/>').replace('décrocher', 'décrocher<br/>')"></h2>
-            <p class="text-lg text-white/40 mb-12 max-w-lg mx-auto">{{ t('landing.cta_final.description') }}</p>
-            <router-link to="/register"
-              class="inline-flex items-center gap-3 bg-violet-600 hover:bg-violet-500 text-white font-black text-sm uppercase tracking-[0.2em]
-                     px-12 py-5 rounded-2xl shadow-2xl shadow-violet-600/30 transition-all hover:scale-[1.02] active:scale-95">
-              {{ t('landing.cta_final.button') }} <ArrowRightIcon class="w-5 h-5" />
-            </router-link>
-            <div class="mt-8 flex items-center justify-center gap-2 text-xs text-white/20 font-bold">
-              <ShieldCheckIcon class="w-4 h-4" /> {{ t('landing.cta_final.footer') }}
+        <div class="w-layout-blockcontainer container slideshow w-container">
+          <h2 class="fsize-m">{{ t('landing.slideshow.title') }}<br /><span class="tertiary-color-emphasis">{{ t('landing.slideshow.title_emphasis') }}</span></h2>
+          <div class="slideshow-wrapper">
+            <div class="slider w-slider">
+              <div class="mask w-slider-mask">
+                <div class="slide w-slide">
+                  <img src="/images/capture%20app.png" loading="lazy" :alt="t('landing.slideshow.title')" class="slide-img" />
+                </div>
+              </div>
+              <div class="slide-nav w-slider-nav"></div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- ─── FULL FOOTER ─── -->
-    <footer class="border-t border-white/5 pt-20 pb-10 mt-32 relative bg-[#0a0a12] z-10">
-      <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-        <!-- Brand -->
-        <div class="md:col-span-2">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-9 h-9 rounded-xl overflow-hidden border border-violet-500/30">
-              <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
+      <!-- LOGO CLIENTS -->
+      <section class="section logo-clients-home1">
+        <div class="w-layout-blockcontainer container w-container">
+          <div class="client-logos-wrapper">
+            <h2 class="fsize-m">{{ t('landing.logos.prefix') }} <span class="tertiary-color-emphasis">{{ t('landing.logos.suffix') }}</span></h2>
+            <div class="w-layout-grid clients-logo-grid">
+              <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e0203b31d31009c8a1_Logo-2.svg" loading="lazy" alt="Logo client" class="client-logo-img" />
+              <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e004207716c18cce39_Logo-1.svg" loading="lazy" alt="Logo client" class="client-logo-img" />
+              <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e0f5925df955da51ff_Logo-3.svg" loading="lazy" alt="Logo client" class="client-logo-img" />
+              <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e0a3a82b904e745e92_Logo6.svg" loading="lazy" alt="Logo client" class="client-logo-img" />
+              <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e0e8531b2688fccf34_Logo-4.svg" loading="lazy" alt="Logo client" class="client-logo-img" />
+              <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e00cf1bd4750d08448_Logo-5.svg" loading="lazy" alt="Logo client" class="client-logo-img" />
             </div>
-            <span class="text-lg font-black uppercase tracking-widest text-white">GoldArmy</span>
-          </div>
-          <p class="text-white/40 text-sm leading-relaxed max-w-sm mb-8">
-            {{ t('landing.footer.description') }}
-          </p>
-          <div class="flex items-center gap-2 text-xs text-white/20 font-bold">
-            <ShieldCheckIcon class="w-4 h-4 text-violet-500" /> {{ t('landing.footer.secure') }}
           </div>
         </div>
+      </section>
 
-        <!-- Liens Rapides -->
-        <div>
-          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">{{ t('landing.footer.navigation') }}</h4>
-          <ul class="space-y-4">
-            <li><a href="/#agents" class="text-sm text-white/40 hover:text-white transition-colors">{{ t('landing.nav.agents') }}</a></li>
-            <li><a href="/#tarifs" class="text-sm text-white/40 hover:text-white transition-colors">{{ t('landing.nav.pricing') }}</a></li>
-            <li><router-link to="/blog" class="text-sm text-white/40 hover:text-white transition-colors">{{ t('landing.nav.blog') }}</router-link></li>
-            <li><router-link to="/login" class="text-sm text-white/40 hover:text-white transition-colors">{{ t('landing.nav.login') }}</router-link></li>
-          </ul>
+      <!-- HOME1 STICKY - 3 cards GoldArmy (animations: reveal-content, line-split, fade-in, reveal-card) -->
+      <section id="agents" class="section home1-sticky">
+        <div class="w-layout-blockcontainer container w-container">
+          <div class="w-layout-grid home1-2cols">
+            <div reveal-content="true" class="home1-left-sticky">
+              <h2 class="line-split-heading">
+                <template v-for="(word, i) in stickyTitleWords" :key="i">
+                  <span :class="stickyWordClass(i)">{{ word }}</span>{{ i !== stickyTitleWords.length - 1 ? ' ' : '' }}
+                </template>
+              </h2>
+              <p class="fsize-body-large">{{ t('landing.agents_intro.paragraph') }}</p>
+              <div fade-in="true" class="reveal-content-wrap">
+                <router-link to="/register" class="button-arrow w-inline-block">
+                  <div class="btn-bg-arrow">
+                    <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                    <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon" btn-arrow-left=""><path :d="arrowPath" fill="currentColor"/></svg>
+                  </div>
+                  <div class="btn-text-mask">
+                    <div class="button-arrow-text">{{ t('landing.sticky.cta_trial') }}</div>
+                    <div class="button-arrow-text">{{ t('landing.sticky.cta_trial') }}</div>
+                  </div>
+                </router-link>
+              </div>
+            </div>
+            <div class="home1-cards-scroll">
+              <div reveal-card="true" class="big-card-home1 first">
+                <div class="updates-banner">updates available</div>
+                <div class="big-card-img-wrapper">
+                  <img src="/images/sniper.png" loading="lazy" :alt="t('landing.sticky.card1_title')" class="big-card--home1-img" />
+                </div>
+                <div class="big-card-text">
+                  <p>{{ t('landing.sticky.card1_category') }}</p>
+                  <h3 class="fsize-s">{{ t('landing.sticky.card1_title') }}</h3>
+                  <p>{{ t('landing.sticky.card1_desc') }}</p>
+                  <router-link to="/opportunities" class="button-arrow w-inline-block">
+                    <div class="btn-bg-arrow">
+                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                    </div>
+                    <div class="btn-text-mask">
+                      <div class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
+                      <div class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
+                    </div>
+                  </router-link>
+                </div>
+              </div>
+              <div reveal-card="true" class="big-card-home1 dark">
+                <div class="big-card-img-wrapper">
+                  <img src="/images/simulateur.png" loading="lazy" :alt="t('landing.sticky.card2_title')" class="big-card--home1-img" />
+                </div>
+                <div class="big-card-text">
+                  <p>{{ t('landing.sticky.card2_category') }}</p>
+                  <h3 class="fsize-s">{{ t('landing.sticky.card2_title') }}</h3>
+                  <p>{{ t('landing.sticky.card2_desc') }}</p>
+                  <router-link to="/mentor" class="button-arrow w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310 w-inline-block">
+                    <div class="btn-bg-arrow w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">
+                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                    </div>
+                    <div class="btn-text-mask">
+                      <div class="button-arrow-text w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">{{ t('landing.sticky.cta_explore') }}</div>
+                      <div class="button-arrow-text w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">{{ t('landing.sticky.cta_explore') }}</div>
+                    </div>
+                  </router-link>
+                </div>
+              </div>
+              <div reveal-card="true" class="big-card-home1 last">
+                <div class="big-card-img-wrapper">
+                  <img src="/images/crmcandidat.png" loading="lazy" :alt="t('landing.sticky.card3_title')" class="big-card--home1-img" />
+                </div>
+                <div class="big-card-text">
+                  <p>{{ t('landing.sticky.card3_category') }}</p>
+                  <h3 class="fsize-s">{{ t('landing.sticky.card3_title') }}</h3>
+                  <p>{{ t('landing.sticky.card3_desc') }}</p>
+                  <router-link to="/crm" class="button-arrow w-inline-block">
+                    <div class="btn-bg-arrow">
+                      <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                    </div>
+                    <div class="btn-text-mask">
+                      <div class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
+                      <div class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
+                    </div>
+                  </router-link>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <!-- Contact & Legal -->
-        <div>
-          <h4 class="text-white font-black uppercase tracking-[0.2em] text-xs mb-6">{{ t('landing.footer.contact') }}</h4>
-          <ul class="space-y-4 mb-8">
-            <li>
-              <a href="mailto:support@goldarmyai.com" class="text-sm text-white/40 hover:text-violet-400 transition-colors flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> {{ t('landing.footer.support') }}
+      <!-- HOME1 3COL - GoldArmy -->
+      <section class="section home1-3col">
+        <div class="w-layout-blockcontainer container w-container">
+          <div class="_3cols-heading">
+            <h3 class="center-align">{{ t('landing.threecol.title') }} <br /><span class="tertiary-color-emphasis">{{ t('landing.threecol.title_emphasis') }}</span></h3>
+            <p class="fsize-body-large center-align">{{ t('landing.threecol.paragraph') }}</p>
+          </div>
+          <div class="w-layout-grid home1-3cols">
+            <div class="card-item-home1">
+              <div class="card-item-img-wrap">
+                <img src="/images/sniper.png" loading="lazy" :alt="t('landing.threecol.card1_title')" class="img-card-home1" />
+              </div>
+              <div class="card-text-content-home1">
+                <div>{{ t('landing.threecol.card1_category') }}</div>
+                <h4 class="fsize-xxs">{{ t('landing.threecol.card1_title') }}</h4>
+                <p>{{ t('landing.threecol.card1_desc') }}</p>
+              </div>
+            </div>
+            <div class="card-item-home1">
+              <div class="card-item-img-wrap">
+                <img src="/images/crmcandidat.png" loading="lazy" :alt="t('landing.threecol.card2_title')" class="img-card-home1" />
+              </div>
+              <div class="card-text-content-home1">
+                <div>{{ t('landing.threecol.card2_category') }}</div>
+                <h4 class="fsize-xxs">{{ t('landing.threecol.card2_title') }}</h4>
+                <p>{{ t('landing.threecol.card2_desc') }}</p>
+              </div>
+            </div>
+            <div class="card-item-home1">
+              <div class="card-item-img-wrap">
+                <img src="/images/simulateur.png" loading="lazy" :alt="t('landing.threecol.card3_title')" class="img-card-home1" />
+              </div>
+              <div class="card-text-content-home1">
+                <div>{{ t('landing.threecol.card3_category') }}</div>
+                <h4 class="fsize-xxs">{{ t('landing.threecol.card3_title') }}</h4>
+                <p>{{ t('landing.threecol.card3_desc') }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOME1 DEV - GoldArmy -->
+      <section class="section home1-dev">
+        <div class="w-layout-blockcontainer container w-container">
+          <div class="w-layout-grid dev-home1-grid">
+            <h4>{{ t('landing.dev.title') }} <span class="tertiary-color-emphasis">{{ t('landing.dev.title_emphasis') }}</span></h4>
+          </div>
+          <div class="w-layout-grid dev-home1-grid">
+            <div class="features-item-wrapper">
+              <div class="code-feature-item">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eac84caa6687a94014774_dev-research-icon.svg" loading="lazy" :alt="t('landing.dev.feature1_label')" class="code-feature-icon" />
+                <div class="fsize-body-large primary-color-emphasis">{{ t('landing.dev.feature1_label') }}</div>
+                <p class="primary-color-emphasis">{{ t('landing.dev.feature1_desc') }}</p>
+              </div>
+              <div class="code-feature-item">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eac8427aa97ef7752b2e8_orvimo-lab-icon.svg" loading="lazy" :alt="t('landing.dev.feature2_label')" class="code-feature-icon" />
+                <div class="fsize-body-large primary-color-emphasis">{{ t('landing.dev.feature2_label') }}</div>
+                <p class="primary-color-emphasis">{{ t('landing.dev.feature2_desc') }}</p>
+              </div>
+              <div class="code-feature-item">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eac84ff9f10f7f83e0d77_smart-monitoring-orvimo.svg" loading="lazy" :alt="t('landing.dev.feature3_label')" class="code-feature-icon" />
+                <div class="fsize-body-large primary-color-emphasis">{{ t('landing.dev.feature3_label') }}</div>
+                <p class="primary-color-emphasis">{{ t('landing.dev.feature3_desc') }}</p>
+              </div>
+              <div class="code-feature-item">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eac84cec739569d673056_ai-intelligence.svg" loading="lazy" :alt="t('landing.dev.feature4_label')" class="code-feature-icon" />
+                <div class="fsize-body-large primary-color-emphasis">{{ t('landing.dev.feature4_label') }}</div>
+                <p class="primary-color-emphasis">{{ t('landing.dev.feature4_desc') }}</p>
+              </div>
+            </div>
+            <div class="full-card-right">
+              <div class="text-content">
+                <h5 class="fsize-xxs">{{ t('landing.dev.card_title') }}</h5>
+                <p>{{ t('landing.dev.card_paragraph') }}</p>
+                <router-link to="/register" class="button-arrow w-inline-block">
+                  <div class="btn-bg-arrow">
+                    <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
+                  </div>
+                  <div class="btn-text-mask">
+                    <div class="button-arrow-text">{{ t('landing.dev.cta') }}</div>
+                    <div class="button-arrow-text">{{ t('landing.dev.cta') }}</div>
+                  </div>
+                </router-link>
+              </div>
+              <div class="full-card-img-wrapper">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eafd3c8ef7fd81aea809b_c809f11685ad994e94791ec0fb55b410_code-ui.png" loading="lazy" :alt="t('landing.dev.card_title')" class="code-ui-img" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- IMG GRID MOTION -->
+      <section class="section img-grid-motion">
+        <div class="motion-grid-wrapper">
+          <div class="motion-grid-parallax-wrapper">
+            <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/695241a041a35e17f8ca2711_victor-UoIiVYka3VY-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
+          </div>
+          <div class="motion-grid-parallax-wrapper">
+            <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69523e91c5230423b4d853c3_anna-dziubinska-mVhd5QVlDWw-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
+          </div>
+          <div class="motion-grid-parallax-wrapper">
+            <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69523e9761a700887790947f_daniil-komov-WhcfAUy8uKg-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
+          </div>
+          <div class="motion-grid-parallax-wrapper">
+            <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69523dc6ae98181d0a14825d_simone-hutsch-l8fyK9RS-OU-unsplash.avif" loading="lazy" alt="" class="central-grid-img" />
+          </div>
+          <div class="motion-grid-parallax-wrapper">
+            <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6948f54b270afe855a420a15_forest-river.avif" loading="lazy" alt="" class="central-grid-img" />
+            <div class="title-wrap">
+              <h3 class="home-3-grid-motion-tile">Flowing Forward With<br /><span class="accent1-color-emphasis">Intelligent Automation.</span></h3>
+            </div>
+          </div>
+          <div class="motion-grid-parallax-wrapper">
+            <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69524198f1ef108473a36c1a_homa-appliances-pWUyHVJgLhg-unsplash.avif" loading="lazy" alt="" class="central-grid-img" />
+          </div>
+          <div class="motion-grid-parallax-wrapper">
+            <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69524198f1ef108473a36c1a_homa-appliances-pWUyHVJgLhg-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
+          </div>
+          <div class="motion-grid-parallax-wrapper">
+            <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69523dcbc18b5ae99fc07c04_vitaly-gariev-Tn0fjekZemA-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
+          </div>
+          <div class="motion-grid-parallax-wrapper">
+            <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eb8bfa7dbbd15f4a2fe95_maarten-van-den-heuvel-KSQgzzn3dW0-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
+          </div>
+        </div>
+      </section>
+
+      <!-- KEY FIGURES - GoldArmy -->
+      <section class="section home1-key-figures">
+        <div class="w-layout-blockcontainer container w-container">
+          <div class="key-figures-home1-wrapper">
+            <div class="w-layout-grid key-figures-grid">
+              <div class="heading-wrapper">
+                <h4>{{ t('landing.key_figures.title') }} <span class="tertiary-color-emphasis">{{ t('landing.key_figures.title_emphasis') }}</span></h4>
+                <p>{{ t('landing.key_figures.paragraph') }}</p>
+              </div>
+            </div>
+            <div class="w-layout-grid key-figures-grid">
+              <div class="key-figures-card dark">
+                <div class="figures-card-wrapper">
+                  <div class="key-number">{{ t('landing.key_figures.card1_number') }}<sup>+</sup></div>
+                  <div><strong>{{ t('landing.key_figures.card1_label_1') }}<br />{{ t('landing.key_figures.card1_label_2') }}</strong></div>
+                </div>
+                <div class="key-card-content-p">
+                  <div class="fsize-body-large primary-color-emphasis">{{ t('landing.key_figures.card1_title') }}</div>
+                  <p>{{ t('landing.key_figures.card1_desc') }}</p>
+                </div>
+              </div>
+              <div class="key-figures-card dark">
+                <div class="figures-card-wrapper">
+                  <div class="key-number">{{ t('landing.key_figures.card2_number') }}<sup>%</sup></div>
+                  <div><strong>{{ t('landing.key_figures.card2_label_1') }} <br />{{ t('landing.key_figures.card2_label_2') }}</strong></div>
+                </div>
+                <div class="key-card-content-p">
+                  <div class="fsize-body-large primary-color-emphasis">{{ t('landing.key_figures.card2_title') }}</div>
+                  <p>{{ t('landing.key_figures.card2_desc') }}</p>
+                </div>
+              </div>
+              <div class="key-figures-card dark">
+                <div class="figures-card-wrapper">
+                  <div class="key-number">{{ t('landing.key_figures.card3_number') }}<sup>+</sup></div>
+                  <div><strong>{{ t('landing.key_figures.card3_label_1') }} <br />{{ t('landing.key_figures.card3_label_2') }}</strong></div>
+                </div>
+                <div class="key-card-content-p">
+                  <div class="fsize-body-large primary-color-emphasis">{{ t('landing.key_figures.card3_title') }}</div>
+                  <p>{{ t('landing.key_figures.card3_desc') }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TESTIMONIALS - GoldArmy -->
+      <section id="avis" class="section home1-testimonials">
+        <div class="w-layout-blockcontainer container w-container">
+          <div class="w-layout-grid home1-grid-testimonials">
+            <div class="testimonial-card-wrapper">
+              <div class="testimonial-card">
+                <div class="testimonial-logo">
+                  <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e00cf1bd4750d08448_Logo-5.svg" loading="lazy" alt="Logo client" />
+                </div>
+                <div class="testimonial-content">
+                  <div class="testimonial-quote">"{{ t('landing.testimonials.quote1') }}"</div>
+                  <div><strong class="testimonial-author">{{ t('landing.testimonials.author1') }}</strong></div>
+                </div>
+              </div>
+              <div class="testimonial-card">
+                <div class="testimonial-logo">
+                  <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e0e8531b2688fccf34_Logo-4.svg" loading="lazy" alt="Logo client" />
+                </div>
+                <div class="testimonial-content">
+                  <div class="testimonial-quote">"{{ t('landing.testimonials.quote2') }}"</div>
+                  <div><strong class="testimonial-author">{{ t('landing.testimonials.author2') }}</strong></div>
+                </div>
+              </div>
+            </div>
+            <div class="testimonial-card-bg-img dark">
+              <div class="testimonial-logo">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eba67e2e43f7ad899aa03_Logo-3-white.svg" loading="lazy" alt="" />
+              </div>
+              <div class="testimonial-content">
+                <div class="testimonial-quote">"{{ t('landing.testimonials.quote3') }}"</div>
+                <div><strong class="testimonial-author">{{ t('landing.testimonials.author3') }}</strong></div>
+              </div>
+              <div class="testimonial-bg-wrapper">
+                <div class="gradient-testimonall"></div>
+                <img class="testimonial-bg-img" src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eb8bfa7dbbd15f4a2fe95_maarten-van-den-heuvel-KSQgzzn3dW0-unsplash.avif" alt="" loading="lazy" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BLOG HOME1 - GoldArmy -->
+      <section id="blog" class="section blog-home1">
+        <div class="w-layout-blockcontainer container w-container">
+          <div class="heading-wrapper">
+            <h2 class="header-title">{{ t('landing.blog.header_title') }}</h2>
+            <h2 class="header-subtitle">{{ t('landing.blog.header_subtitle') }}</h2>
+          </div>
+          <div class="blog-list-featured">
+            <div class="blog-item-featured featured">
+              <a href="#" class="blog-list-img-wrapper blog-v1 featured w-inline-block">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/693934e70995d1778cf1edbd_jimmy-chang-ACt8ycSzpdE-unsplash.avif" loading="lazy" alt="" class="blog-img" />
               </a>
-            </li>
-            <li>
-              <a href="mailto:yvanloic@goldarmyai.com" class="text-sm text-white/40 hover:text-violet-400 transition-colors flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span> {{ t('landing.footer.ceo') }}
+              <div class="blog-list-content">
+                <div class="blog-category-wrapper">
+                  <div class="blog-category-title featured">{{ t('landing.blog.featured_category') }}</div>
+                </div>
+                <a href="#" class="blog-title-wrapper w-inline-block">
+                  <div class="blog-title-text featured">{{ t('landing.blog.featured_title') }}</div>
+                </a>
+                <div class="summary-wrapper">
+                  <p class="summary-text featured">{{ t('landing.blog.featured_summary') }}</p>
+                </div>
+                <div class="date-wrapper">
+                  <div class="date">—</div>
+                  <div class="date">{{ t('landing.blog.featured_date') }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="blog-list-home1">
+            <div class="blog-item">
+              <a href="#" class="blog-list-img-wrapper blog-v1 w-inline-block">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/693939b6497441ceb33405f3_daniil-komov-WhcfAUy8uKg-unsplash.avif" loading="lazy" alt="" class="blog-img" />
               </a>
-            </li>
-          </ul>
+              <div class="blog-list-content">
+                <div class="blog-category-wrapper"><div class="blog-category-title">{{ t('landing.blog.item1_category') }}</div></div>
+                <a href="#" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item1_title') }}</div></a>
+                <div class="summary-wrapper"><p class="summary-text">{{ t('landing.blog.item1_summary') }}</p></div>
+                <div class="date-wrapper"><div class="date">—</div><div class="date">{{ t('landing.blog.item_date') }}</div></div>
+              </div>
+            </div>
+            <div class="blog-item">
+              <a href="#" class="blog-list-img-wrapper blog-v1 w-inline-block">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/69393a447db46aaa909fe6d4_homa-appliances-pWUyHVJgLhg-unsplash.avif" loading="lazy" alt="" class="blog-img" />
+              </a>
+              <div class="blog-list-content">
+                <div class="blog-category-wrapper"><div class="blog-category-title">{{ t('landing.blog.item2_category') }}</div></div>
+                <a href="#" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item2_title') }}</div></a>
+                <div class="summary-wrapper"><p class="summary-text">{{ t('landing.blog.item2_summary') }}</p></div>
+                <div class="date-wrapper"><div class="date">—</div><div class="date">{{ t('landing.blog.item_date') }}</div></div>
+              </div>
+            </div>
+            <div class="blog-item">
+              <a href="#" class="blog-list-img-wrapper blog-v1 w-inline-block">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/693939f6f6dda0fc21949f22_olena-bohovyk-3BlVILvh9hM-unsplash.avif" loading="lazy" alt="" class="blog-img" />
+              </a>
+              <div class="blog-list-content">
+                <div class="blog-category-wrapper"><div class="blog-category-title">{{ t('landing.blog.item3_category') }}</div></div>
+                <a href="#" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item3_title') }}</div></a>
+                <div class="summary-wrapper"><p class="summary-text">{{ t('landing.blog.item3_summary') }}</p></div>
+                <div class="date-wrapper"><div class="date">—</div><div class="date">{{ t('landing.blog.item_date') }}</div></div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Bottom Bar -->
-      <div class="max-w-7xl mx-auto px-6 border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-        <p class="text-xs text-white/20 font-bold">{{ t('landing.footer.rights') }}</p>
-        <div class="flex gap-6">
-          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">{{ t('landing.footer.privacy') }}</a>
-          <a href="#" class="text-xs text-white/20 hover:text-white transition-colors font-bold tracking-widest uppercase">{{ t('landing.footer.terms') }}</a>
+      <!-- PRICING - GoldArmy: Free, 9.99, 19.99 -->
+      <section id="pricing" class="section home1-pricing">
+        <div class="w-layout-blockcontainer container w-container">
+          <div class="pricing-v3-wrapper">
+            <div class="home1-pricing-left-col">
+              <div class="heading-wrapper">
+                <h2>{{ t('landing.pricing.title') }}</h2>
+                <p>{{ t('landing.pricing.paragraph') }}</p>
+              </div>
+              <div class="pricing-v3-picture-wrap">
+                <div class="img-curtain"></div>
+                <div class="pricing-v3-picture-content">
+                  <div class="pricing-v3-picture-heading">{{ t('landing.pricing.picture_heading') }}</div>
+                  <p>{{ t('landing.pricing.picture_paragraph') }}</p>
+                </div>
+                <div class="pricingv3-background">
+                  <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6942c7713ce8ee94735cd376_brooke-cagle-LCcFI_26diA-unsplash.avif" loading="lazy" alt="" class="img-pricing-v3" />
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid grid-pricing-v3-home1">
+              <div class="pricing-v3-col home1 first">
+                <div class="pricing-row1">
+                  <div class="pricing-title-wrap">
+                    <div class="price-title">{{ t('landing.pricing.plan1_title') }}</div>
+                    <div>{{ t('landing.pricing.plan1_desc') }}</div>
+                  </div>
+                  <div class="price-wrapper">
+                    <div class="billed-annualy">
+                      <div class="price">{{ t('landing.pricing.plan1_price') }}</div>
+                      <div class="period">{{ t('landing.pricing.plan1_period_monthly') }}</div>
+                    </div>
+                  </div>
+                  <div class="pricing-infos">
+                    <div class="info-figure">{{ t('landing.pricing.plan1_info_figure') }}</div>
+                    <div class="infos-sub-text">{{ t('landing.pricing.plan1_info_1') }} <br />{{ t('landing.pricing.plan1_info_2') }}</div>
+                  </div>
+                  <router-link to="/register" class="pricing-button w-inline-block">
+                    <div class="price-btn-cta">{{ t('landing.pricing.plan1_cta') }}</div>
+                    <div class="price-btn-subtext">{{ t('landing.pricing.plan1_subtext') }}</div>
+                  </router-link>
+                  <div class="infos-2-wrapper">
+                    <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69416fc4e9533b6332c923d0_hosting-icon-black.svg" loading="lazy" alt="" />
+                    <div>{{ t('landing.pricing.plan1_hosted') }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="pricing-v3-col home1">
+                <div class="pricing-row1">
+                  <div class="pricing-title-wrap">
+                    <div class="price-title">{{ t('landing.pricing.plan2_title') }}</div>
+                    <div>{{ t('landing.pricing.plan2_desc') }}</div>
+                  </div>
+                  <div class="price-wrapper">
+                    <div class="billed-annualy">
+                      <div class="price">{{ t('landing.pricing.plan2_price') }}</div>
+                      <div class="period">{{ t('landing.pricing.plan2_period_annual') }}</div>
+                    </div>
+                    <div class="billed-monthly">
+                      <div class="price">{{ t('landing.pricing.plan2_price') }}</div>
+                      <div class="period">{{ t('landing.pricing.plan2_period_monthly') }}</div>
+                    </div>
+                  </div>
+                  <div class="pricing-infos">
+                    <div class="info-figure">{{ t('landing.pricing.plan2_info_figure') }}</div>
+                    <div class="infos-sub-text">{{ t('landing.pricing.plan2_info_1') }} <br />{{ t('landing.pricing.plan2_info_2') }}</div>
+                  </div>
+                  <router-link to="/register" class="pricing-button w-inline-block">
+                    <div class="price-btn-cta">{{ t('landing.pricing.plan2_cta') }}</div>
+                    <div class="price-btn-subtext">{{ t('landing.pricing.plan2_subtext') }}</div>
+                  </router-link>
+                  <div class="infos-2-wrapper">
+                    <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69416fc4e9533b6332c923d0_hosting-icon-black.svg" loading="lazy" alt="" />
+                    <div>{{ t('landing.pricing.plan2_hosted') }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="pricing-v3-col home1">
+                <div class="pricing-row1">
+                  <div class="pricing-title-wrap">
+                    <div class="price-title">{{ t('landing.pricing.plan3_title') }}</div>
+                    <div>{{ t('landing.pricing.plan3_desc') }}</div>
+                  </div>
+                  <div class="price-wrapper">
+                    <div class="billed-annualy">
+                      <div class="price">{{ t('landing.pricing.plan3_price') }}</div>
+                      <div class="period">{{ t('landing.pricing.plan3_period_annual') }}</div>
+                    </div>
+                    <div class="billed-monthly">
+                      <div class="price">{{ t('landing.pricing.plan3_price') }}</div>
+                      <div class="period">{{ t('landing.pricing.plan3_period_monthly') }}</div>
+                    </div>
+                  </div>
+                  <div class="pricing-infos">
+                    <div class="info-figure">{{ t('landing.pricing.plan3_info_figure') }}</div>
+                    <div class="infos-sub-text">{{ t('landing.pricing.plan3_info_1') }} <br />{{ t('landing.pricing.plan3_info_2') }}</div>
+                  </div>
+                  <router-link to="/register" class="pricing-button w-inline-block">
+                    <div class="price-btn-cta">{{ t('landing.pricing.plan3_cta') }}</div>
+                    <div class="price-btn-subtext">{{ t('landing.pricing.plan3_subtext') }}</div>
+                  </router-link>
+                  <div class="infos-2-wrapper">
+                    <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6941757c14730bd9f517661a_self-hosting-dark.svg" loading="lazy" alt="" />
+                    <div>{{ t('landing.pricing.plan3_hosted') }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="pricing-v3-col home1 dark last">
+                <div class="pricing-row1">
+                  <div class="pricing-title-wrap">
+                    <div class="price-title">{{ t('landing.pricing.plan4_title') }}</div>
+                    <div>{{ t('landing.pricing.plan4_desc') }}</div>
+                  </div>
+                  <div class="price-wrapper">
+                    <div class="price">{{ t('landing.pricing.plan4_price') }}</div>
+                  </div>
+                  <div class="pricing-infos">
+                    <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694176ce78bb904b99d64825_Custom.svg" loading="lazy" alt="" />
+                    <div class="infos-sub-text">{{ t('landing.pricing.plan4_info_1') }} <br />{{ t('landing.pricing.plan4_info_2') }}</div>
+                  </div>
+                  <router-link to="/register" class="pricing-button accent1 w-inline-block">
+                    <div class="price-btn-cta">{{ t('landing.pricing.plan4_cta') }}</div>
+                  </router-link>
+                  <div class="infos-2-wrapper">
+                    <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69416fc4883379fdc3e30642_hosting-icon-white.svg" loading="lazy" alt="" />
+                    <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6941757c333623480a910900_self-hosting-white.svg" loading="lazy" alt="" />
+                    <div>{{ t('landing.pricing.plan4_hosted') }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </footer>
+      </section>
 
+      <!-- FAQ - GoldArmy -->
+      <section class="section faq-home1">
+        <div class="w-layout-blockcontainer container w-container">
+          <h2 class="center-align">{{ t('landing.faq_title') }}</h2>
+          <div class="faq-list">
+            <div v-for="(faq, i) in faqItems" :key="i" class="accordion-item" :class="{ 'w--open': openFaqIndex === i }">
+              <div class="accordion-title-toggle" @click="openFaqIndex = openFaqIndex === i ? null : i">
+                <div>{{ faq.q }}</div>
+                <div class="accordion-toggle">
+                  <div class="cross-h"></div>
+                  <div class="cross-v"></div>
+                </div>
+              </div>
+              <div class="accordion-content">
+                <p class="accordion-content-text">{{ faq.a }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA V1 - GoldArmy -->
+      <section class="section cta-v1">
+        <div class="cta1-wrapper">
+          <div class="w-layout-grid cta1-content">
+            <div class="cta-text-wrapper-left">
+              <h2 class="heading-cta">{{ t('landing.cta.line1') }}<br />{{ t('landing.cta.line2') }}<br />{{ t('landing.cta.line3') }}</h2>
+            </div>
+            <div class="cta-text-wrapper-right">
+              <div class="cta-text-right">{{ t('landing.cta.subtitle') }}</div>
+              <div class="reveal-content-wrap">
+                <router-link to="/register" class="button-default w-button">{{ t('landing.cta.button') }}</router-link>
+              </div>
+            </div>
+          </div>
+          <div class="background-cta">
+            <img class="cta-img-bg" src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6939c21874a51449ee9fd368_background.avif" alt="" loading="lazy" />
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <Footer />
   </div>
 </template>
 
 <style scoped>
-@keyframes float-slow {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-16px) rotate(3deg); }
+.page-wrapper {
+  min-height: 100vh;
+  overflow-x: hidden;
 }
-@keyframes float-medium {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(-3deg); }
+.main {
+  overflow-x: hidden;
 }
-@keyframes float-fast {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
+.desktop-only { display: none; }
+@media (min-width: 992px) {
+  .desktop-only { display: inline-block; }
+  .nav-menu .nav-right-sign-cta-wrap { display: none; }
 }
 
-.animate-float-slow  { animation: float-slow  6s ease-in-out infinite; }
-.animate-float-medium{ animation: float-medium 4s ease-in-out infinite; }
-.animate-float-fast  { animation: float-fast  3s ease-in-out infinite; }
+/* Mobile: show nav menu when burger open (override orvimo display:none) */
+@media screen and (max-width: 991px) {
+  .page-wrapper .nav-menu.w--open {
+    display: flex !important;
+    flex-direction: column;
+    padding-top: 5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    top: 0;
+    left: 0;
+    right: 0;
+    position: fixed;
+    z-index: 100;
+  }
+  .page-wrapper .nav-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.accordion-item.w--open .accordion-content {
+  height: auto;
+  overflow: visible;
+  padding-bottom: 1rem;
+}
+.accordion-item.w--open .cross-v {
+  transform: rotate(90deg);
+}
+
+/* Line-split animation: words start hidden, GSAP reveals */
+.line-split-heading .line-split-word {
+  display: inline-block;
+  margin-right: 0.2em;
+  opacity: 0;
+}
+
+/* Responsive: containers and sections */
+.page-wrapper :deep(.w-container),
+.page-wrapper :deep(.container) {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media screen and (max-width: 991px) {
+  .page-wrapper :deep(.w-container),
+  .page-wrapper :deep(.container) {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+@media screen and (max-width: 767px) {
+  .page-wrapper :deep(.container),
+  .page-wrapper :deep(.w-container) {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .page-wrapper :deep(.hero-content) {
+    height: auto;
+    min-height: 70vh;
+    padding-top: 6rem;
+  }
+  .page-wrapper :deep(.hero-heading) {
+    font-size: clamp(1.75rem, 5vw, 2.5rem);
+  }
+  .page-wrapper :deep(.slide-img),
+  .page-wrapper :deep(.img-card-home1),
+  .page-wrapper :deep(.big-card--home1-img) {
+    max-width: 100%;
+    height: auto;
+  }
+}
+@media screen and (max-width: 479px) {
+  .page-wrapper :deep(.container),
+  .page-wrapper :deep(.w-container) {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  .page-wrapper :deep(.hero-heading) {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+  }
+  .page-wrapper :deep(.grid-pricing-v3-home1) {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Global: prevent horizontal overflow on landing */
+.page-wrapper :deep(main img),
+.page-wrapper :deep(.slide-img),
+.page-wrapper :deep(.img-card-home1),
+.page-wrapper :deep(.big-card--home1-img),
+.page-wrapper :deep(.code-ui-img),
+.page-wrapper :deep(.client-logo-img) {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.page-wrapper :deep(.w-layout-grid),
+.page-wrapper :deep(.w-layout-blockcontainer) {
+  box-sizing: border-box;
+}
 </style>
