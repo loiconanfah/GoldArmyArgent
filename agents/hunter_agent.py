@@ -180,21 +180,18 @@ class HunterAgent(BaseAgent):
             
     def _filter_strict_precision(self, jobs: list, expected_location: str, expected_job_type: str) -> list:
         """
-        Filtre impitoyable garanti sans hallucination.
-        Si l'user demande "Paris", on supprime ce qui mentionne explicitement une autre grande ville.
-        Tentative de récupération de la ville dans le titre si 'Non spécifié'.
+        Filtre localisation léger : on n'exclut que les offres qui mentionnent explicitement
+        une AUTRE grande ville que la cible. Pas de filtrage sur type de contrat ni sur
+        localisation vide (le Judge score et dégrade les imprécis).
         """
-        if not expected_location or expected_location == "Non spécifié":
+        if not expected_location or expected_location.strip().lower() == "non spécifié":
             return jobs
-            
         result = []
-        loc_target = expected_location.lower().split(",")[0].strip() # "Paris"
-        
-        # Villes à éviter si on cherche dans une autre (exclusion mutuelle simple)
+        loc_target = expected_location.lower().split(",")[0].strip()
         major_cities = [
-            "paris", "lyon", "marseille", "bordeaux", "nantes", "lille", "toulouse", 
+            "paris", "lyon", "marseille", "bordeaux", "nantes", "lille", "toulouse",
             "montreal", "quebec", "toronto", "vancouver", "ottawa", "calgary",
-            "london", "manchester", "birmingham", 
+            "london", "manchester", "birmingham",
             "new york", "san francisco", "los angeles", "chicago", "boston", "seattle"
         ]
         other_cities = [c for c in major_cities if c != loc_target]
@@ -202,33 +199,22 @@ class HunterAgent(BaseAgent):
         for job in jobs:
             job_loc = job.get("location", "").lower()
             job_title = job.get("title", "").lower()
-            
-            # RECOVERY: Si localisation inconnue, on check le titre
+            # Pour le filtre uniquement : si location vide, on peut inférer la ville depuis le titre
+            # mais on ne modifie pas job["location"] pour l'affichage (garder la localisation précise de la source)
             if "non spécifié" in job_loc or not job_loc.strip():
                 for city in major_cities:
                     if city in job_title:
-                        job_loc = city # On "découvre" la ville dans le titre
-                        job["location"] = city.capitalize()
+                        job_loc = city
                         break
-            
-            # 1. Si la ville cible est dans la loc -> OK
             if loc_target in job_loc:
                 result.append(job)
                 continue
-            
-            # 2. Si une AUTRE grande ville est mentionnée (dans loc ou titre découvert) -> KO
             if any(other in job_loc for other in other_cities):
-                logger.debug(f"🚫 Filtre Strict: Exclusion de {job.get('title')} ({job_loc}) car hors de {loc_target}")
                 continue
-            
-            # 3. Remote -> On garde (le Judge décidera selon le profil)
             if "remote" in job_loc or "télétravail" in job_loc or "anywhere" in job_loc:
                 result.append(job)
                 continue
-            
-            # 4. Par défaut on garde pour ne pas être trop destructif sur les petites villes
             result.append(job)
-            
         return result
 
 

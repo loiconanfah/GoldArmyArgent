@@ -64,22 +64,24 @@ class JSearchSearcher:
                             return []
                     elif response.status == 429:
                         from config.settings import settings
-                        backup_key = getattr(settings, "rapidapi_key_2", None)
-                        if backup_key and self.api_key != backup_key:
-                            logger.warning("⚠️ Limite API JSearch atteinte (429) - Bascule sur la clé secondaire !")
-                            self.api_key = backup_key
-                            headers["X-RapidAPI-Key"] = self.api_key
+                        backup_keys = [getattr(settings, "rapidapi_key_2", None), getattr(settings, "rapidapi_key_3", None)]
+                        used = {self.api_key}
+                        for backup_key in backup_keys:
+                            if not backup_key or backup_key in used:
+                                continue
+                            used.add(backup_key)
+                            logger.warning("⚠️ Limite API JSearch atteinte (429) - Bascule sur une clé de secours !")
+                            headers["X-RapidAPI-Key"] = backup_key
                             async with session.get(self.BASE_URL, headers=headers, params=params) as response_retry:
                                 if response_retry.status == 200:
                                     try:
                                         data_retry = await response_retry.json()
                                         jobs_retry = data_retry.get("data", [])
-                                        logger.success("✅ Succès du Fallback avec la clé JSearch secondaire")
+                                        logger.success("✅ Succès du Fallback JSearch (clé de secours)")
                                         return self._normalize_jobs(jobs_retry)
                                     except Exception as e:
                                         logger.error(f"❌ Erreur parsing JSON JSearch (Fallback): {e}")
-                                        return []
-                                    
+                                        continue
                         logger.warning("⚠️ Limite API JSearch atteinte (429) pour toutes les clés.")
                         return []
                     elif response.status == 403: # Clé invalide souvent
@@ -93,6 +95,12 @@ class JSearchSearcher:
             logger.error(f"⚠️ Exception JSearch: {str(e)}")
             return []
             
+    def _job_location(self, job: Dict) -> str:
+        """Localisation précise : ville, état/région, pays (éviter d'afficher seulement le pays)."""
+        parts = [job.get("job_city"), job.get("job_state"), job.get("job_country")]
+        loc = ", ".join(p for p in parts if p and str(p).strip()).strip()
+        return loc or job.get("job_country") or "Non spécifié"
+
     def _normalize_jobs(self, raw_jobs: List[Dict]) -> List[Dict]:
         """Convertit les résultats JSearch au format standard GoldArmy."""
         normalized = []
@@ -108,7 +116,7 @@ class JSearchSearcher:
                     "id": f"jsearch-{job.get('job_id', hash(job.get('job_apply_link', '')))}",
                     "title": job.get("job_title", "Titre non spécifié"),
                     "company": job.get("employer_name", "Confidentiel"),
-                    "location": f"{job.get('job_city', '')}, {job.get('job_country', '')}".strip(', '),
+                    "location": self._job_location(job),
                     "description": job.get("job_description", ""),
                     "url": job.get("job_apply_link", job.get("job_google_link")),
                     "source": "JSearch",

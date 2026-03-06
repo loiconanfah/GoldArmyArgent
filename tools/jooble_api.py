@@ -108,7 +108,8 @@ class JoobleClient:
 
             title = j.get("title") or j.get("position") or "Offre"
             company = j.get("company") or j.get("companyname") or j.get("employer") or "Entreprise"
-            location = j.get("location") or j.get("region") or j.get("city") or ""
+            location_raw = j.get("location") or j.get("region") or j.get("city") or ""
+            location = (location_raw.strip() or "Non spécifié") if isinstance(location_raw, str) else "Non spécifié"
             url = j.get("link") or j.get("url") or j.get("applyLink") or ""
             snippet = j.get("snippet") or j.get("description") or j.get("summary") or ""
 
@@ -117,7 +118,7 @@ class JoobleClient:
                     "id": j.get("id") or f"jooble-{idx}",
                     "title": title,
                     "company": company,
-                    "location": "Non spécifié",
+                    "location": location,
                     "url": url,
                     "description": snippet,
                     "source": "Jooble",

@@ -167,7 +167,7 @@ onMounted(async () => {
 })
 
 const openAuditFlow = () => {
-    if (hasStoredCv.value && !cvFilename.value) {
+    if (!cvFilename.value) {
         showAuditModal.value = true
     } else {
         isUploading.value = true
@@ -1165,6 +1165,7 @@ const openInWorkspace = (msg) => {
                     
                     <div class="w-full space-y-3">
                         <button 
+                            v-if="hasStoredCv"
                             @click="useStoredCv"
                             class="group w-full flex items-center justify-between p-4 bg-surface-800 hover:bg-surface-700 border border-surface-700 hover:border-indigo-500/50 rounded-2xl transition-all"
                         >

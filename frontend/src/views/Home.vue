@@ -37,6 +37,15 @@ onMounted(async () => {
   setTimeout(() => { ready.value = true }, 100)
   tipInterval = setInterval(() => { activeTip.value = (activeTip.value + 1) % tips.value.length }, 4000)
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTutorial() })
+  // Auto-lancement du tutoriel pour les utilisateurs connectés pour la 1ère fois
+  if (localStorage.getItem('token') && stored) {
+    try {
+      const user = JSON.parse(stored)
+      if (user?.id && !localStorage.getItem(`goldarmy_tutorial_seen_${user.id}`)) {
+        setTimeout(() => startTutorial(), 600)
+      }
+    } catch {}
+  }
 })
 onUnmounted(() => clearInterval(tipInterval))
 
@@ -186,7 +195,11 @@ const isLast = computed(() => tutorialStep.value === tutorialSteps.value.length 
 function startTutorial() { tutorialStep.value = 0; tutorialActive.value = true; scrollTarget() }
 function nextStep() { if (isLast.value) { closeTutorial(); return } tutorialStep.value++; scrollTarget() }
 function prevStep() { if (tutorialStep.value > 0) { tutorialStep.value--; scrollTarget() } }
-function closeTutorial() { tutorialActive.value = false }
+function closeTutorial() {
+  tutorialActive.value = false
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  if (user?.id) localStorage.setItem(`goldarmy_tutorial_seen_${user.id}`, '1')
+}
 function scrollTarget() {
   nextTick(() => { document.getElementById(currentStep.value.targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' }) })
 }
@@ -200,7 +213,7 @@ function scrollTarget() {
       <div v-if="tutorialActive" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 pointer-events-none" />
     </Transition>
     <Transition name="pop">
-      <div v-if="tutorialActive" class="fixed bottom-6 right-6 z-50 w-80 bg-[#1e2030] border border-indigo-500/30 rounded-2xl shadow-2xl p-5 pointer-events-auto">
+      <div v-if="tutorialActive" class="tutorial-panel fixed bottom-6 right-6 z-50 w-80 bg-[#1e2030] border border-indigo-500/30 rounded-2xl shadow-2xl p-5 pointer-events-auto">
         <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/5 to-violet-500/5 pointer-events-none" />
         <div class="relative">
           <div class="flex items-center justify-between mb-3">
@@ -212,7 +225,7 @@ function scrollTarget() {
             </button>
           </div>
           <h3 class="font-bold text-white text-sm mb-2">{{ currentStep.title }}</h3>
-          <p class="text-slate-300 text-xs leading-relaxed mb-4">{{ currentStep.text }}</p>
+          <p class="tutorial-explanatory text-slate-300 text-xs leading-relaxed mb-4">{{ currentStep.text }}</p>
           <div class="flex items-center gap-1 mb-4">
             <div v-for="(_, i) in tutorialSteps" :key="i"
               class="flex-1 h-1 rounded-full transition-all duration-500 cursor-pointer"

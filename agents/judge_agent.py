@@ -77,6 +77,7 @@ class JudgeAgent(BaseAgent):
         for i, job in enumerate(jobs):
             job_list_text += f"ID: {i}\nTITRE: {job.get('title')}\nENTREPRISE: {job.get('company')}\nLOC: {job.get('location')}\nDESC: {job.get('description')[:500]}...\n---\n"
 
+        target_job_type = profile.get("target_job_type") or profile.get("target_level") or "emploi"
         prompt = f"""
         En tant qu'expert en recrutement (Agent Judge), note la pertinence de ces offres pour ce candidat.
         
@@ -85,6 +86,7 @@ class JudgeAgent(BaseAgent):
         - Compétences: {profile.get('skills')}
         - Expérience: {profile.get('experience_years')} ans
         - Niveau: {profile.get('target_level')}
+        - TYPE DE CONTRAT RECHERCHÉ: {target_job_type.upper()} (respecte cette contrainte en priorité)
         
         OFFRES A EVALUER:
         {job_list_text}
@@ -92,9 +94,10 @@ class JudgeAgent(BaseAgent):
         RÈGLES DE SCORING STRICTES (SUR 100) :
         Tu es le dernier rempart avant l'affichage à l'utilisateur. Ton but est d'éliminer le "bruit".
 
-        1. TYPE DE CONTRAT (CRITÈRE ÉLIMINATOIRE) : 
-           - Si l'utilisateur cherche explicitement un "Stage" (Intern) ou une "Alternance" et que l'offre est un emploi permanent (CDI, Permanent, Senior, Staff, etc.), la note DOIT ÊTRE 0. Aucune exception.
-           - Si l'utilisateur cherche un emploi et que l'offre est un "Stage étudiant", la note DOIT ÊTRE 0.
+        1. TYPE DE CONTRAT (CRITÈRE ÉLIMINATOIRE - PRIORITAIRE) :
+           - L'utilisateur cherche un contrat de type: {target_job_type.upper()}.
+           - Si l'utilisateur cherche un STAGE (ou Alternance) et que l'offre est un emploi permanent (CDI, Permanent, Full-time, Senior, Staff), la note DOIT ÊTRE 0. Aucune exception.
+           - Si l'utilisateur cherche un EMPLOI (CDI, etc.) et que l'offre est uniquement un "Stage" ou "Intern", la note DOIT ÊTRE 0.
         2. PERTINENCE DU RÔLE (CRITÈRE ÉLIMINATOIRE) :
            - L'offre DOIT correspondre au domaine et au métier exact visé par le candidat. Si le domaine s'écarte (ex: Vente vs Informatique), note = 0.
         3. NIVEAU D'EXPÉRIENCE (CRITÈRE ÉLIMINATOIRE) :

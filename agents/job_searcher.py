@@ -177,7 +177,9 @@ class JobSearchAgent(BaseAgent):
         jobs_v1 = hunt_v1.get("jobs", [])
         
         cv_profile = action_plan.get("cv_profile", {})
-        cv_profile["target_location"] = action_plan.get("criteria", {}).get("location", "Paris, France")
+        criteria_loc = action_plan.get("criteria", {})
+        cv_profile["target_location"] = criteria_loc.get("location", "Paris, France")
+        cv_profile["target_job_type"] = criteria_loc.get("job_type", "emploi")
         
         # --- PARALLÉLISME MASSIF : JUDGE 1 + HUNTER 2 ---
         logger.info("⚡ Lancement concurrent du Jugement Vague 1 et de la Traque Vague 2...")
@@ -209,13 +211,15 @@ class JobSearchAgent(BaseAgent):
             res_v2 = await judge.act({"jobs": jobs_v2, "cv_profile": cv_profile})
             judged_v2 = res_v2.get("evaluated_jobs", [])
 
-        # Fusion et Dédoublonnage final
+        # Fusion et Dédoublonnage final (pas de post-filtre type contrat : le Judge a déjà scoré)
         all_results = judged_v1 + judged_v2
         unique_final = []
         seen = set()
         for j in all_results:
+            if j.get("match_score", 0) <= 0:
+                continue
             key = f"{j.get('title')}-{j.get('company')}".lower()
-            if key not in seen and j.get("match_score", 0) > 0:
+            if key not in seen:
                 seen.add(key)
                 unique_final.append(j)
 

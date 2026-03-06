@@ -199,6 +199,36 @@
 #app.theme-light ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
+/* Tutoriel: toujours fond sombre + texte clair pour lisibilité (thème clair ou sombre) */
+#app.theme-light .tutorial-panel {
+  background-color: #1e2030 !important;
+}
+#app.theme-light .tutorial-panel .text-slate-300,
+#app.theme-light .tutorial-panel .text-slate-400,
+#app.theme-light .tutorial-panel .text-slate-500,
+#app.theme-light .tutorial-panel .text-slate-600,
+#app.theme-light .tutorial-panel p,
+#app.theme-light .tutorial-panel h3 {
+  color: #e2e8f0 !important;
+}
+#app.theme-light .tutorial-panel .tutorial-explanatory {
+  color: #f1f5f9 !important;
+  font-size: 0.8125rem;
+}
+#app.theme-light .tutorial-panel .text-indigo-400 {
+  color: #a5b4fc !important;
+}
+#app.theme-light .tutorial-panel .bg-surface-700 {
+  background-color: #475569 !important;
+}
+#app.theme-light .tutorial-panel button:not([class*="bg-indigo"]) {
+  color: #e2e8f0 !important;
+  border-color: #64748b !important;
+}
+#app.theme-light .tutorial-panel button:hover:not(:disabled) {
+  color: #fff !important;
+}
+
 /* Graphiques / SVG en thème clair: texte et traits lisibles */
 #app.theme-light .dashboard-chart text {
   fill: #1e293b !important;
