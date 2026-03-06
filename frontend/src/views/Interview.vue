@@ -51,6 +51,9 @@ const scorecard = ref(null)
 const ttsStatus = ref('Initialisation...') // Diagnostic status
 const lastTtsError = ref(null)
 const pendingFinish = ref(false)
+const callStartTime = ref(null)
+const callElapsed = ref('00:00')
+let callTimerInterval = null
 
 // Visual audio pulse simulation
 const audioLevel = ref(0)
@@ -71,6 +74,13 @@ const startInterview = async () => {
 
     errorMsg.value = ""
     isInterviewStarted.value = true
+    callStartTime.value = Date.now()
+    callTimerInterval = setInterval(() => {
+        if (!callStartTime.value) return
+        const s = Math.floor((Date.now() - callStartTime.value) / 1000)
+        const m = Math.floor(s / 60)
+        callElapsed.value = `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+    }, 1000)
     
     // Hack: Débloquer l'audio immédiatement sur le geste utilisateur
     if (window.speechSynthesis) {
@@ -538,6 +548,9 @@ const goBackToDashboard = () => router.push('/dashboard')
 
 const stopInterview = () => {
     isInterviewStarted.value = false
+    callStartTime.value = null
+    if (callTimerInterval) clearInterval(callTimerInterval)
+    callTimerInterval = null
     showScorecard.value = false
     scorecard.value = null
     if (socket.value) socket.value.close()
@@ -694,154 +707,173 @@ onUnmounted(() => {
       </div>
    </div>
 
-    <!-- IMMERSIVE VIDEO CALL UI -->
-    <div v-else class="fixed inset-0 bg-black flex flex-col z-[210] overflow-hidden font-sans">
+    <!-- IMMERSIVE VIDEO CALL UI — Design type visioconférence (2 panneaux) -->
+    <div v-else class="fixed inset-0 bg-surface-950 flex flex-col md:flex-row z-[210] overflow-hidden font-sans">
       
-      <!-- BACKGROUND / RECRUITER VIDEO AREA -->
-      <div class="absolute inset-0 z-0">
+      <!-- ═══ PANNEAU GAUCHE : Appel vidéo ═══ -->
+      <div class="flex-1 flex flex-col min-w-0 relative bg-black/90">
+        <!-- Fond recruteur -->
+        <div class="absolute inset-0 z-0">
           <img 
             :src="currentRecruiter?.img" 
-            class="w-full h-full object-cover transition-all duration-1000"
-            :class="isAIThinking ? 'blur-sm scale-110' : 'blur-none scale-100'"
+            class="w-full h-full object-cover transition-all duration-500"
+            :class="isAIThinking ? 'blur-md scale-105 opacity-80' : 'blur-none scale-100 opacity-100'"
           />
-          <!-- Screen Overlay for dark/meeting vibe -->
-          <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40"></div>
-          
-          <!-- Futuristic Grid Overlay -->
-          <!-- Noise texture overlay — class defined in <style scoped> to avoid Vue template parser issue with '/' in data URIs -->
-          <div class="noise-overlay absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none" />
-          <div class="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none"></div>
-          
-          <!-- Pulse / Aura effect around the AI face -->
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div 
-                class="w-[600px] h-[600px] rounded-full blur-[140px] transition-all duration-500 pointer-events-none opacity-50 mix-blend-screen"
-                :style="isSpeaking ? `background: radial-gradient(circle, #6366f1 0%, transparent 70%); transform: scale(${1 + audioLevel/40});` : 'background: transparent'"
-              ></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+          <div class="noise-overlay absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" />
+        </div>
+
+        <!-- Header type call -->
+        <header class="relative z-10 flex items-center justify-between p-4 md:p-6 border-b border-white/10 bg-black/30 backdrop-blur-xl">
+          <div class="flex items-center gap-4">
+            <button @click="goBackToDashboard" class="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors">
+              <ArrowLeftIcon class="w-5 h-5" />
+            </button>
+            <div>
+              <h1 class="text-sm md:text-base font-bold text-white truncate max-w-[200px] md:max-w-md">
+                {{ config.company }} — {{ config.jobTitle }}
+              </h1>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold uppercase">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Simulateur
+                </span>
+                <span class="text-slate-500 text-[10px] font-medium">• {{ callElapsed }}</span>
+              </div>
+            </div>
           </div>
+          <div class="flex items-center gap-3">
+            <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
+              <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+              <span class="text-xs font-bold text-white">{{ currentRecruiter?.name }}</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Zone principale : recruteur + vignettes -->
+        <div class="relative z-10 flex-1 flex min-h-0 p-4">
+          <div class="flex-1 flex rounded-2xl overflow-hidden border border-white/10 bg-black/20 backdrop-blur-sm relative">
+            <!-- Vue principale recruteur -->
+            <div class="absolute inset-0 flex items-center justify-center p-4">
+              <img :src="currentRecruiter?.img" class="max-h-full w-auto object-contain rounded-xl shadow-2xl" />
+            </div>
+            <div class="absolute top-4 left-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-black/50 backdrop-blur border border-white/10">
+              <img :src="currentRecruiter?.img" class="w-8 h-8 rounded-full object-cover border-2 border-white/20" />
+              <div>
+                <span class="text-xs font-bold text-white block">{{ currentRecruiter?.name }}</span>
+                <span class="text-[10px] text-slate-400">{{ currentRecruiter?.role }}</span>
+              </div>
+            </div>
+            <!-- Vignettes participants (recruteur + vous) -->
+            <div class="absolute top-4 right-4 flex flex-col gap-2">
+              <div class="w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 border-white/20 bg-surface-900 shadow-lg">
+                <img :src="currentRecruiter?.img" class="w-full h-full object-cover" />
+              </div>
+              <div class="relative w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 shadow-lg transition-all"
+                   :class="isListening ? 'border-pink-500 ring-2 ring-pink-500/30' : 'border-white/20'">
+                <video ref="userVideo" autoplay playsinline muted class="w-full h-full object-cover bg-surface-900"></video>
+                <div v-if="!stream" class="absolute inset-0 flex items-center justify-center bg-surface-950">
+                  <VideoCameraSlashIcon class="w-6 h-6 text-slate-600" />
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 py-1 bg-black/60 text-center">
+                  <span class="text-[9px] font-bold text-white">Vous</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bandeau transcript live (style visio) -->
+        <div class="relative z-10 mx-4 mb-2 p-3 rounded-xl bg-surface-900/90 backdrop-blur border border-white/10 flex items-center gap-3">
+          <div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <SpeakerWaveIcon class="w-4 h-4 text-emerald-400" />
+          </div>
+          <p class="text-sm text-slate-300 truncate flex-1 min-w-0">
+            <template v-if="isAIThinking">Le recruteur réfléchit...</template>
+            <template v-else-if="isSpeaking && conversation.length">{{ conversation[conversation.length - 1]?.content || 'Parole en cours...' }}</template>
+            <template v-else-if="transcript">{{ transcript }}...</template>
+            <template v-else>En attente — parlez lorsque le micro est actif.</template>
+          </p>
+        </div>
+
+        <!-- Barre de contrôles (style visio : mic, cam, raccrocher) -->
+        <div class="relative z-20 p-4 flex items-center justify-center">
+          <div class="inline-flex items-center gap-2 p-2 rounded-[2rem] bg-surface-900/95 backdrop-blur-xl border border-white/10 shadow-2xl">
+            <button @click="showChat = !showChat" 
+              :class="showChat ? 'bg-indigo-500 text-white' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'"
+              class="p-3 rounded-full transition-all" title="Transcription">
+              <ChatBubbleLeftRightIcon class="w-5 h-5" />
+            </button>
+            <button @click="testAudio" class="p-3 rounded-full bg-white/5 text-slate-400 hover:text-indigo-400 hover:bg-white/10 transition-all" title="Tester le son">
+              <SpeakerWaveIcon class="w-5 h-5" />
+            </button>
+            <button @click="triggerListen" 
+              :class="isListening ? 'bg-rose-500 text-white scale-105 shadow-lg shadow-rose-500/40' : (isAIThinking ? 'bg-indigo-500 text-white animate-pulse' : 'bg-white/10 text-white hover:bg-white/20')"
+              class="p-4 rounded-full transition-all mx-1" title="Micro">
+              <MicrophoneIcon v-if="!isListening && !isAIThinking" class="w-6 h-6" />
+              <StopIcon v-else-if="isListening" class="w-6 h-6" />
+              <span v-else class="flex gap-1">
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:0.1s]"></span>
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:0.2s]"></span>
+              </span>
+            </button>
+            <button @click="finishInterview" class="p-3 rounded-full bg-rose-500 hover:bg-rose-400 text-white transition-all" title="Terminer l'entretien">
+              <PhoneIcon class="w-5 h-5 rotate-[135deg]" />
+            </button>
+          </div>
+        </div>
+        <p v-if="isListening" class="text-center text-pink-400 text-xs font-bold uppercase tracking-wider pb-2 animate-pulse">Micro actif — parlez</p>
       </div>
 
-      <!-- TOP BAR -->
-      <header class="absolute top-0 w-full p-6 flex items-center justify-between z-20">
-          <div class="flex items-center gap-4">
-              <div class="bg-black/40 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
-                  <BuildingOfficeIcon class="w-4 h-4 text-indigo-400" />
-                  <span class="text-xs font-bold text-white tracking-widest uppercase">{{ config.company }} — {{ currentRecruiter?.role }}</span>
-              </div>
-          </div>
-
-          <div class="flex items-center gap-3">
-              <div v-if="ttsStatus" class="bg-black/40 backdrop-blur-xl border border-white/5 px-3 py-1.5 rounded-xl hidden md:flex items-center gap-2">
-                  <SpeakerWaveIcon class="w-3 h-3 text-indigo-400" />
-                  <span class="text-[9px] font-bold text-indigo-200 uppercase tracking-widest">{{ ttsStatus.includes('HD') ? 'Son Haute-Fidélité' : ttsStatus }}</span>
-              </div>
-              <div class="bg-indigo-500/20 backdrop-blur-xl border border-indigo-500/30 px-4 py-2 rounded-2xl flex items-center gap-3">
-                  <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
-                  <span class="text-xs font-bold text-indigo-100 uppercase tracking-tighter">{{ currentRecruiter?.name }}</span>
-              </div>
-          </div>
-      </header>
-
-      <!-- ANALYST TIPS (Nano Banana) -->
-      <transition 
-        enter-active-class="transition duration-500 ease-out translate-x-10 opacity-0"
-        enter-to-class="translate-x-0 opacity-100"
-        leave-active-class="transition duration-400 ease-in"
-        leave-to-class="-translate-x-full opacity-0"
-      >
-        <div v-if="analystNote" class="absolute left-6 top-24 z-30 max-w-xs">
-            <div class="bg-black/40 backdrop-blur-3xl border border-white/20 p-5 rounded-[2rem] shadow-2xl relative overflow-hidden group">
-                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10"></div>
-                <div class="relative z-10">
-                    <div class="flex items-center gap-2 mb-2">
-                        <SparklesIcon class="w-4 h-4 text-gold-400" />
-                        <span class="text-[10px] uppercase font-black tracking-widest text-slate-400">Notes de l'Analyste</span>
-                    </div>
-                    <p class="text-sm font-bold text-white leading-relaxed">{{ analystNote.tip }}</p>
-                    <div class="mt-3 flex items-center justify-between">
-                        <div class="text-[9px] bg-indigo-500/20 border border-indigo-500/30 px-3 py-1 rounded-full text-indigo-300 uppercase font-black tracking-tighter">{{ analystNote.sentiment }}</div>
-                        <div class="w-1.5 h-1.5 rounded-full" :class="analystNote.sentiment === 'positif' ? 'bg-emerald-500' : 'bg-amber-500'"></div>
-                    </div>
-                </div>
+      <!-- ═══ PANNEAU DROIT : Transcription / Messages ═══ -->
+      <div v-show="showChat" class="w-full md:w-[380px] lg:w-[420px] shrink-0 flex flex-col bg-surface-900 border-l border-white/10">
+        <div class="p-4 border-b border-white/10 flex items-center justify-between">
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">Transcription</h2>
+          <button @click="showChat = false" class="md:hidden p-2 rounded-lg hover:bg-white/10 text-slate-400">
+            <XMarkIcon class="w-5 h-5" />
+          </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth custom-scrollbar" ref="chatContainer">
+          <div v-for="msg in conversation" :key="msg.id" :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+            <div :class="msg.role === 'user' 
+              ? 'max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 bg-indigo-500/90 text-white shadow-lg' 
+              : 'max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 bg-white/10 text-slate-200 border border-white/10'">
+              <p class="text-[10px] font-bold opacity-80 mb-1">{{ msg.role === 'user' ? 'Vous' : currentRecruiter?.name }}</p>
+              <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
             </div>
+          </div>
+          <div v-if="isAIThinking" class="flex justify-start">
+            <div class="rounded-2xl rounded-bl-md px-4 py-2.5 bg-indigo-500/20 border border-indigo-500/30 text-slate-300 text-sm flex items-center gap-2">
+              <span class="flex gap-1">
+                <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span>
+                <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.15s]"></span>
+                <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.3s]"></span>
+              </span>
+              Le recruteur rédige sa réponse...
+            </div>
+          </div>
+          <div v-if="transcript && !isAIThinking" class="flex justify-end">
+            <div class="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 bg-pink-500/20 border border-pink-500/30 text-pink-200 text-sm italic">
+              {{ transcript }}...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Note analyste (overlay compact) -->
+      <transition enter-active-class="transition duration-300 ease-out" leave-active-class="transition duration-200 ease-in" enter-from-class="opacity-0 translate-y-2" leave-to-class="opacity-0 translate-y-2">
+        <div v-if="analystNote" class="absolute left-4 bottom-24 z-30 max-w-xs md:left-6">
+          <div class="bg-surface-900/95 backdrop-blur border border-white/20 p-4 rounded-2xl shadow-xl">
+            <div class="flex items-center gap-2 mb-2">
+              <SparklesIcon class="w-4 h-4 text-amber-400" />
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Conseil</span>
+            </div>
+            <p class="text-sm text-white leading-relaxed">{{ analystNote.tip }}</p>
+            <span class="text-[10px] text-indigo-400 font-medium">{{ analystNote.sentiment }}</span>
+          </div>
         </div>
       </transition>
-
-      <!-- USER WEBCAM (VIGNETTE) -->
-      <div class="absolute right-6 bottom-32 w-48 md:w-64 aspect-video bg-surface-900 rounded-2xl border-2 border-white/20 shadow-2xl overflow-hidden z-20 group transition-all"
-           :class="isListening ? 'border-pink-500 scale-105 shadow-pink-500/20' : ''">
-          <video ref="userVideo" autoplay playsinline muted class="w-full h-full object-cover grayscale-[0.3]"></video>
-          <div v-if="!stream" class="absolute inset-0 flex items-center justify-center bg-surface-950 flex-col gap-2">
-              <VideoCameraSlashIcon class="w-8 h-8 text-slate-700" />
-              <span class="text-[10px] text-slate-500 uppercase font-bold">Caméra désactivée</span>
-          </div>
-          <div class="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur px-2 py-1 rounded-lg">
-              <UserIcon class="w-3 h-3 text-slate-300" />
-              <span class="text-[9px] font-bold text-white uppercase">Moi</span>
-          </div>
-      </div>
-
-      <!-- TRANSCRIPTION DRAWER (Toggleable) -->
-      <div v-if="showChat" class="absolute left-6 bottom-32 w-80 max-h-[40%] bg-black/60 backdrop-blur-3xl border border-white/10 rounded-3xl z-40 flex flex-col overflow-hidden animate-fade-in-up">
-          <div class="p-4 border-b border-white/5 flex items-center justify-between">
-              <span class="text-xs font-black uppercase text-slate-400">Transcription</span>
-              <button @click="showChat = false" class="p-1 hover:bg-white/10 rounded-lg text-slate-400"><XMarkIcon class="w-4 h-4" /></button>
-          </div>
-          <div class="flex-1 overflow-y-auto p-4 space-y-4 text-sm scroll-smooth" ref="chatContainer">
-              <div v-for="msg in conversation" :key="msg.id" :class="msg.role === 'user' ? 'text-indigo-200' : 'text-slate-300'">
-                  <span class="font-bold text-[10px] block opacity-50">{{ msg.role === 'user' ? 'VOUS' : 'RECRUTEUR' }}</span>
-                  {{ msg.content }}
-              </div>
-              <div v-if="transcript" class="text-pink-300 italic opacity-60">{{ transcript }}...</div>
-          </div>
-      </div>
-
-      <!-- MEETING TOOLBAR -->
-      <div class="absolute bottom-10 w-full flex items-center justify-center gap-6 z-50">
-          <div class="bg-black/30 backdrop-blur-3xl border border-white/10 p-2.5 rounded-[2.5rem] flex items-center gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-white/5">
-              
-              <!-- Toggle Transcription -->
-              <button @click="showChat = !showChat" 
-                :class="showChat ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/40' : 'text-slate-400 hover:text-white hover:bg-white/5'"
-                class="p-4 rounded-2xl transition-all" title="Transcription">
-                  <ChatBubbleLeftRightIcon class="w-6 h-6" />
-              </button>
-
-
-              <!-- Manual Audio Recovery -->
-              <button @click="testAudio" 
-                class="p-4 rounded-full text-slate-400 hover:text-indigo-400 transition-all border border-dashed border-white/5" title="Relancer le son">
-                  <SpeakerWaveIcon class="w-6 h-6" />
-              </button>
-
-              <!-- Main Interaction Button (The Orb) -->
-              <button @click="triggerListen" class="relative group mx-2">
-                  <div class="absolute inset-0 rounded-full blur-3xl transition-all duration-700 group-hover:scale-125"
-                    :class="isListening ? 'bg-pink-500/60 opacity-80' : (isAIThinking ? 'bg-indigo-500/60 opacity-80' : 'bg-indigo-500/20 opacity-0')"></div>
-                  
-                  <div class="w-24 h-24 rounded-full flex items-center justify-center border-[6px] relative z-10 transition-all duration-300 shadow-2xl"
-                    :class="isListening 
-                       ? 'bg-pink-500 border-pink-300 shadow-[0_0_40px_#ec4899] scale-105' 
-                       : (isAIThinking ? 'bg-indigo-600 border-indigo-300 animate-pulse' : 'bg-surface-900 border-white/10 group-hover:border-white/30')">
-                      
-                      <div v-if="isAIThinking" class="flex gap-1.5">
-                          <span class="w-2.5 h-2.5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                          <span class="w-2.5 h-2.5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                          <span class="w-2.5 h-2.5 bg-white rounded-full animate-bounce"></span>
-                      </div>
-                      <StopIcon v-else-if="isListening" class="w-12 h-12 text-white" />
-                      <MicrophoneIcon v-else class="w-12 h-12 text-white group-hover:scale-110 transition-transform" />
-                  </div>
-              </button>
-
-              <!-- End Call Button -->
-              <button @click="finishInterview" class="p-4 rounded-full text-rose-500 hover:bg-rose-500/20 transition-all" title="Terminer et voir mon bilan">
-                  <div class="bg-rose-600 p-2.5 rounded-full rotate-[135deg] shadow-lg shadow-rose-900/50">
-                      <PhoneIcon class="w-6 h-6 text-white" />
-                  </div>
-              </button>
-          </div>
-      </div>
 
       <!-- SCORECARD MODAL -->
       <div v-if="showScorecard" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
