@@ -31,6 +31,9 @@ class HunterAgent(BaseAgent):
         # Sources spécifiques Amériques
         elif any(w in loc_lower for w in ["usa", "united states", "california", "new york", "texas", "canada", "montreal", "toronto", "vancouver", "chicago", "seattle", "boston", "silicon valley", "florida"]):
             apis_to_use += ["linkedin", "indeed"]
+        # Cameroun : scraper Emploi.cm
+        elif any(w in loc_lower for w in ["cameroun", "cameroon", "yaoundé", "yaounde", "douala", "garoua", "bafoussam"]):
+            apis_to_use += ["emploi_cm", "linkedin", "indeed_fr"]
         # Reste du monde
         else:
             apis_to_use += ["linkedin", "indeed_fr"]
@@ -91,6 +94,8 @@ class HunterAgent(BaseAgent):
                         tasks.append(self._search_indeed_fr(kw, location, api_limit))
                     elif api == "google_jobs":
                         tasks.append(self._search_google_jobs(kw, location, api_limit))
+                    elif api == "emploi_cm":
+                        tasks.append(self._search_emploi_cm(kw, location, api_limit))
                 
                 if not tasks:
                     return []
@@ -342,6 +347,18 @@ class HunterAgent(BaseAgent):
             return results
         except Exception as e:
             logger.error(f"Google Jobs Error: {e}")
+            return []
+
+    async def _search_emploi_cm(self, kw, loc, limit):
+        """Scrape Emploi.cm (recherche-jobs-cameroun) pour les offres au Cameroun."""
+        try:
+            from tools.emploi_cm_searcher import EmploiCmSearcher
+            searcher = EmploiCmSearcher()
+            results = await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+            logger.info(f"📄 Emploi.cm: {len(results)} offres pour '{kw}'")
+            return results
+        except Exception as e:
+            logger.error(f"Emploi.cm Error: {e}")
             return []
 
     async def enrich_jobs(self, jobs: List[Dict[str, Any]], limit: int = 15) -> List[Dict[str, Any]]:

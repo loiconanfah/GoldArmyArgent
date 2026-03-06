@@ -84,6 +84,14 @@ class JobSearchAgent(BaseAgent):
         "barcelona": "Barcelona, Spain",
         "allemagne": "Germany",
         "berlin": "Berlin, Germany",
+        # Cameroun
+        "cameroun": "Cameroun",
+        "cameroon": "Cameroun",
+        "yaoundé": "Yaoundé, Cameroun",
+        "yaounde": "Yaoundé, Cameroun",
+        "douala": "Douala, Cameroun",
+        "garoua": "Garoua, Cameroun",
+        "bafoussam": "Bafoussam, Cameroun",
     }
 
     def _normalize_location(self, loc: str) -> str:
@@ -147,8 +155,8 @@ class JobSearchAgent(BaseAgent):
         logger.info("🎬 Orchestrateur: Phase d'exécution du Swarm (Waves Strategy)...")
         
         all_apis = action_plan.get("criteria", {}).get("apis", [])
-        # Vague 1 : APIs Ultra-Rapides (Jooble, JSearch, Findwork sont souvent < 5s)
-        wave_1_apis = [api for api in all_apis if api in ["jooble", "jsearch", "findwork", "gov"]]
+        # Vague 1 : APIs Ultra-Rapides (Jooble, JSearch, Findwork, Emploi.cm, etc.)
+        wave_1_apis = [api for api in all_apis if api in ["jooble", "jsearch", "findwork", "gov", "emploi_cm"]]
         # Vague 2 : APIs Profondes ou plus lentes
         wave_2_apis = [api for api in all_apis if api not in wave_1_apis]
 
