@@ -1,259 +1,417 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
 import { articles } from '@/data/articles'
 import { ArrowLeftIcon, ArrowRightIcon, LinkIcon } from '@heroicons/vue/24/outline'
+import LandingNav from '@/components/LandingNav.vue'
 import Footer from '@/components/Footer.vue'
 
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const article = computed(() => {
-  return articles.find(a => a.id === route.params.id)
+const article = computed(() => articles.find(a => a.id === route.params.id))
+
+useHead({
+  title: computed(() => article.value ? `${article.value.title} | GoldArmy Blog` : 'Blog | GoldArmy'),
+  meta: [
+    {
+      name: 'description',
+      content: computed(() => article.value?.description ?? t('seo.blog.description'))
+    }
+  ]
 })
 
 const scrollProgress = ref(0)
-const isLoaded = ref(false)
 
-const handleScroll = () => {
+function handleScroll() {
   const windowHeight = window.innerHeight
-  const documentHeight = document.documentElement.scrollHeight
-  const scrollTop = window.scrollY
-  scrollProgress.value = (scrollTop / (documentHeight - windowHeight)) * 100
+  const documentHeight = document.documentElement.scrollHeight - windowHeight
+  if (documentHeight <= 0) return
+  scrollProgress.value = (window.scrollY / documentHeight) * 100
 }
 
-const copyLink = () => {
+function copyLink() {
   navigator.clipboard.writeText(window.location.href)
   alert(t('blog.link_copied'))
 }
 
-const shareLinkedIn = () => {
-  const url = encodeURIComponent(window.location.href)
-  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank')
+function shareLinkedIn() {
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank')
 }
 
-const shareTwitter = () => {
+function shareTwitter() {
   const url = encodeURIComponent(window.location.href)
   const text = encodeURIComponent(t('blog.share_text', { title: article.value?.title }))
   window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank')
 }
 
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString(locale.value === 'fr' ? 'fr-FR' : 'en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
+}
+
 onMounted(() => {
-  if (article.value) {
-    useHead({
-      title: `${article.value.title} | GoldArmy AI Blog`,
-      meta: [
-        { name: 'description', content: article.value.description }
-      ]
-    })
-    window.addEventListener('scroll', handleScroll)
-    // Trigger entrance animations
-    setTimeout(() => {
-      isLoaded.value = true
-    }, 100)
-  } else {
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = '/orvimo-landing.css'
+  link.id = 'orvimo-landing-css'
+  document.head.appendChild(link)
+  document.documentElement.classList.add('w-mod-ix3')
+  if (!article.value) {
     router.replace('/blog')
+    return
   }
+  window.addEventListener('scroll', handleScroll)
 })
 
 onUnmounted(() => {
+  const link = document.getElementById('orvimo-landing-css')
+  if (link) link.remove()
+  document.documentElement.classList.remove('w-mod-ix3')
   window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0a12] text-white font-sans overflow-x-hidden selection:bg-violet-500/30" v-if="article">
-    
-    <!-- Reading Progress Bar -->
-    <div class="fixed top-0 left-0 h-1 bg-gradient-to-r from-violet-600 to-indigo-400 z-[200] transition-all duration-150 ease-out"
-         :style="{ width: `${scrollProgress}%` }">
-    </div>
+  <div v-if="article" class="page-wrapper page-wrapper--article">
+    <div class="article-progress" :style="{ width: `${scrollProgress}%` }"></div>
 
-    <!-- Premium Navbar matching Landing.vue -->
-    <nav class="fixed top-6 inset-x-0 z-[100] px-6 transition-all duration-700 delay-300"
-         :class="isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8'">
-      <div class="max-w-7xl mx-auto flex items-center justify-between
-                  bg-white/5 backdrop-blur-2xl border border-white/10
-                  rounded-2xl px-6 py-4 shadow-2xl shadow-black/40">
-        <router-link to="/" class="flex items-center gap-3 group">
-          <div class="w-9 h-9 rounded-xl overflow-hidden border border-violet-500/30 shadow-[0_0_20px_rgba(124,58,237,0.4)] group-hover:shadow-[0_0_30px_rgba(124,58,237,0.6)] transition-shadow">
-            <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
+    <LandingNav />
+
+    <main class="main dark-secondary">
+      <article class="article-content">
+        <header class="article-header">
+          <router-link to="/blog" class="article-back">
+            <ArrowLeftIcon class="article-back__icon" />
+            {{ t('blog.back_to_blog') }}
+          </router-link>
+
+          <div class="article-meta">
+            <time :datetime="article.date">{{ formatDate(article.date) }}</time>
+            <span class="article-meta__dot"></span>
+            <span>{{ article.readTime }}</span>
           </div>
-          <span class="text-lg font-black tracking-tight uppercase text-white group-hover:text-violet-100 transition-colors">GoldArmy</span>
-        </router-link>
-        <div class="hidden md:flex items-center gap-8">
-          <router-link to="/" class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">{{ t('landing.nav.home') }}</router-link>
-          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors">{{ t('landing.nav.blog') }}</router-link>
+
+          <h1 class="article-title">{{ article.title }}</h1>
+          <p class="article-lead">{{ article.description }}</p>
+        </header>
+
+        <div class="article-hero-image">
+          <img :src="article.image" :alt="article.title" loading="eager" />
         </div>
-        <div class="flex items-center gap-3">
-          <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-            {{ t('landing.nav.login') }}
-          </router-link>
-          <router-link to="/register"
-            class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
-                   px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
-                   transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
-            {{ t('landing.nav.get_started') }} →
-          </router-link>
-        </div>
-      </div>
-    </nav>
 
-    <!-- Floating Share Sidebar (Desktop only) -->
-    <div class="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 flex-col gap-4 z-50 transition-all duration-1000 delay-500"
-         :class="isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'">
-      <div class="w-px h-16 bg-gradient-to-b from-transparent to-white/20 mx-auto mb-2"></div>
-      
-      <button @click="shareLinkedIn" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all hover:scale-110 group" title="Partager sur LinkedIn">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-      </button>
+        <div class="article-body-wrap">
+          <div v-html="article.content" class="article-body"></div>
 
-      <button @click="shareTwitter" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-sky-400 hover:bg-sky-500/10 hover:border-sky-500/30 transition-all hover:scale-110 group" title="Partager sur X (Twitter)">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
-      </button>
-
-      <button @click="copyLink" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 hover:border-white/30 transition-all hover:scale-110 group" title="Copier le lien">
-        <LinkIcon class="w-4 h-4" />
-      </button>
-
-      <div class="w-px h-16 bg-gradient-to-t from-transparent to-white/20 mx-auto mt-2"></div>
-    </div>
-
-    <!-- Article Header -->
-    <div class="relative pt-40 pb-12 px-6 max-w-4xl mx-auto z-10 transition-all duration-1000"
-         :class="isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'">
-      
-      <!-- Glow blobs behind title -->
-      <div class="absolute top-[20%] right-[-20%] w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none transition-opacity duration-1000 delay-500"
-           :class="isLoaded ? 'opacity-100' : 'opacity-0'"></div>
-      <div class="absolute top-[40%] left-[-10%] w-[300px] h-[300px] bg-indigo-600/15 rounded-full blur-[100px] pointer-events-none transition-opacity duration-1000 delay-700"
-           :class="isLoaded ? 'opacity-100' : 'opacity-0'"></div>
-
-      <button @click="router.push('/blog')" class="flex items-center gap-2 text-white/40 hover:text-white transition-colors mb-12 text-xs font-bold uppercase tracking-widest group">
-        <ArrowLeftIcon class="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> {{ t('blog.back_to_blog') }}
-      </button>
-
-      <div class="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-violet-400 mb-6">
-        <span class="px-3 py-1 rounded-full border border-violet-500/30 bg-violet-500/10">{{ new Date(article.date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
-        <span class="w-1 h-1 rounded-full bg-violet-400/50"></span>
-        <span class="flex items-center gap-1.5"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> {{ t('blog.read_time', { time: article.readTime }) }}</span>
-      </div>
-
-      <h1 class="text-4xl md:text-6xl font-black mb-8 leading-[1.1] tracking-tighter">
-        {{ article.title }}
-      </h1>
-      
-      <p class="text-xl text-white/50 leading-relaxed max-w-2xl border-l-2 border-violet-500/50 pl-6">
-        {{ article.description }}
-      </p>
-    </div>
-
-    <!-- Hero Image Parallax Wrapper -->
-    <div class="relative max-w-5xl mx-auto px-6 mb-24 z-10 transition-all duration-1000 delay-300"
-         :class="isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'">
-      <div class="h-[400px] md:h-[600px] w-full rounded-[2.5rem] overflow-hidden border border-white/10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] relative group">
-        <!-- Overlay gradients for depth -->
-        <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0a0a12] to-transparent z-10 pointer-events-none opacity-60"></div>
-        <div class="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-[2.5rem] z-20 pointer-events-none"></div>
-        
-        <!-- The Image with smooth scale animation -->
-        <img :src="article.image" :alt="article.title" 
-             class="w-full h-full object-cover transition-transform duration-[20s] ease-out group-hover:scale-110" 
-             style="transform-origin: center center" />
-      </div>
-    </div>
-
-    <!-- Article Content -->
-    <div class="relative z-10 px-6 pb-32 max-w-3xl mx-auto prose prose-invert prose-lg 
-                prose-p:text-white/70 prose-p:leading-[1.8] prose-p:tracking-[0.01em]
-                prose-a:text-violet-400 hover:prose-a:text-violet-300 prose-a:transition-colors prose-a:underline-offset-4 prose-a:decoration-violet-500/30 hover:prose-a:decoration-violet-400
-                prose-headings:text-white prose-headings:font-black prose-headings:tracking-tight 
-                prose-strong:text-white prose-strong:font-bold
-                prose-blockquote:border-l-4 prose-blockquote:border-violet-500 prose-blockquote:bg-white/[0.02] prose-blockquote:pl-6 prose-blockquote:py-2 prose-blockquote:rounded-r-xl prose-blockquote:not-italic
-                prose-li:marker:text-violet-500
-                transition-all duration-1000 delay-500"
-         :class="isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'">
-      
-      <div v-html="article.content" class="article-body"></div>
-      
-      <!-- Premium CTAs Matching Landing Tone -->
-      <div class="mt-32 pt-20 border-t border-white/5 text-center relative">
-        <!-- Glow behind CTA -->
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-violet-600/10 blur-[100px] rounded-full pointer-events-none"></div>
-        
-        <div class="relative z-10 p-12 rounded-[3rem] bg-gradient-to-b from-white/[0.03] to-transparent border border-white/5 shadow-2xl backdrop-blur-xl">
-            <p class="text-[10px] font-black uppercase tracking-[0.5em] text-violet-500 mb-6 flex items-center justify-center gap-3">
-              <span class="w-8 h-px bg-violet-500/30"></span> {{ t('blog.cta_tagline') }} <span class="w-8 h-px bg-violet-500/30"></span>
-            </p>
-            <h3 class="text-4xl lg:text-5xl font-black mb-6 tracking-tighter leading-tight">{{ t('blog.cta_title') }}</h3>
-            <p class="text-lg text-white/50 mb-10 max-w-lg mx-auto leading-relaxed">{{ t('blog.cta_subtitle') }}</p>
-            
-            <router-link to="/register"
-              class="inline-flex items-center justify-center gap-3 bg-white text-[#0a0a12] font-black text-sm uppercase tracking-[0.2em]
-                     px-12 py-5 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all hover:scale-[1.03] active:scale-95 hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] group w-full sm:w-auto">
-              {{ t('blog.cta_button') }} <ArrowRightIcon class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <footer class="article-cta">
+            <p class="article-cta__tagline">{{ t('blog.cta_tagline') }}</p>
+            <h2 class="article-cta__title">{{ t('blog.cta_title') }}</h2>
+            <p class="article-cta__subtitle">{{ t('blog.cta_subtitle') }}</p>
+            <router-link to="/register" class="article-cta__btn">
+              {{ t('blog.cta_button') }}
+              <ArrowRightIcon class="article-cta__btn-icon" />
             </router-link>
-            
-            <p class="mt-8 text-xs font-bold text-white/30 uppercase tracking-widest">{{ t('blog.cta_free_trial') }}</p>
+            <p class="article-cta__footnote">{{ t('blog.cta_free_trial') }}</p>
+          </footer>
         </div>
-      </div>
-    </div>
+      </article>
+
+      <aside class="article-share">
+        <button type="button" class="article-share__btn" title="LinkedIn" @click="shareLinkedIn" aria-label="Partager sur LinkedIn">
+          <svg class="article-share__icon" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+        </button>
+        <button type="button" class="article-share__btn" title="X (Twitter)" @click="shareTwitter" aria-label="Partager sur X">
+          <svg class="article-share__icon" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </button>
+        <button type="button" class="article-share__btn" title="Copier le lien" @click="copyLink" aria-label="Copier le lien">
+          <LinkIcon class="article-share__icon" />
+        </button>
+      </aside>
+    </main>
 
     <Footer />
   </div>
 </template>
 
-<style>
-/* Scoped overrides for the v-html injected content for maximum legibility and style */
-.article-body h2 {
-  font-size: 2.5rem;
-  margin-top: 4.5rem;
-  margin-bottom: 2rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  position: relative;
+<style scoped>
+/* Thème identique landing (orvimo dark) */
+.page-wrapper--article {
+  min-height: 100vh;
+  overflow-x: clip;
+  --_theme---bodybackground: #2e2e2e;
+  --_theme---textcolor--primarytext: #ffffff;
+  --_theme---textcolor--secondarytext: #e8e8e8;
+  --_theme---textcolor--tertiarytext: #b8b8b8;
+  --_theme---background--primarybackground: #2e2e2e;
+  --_theme---background--secondarybackground: #1f1f1f;
+  --_theme---textcolor--accenttext1: #ff6f00;
+  --_theme---border--mediumalpha: rgba(255, 255, 255, 0.12);
+  background-color: var(--_theme---bodybackground);
+  color: var(--_theme---textcolor--primarytext);
 }
-.article-body h2::after {
-  content: '';
-  position: absolute;
-  bottom: -1rem;
+.page-wrapper--article :deep(.main) {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.article-progress {
+  position: fixed;
+  top: 0;
   left: 0;
-  width: 40px;
-  height: 4px;
-  background: #8b5cf6;
-  border-radius: 2px;
+  height: 3px;
+  background: linear-gradient(90deg, #ff6f00, #ff9a5c);
+  z-index: 1001;
+  transition: width 0.1s ease-out;
 }
-.article-body p {
-  margin-bottom: 2rem;
+.article-content {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+.article-header {
+  margin-bottom: 2.5rem;
+}
+.article-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--_theme---textcolor--secondarytext);
+  text-decoration: none;
+  margin-bottom: 1.5rem;
+  transition: color 0.2s;
+}
+.article-back:hover {
+  color: var(--_theme---textcolor--accenttext1);
+}
+.article-back__icon {
+  width: 1rem;
+  height: 1rem;
+}
+.article-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--_theme---textcolor--accenttext1);
+  margin-bottom: 1rem;
+}
+.article-meta__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--_theme---textcolor--accenttext1);
+  opacity: 0.6;
+}
+.article-title {
+  font-size: clamp(1.875rem, 4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  color: var(--_theme---textcolor--primarytext);
+}
+.article-lead {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--_theme---textcolor--secondarytext);
+  margin: 0;
+  padding-left: 1.25rem;
+  border-left: 3px solid var(--_theme---textcolor--accenttext1);
+  opacity: 0.8;
+}
+.article-hero-image {
+  border-radius: var(--radius--s, 1rem);
+  overflow: hidden;
+  margin-bottom: 2.5rem;
+  border: 1px solid var(--_theme---border--mediumalpha, rgba(255, 255, 255, 0.12));
+}
+.article-hero-image img {
+  width: 100%;
+  height: auto;
+  max-height: 420px;
+  object-fit: cover;
+  display: block;
+}
+.article-body-wrap {
+  margin-bottom: 3rem;
+}
+.article-cta {
+  margin-top: 3.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--_theme---border--mediumalpha, rgba(255, 255, 255, 0.12));
+  text-align: center;
+  background: var(--_theme---background--secondarybackground);
+  border: 1px solid var(--_theme---border--mediumalpha, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius--s, 1rem);
+  padding: 2rem 1.5rem;
+}
+.article-cta__tagline {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--_theme---textcolor--accenttext1);
+  margin: 0 0 0.75rem;
+}
+.article-cta__title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+  color: var(--_theme---textcolor--primarytext);
+}
+.article-cta__subtitle {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--_theme---textcolor--secondarytext);
+  margin: 0 auto 1.5rem;
+  max-width: 480px;
+}
+.article-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #1f1f1f;
+  background: linear-gradient(135deg, #ff9a5c, #ff6f00);
+  border: none;
+  border-radius: var(--radius--xs, 0.5rem);
+  text-decoration: none;
+  box-shadow: 0 4px 20px rgba(255, 111, 0, 0.35);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.article-cta__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(255, 111, 0, 0.45);
+}
+.article-cta__btn-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+.article-cta__footnote {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--_theme---textcolor--tertiarytext);
+  margin: 1rem 0 0;
+}
+.article-share {
+  position: fixed;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 100;
+}
+@media (max-width: 1024px) {
+  .article-share {
+    display: none;
+  }
+}
+.article-share__btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--_theme---background--secondarybackground);
+  border: 1px solid var(--_theme---border--mediumalpha, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius--xs, 0.5rem);
+  color: var(--_theme---textcolor--secondarytext);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.article-share__btn:hover {
+  color: var(--_theme---textcolor--accenttext1);
+  background: rgba(255, 111, 0, 0.1);
+  border-color: rgba(255, 111, 0, 0.25);
+}
+.article-share__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+</style>
+
+<style>
+/* Contenu article : couleurs thème landing */
+.page-wrapper--article .article-body :deep(h2) {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  color: var(--_theme---textcolor--primarytext);
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(255, 111, 0, 0.35);
+}
+.page-wrapper--article .article-body :deep(p) {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--_theme---textcolor--secondarytext);
+  margin-bottom: 1.25rem;
+}
+.page-wrapper--article .article-body :deep(p:first-of-type) {
   font-size: 1.125rem;
 }
-.article-body p:first-of-type::first-letter {
-  font-size: 4rem;
-  font-weight: 900;
-  color: #8b5cf6;
-  float: left;
-  line-height: 1;
-  margin-right: 0.75rem;
-  margin-top: 0.25rem;
+.page-wrapper--article .article-body :deep(a) {
+  color: var(--_theme---textcolor--accenttext1);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.article-body ul, .article-body ol {
-  margin-top: 2rem;
-  margin-bottom: 3rem;
+.page-wrapper--article .article-body :deep(a:hover) {
+  color: #ffb380;
+}
+.page-wrapper--article .article-body :deep(strong) {
+  color: var(--_theme---textcolor--primarytext);
+  font-weight: 700;
+}
+.page-wrapper--article .article-body :deep(ul),
+.page-wrapper--article .article-body :deep(ol) {
+  margin: 1.25rem 0;
   padding-left: 1.5rem;
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 1rem;
-  padding: 2rem 2rem 2rem 3rem;
+  color: var(--_theme---textcolor--secondarytext);
+  line-height: 1.7;
 }
-.article-body li {
-  margin-bottom: 1.25rem;
-  line-height: 1.8;
+.page-wrapper--article .article-body :deep(li) {
+  margin-bottom: 0.5rem;
 }
-.article-body li:last-child {
-  margin-bottom: 0;
+.page-wrapper--article .article-body :deep(li::marker) {
+  color: var(--_theme---textcolor--accenttext1);
+}
+.page-wrapper--article .article-body :deep(img) {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+  border: 1px solid var(--_theme---border--mediumalpha, rgba(255, 255, 255, 0.12));
+}
+.page-wrapper--article .article-body :deep(blockquote) {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid var(--_theme---textcolor--accenttext1);
+  background: rgba(255, 111, 0, 0.06);
+  border-radius: 0 8px 8px 0;
+  color: var(--_theme---textcolor--primarytext);
+  font-style: normal;
 }
 </style>

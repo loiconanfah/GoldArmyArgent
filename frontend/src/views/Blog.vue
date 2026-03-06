@@ -1,14 +1,32 @@
 <script setup>
-import { onMounted, computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
 import { articles } from '@/data/articles'
-import { ChevronRightIcon } from '@heroicons/vue/24/outline'
+import LandingNav from '@/components/LandingNav.vue'
 import Footer from '@/components/Footer.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+
+const featuredArticle = computed(() => articles[0] ?? null)
+const otherFeatured = computed(() => articles.slice(1, 6))
+const recentArticles = computed(() => articles)
+
+onMounted(() => {
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = '/orvimo-landing.css'
+  link.id = 'orvimo-landing-css'
+  document.head.appendChild(link)
+  document.documentElement.classList.add('w-mod-ix3')
+})
+onUnmounted(() => {
+  const link = document.getElementById('orvimo-landing-css')
+  if (link) link.remove()
+  document.documentElement.classList.remove('w-mod-ix3')
+})
 
 useHead({
   title: computed(() => t('seo.blog.title')),
@@ -16,95 +34,396 @@ useHead({
     { name: 'description', content: computed(() => t('seo.blog.description')) }
   ]
 })
+
+function goToArticle(id) {
+  router.push(`/blog/${id}`)
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0a12] text-white font-sans overflow-x-hidden selection:bg-violet-500/30">
-    
-    <!-- Premium Navbar matching Landing.vue -->
-    <nav class="fixed top-6 inset-x-0 z-[100] px-6">
-      <div class="max-w-7xl mx-auto flex items-center justify-between
-                  bg-white/5 backdrop-blur-2xl border border-white/10
-                  rounded-2xl px-6 py-4 shadow-2xl shadow-black/40">
-        <router-link to="/" class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl overflow-hidden border border-violet-500/30 shadow-[0_0_20px_rgba(124,58,237,0.4)]">
-            <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
-          </div>
-          <span class="text-lg font-black tracking-tight uppercase text-white">GoldArmy</span>
-        </router-link>
-        <div class="hidden md:flex items-center gap-8">
-          <router-link to="/" class="text-xs font-bold uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors">{{ t('landing.nav.home') }}</router-link>
-          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors">{{ t('landing.nav.blog') }}</router-link>
-        </div>
-        <div class="flex items-center gap-3">
-          <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-            {{ t('landing.nav.login') }}
-          </router-link>
-          <router-link to="/register"
-            class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
-                   px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
-                   transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
-            {{ t('landing.nav.get_started') }} →
-          </router-link>
-        </div>
-      </div>
-    </nav>
+  <div class="page-wrapper page-wrapper--blog">
+    <LandingNav />
+    <main class="main dark-secondary">
+      <!-- Featured Posts -->
+      <section class="section blog-featured">
+        <div class="blog-featured__container">
+          <div class="blog-featured__grid">
+            <!-- Main featured card -->
+            <article
+              v-if="featuredArticle"
+              class="blog-featured__main"
+              @click="goToArticle(featuredArticle.id)"
+            >
+              <div class="blog-featured__main-img-wrap">
+                <img
+                  :src="featuredArticle.image"
+                  :alt="featuredArticle.title"
+                  class="blog-featured__main-img"
+                  loading="eager"
+                />
+                <div class="blog-featured__main-overlay"></div>
+                <div class="blog-featured__main-content">
+                  <span class="blog-featured__pill">{{ t('blog.category_default') }}</span>
+                  <h2 class="blog-featured__main-title">{{ featuredArticle.title }}</h2>
+                </div>
+              </div>
+            </article>
 
-    <!-- Header Section with Glows -->
-    <section class="relative pt-40 pb-20 overflow-hidden">
-      <!-- Glow blobs -->
-      <div class="absolute top-[-10%] right-[10%] w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none"></div>
-      <div class="absolute top-[20%] left-[-10%] w-[300px] h-[300px] bg-indigo-600/15 rounded-full blur-[100px] pointer-events-none"></div>
-
-      <div class="relative px-6 max-w-7xl mx-auto text-center z-10">
-        <div class="inline-flex items-center gap-2.5 mb-8 px-4 py-2 rounded-full
-                    bg-violet-500/10 border border-violet-500/20 text-violet-300 text-[10px] font-black uppercase tracking-[0.3em]">
-          {{ t('blog.tagline') }}
-        </div>
-        <h1 class="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-tight">
-          {{ t('blog.title_main') }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">{{ t('blog.title_highlight') }}</span><br/>
-          <span class="text-white/30">{{ t('blog.title_sub') }}</span>
-        </h1>
-        <p class="text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-          {{ t('blog.subtitle') }}
-        </p>
-      </div>
-    </section>
-
-    <!-- Article Grid -->
-    <section class="px-6 pb-32 max-w-7xl mx-auto relative z-10">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <article 
-          v-for="article in articles" 
-          :key="article.id"
-          @click="router.push(`/blog/${article.id}`)"
-          class="bg-white/3 border border-white/8 rounded-3xl overflow-hidden hover:border-violet-500/30 hover:bg-white/5 transition-all cursor-pointer group flex flex-col shadow-2xl shadow-black/50"
-        >
-          <div class="h-56 overflow-hidden relative border-b border-white/5">
-            <!-- Image Overlay Glow -->
-            <div class="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0a12]/80 z-10"></div>
-            <img :src="article.image" :alt="article.title" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
-          </div>
-          <div class="p-8 flex-1 flex flex-col relative z-20 -mt-10">
-            <div class="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-violet-400 mb-4">
-              <span>{{ new Date(article.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) }}</span>
-              <span class="w-1 h-1 rounded-full bg-violet-400/50"></span>
-              <span>Lecture {{ article.readTime }}</span>
-            </div>
-            <h2 class="text-2xl font-black tracking-tight mb-4 group-hover:text-violet-300 transition-colors line-clamp-3 leading-snug">
-              {{ article.title }}
-            </h2>
-            <p class="text-white/50 text-sm mb-8 line-clamp-3 flex-1 leading-relaxed">
-              {{ article.description }}
-            </p>
-            <div class="flex items-center gap-2 text-violet-400 font-bold text-xs uppercase tracking-widest mt-auto group-hover:translate-x-2 transition-transform">
-              {{ t('blog.read_more') }} <ChevronRightIcon class="w-4 h-4" />
+            <!-- Other featured posts -->
+            <div class="blog-featured__side">
+              <h3 class="blog-featured__side-title">{{ t('blog.other_featured_posts') }}</h3>
+              <div class="blog-featured__list">
+                <button
+                  v-for="art in otherFeatured"
+                  :key="art.id"
+                  type="button"
+                  class="blog-featured__item"
+                  @click="goToArticle(art.id)"
+                >
+                  <div class="blog-featured__item-thumb">
+                    <img :src="art.image" :alt="art.title" loading="lazy" />
+                  </div>
+                  <span class="blog-featured__item-title">{{ art.title }}</span>
+                </button>
+              </div>
             </div>
           </div>
-        </article>
-      </div>
-    </section>
+        </div>
+      </section>
 
+      <!-- Recent Posts -->
+      <section id="recent-posts" class="section blog-recent">
+        <div class="blog-recent__container">
+          <header class="blog-recent__header">
+            <h2 class="blog-recent__heading">{{ t('blog.recent_posts') }}</h2>
+            <a href="#recent-posts" class="blog-recent__all-btn">{{ t('blog.all_posts') }}</a>
+          </header>
+          <div class="blog-recent__grid">
+            <article
+              v-for="article in recentArticles"
+              :key="article.id"
+              class="blog-recent__card"
+              @click="goToArticle(article.id)"
+            >
+              <div class="blog-recent__card-img-wrap">
+                <img
+                  :src="article.image"
+                  :alt="article.title"
+                  class="blog-recent__card-img"
+                  loading="lazy"
+                />
+              </div>
+              <div class="blog-recent__card-body">
+                <h3 class="blog-recent__card-title">{{ article.title }}</h3>
+                <p class="blog-recent__card-desc">{{ article.description }}</p>
+                <div class="blog-recent__card-meta">
+                  <span class="blog-recent__card-author">
+                    <span class="blog-recent__avatar">{{ (article.author || t('blog.author_default')).charAt(0) }}</span>
+                    {{ article.author || t('blog.author_default') }}
+                  </span>
+                  <span class="blog-recent__card-dot"></span>
+                  <span class="blog-recent__card-read">{{ article.readTime }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
     <Footer />
   </div>
 </template>
+
+<style scoped>
+/* Thème identique landing (orvimo dark) */
+.page-wrapper--blog {
+  min-height: 100vh;
+  overflow-x: clip;
+  --_theme---bodybackground: #2e2e2e;
+  --_theme---textcolor--primarytext: #ffffff;
+  --_theme---textcolor--secondarytext: #e8e8e8;
+  --_theme---textcolor--tertiarytext: #b8b8b8;
+  --_theme---background--primarybackground: #2e2e2e;
+  --_theme---background--secondarybackground: #1f1f1f;
+  --_theme---background--tertiarybackground: #333;
+  --_theme---border--mediumalpha: rgba(255, 255, 255, 0.12);
+  --_theme---textcolor--accenttext1: #ff6f00;
+  background-color: var(--_theme---bodybackground);
+  color: var(--_theme---textcolor--primarytext);
+}
+.page-wrapper--blog :deep(.main) {
+  padding-top: 0;
+}
+
+/* Featured section */
+.blog-featured {
+  padding: 2.5rem 1.5rem 3rem;
+}
+.blog-featured__container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.blog-featured__grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 900px) {
+  .blog-featured__grid {
+    grid-template-columns: 1.4fr 1fr;
+    gap: 2.5rem;
+  }
+}
+
+.blog-featured__main {
+  border-radius: 1rem;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.blog-featured__main:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+.blog-featured__main-img-wrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  min-height: 280px;
+}
+.blog-featured__main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.blog-featured__main-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(30, 30, 30, 0.95) 0%, transparent 50%);
+  pointer-events: none;
+}
+.blog-featured__main-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1.5rem 1.5rem 1.75rem;
+}
+.blog-featured__pill {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--_theme---background--secondarybackground);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 0.75rem;
+}
+.blog-featured__main-title {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 0;
+  color: var(--_theme---textcolor--primarytext);
+}
+
+.blog-featured__side-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--_theme---textcolor--primarytext);
+  margin: 0 0 1.25rem;
+}
+.blog-featured__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.blog-featured__item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  transition: background 0.2s;
+}
+.blog-featured__item:hover {
+  background: var(--_theme---background--secondarybackground);
+}
+.blog-featured__item-thumb {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: var(--_theme---background--tertiarybackground);
+}
+.blog-featured__item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.blog-featured__item-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--_theme---textcolor--primarytext);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Recent section */
+.blog-recent {
+  padding: 0 1.5rem 4rem;
+}
+.blog-recent__container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.blog-recent__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.blog-recent__heading {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--_theme---textcolor--primarytext);
+  margin: 0;
+}
+.blog-recent__all-btn {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--_theme---textcolor--primarytext);
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--_theme---border--mediumalpha);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.blog-recent__all-btn:hover {
+  border-color: var(--_theme---textcolor--accenttext1);
+  background: rgba(255, 111, 0, 0.08);
+}
+
+.blog-recent__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.75rem;
+}
+@media (min-width: 768px) {
+  .blog-recent__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .blog-recent__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+}
+
+.blog-recent__card {
+  background: var(--_theme---background--secondarybackground);
+  border: 1px solid var(--_theme---border--mediumalpha);
+  border-radius: 1rem;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.25s, transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.blog-recent__card:hover {
+  border-color: rgba(255, 111, 0, 0.35);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+.blog-recent__card-img-wrap {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+.blog-recent__card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.blog-recent__card:hover .blog-recent__card-img {
+  transform: scale(1.05);
+}
+.blog-recent__card-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.blog-recent__card-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  margin: 0 0 0.5rem;
+  color: var(--_theme---textcolor--primarytext);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.blog-recent__card-desc {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--_theme---textcolor--secondarytext);
+  margin: 0 0 1rem;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.blog-recent__card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--_theme---textcolor--tertiarytext);
+}
+.blog-recent__card-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.blog-recent__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--_theme---textcolor--accenttext1);
+  color: #1f1f1f;
+  font-weight: 700;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.blog-recent__card-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--_theme---textcolor--tertiarytext);
+}
+</style>
