@@ -20,8 +20,11 @@ import {
   MicrophoneIcon,
   UserIcon,
   SparklesIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  SunIcon,
+  MoonIcon
 } from '@heroicons/vue/24/outline'
+import { useTheme } from './composables/useTheme'
 import ToastPortal from './components/ToastPortal.vue'
 
 const route = useRoute()
@@ -35,6 +38,7 @@ const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(false)
 
 const { t, locale } = useI18n()
+const { theme, toggleTheme } = useTheme()
 
 const toggleLanguage = () => {
   const nextLocale = locale.value === 'fr' ? 'en' : 'fr'
@@ -227,6 +231,16 @@ const navigation = computed(() => [
                 <span :class="locale === 'en' ? 'text-indigo-400' : ''">EN</span>
             </button>
 
+            <!-- Theme toggle -->
+            <button
+              @click="toggleTheme"
+              :title="theme === 'dark' ? t('nav.theme_light') : t('nav.theme_dark')"
+              class="p-2 text-slate-400 hover:text-white rounded-full hover:bg-surface-800 transition-colors"
+              aria-label="Toggle theme"
+            >
+              <SunIcon v-if="theme === 'dark'" class="w-5 h-5" />
+              <MoonIcon v-else class="w-5 h-5" />
+            </button>
             <!-- Notifications -->
             <button class="relative p-2 text-slate-400 hover:text-white rounded-full hover:bg-surface-800 transition-colors">
                 <BellIcon class="w-5 h-5" />
@@ -292,6 +306,6 @@ html {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569; 
+  background: #64748b; 
 }
 </style>

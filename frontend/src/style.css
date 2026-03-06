@@ -7,7 +7,7 @@
     --bg-primary: #ffffff;
     --bg-secondary: #f8fafc;
     --text-primary: #0f172a;
-    --text-secondary: #475569;
+    --text-secondary: #1e293b;
     --accent-primary: #7c3aed;
     --accent-secondary: #6d28d9;
     --border-color: rgba(0, 0, 0, 0.05);
@@ -115,4 +115,94 @@
   .mask-radial-faded {
     mask-image: radial-gradient(circle, black 40%, transparent 80%);
   }
+}
+
+/* ═══ Theme light: overrides for app (Accueil + layout) when #app has .theme-light ═══ */
+#app {
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+#app.theme-light,
+#app.theme-light .bg-surface-950 {
+  background-color: #f8fafc !important;
+}
+#app.theme-light .bg-surface-900 {
+  background-color: #f1f5f9 !important;
+}
+#app.theme-light .bg-surface-800,
+#app.theme-light .hover\:bg-surface-800:hover {
+  background-color: #e2e8f0 !important;
+}
+#app.theme-light .bg-surface-700 {
+  background-color: #cbd5e1 !important;
+}
+#app.theme-light .bg-surface-800\/70 {
+  background-color: rgba(226, 232, 240, 0.9) !important;
+}
+#app.theme-light .bg-surface-950\/80 {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+}
+#app.theme-light,
+#app.theme-light .text-slate-200,
+#app.theme-light .text-white {
+  color: #0f172a !important;
+}
+/* Texte secondaire thème clair: contraste élevé (WCAG AA) sur fond clair */
+#app.theme-light .text-slate-400,
+#app.theme-light .text-slate-500,
+#app.theme-light .text-slate-300 {
+  color: #1e293b !important;
+}
+#app.theme-light .placeholder-slate-500::placeholder {
+  color: #64748b !important;
+}
+#app.theme-light .border-surface-800,
+#app.theme-light .border-surface-700 {
+  border-color: #e2e8f0 !important;
+}
+#app.theme-light .border-surface-700\/50 {
+  border-color: rgba(203, 213, 225, 0.5) !important;
+}
+#app.theme-light .ring-surface-950 {
+  --tw-ring-color: #f8fafc;
+}
+#app.theme-light .border-surface-600 {
+  border-color: #cbd5e1 !important;
+}
+#app.theme-light input,
+#app.theme-light .focus\:border-indigo-500\/50:focus {
+  --tw-border-opacity: 1;
+}
+#app.theme-light .bg-indigo-500\/5,
+#app.theme-light .bg-indigo-500\/10 {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+}
+#app.theme-light .ring-offset-surface-950 {
+  --tw-ring-offset-color: #f8fafc;
+}
+#app.theme-light .text-slate-600,
+#app.theme-light .text-slate-700 {
+  color: #1e293b !important;
+}
+#app.theme-light .border-2.border-surface-950 {
+  border-color: #f8fafc !important;
+}
+#app.theme-light .group-hover\:ring-indigo-500\/30.group-hover {
+  --tw-ring-color: rgba(99, 102, 241, 0.3);
+}
+#app.theme-light .selection\:bg-gold-500\/30::selection {
+  background-color: rgba(245, 158, 11, 0.25);
+}
+/* Scrollbar light theme: visible sur fond clair */
+#app.theme-light ::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+}
+#app.theme-light ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+/* Graphiques / SVG en thème clair: texte et traits lisibles */
+#app.theme-light .dashboard-chart text {
+  fill: #1e293b !important;
+}
+#app.theme-light .dashboard-chart line {
+  stroke: #cbd5e1 !important;
 }

@@ -10,7 +10,9 @@
         "profile": "My Profile",
         "admin": "Admin Console",
         "settings": "Settings",
-        "logout": "Logout"
+        "logout": "Logout",
+        "theme_light": "Light theme",
+        "theme_dark": "Dark theme"
     },
     "landing": {
         "nav": {

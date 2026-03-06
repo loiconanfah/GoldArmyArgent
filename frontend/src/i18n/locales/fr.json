@@ -10,7 +10,9 @@
         "profile": "Mon Profil",
         "admin": "Console Admin",
         "settings": "Paramètres",
-        "logout": "Déconnexion"
+        "logout": "Déconnexion",
+        "theme_light": "Thème clair",
+        "theme_dark": "Thème sombre"
     },
     "landing": {
         "nav": {

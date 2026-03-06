@@ -206,6 +206,7 @@ onMounted(() => {
           <!-- Premium SVG Line Chart -->
           <div class="mt-2 w-full" style="height:220px;">
             <svg
+              class="dashboard-chart"
               :viewBox="`0 0 ${W} ${H}`"
               preserveAspectRatio="xMidYMid meet"
               class="w-full h-full"
@@ -225,13 +226,13 @@ onMounted(() => {
               <!-- Y grid lines -->
               <g v-for="g in yGridLines" :key="g.val">
                 <line :x1="PAD.left" :y1="g.y" :x2="W - PAD.right" :y2="g.y" stroke="#1e293b" stroke-width="1" stroke-dasharray="4,4"/>
-                <text :x="PAD.left - 8" :y="g.y + 4" text-anchor="end" font-size="11" fill="#475569" font-family="sans-serif">{{ g.val }}</text>
+                <text :x="PAD.left - 8" :y="g.y + 4" text-anchor="end" font-size="11" fill="#94a3b8" font-family="sans-serif">{{ g.val }}</text>
               </g>
 
               <!-- X axis ticks / labels -->
               <g v-for="(pt, i) in points" :key="'x'+i">
                 <line :x1="pt.x" :y1="H - PAD.bottom" :x2="pt.x" :y2="H - PAD.bottom + 4" stroke="#334155" stroke-width="1"/>
-                <text :x="pt.x" :y="H - PAD.bottom + 16" text-anchor="middle" font-size="10" fill="#64748b" font-family="sans-serif" font-weight="bold">{{ pt.label }}</text>
+                <text :x="pt.x" :y="H - PAD.bottom + 16" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="sans-serif" font-weight="bold">{{ pt.label }}</text>
               </g>
 
               <!-- Area fill -->
@@ -250,7 +251,7 @@ onMounted(() => {
               </g>
 
               <!-- Empty state -->
-              <text v-if="!chartData.length" :x="W/2" :y="H/2" text-anchor="middle" fill="#475569" font-size="14" font-family="sans-serif">{{ t('dashboard.recent_activity.empty') }}</text>
+              <text v-if="!chartData.length" :x="W/2" :y="H/2" text-anchor="middle" fill="#94a3b8" font-size="14" font-family="sans-serif">{{ t('dashboard.recent_activity.empty') }}</text>
             </svg>
           </div>
       </div>

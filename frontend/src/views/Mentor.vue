@@ -57,7 +57,7 @@ const handleFeatureClick = (feature) => {
   <div class="p-6 md:p-10 max-w-7xl mx-auto animate-fade-in space-y-8">
     
     <!-- Title Section -->
-    <div class="border-b border-slate-700 pb-6">
+    <div class="border-b border-surface-700 pb-6">
        <h1 class="text-3xl font-bold flex items-center gap-3 text-white">
          <span class="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20">
             <AcademicCapIcon class="w-8 h-8 text-white" />
@@ -73,7 +73,7 @@ const handleFeatureClick = (feature) => {
        <div 
          v-for="feature in mentorFeatures" 
          :key="feature.titleKey"
-         class="relative flex flex-col p-6 rounded-2xl border border-slate-700 bg-slate-800/50 backdrop-blur overflow-hidden group hover:border-slate-500 transition-colors"
+         class="relative flex flex-col p-6 rounded-2xl border border-surface-700 bg-surface-900 backdrop-blur overflow-hidden group hover:border-indigo-500/40 transition-colors"
        >
           <!-- Background Glow -->
           <div :class="`absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br ${feature.color} opacity-20 rounded-full blur-3xl group-hover:opacity-30 transition-opacity`"></div>
@@ -93,12 +93,14 @@ const handleFeatureClick = (feature) => {
              <p class="text-slate-400 text-sm leading-relaxed mb-6">{{ $t(feature.descKey) }}</p>
           </div>
           
-          <div class="relative z-10 mt-auto pt-4 border-t border-slate-700 flex justify-between items-center">
+          <div class="relative z-10 mt-auto pt-4 border-t border-surface-700 flex justify-between items-center">
              <button 
                 @click="handleFeatureClick(feature)"
                 :disabled="feature.locked" :class="[
-               'px-4 py-2 font-bold rounded-lg transition-colors text-sm w-full text-center',
-               feature.locked ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-slate-100/10 text-white hover:bg-slate-100/20'
+               'px-4 py-2.5 font-bold rounded-xl transition-all text-sm w-full text-center uppercase tracking-wide',
+               feature.locked 
+                 ? 'bg-surface-700 text-slate-400 cursor-not-allowed border border-surface-600' 
+                 : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-500 hover:to-violet-500 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98]'
              ]">
                {{ feature.locked ? $t('mentor.coming_soon_btn') : $t('mentor.launch_tool') }}
              </button>

@@ -466,12 +466,12 @@ onMounted(() => { fetchCrmData() })
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
 
 .custom-scrollbar-h::-webkit-scrollbar { height: 6px; }
 .custom-scrollbar-h::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar-h::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-.custom-scrollbar-h::-webkit-scrollbar-thumb:hover { background: #334155; }
+.custom-scrollbar-h::-webkit-scrollbar-thumb:hover { background: #475569; }
 
 @keyframes scale-in {
   from { transform: scale(0.94); opacity: 0; }
