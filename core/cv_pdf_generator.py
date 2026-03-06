@@ -25,70 +25,80 @@ THEMES = {
         "sidebar_bg": "#0f172a", "accent": "#38bdf8",
         "text_sidebar": "#e2e8f0", "text_main": "#1e293b",
         "title_main": "#0f172a", "line": "#38bdf8",
-        "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
+        "font_main": "Helvetica", "font_bold": "Helvetica-Bold",
+        "name_font_size": 22, "main_title_size": 30, "hr_thickness": 1.2,
     },
     "emerald": {
         "name": "Emerald Leader", "layout": "modern_sidebar",
         "sidebar_bg": "#064e3b", "accent": "#34d399",
         "text_sidebar": "#d1fae5", "text_main": "#1e293b",
         "title_main": "#064e3b", "line": "#34d399",
-        "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
+        "font_main": "Helvetica", "font_bold": "Helvetica-Bold",
+        "name_font_size": 20, "main_title_size": 28, "hr_thickness": 1.5,
     },
     "modern": {
         "name": "Modern Startup", "layout": "reverse_sidebar",
         "sidebar_bg": "#2e1065", "accent": "#a78bfa",
         "text_sidebar": "#ede9fe", "text_main": "#1e293b",
         "title_main": "#2e1065", "line": "#a78bfa",
-        "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
+        "font_main": "Helvetica", "font_bold": "Helvetica-Bold",
+        "name_font_size": 24, "main_title_size": 26, "hr_thickness": 1,
     },
     "minimal": {
         "name": "Executive Minimal", "layout": "classic_single",
         "sidebar_bg": "#ffffff", "accent": "#1e40af",
         "text_sidebar": "#1e293b", "text_main": "#1e293b",
         "title_main": "#0f172a", "line": "#cbd5e1",
-        "font_main": "Times-Roman", "font_bold": "Times-Bold"
+        "font_main": "Times-Roman", "font_bold": "Times-Bold",
+        "name_font_size": 20, "main_title_size": 24, "hr_thickness": 1.5,
     },
     "bold": {
         "name": "Creative Bold", "layout": "grid_bento",
         "sidebar_bg": "#18181b", "accent": "#f43f5e",
         "text_sidebar": "#f4f4f5", "text_main": "#18181b",
         "title_main": "#18181b", "line": "#f43f5e",
-        "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
+        "font_main": "Helvetica", "font_bold": "Helvetica-Bold",
+        "name_font_size": 26, "main_title_size": 32, "hr_thickness": 2,
     },
     "banker": {
         "name": "Trustworthy Banker", "layout": "executive_band",
         "sidebar_bg": "#1e3a5f", "accent": "#3b82f6",
         "text_sidebar": "#ffffff", "text_main": "#1e293b",
         "title_main": "#1e3a5f", "line": "#93c5fd",
-        "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
+        "font_main": "Helvetica", "font_bold": "Helvetica-Bold",
+        "name_font_size": 22, "main_title_size": 26, "hr_thickness": 2,
     },
     "tech": {
         "name": "Tech God Mode", "layout": "terminal_code",
         "sidebar_bg": "#0a0a0a", "accent": "#00ff7f",
         "text_sidebar": "#00ff7f", "text_main": "#e2ffe8",
         "title_main": "#00ff7f", "line": "#14532d",
-        "font_main": "Courier", "font_bold": "Courier-Bold"
+        "font_main": "Courier", "font_bold": "Courier-Bold",
+        "name_font_size": 14, "main_title_size": 16, "hr_thickness": 1,
     },
     "classic": {
         "name": "Classic Academic", "layout": "centered_minimal",
         "sidebar_bg": "#ffffff", "accent": "#7c2d12",
         "text_sidebar": "#3b1a0a", "text_main": "#1c1917",
         "title_main": "#3b1a0a", "line": "#d6b89a",
-        "font_main": "Times-Roman", "font_bold": "Times-Bold"
+        "font_main": "Times-Roman", "font_bold": "Times-Bold",
+        "name_font_size": 24, "main_title_size": 26, "hr_thickness": 1.5,
     },
     "vibrant": {
         "name": "Vibrant Energy", "layout": "split_equal",
         "sidebar_bg": "#7f1d1d", "accent": "#fb923c",
         "text_sidebar": "#ffffff", "text_main": "#1c0a0a",
         "title_main": "#7f1d1d", "line": "#fca5a5",
-        "font_main": "Helvetica", "font_bold": "Helvetica-Bold"
+        "font_main": "Helvetica", "font_bold": "Helvetica-Bold",
+        "name_font_size": 24, "main_title_size": 28, "hr_thickness": 1.8,
     },
     "luxury": {
         "name": "Elegant Luxury", "layout": "compact_tight",
         "sidebar_bg": "#1c1917", "accent": "#d97706",
         "text_sidebar": "#fef3c7", "text_main": "#1c1917",
         "title_main": "#1c1917", "line": "#fbbf24",
-        "font_main": "Times-Roman", "font_bold": "Times-Bold"
+        "font_main": "Times-Roman", "font_bold": "Times-Bold",
+        "name_font_size": 20, "main_title_size": 26, "hr_thickness": 1,
     }
 }
 
@@ -120,17 +130,20 @@ def _on(bg: HexColor) -> HexColor:
     return white if _lum(bg) < 0.25 else black
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STYLES TYPOGRAPHIQUES
+# STYLES TYPOGRAPHIQUES (varient selon le thème pour un rendu unique)
 # ─────────────────────────────────────────────────────────────────────────────
-def _get_styles(c):
+def _get_styles(c, theme_dict=None):
     base = getSampleStyleSheet()
-    LEAD = 1.3   # leading multiplier — compact but readable
+    LEAD = 1.3
+    t = theme_dict or {}
+    sb_name_font = t.get("name_font_size", 22)
+    main_title_font = t.get("main_title_size", 30)
 
     # ── Sidebar styles ──
     SB = {
         "name": ParagraphStyle(
             "sb_name", parent=base["Normal"],
-            fontName=c["FONT_BOLD"], fontSize=22, leading=26,
+            fontName=c["FONT_BOLD"], fontSize=sb_name_font, leading=sb_name_font + 4,
             textColor=_on(c["SIDEBAR_BG"]), spaceBefore=0, spaceAfter=4,
             textTransform="uppercase"
         ),
@@ -174,7 +187,7 @@ def _get_styles(c):
     M = {
         "name": ParagraphStyle(
             "m_name", parent=base["Normal"],
-            fontName=c["FONT_BOLD"], fontSize=30, leading=34,
+            fontName=c["FONT_BOLD"], fontSize=main_title_font, leading=main_title_font + 4,
             textColor=c["MAIN_TITLE"], spaceBefore=0, spaceAfter=3,
             textTransform="uppercase"
         ),
@@ -266,7 +279,7 @@ def _sidebar_header(cv_data, story, SB, c):
     story.append(Paragraph(cv_data.get("full_name", "").upper(), SB["name"]))
     if cv_data.get("title"):
         story.append(Paragraph(cv_data["title"], SB["subtitle"]))
-    story.append(HRFlowable(width="100%", thickness=1, color=c["ACCENT"],
+    story.append(HRFlowable(width="100%", thickness=c.get("HR_THICKNESS", 1), color=c["ACCENT"],
                             spaceBefore=4, spaceAfter=8))
     # Coordonnées
     for label, key in [("Email", "email"), ("Tél.", "phone"),
@@ -332,7 +345,7 @@ def _main_header(cv_data, story, M, c):
              if _clean(cv_data.get(f, ""))]
     if parts:
         story.append(Paragraph("  ·  ".join(parts), M["contact"]))
-    story.append(HRFlowable(width="100%", thickness=1.5, color=c["ACCENT"],
+    story.append(HRFlowable(width="100%", thickness=min(2, (c.get("HR_THICKNESS", 1) or 1) * 1.2), color=c["ACCENT"],
                             spaceBefore=2, spaceAfter=8))
 
 def _section_title(story, title, M, c):
@@ -781,7 +794,8 @@ def generate_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> byte
     buffer = io.BytesIO()
     theme  = THEMES.get(theme_id, THEMES["midnight"])
     c      = _get_colors(theme_id)
-    styles = _get_styles(c)
+    c["HR_THICKNESS"] = theme.get("hr_thickness", 1)
+    styles = _get_styles(c, theme)
 
     doc   = BaseDocTemplate(buffer, pagesize=LETTER)
     story: List = []

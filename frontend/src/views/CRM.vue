@@ -166,11 +166,15 @@ const generateFollowup = async (card) => {
             return
         }
 
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}))
+            followupEmail.value = `❌ ${errData.detail || errData.message || res.statusText || t('common.error')}`
+            return
+        }
         const data = await res.json()
         if (data.status === 'success') {
-            followupEmail.value = data.email
+            followupEmail.value = (data.email && String(data.email).trim()) || '⚠️ Aucun texte généré. Réessayez.'
             followupCount.value = data.followUpCount
-            // Update the card's count in UI
             const col = crmCards.value['FOLLOW_UP']
             const idx = col.findIndex(c => c.id === card.id)
             if (idx !== -1) col[idx].follow_up_count = data.followUpCount
@@ -179,10 +183,10 @@ const generateFollowup = async (card) => {
             const errStr = typeof errDetail === 'object' ? JSON.stringify(errDetail) : errDetail
             followupEmail.value = `❌ ${t('common.error')}:\n${errStr}`
         }
-    } catch(e) {
+    } catch (e) {
         followupEmail.value = `❌ ${t('common.error')}:\n${e.message}`
     } finally {
-        isAddingLink.value = false
+        isGeneratingFollowup.value = false
     }
 }
 

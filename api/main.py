@@ -152,25 +152,37 @@ async def parse_pdf(file: UploadFile = File(...)):
 class CvRewriteRequest(BaseModel):
     cv_json: str  # JSON string du CV structuré
     filename: Optional[str] = "CV_ATS_Optimise"
+    theme_id: Optional[str] = "midnight"  # midnight, emerald, modern, minimal, bold, banker, tech, classic, vibrant, luxury
 
 
 @app.post("/api/generate-cv-pdf")
-async def generate_cv_pdf_endpoint(request: CvRewriteRequest):
+async def generate_cv_pdf_endpoint(raw_request: Request):
     """
-    Reçoit les données structurées du CV (JSON) générées par le Mentor IA
-    et retourne un fichier .pdf ATS-optimisé en téléchargement.
+    Reçoit cv_json + filename + theme_id dans le body JSON.
+    Génère un PDF avec le design du thème choisi (midnight, emerald, modern, etc.).
     """
     try:
         from core.cv_pdf_generator import generate_cv_pdf
-        
-        cv_data_input = request.cv_json
-        
-        # Le frontend peut envoyer une string JSON ou un objet direct, on gère les deux
+
+        body = await raw_request.json()
+        cv_data_input = body.get("cv_json")
+        filename = (body.get("filename") or "CV_ATS_Optimise").replace(" ", "_").strip()
+        # Accepter theme_id ou themeId (camelCase) pour compatibilité
+        theme_id = body.get("theme_id") or body.get("themeId")
+        if not isinstance(theme_id, str) or not theme_id.strip():
+            theme_id = "midnight"
+        theme_id = theme_id.strip().lower()
+        valid_themes = {"midnight", "emerald", "modern", "minimal", "bold", "banker", "tech", "classic", "vibrant", "luxury"}
+        if theme_id not in valid_themes:
+            theme_id = "midnight"
+
+        if cv_data_input is None:
+            raise HTTPException(status_code=400, detail="cv_json manquant")
+
         if isinstance(cv_data_input, str):
             try:
                 cv_data = json.loads(cv_data_input)
             except json.JSONDecodeError as e:
-                # Si le JSON est corrompu par le LLM
                 import re
                 match = re.search(r'\{.*\}', cv_data_input, re.DOTALL)
                 if match:
@@ -181,17 +193,20 @@ async def generate_cv_pdf_endpoint(request: CvRewriteRequest):
             cv_data = cv_data_input
         else:
             cv_data = {}
-            
-        pdf_bytes = generate_cv_pdf(cv_data)
 
-        filename = (request.filename or "CV_ATS_Optimise").replace(" ", "_").strip()
+        pdf_bytes = generate_cv_pdf(cv_data, theme_id=theme_id)
         if not filename.endswith(".pdf"):
             filename += ".pdf"
 
+        headers = {
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-CV-Theme": theme_id,
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
             media_type="application/pdf",
-            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+            headers=headers
         )
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=400, detail=f"JSON CV invalide: {str(e)}")
@@ -443,27 +458,33 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         )
         follow_up_count = updated.get("follow_up_count", 1) if updated else 1
 
-        # Generate email with GoldArmy unified LLM client
+        # Email de relance avec gemini-3.1-pro-preview (même modèle que Sniper / reste de l'app)
         from llm.unified_client import UnifiedLLMClient
         llm = UnifiedLLMClient()
 
-        
-        prompt = f"""
-        Tu es l'assistant de recrutement GoldArmy.
-        Rédige un email de relance professionnel, chaleureux et concis (5-7 lignes max) en français.
-        Candidature pour : {job_title} chez {company}.
-        Notes sur le poste : {notes if notes else 'Aucune note particulière.'}
-        C'est la relance numéro {follow_up_count}. Si >1, rends le ton plus direct.
-        Format attendu : 
-        Objet: [Sujet du mail]
-        
-        Corps de l'email...
-        Cordialement,
-        [Prénom de l'utilisateur]
-        """
-        
+        prompt = (
+            "Tu rédiges un email de relance professionnel COMPLET en français. "
+            "Le mail doit OBLIGATOIREMENT contenir les 4 parties suivantes, dans l'ordre :\n"
+            "1) Objet: [un sujet clair]\n"
+            "2) Formule d'appel (ex: Bonjour, ou Bonjour M. Dupont,)\n"
+            "3) Corps du mail : 3 à 5 phrases complètes. Rappeler la candidature (poste et entreprise), "
+            "réaffirmer ton intérêt, demander poliment où en est le processus de recrutement.\n"
+            "4) Formule de politesse (Cordialement, ou Bien à vous,) puis une ligne type [Prénom].\n\n"
+            f"Contexte : candidature pour {job_title} chez {company}. "
+            f"Notes : {notes if notes else 'Aucune.'} "
+            f"Relance n°{follow_up_count}. Si >1, ton un peu plus direct.\n\n"
+            "Réponds UNIQUEMENT par le texte de l'email complet, rien d'autre."
+        )
         messages = [{"role": "user", "content": prompt}]
-        email_text = await llm.chat(messages)
+        email_text = await llm.chat(
+            messages,
+            model="gemini-3.1-pro-preview",
+            max_tokens=2048,
+            temperature=0.7,
+            timeout=120,
+        )
+        if not email_text or not email_text.strip():
+            raise HTTPException(status_code=503, detail="Réponse vide du modèle. Réessayez.")
 
         await log_usage(current_user["id"], "follow_up")
 
@@ -472,6 +493,8 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
             "email": email_text,
             "followUpCount": follow_up_count
         }
+    except HTTPException:
+        raise
     except Exception as e:
         import logging
         logging.error(f"Followup generation error: {e}")
@@ -1016,13 +1039,64 @@ async def stripe_webhook(request: Request):
     
     return {"status": "success"}
 
+
+def _require_admin(current_user: dict):
+    """Vérifie que l'utilisateur connecté est ADMIN."""
+    if current_user.get("subscription_tier") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs GoldArmy.")
+
+
+@app.get("/api/admin/stats")
+async def admin_stats(current_user: dict = Depends(get_current_user)):
+    """Statistiques globales pour le tableau de bord admin (effectif, tiers, candidatures)."""
+    _require_admin(current_user)
+    db = get_db()
+    total_users = await db.users.count_documents({})
+    pipeline = [
+        {"$group": {"_id": "$subscription_tier", "count": {"$sum": 1}}},
+    ]
+    tiers = {"pro": 0, "essential": 0, "free": 0}
+    async for doc in db.users.aggregate(pipeline):
+        t = (doc["_id"] or "FREE").upper()
+        if t == "PRO":
+            tiers["pro"] = doc["count"]
+        elif t == "ESSENTIAL":
+            tiers["essential"] = doc["count"]
+        elif t == "FREE" or t == "ADMIN":
+            tiers["free"] = tiers.get("free", 0) + doc["count"]
+    total_applications = await db.applications.count_documents({})
+    return {"status": "success", "data": {"total_users": total_users, "tiers": tiers, "total_applications": total_applications}}
+
+
+@app.get("/api/admin/users")
+async def admin_users(current_user: dict = Depends(get_current_user)):
+    """Liste des utilisateurs pour le radar admin (id, email, full_name, subscription_tier)."""
+    _require_admin(current_user)
+    db = get_db()
+    cursor = db.users.find({}, {"_id": 0, "id": 1, "email": 1, "full_name": 1, "subscription_tier": 1, "created_at": 1})
+    users = []
+    async for u in cursor:
+        u["subscription_tier"] = u.get("subscription_tier") or "FREE"
+        users.append(u)
+    return {"status": "success", "data": users}
+
+
+@app.get("/api/admin/user/{user_id}")
+async def admin_user_detail(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Détail d'un utilisateur (profil + candidatures) pour l'inspection admin."""
+    _require_admin(current_user)
+    db = get_db()
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable.")
+    apps = await db.applications.find({"user_id": user_id}, {"_id": 0}).sort("updated_at", -1).limit(100).to_list(length=100)
+    return {"status": "success", "data": {"profile": user, "applications": apps}}
+
+
 @app.post("/api/admin/promote-user")
 async def admin_promote_user(req: PromoteUserRequest, current_user: dict = Depends(get_current_user)):
     """Permet à un administrateur de promouvoir un utilisateur au rang Premium."""
-    if current_user.get("subscription_tier") != "ADMIN":
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs GoldArmy.")
-    
-    from core.database import get_db
+    _require_admin(current_user)
     db = get_db()
     # Trouver l'utilisateur par email
     target = await db.users.find_one({"email": req.email})

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
 import gsap from 'gsap'
@@ -9,14 +10,48 @@ import LandingNav from '../components/LandingNav.vue'
 
 gsap.registerPlugin(ScrollTrigger)
 
-const { t } = useI18n()
+const route = useRoute()
+const { t, locale } = useI18n()
+
+// Apply ?lang= from URL (for SEO / shared links)
+if (route.query.lang === 'fr' || route.query.lang === 'en') {
+  locale.value = route.query.lang
+  if (typeof localStorage !== 'undefined') localStorage.setItem('language', route.query.lang)
+}
+
+const logoUrl = computed(() => `${typeof window !== 'undefined' ? window.location.origin : 'https://www.goldarmyai.com'}/images/logosansfond.png`)
+const canonicalUrl = computed(() => {
+  const base = typeof window !== 'undefined' ? window.location.origin : 'https://www.goldarmyai.com'
+  const path = typeof window !== 'undefined' ? window.location.pathname || '/' : '/'
+  return path === '/' ? base + '/' : base + path
+})
 
 useHead({
   title: computed(() => t('seo.landing.title')),
+  htmlAttrs: {
+    lang: computed(() => locale.value)
+  },
+  link: [
+    { rel: 'canonical', href: canonicalUrl },
+    { rel: 'alternate', hreflang: 'fr', href: computed(() => `${typeof window !== 'undefined' ? window.location.origin : 'https://www.goldarmyai.com'}/?lang=fr`) },
+    { rel: 'alternate', hreflang: 'en', href: computed(() => `${typeof window !== 'undefined' ? window.location.origin : 'https://www.goldarmyai.com'}/?lang=en`) },
+    { rel: 'alternate', hreflang: 'x-default', href: computed(() => `${typeof window !== 'undefined' ? window.location.origin : 'https://www.goldarmyai.com'}/`) }
+  ],
   meta: [
     { name: 'description', content: computed(() => t('seo.landing.description')) },
+    { name: 'robots', content: 'index, follow' },
+    { property: 'og:type', content: 'website' },
     { property: 'og:title', content: computed(() => t('seo.landing.title')) },
-    { property: 'og:type', content: 'website' }
+    { property: 'og:description', content: computed(() => t('seo.landing.description')) },
+    { property: 'og:image', content: logoUrl },
+    { property: 'og:image:alt', content: 'GoldArmy — Co-pilote de carrière propulsé par l\'IA' },
+    { property: 'og:url', content: canonicalUrl },
+    { property: 'og:site_name', content: 'GoldArmy' },
+    { property: 'og:locale', content: computed(() => locale.value === 'fr' ? 'fr_FR' : 'en_GB') },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: computed(() => t('seo.landing.title')) },
+    { name: 'twitter:description', content: computed(() => t('seo.landing.description')) },
+    { name: 'twitter:image', content: logoUrl }
   ]
 })
 
@@ -56,6 +91,98 @@ const faqItems = computed(() => [
 
 let gsapCtx
 
+function runScrollReveals(root) {
+  const section = root.querySelector('#agents')
+  const stickyCol = root.querySelector('.home1-left-sticky')
+  const cardsScroll = root.querySelector('.home1-cards-scroll')
+  const threecolSection = root.querySelector('.home1-3col')
+  const defaultTrigger = { start: 'top 85%', toggleActions: 'play none none none' }
+  const revealContentAgents = section ? section.querySelectorAll('[reveal-content="true"]') : []
+  const fadeInAgents = section ? section.querySelectorAll('[fade-in="true"]') : []
+  const revealContentThreecol = threecolSection ? threecolSection.querySelectorAll('[reveal-content="true"]') : []
+  const fadeInThreecol = threecolSection ? threecolSection.querySelectorAll('[fade-in="true"]') : []
+  const revealCard = root.querySelectorAll('[reveal-card="true"]')
+  const lineWords = root.querySelectorAll('#agents .line-split-word')
+
+  gsap.set([...revealContentAgents, ...revealContentThreecol], { opacity: 0, y: 28 })
+  gsap.set([...fadeInAgents, ...fadeInThreecol], { opacity: 0, y: 20 })
+  gsap.set(revealCard, { opacity: 0, y: 56 })
+  gsap.set(lineWords, { opacity: 0, y: 14 })
+
+  if (revealContentAgents.length) {
+    gsap.to(revealContentAgents, {
+      opacity: 1,
+      y: 0,
+      duration: 0.7,
+      ease: 'power2.out',
+      stagger: 0.08,
+      scrollTrigger: { trigger: section || root, ...defaultTrigger }
+    })
+  }
+  if (fadeInAgents.length) {
+    gsap.to(fadeInAgents, {
+      opacity: 1,
+      y: 0,
+      duration: 0.5,
+      ease: 'power2.out',
+      stagger: 0.06,
+      scrollTrigger: { trigger: section || root, ...defaultTrigger }
+    })
+  }
+  if (revealContentThreecol.length) {
+    gsap.to(revealContentThreecol, {
+      opacity: 1,
+      y: 0,
+      duration: 0.7,
+      ease: 'power2.out',
+      stagger: 0.08,
+      scrollTrigger: { trigger: threecolSection || root, ...defaultTrigger }
+    })
+  }
+  if (fadeInThreecol.length) {
+    gsap.to(fadeInThreecol, {
+      opacity: 1,
+      y: 0,
+      duration: 0.5,
+      ease: 'power2.out',
+      stagger: 0.06,
+      scrollTrigger: { trigger: threecolSection || root, ...defaultTrigger }
+    })
+  }
+  if (revealCard.length) {
+    gsap.to(revealCard, {
+      opacity: 1,
+      y: 0,
+      duration: 0.85,
+      stagger: 0.12,
+      ease: 'power3.out',
+      scrollTrigger: {
+        trigger: section || cardsScroll || root,
+        start: 'top 88%',
+        toggleActions: 'play none none none'
+      }
+    })
+  }
+  if (lineWords.length) {
+    gsap.to(lineWords, {
+      opacity: 1,
+      y: 0,
+      duration: 0.4,
+      stagger: 0.03,
+      ease: 'power2.out',
+      scrollTrigger: { trigger: stickyCol || section || root, ...defaultTrigger }
+    })
+  }
+
+  ScrollTrigger.refresh()
+}
+
+function forceRevealFallback(rootEl) {
+  if (!rootEl) return
+  const hidden = rootEl.querySelectorAll('[reveal-content="true"], [fade-in="true"], [reveal-card="true"], #agents .line-split-word')
+  if (hidden.length) gsap.set(hidden, { opacity: 1, y: 0 })
+}
+
 onMounted(async () => {
   const link = document.createElement('link')
   link.rel = 'stylesheet'
@@ -63,9 +190,19 @@ onMounted(async () => {
   link.id = 'orvimo-landing-css'
   document.head.appendChild(link)
   document.documentElement.classList.add('w-mod-ix3')
-  await nextTick()
+
+  const waitForStyles = new Promise((resolve) => {
+    if (link.sheet && link.sheet.cssRules?.length) return resolve()
+    link.onload = () => resolve()
+    link.onerror = () => resolve()
+    setTimeout(resolve, 150)
+  })
+
+  await Promise.all([nextTick(), waitForStyles])
+
   const root = rootRef.value
   if (!root) return
+
   const heroLogoEl = heroLogoRef.value
   if (heroLogoEl) {
     gsap.set(heroLogoEl, { opacity: 0, scale: 0.88, y: 20 })
@@ -86,88 +223,28 @@ onMounted(async () => {
       delay: 1.4
     })
   }
+
   gsapCtx = gsap.context(() => {
-    const section = root.querySelector('#agents')
-    const stickyCol = root.querySelector('.home1-left-sticky')
-    const cardsScroll = root.querySelector('.home1-cards-scroll')
-    const threecolSection = root.querySelector('.home1-3col')
-    const defaultTrigger = { start: 'top 85%', toggleActions: 'play none none none' }
-    const revealContentAgents = section ? section.querySelectorAll('[reveal-content="true"]') : []
-    const fadeInAgents = section ? section.querySelectorAll('[fade-in="true"]') : []
-    const revealContentThreecol = threecolSection ? threecolSection.querySelectorAll('[reveal-content="true"]') : []
-    const fadeInThreecol = threecolSection ? threecolSection.querySelectorAll('[fade-in="true"]') : []
-    const revealCard = root.querySelectorAll('[reveal-card="true"]')
-    const lineWords = root.querySelectorAll('#agents .line-split-word')
-    gsap.set([...revealContentAgents, ...revealContentThreecol], { opacity: 0, y: 28 })
-    gsap.set([...fadeInAgents, ...fadeInThreecol], { opacity: 0, y: 20 })
-    gsap.set(revealCard, { opacity: 0, y: 56 })
-    gsap.set(lineWords, { opacity: 0, y: 14 })
-    if (revealContentAgents.length) {
-      gsap.to(revealContentAgents, {
-        opacity: 1,
-        y: 0,
-        duration: 0.7,
-        ease: 'power2.out',
-        stagger: 0.08,
-        scrollTrigger: { trigger: section || root, ...defaultTrigger }
-      })
+    runScrollReveals(root)
+
+    requestAnimationFrame(() => {
+      ScrollTrigger.refresh()
+      requestAnimationFrame(() => ScrollTrigger.refresh())
+    })
+
+    if (typeof window !== 'undefined') {
+      const onLoad = () => {
+        ScrollTrigger.refresh()
+      }
+      if (document.readyState === 'complete') onLoad()
+      else window.addEventListener('load', onLoad)
     }
-    if (fadeInAgents.length) {
-      gsap.to(fadeInAgents, {
-        opacity: 1,
-        y: 0,
-        duration: 0.5,
-        ease: 'power2.out',
-        stagger: 0.06,
-        scrollTrigger: { trigger: section || root, ...defaultTrigger }
-      })
-    }
-    if (revealContentThreecol.length) {
-      gsap.to(revealContentThreecol, {
-        opacity: 1,
-        y: 0,
-        duration: 0.7,
-        ease: 'power2.out',
-        stagger: 0.08,
-        scrollTrigger: { trigger: threecolSection || root, ...defaultTrigger }
-      })
-    }
-    if (fadeInThreecol.length) {
-      gsap.to(fadeInThreecol, {
-        opacity: 1,
-        y: 0,
-        duration: 0.5,
-        ease: 'power2.out',
-        stagger: 0.06,
-        scrollTrigger: { trigger: threecolSection || root, ...defaultTrigger }
-      })
-    }
-    /* Reveal all 3 cards when section enters view (so 3rd card is never stuck at opacity 0) */
-    if (revealCard.length) {
-      gsap.to(revealCard, {
-        opacity: 1,
-        y: 0,
-        duration: 0.85,
-        stagger: 0.12,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: section || cardsScroll || root,
-          start: 'top 88%',
-          toggleActions: 'play none none none'
-        }
-      })
-    }
-    if (lineWords.length) {
-      gsap.to(lineWords, {
-        opacity: 1,
-        y: 0,
-        duration: 0.4,
-        stagger: 0.03,
-        ease: 'power2.out',
-        scrollTrigger: { trigger: stickyCol || section || root, ...defaultTrigger }
-      })
-    }
-    ScrollTrigger.refresh()
+
+    setTimeout(() => {
+      const stillHidden = root.querySelectorAll('[reveal-content="true"], [fade-in="true"], [reveal-card="true"], #agents .line-split-word')
+      const anyHidden = [...stillHidden].some((el) => parseFloat(getComputedStyle(el).opacity) < 0.1)
+      if (anyHidden) forceRevealFallback(root)
+    }, 2500)
   }, root)
 })
 
@@ -210,39 +287,39 @@ function closeNav() {
               <div class="hero-text-wrap">
                 <h1 class="hero-heading">{{ t('landing.hero.title_1') }} <span class="tertiary-color-emphasis">{{ t('landing.hero.title_2') }}</span> {{ t('landing.hero.title_3') }}</h1>
                 <p class="hero-paragraph">{{ t('landing.hero.description') }}</p>
-              </div>
+        </div>
               <router-link to="/register" class="button-arrow w-inline-block" aria-label="CTA">
                 <div class="btn-bg-arrow">
                   <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
                   <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon" btn-arrow-left=""><path :d="arrowPath" fill="currentColor"/></svg>
-                </div>
+      </div>
                 <div class="btn-text-mask">
                   <div class="button-arrow-text">{{ t('landing.hero.cta_main') }}</div>
                   <div class="button-arrow-text">{{ t('landing.hero.cta_main') }}</div>
-                </div>
-              </router-link>
-            </div>
+        </div>
+          </router-link>
+        </div>
             <div class="hero1-background">
               <div class="gradient-wrapper">
                 <div class="yellow-gradient" gradient="true"></div>
                 <div class="blue-gradient" gradient="true"></div>
                 <div class="orange-gradient" gradient="true"></div>
                 <div class="light" gradient="true"></div>
-              </div>
+      </div>
               <div ref="heroLogoRef" class="hero-logo-wrap hero-logo-wrap--desktop">
                 <img src="/images/logosansfond.png" alt="GoldArmy" class="hero-logo" />
               </div>
             </div>
           </div>
-        </div>
-      </section>
+      </div>
+    </section>
 
       <!-- SLIDESHOW - App capture GoldArmy -->
       <section class="section slideshow">
         <div class="offset-separator">
           <div class="offset-top"></div>
           <div class="offset-bottom"></div>
-        </div>
+            </div>
         <div class="w-layout-blockcontainer container slideshow w-container">
           <h2 class="fsize-m">{{ t('landing.slideshow.title') }}<br /><span class="tertiary-color-emphasis">{{ t('landing.slideshow.title_emphasis') }}</span></h2>
           <div class="slideshow-wrapper">
@@ -250,8 +327,8 @@ function closeNav() {
               <div class="mask w-slider-mask">
                 <div class="slide w-slide">
                   <img src="/images/capture%20app.png" loading="lazy" :alt="t('landing.slideshow.title')" class="slide-img" />
-                </div>
-              </div>
+        </div>
+    </div>
               <div class="slide-nav w-slider-nav"></div>
             </div>
           </div>
@@ -270,9 +347,9 @@ function closeNav() {
               <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e0a3a82b904e745e92_Logo6.svg" loading="lazy" alt="Logo client" class="client-logo-img" />
               <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e0e8531b2688fccf34_Logo-4.svg" loading="lazy" alt="Logo client" class="client-logo-img" />
               <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e00cf1bd4750d08448_Logo-5.svg" loading="lazy" alt="Logo client" class="client-logo-img" />
-            </div>
-          </div>
-        </div>
+                        </div>
+                    </div>
+                </div>
       </section>
 
       <!-- HOME1 STICKY - 3 cards GoldArmy (animations: reveal-content, line-split, fade-in, reveal-card) -->
@@ -301,20 +378,20 @@ function closeNav() {
                   <div class="btn-bg-arrow">
                     <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
                     <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow-left="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
-                  </div>
+                        </div>
                   <div class="btn-text-mask">
                     <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_trial') }}</div>
                     <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_trial') }}</div>
-                  </div>
+                    </div>
                 </router-link>
-              </div>
+                </div>
             </div>
             <div class="home1-cards-scroll">
               <div card="true" reveal-card="true" class="big-card-home1 first">
                 <div card="true" class="updates-banner">updates available</div>
                 <div class="big-card-img-wrapper">
                   <img src="/images/sniper.png" loading="lazy" card="true" :alt="t('landing.sticky.card1_title')" class="big-card--home1-img" />
-                </div>
+        </div>
                 <div class="big-card-text">
                   <p line-split="true">{{ t('landing.sticky.card1_category') }}</p>
                   <h3 line-split="true" class="fsize-s">{{ t('landing.sticky.card1_title') }}</h3>
@@ -328,18 +405,18 @@ function closeNav() {
                     <div class="btn-bg-arrow">
                       <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
                       <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow-left="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
-                    </div>
+            </div>
                     <div class="btn-text-mask">
                       <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
                       <div button-text="" class="button-arrow-text">{{ t('landing.sticky.cta_explore') }}</div>
-                    </div>
+        </div>
                   </router-link>
+                    </div>
                 </div>
-              </div>
               <div reveal-card="true" class="big-card-home1 dark">
                 <div class="big-card-img-wrapper">
                   <img src="/images/simulateur.png" loading="lazy" card="true" :alt="t('landing.sticky.card2_title')" class="big-card--home1-img" />
-                </div>
+            </div>
                 <div class="big-card-text">
                   <p line-split="true">{{ t('landing.sticky.card2_category') }}</p>
                   <h3 line-split="true" class="fsize-s">{{ t('landing.sticky.card2_title') }}</h3>
@@ -353,7 +430,7 @@ function closeNav() {
                     <div class="btn-bg-arrow w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">
                       <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
                       <svg viewBox="0 0 14 13" fill="none" width="14" height="6" btn-arrow-left="" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
-                    </div>
+                </div>
                     <div class="btn-text-mask">
                       <div button-text="" class="button-arrow-text w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">{{ t('landing.sticky.cta_explore') }}</div>
                       <div button-text="" class="button-arrow-text w-variant-3b90a6fd-627b-3ead-4bd6-a49c02101310">{{ t('landing.sticky.cta_explore') }}</div>
@@ -387,9 +464,9 @@ function closeNav() {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
         </div>
-      </section>
+    </section>
 
       <!-- HOME1 3COL - GoldArmy (structure identique home: reveal-content, line-split, fade-in) -->
       <section class="section home1-3col">
@@ -397,27 +474,27 @@ function closeNav() {
           <div reveal-content="true" class="_3cols-heading">
             <h3 line-split="true" class="center-align">{{ t('landing.threecol.title') }} <br /><span class="tertiary-color-emphasis">{{ t('landing.threecol.title_emphasis') }}</span></h3>
             <p line-split="true" class="fsize-body-large center-align">{{ t('landing.threecol.paragraph') }}</p>
-          </div>
+                        </div>
           <div reveal-content="true" class="w-layout-grid home1-3cols">
             <div fade-in="true" class="card-item-home1">
               <div class="card-item-img-wrap">
                 <img src="/images/sniper.png" loading="lazy" :alt="t('landing.threecol.card1_title')" class="img-card-home1" />
-              </div>
+                    </div>
               <div class="card-text-content-home1">
                 <div>{{ t('landing.threecol.card1_category') }}</div>
                 <h4 class="fsize-xxs">{{ t('landing.threecol.card1_title') }}</h4>
                 <p>{{ t('landing.threecol.card1_desc') }}</p>
-              </div>
-            </div>
+                        </div>
+                    </div>
             <div fade-in="true" class="card-item-home1">
               <div class="card-item-img-wrap">
                 <img src="/images/crmcandidat.png" loading="lazy" :alt="t('landing.threecol.card2_title')" class="img-card-home1" />
-              </div>
+                </div>
               <div class="card-text-content-home1">
                 <div>{{ t('landing.threecol.card2_category') }}</div>
                 <h4 class="fsize-xxs">{{ t('landing.threecol.card2_title') }}</h4>
                 <p>{{ t('landing.threecol.card2_desc') }}</p>
-              </div>
+            </div>
             </div>
             <div fade-in="true" class="card-item-home1">
               <div class="card-item-img-wrap">
@@ -429,39 +506,39 @@ function closeNav() {
                 <p>{{ t('landing.threecol.card3_desc') }}</p>
               </div>
             </div>
-          </div>
+            </div>
         </div>
-      </section>
+    </section>
 
       <!-- HOME1 DEV - GoldArmy -->
       <section class="section home1-dev">
         <div class="w-layout-blockcontainer container w-container">
           <div class="w-layout-grid dev-home1-grid">
             <h4>{{ t('landing.dev.title') }} <span class="tertiary-color-emphasis">{{ t('landing.dev.title_emphasis') }}</span></h4>
-          </div>
+                    </div>
           <div class="w-layout-grid dev-home1-grid">
             <div class="features-item-wrapper">
               <div class="code-feature-item">
                 <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eac84caa6687a94014774_dev-research-icon.svg" loading="lazy" :alt="t('landing.dev.feature1_label')" class="code-feature-icon" />
                 <div class="fsize-body-large primary-color-emphasis">{{ t('landing.dev.feature1_label') }}</div>
                 <p class="primary-color-emphasis">{{ t('landing.dev.feature1_desc') }}</p>
-              </div>
+                    </div>
               <div class="code-feature-item">
                 <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eac8427aa97ef7752b2e8_orvimo-lab-icon.svg" loading="lazy" :alt="t('landing.dev.feature2_label')" class="code-feature-icon" />
                 <div class="fsize-body-large primary-color-emphasis">{{ t('landing.dev.feature2_label') }}</div>
                 <p class="primary-color-emphasis">{{ t('landing.dev.feature2_desc') }}</p>
-              </div>
+                </div>
               <div class="code-feature-item">
                 <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eac84ff9f10f7f83e0d77_smart-monitoring-orvimo.svg" loading="lazy" :alt="t('landing.dev.feature3_label')" class="code-feature-icon" />
                 <div class="fsize-body-large primary-color-emphasis">{{ t('landing.dev.feature3_label') }}</div>
                 <p class="primary-color-emphasis">{{ t('landing.dev.feature3_desc') }}</p>
-              </div>
+            </div>
               <div class="code-feature-item">
                 <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eac84cec739569d673056_ai-intelligence.svg" loading="lazy" :alt="t('landing.dev.feature4_label')" class="code-feature-icon" />
                 <div class="fsize-body-large primary-color-emphasis">{{ t('landing.dev.feature4_label') }}</div>
                 <p class="primary-color-emphasis">{{ t('landing.dev.feature4_desc') }}</p>
-              </div>
-            </div>
+                    </div>
+                        </div>
             <div class="full-card-right">
               <div class="text-content">
                 <h5 class="fsize-xxs">{{ t('landing.dev.card_title') }}</h5>
@@ -469,42 +546,42 @@ function closeNav() {
                 <router-link to="/register" class="button-arrow w-inline-block">
                   <div class="btn-bg-arrow">
                     <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
-                  </div>
+                    </div>
                   <div class="btn-text-mask">
                     <div class="button-arrow-text">{{ t('landing.dev.cta') }}</div>
                     <div class="button-arrow-text">{{ t('landing.dev.cta') }}</div>
-                  </div>
+                        </div>
                 </router-link>
-              </div>
+                        </div>
               <div class="full-card-img-wrapper">
                 <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eafd3c8ef7fd81aea809b_c809f11685ad994e94791ec0fb55b410_code-ui.png" loading="lazy" :alt="t('landing.dev.card_title')" class="code-ui-img" />
-              </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </section>
+    </section>
 
       <!-- IMG GRID MOTION -->
       <section class="section img-grid-motion">
         <div class="motion-grid-wrapper">
           <div class="motion-grid-parallax-wrapper">
             <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/695241a041a35e17f8ca2711_victor-UoIiVYka3VY-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
-          </div>
+            </div>
           <div class="motion-grid-parallax-wrapper">
             <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69523e91c5230423b4d853c3_anna-dziubinska-mVhd5QVlDWw-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
-          </div>
+                   </div>
           <div class="motion-grid-parallax-wrapper">
             <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69523e9761a700887790947f_daniil-komov-WhcfAUy8uKg-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
-          </div>
+                </div>
           <div class="motion-grid-parallax-wrapper">
             <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69523dc6ae98181d0a14825d_simone-hutsch-l8fyK9RS-OU-unsplash.avif" loading="lazy" alt="" class="central-grid-img" />
-          </div>
+                    </div>
           <div class="motion-grid-parallax-wrapper">
             <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6948f54b270afe855a420a15_forest-river.avif" loading="lazy" alt="" class="central-grid-img" />
             <div class="title-wrap">
               <h3 class="home-3-grid-motion-tile">Flowing Forward With<br /><span class="accent1-color-emphasis">Intelligent Automation.</span></h3>
+                </div>
             </div>
-          </div>
           <div class="motion-grid-parallax-wrapper">
             <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/69524198f1ef108473a36c1a_homa-appliances-pWUyHVJgLhg-unsplash.avif" loading="lazy" alt="" class="central-grid-img" />
           </div>
@@ -518,7 +595,7 @@ function closeNav() {
             <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eb8bfa7dbbd15f4a2fe95_maarten-van-den-heuvel-KSQgzzn3dW0-unsplash.avif" loading="lazy" alt="" class="top-bottom-grid-img" />
           </div>
         </div>
-      </section>
+    </section>
 
       <!-- KEY FIGURES - GoldArmy -->
       <section class="section home1-key-figures">
@@ -562,9 +639,9 @@ function closeNav() {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
         </div>
-      </section>
+    </section>
 
       <!-- TESTIMONIALS - GoldArmy -->
       <section id="avis" class="section home1-testimonials">
@@ -578,16 +655,16 @@ function closeNav() {
                 <div class="testimonial-content">
                   <div class="testimonial-quote">"{{ t('landing.testimonials.quote1') }}"</div>
                   <div><strong class="testimonial-author">{{ t('landing.testimonials.author1') }}</strong></div>
-                </div>
-              </div>
+            </div>
+                            </div>
               <div class="testimonial-card">
                 <div class="testimonial-logo">
                   <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6943c7e0e8531b2688fccf34_Logo-4.svg" loading="lazy" alt="Logo client" />
-                </div>
+                        </div>
                 <div class="testimonial-content">
                   <div class="testimonial-quote">"{{ t('landing.testimonials.quote2') }}"</div>
                   <div><strong class="testimonial-author">{{ t('landing.testimonials.author2') }}</strong></div>
-                </div>
+                    </div>
               </div>
             </div>
             <div class="testimonial-card-bg-img dark">
@@ -603,9 +680,9 @@ function closeNav() {
                 <img class="testimonial-bg-img" src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eb8bfa7dbbd15f4a2fe95_maarten-van-den-heuvel-KSQgzzn3dW0-unsplash.avif" alt="" loading="lazy" />
               </div>
             </div>
-          </div>
+            </div>
         </div>
-      </section>
+    </section>
 
       <!-- BLOG HOME1 - GoldArmy -->
       <section id="blog" class="section blog-home1">
@@ -613,7 +690,7 @@ function closeNav() {
           <div class="heading-wrapper">
             <h2 class="header-title">{{ t('landing.blog.header_title') }}</h2>
             <h2 class="header-subtitle">{{ t('landing.blog.header_subtitle') }}</h2>
-          </div>
+                        </div>
           <div class="blog-list-featured">
             <div class="blog-item-featured featured">
               <a href="#" class="blog-list-img-wrapper blog-v1 featured w-inline-block">
@@ -622,7 +699,7 @@ function closeNav() {
               <div class="blog-list-content">
                 <div class="blog-category-wrapper">
                   <div class="blog-category-title featured">{{ t('landing.blog.featured_category') }}</div>
-                </div>
+                    </div>
                 <a href="#" class="blog-title-wrapper w-inline-block">
                   <div class="blog-title-text featured">{{ t('landing.blog.featured_title') }}</div>
                 </a>
@@ -668,11 +745,11 @@ function closeNav() {
                 <a href="#" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item3_title') }}</div></a>
                 <div class="summary-wrapper"><p class="summary-text">{{ t('landing.blog.item3_summary') }}</p></div>
                 <div class="date-wrapper"><div class="date">—</div><div class="date">{{ t('landing.blog.item_date') }}</div></div>
-              </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </section>
+    </section>
 
       <!-- PRICING - GoldArmy: Free, 9.99, 19.99 -->
       <section id="pricing" class="section home1-pricing">
@@ -682,7 +759,7 @@ function closeNav() {
               <div class="heading-wrapper">
                 <h2>{{ t('landing.pricing.title') }}</h2>
                 <p>{{ t('landing.pricing.paragraph') }}</p>
-              </div>
+        </div>
               <div class="pricing-v3-picture-wrap">
                 <div class="img-curtain"></div>
                 <div class="pricing-v3-picture-content">
@@ -805,9 +882,9 @@ function closeNav() {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
         </div>
-      </section>
+    </section>
 
       <!-- FAQ - GoldArmy -->
       <section class="section faq-home1">
@@ -820,15 +897,15 @@ function closeNav() {
                 <div class="accordion-toggle">
                   <div class="cross-h"></div>
                   <div class="cross-v"></div>
-                </div>
-              </div>
+            </div>
+                        </div>
               <div class="accordion-content">
                 <p class="accordion-content-text">{{ faq.a }}</p>
               </div>
+                </div>
             </div>
-          </div>
         </div>
-      </section>
+    </section>
 
       <!-- CTA V1 - GoldArmy -->
       <section class="section cta-v1">
@@ -846,9 +923,9 @@ function closeNav() {
           </div>
           <div class="background-cta">
             <img class="cta-img-bg" src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6939c21874a51449ee9fd368_background.avif" alt="" loading="lazy" />
-          </div>
+            </div>
         </div>
-      </section>
+    </section>
     </main>
 
     <Footer />
@@ -970,7 +1047,7 @@ function closeNav() {
     box-shadow: 0 14px 48px rgba(99, 102, 241, 0.45);
   }
   .hero-mobile__cta:active {
-    transform: translateY(0);
+  transform: translateY(0);
   }
   .hero-mobile__cta-arrow {
     width: 1.25rem;

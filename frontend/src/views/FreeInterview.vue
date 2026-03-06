@@ -309,8 +309,8 @@ const endCall = () => {
                 <div class="interview-trust">
                   <span class="trust-item"><MicrophoneIcon class="trust-icon" /> {{ t('free_interview.mic_required') }}</span>
                   <span class="trust-item"><ShieldCheckIcon class="trust-icon" /> {{ t('free_interview.no_recording') }}</span>
-                </div>
-              </div>
+        </div>
+      </div>
             </div>
             <div class="interview-intro-col">
               <div class="interview-intro-card">
@@ -321,9 +321,9 @@ const endCall = () => {
                 <button type="button" @click="startCall" :disabled="!jobTitle.trim()" class="interview-start-btn">
                   <VideoCameraIcon class="btn-icon-svg" /> {{ t('free_interview.start_button') }}
                 </button>
-              </div>
             </div>
-          </div>
+            </div>
+            </div>
         </div>
       </section>
     </template>
@@ -333,7 +333,7 @@ const endCall = () => {
           <div class="interview-spinner"></div>
           <h2 class="interview-connecting-title">{{ t('free_interview.connecting') }}</h2>
           <p class="interview-connecting-sub">{{ t('free_interview.secure_channel') }}</p>
-        </div>
+    </div>
       </section>
     </template>
     <div v-else-if="step === 'interviewing' || step === 'feedback'" class="interview-simulator-wrap">
@@ -511,9 +511,9 @@ const endCall = () => {
               <h4 class="fsize-xxs">{{ t('free_interview.bento_feature3_title') }}</h4>
               <p>{{ t('free_interview.bento_feature3_desc') }}</p>
             </div>
-          </div>
-        </div>
-      </div>
+                        </div>
+                    </div>
+                </div>
     </section>
 
     <!-- Bloc SEO + FAQ (design type ATS) -->
@@ -536,7 +536,7 @@ const endCall = () => {
             <h4 class="ats-reason-title">{{ reason.title }}</h4>
             <p class="ats-reason-desc">{{ reason.desc }}</p>
           </article>
-        </div>
+                </div>
         <div class="ats-faq-wrap">
           <h3 class="ats-faq-heading">
             <QuestionMarkCircleIcon class="ats-faq-heading-icon" />
@@ -550,12 +550,12 @@ const endCall = () => {
               </button>
               <div class="ats-faq-a">
                 <p>{{ faq.a }}</p>
-              </div>
+                </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+                    </div>
+            </section>
 
     <!-- CTA final -->
     <section class="section cta-v1">
@@ -574,8 +574,8 @@ const endCall = () => {
         <div class="background-cta">
           <img class="cta-img-bg" src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6939c21874a51449ee9fd368_background.avif" alt="" loading="lazy" />
         </div>
-      </div>
-    </section>
+            </div>
+        </section>
 
     </main>
 

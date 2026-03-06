@@ -779,6 +779,7 @@
     },
     "crm_board": {
         "title": "Applications CRM",
+        "description": "Drag and drop your applications between columns to track your pipeline.",
         "add_application": "Add Application",
         "columns": {
             "to_apply": "To Apply",

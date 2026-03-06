@@ -731,6 +731,7 @@
     },
     "crm_board": {
         "title": "CRM Candidatures",
+        "description": "Glissez-déposez vos candidatures entre les colonnes pour suivre votre pipeline.",
         "add_application": "Ajouter Candidature",
         "columns": {
             "to_apply": "À Postuler",

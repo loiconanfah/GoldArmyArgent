@@ -3,13 +3,19 @@ import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const navOpen = ref(false)
 
 function closeNav() {
   navOpen.value = false
+}
+
+function setLocale(lang) {
+  locale.value = lang
+  if (typeof localStorage !== 'undefined') localStorage.setItem('language', lang)
+  closeNav()
 }
 
 watch(navOpen, (open) => {
@@ -50,6 +56,11 @@ function goToSection(hash) {
         </nav>
 
         <div class="nav-modern__actions">
+          <div class="nav-modern__lang" role="group" aria-label="Changer la langue">
+            <button type="button" :class="['nav-modern__lang-btn', { 'nav-modern__lang-btn--active': locale === 'fr' }]" @click="setLocale('fr')" :aria-pressed="locale === 'fr'">FR</button>
+            <span class="nav-modern__lang-sep" aria-hidden="true">|</span>
+            <button type="button" :class="['nav-modern__lang-btn', { 'nav-modern__lang-btn--active': locale === 'en' }]" @click="setLocale('en')" :aria-pressed="locale === 'en'">EN</button>
+          </div>
           <router-link to="/login" class="nav-modern__btn nav-modern__btn--ghost" @click="closeNav">{{ t('landing.nav.login') }}</router-link>
           <router-link to="/register" class="nav-modern__btn nav-modern__btn--cta" @click="closeNav">{{ t('landing.nav.get_started') }}</router-link>
         </div>
@@ -80,6 +91,11 @@ function goToSection(hash) {
           <router-link to="/free-interview" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.simulation') }}</router-link>
           <router-link to="/blog" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.blog') }}</router-link>
           <div class="nav-modern__drawer-actions">
+            <div class="nav-modern__lang nav-modern__lang--drawer" role="group" aria-label="Changer la langue">
+              <button type="button" :class="['nav-modern__lang-btn', { 'nav-modern__lang-btn--active': locale === 'fr' }]" @click="setLocale('fr')">FR</button>
+              <span class="nav-modern__lang-sep">|</span>
+              <button type="button" :class="['nav-modern__lang-btn', { 'nav-modern__lang-btn--active': locale === 'en' }]" @click="setLocale('en')">EN</button>
+            </div>
             <router-link to="/login" class="nav-modern__btn nav-modern__btn--ghost" @click="closeNav">{{ t('landing.nav.login') }}</router-link>
             <router-link to="/register" class="nav-modern__btn nav-modern__btn--cta" @click="closeNav">{{ t('landing.nav.get_started') }}</router-link>
           </div>
@@ -205,6 +221,42 @@ function goToSection(hash) {
 }
 .nav-modern__btn--cta:active {
   transform: translateY(0);
+}
+.nav-modern__lang {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.nav-modern__lang-btn {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+.nav-modern__lang-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+.nav-modern__lang-btn--active {
+  color: #ff8c42;
+  background: rgba(255, 111, 0, 0.15);
+}
+.nav-modern__lang-sep {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.7rem;
+  user-select: none;
+}
+.nav-modern__lang--drawer {
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+.nav-modern__lang--drawer .nav-modern__lang-btn {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
 }
 .nav-modern__burger {
   display: flex;

@@ -444,13 +444,15 @@ const downloadCvDocx = async (cvJsonString) => {
                 filename = `CV_${parsed.full_name.replace(/\s+/g, '_')}_ATS`
             }
         } catch {}
+        // Toujours lire la valeur actuelle du thème au moment du clic (évite ref vs valeur)
+        const themeId = typeof selectedTheme.value === 'string' ? selectedTheme.value : 'midnight'
 
         const res = await authFetch('/api/generate-cv-pdf', {
             method: 'POST',
             body: JSON.stringify({ 
                 cv_json: cvJsonString, 
                 filename,
-                theme_id: selectedTheme.value
+                theme_id: themeId
             })
         })
 

@@ -105,32 +105,32 @@ const handleFileSelect = (e) => {
 }
 
 const analyzeFile = async () => {
-  isAnalyzing.value = true
-  result.value = null
-  const formData = new FormData()
-  formData.append('file', file.value)
-  try {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    isAnalyzing.value = true
+    result.value = null
+    const formData = new FormData()
+    formData.append('file', file.value)
+    try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     const response = await fetch(`${apiUrl}/api/public/mini-audit`, { method: 'POST', body: formData })
-    const data = await response.json()
-    if (data.status === 'success') {
+        const data = await response.json()
+        if (data.status === 'success') {
       result.value = { score: data.score, flaws: data.flaws || [] }
-    } else {
-      throw new Error("Erreur de l'API")
-    }
-  } catch (e) {
-    console.error("Erreur d'analyse:", e)
-    result.value = {
-      score: 0,
+        } else {
+            throw new Error("Erreur de l'API")
+        }
+    } catch (e) {
+        console.error("Erreur d'analyse:", e)
+        result.value = {
+            score: 0,
       flaws: [
         "Impossible d'analyser le fichier.",
         "Le fichier est peut-être corrompu ou illisible.",
         "Veuillez vérifier votre connexion et réessayer."
       ]
+        }
+    } finally {
+        isAnalyzing.value = false
     }
-  } finally {
-    isAnalyzing.value = false
-  }
 }
 
 const goToRegister = () => router.push('/register')
@@ -149,7 +149,7 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
             <div class="hero-left-col">
               <div class="hero-text-wrap">
                 <h1 class="hero-heading">
-                  {{ t('free_cv.hero_title') }}
+                    {{ t('free_cv.hero_title') }}
                   <span class="tertiary-color-emphasis">{{ t('free_cv.hero_highlight') }}</span>
                 </h1>
                 <p class="hero-paragraph">
@@ -167,28 +167,28 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
                     {{ t('free_cv.pdf_format') }}
                   </span>
                 </div>
-              </div>
+                </div>
             </div>
             <div class="cv-roast-upload-col">
               <!-- Upload zone (visible when no result and not analyzing) -->
               <div v-if="!result && !isAnalyzing" class="cv-roast-upload-card"
-                @dragover.prevent="isDragging = true"
-                @dragleave.prevent="isDragging = false"
-                @drop="handleFileDrop"
+                            @dragover.prevent="isDragging = true"
+                            @dragleave.prevent="isDragging = false"
+                            @drop="handleFileDrop"
                 @click="$refs.fileInput?.click()"
                 :class="{ 'is-dragging': isDragging }">
                 <div class="upload-card-inner">
                   <div class="upload-icon-wrap">
                     <DocumentTextIcon class="upload-icon" />
-                  </div>
+                        </div>
                   <p class="upload-title">{{ t('free_cv.upload_title') }}</p>
                   <p class="upload-subtitle">{{ t('free_cv.upload_subtitle') }}</p>
                   <input type="file" ref="fileInput" @change="handleFileSelect" accept="application/pdf" class="hidden-input" />
                   <span class="upload-btn">
                     <ArrowUpTrayIcon class="btn-icon-inline" /> {{ t('free_cv.upload_button') }}
                   </span>
-                </div>
-              </div>
+                        </div>
+                    </div>
               <!-- Analyzing state -->
               <div v-if="isAnalyzing" class="cv-roast-analyzing">
                 <div class="analyzing-doc">
@@ -200,14 +200,14 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
                   <li><span class="step-dot"></span> {{ t('free_cv.analyzing_step2') }}</li>
                   <li><span class="step-dot step-pending"></span> {{ t('free_cv.analyzing_step3') }}</li>
                 </ul>
-              </div>
+                </div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- RÉSULTATS (après analyse) -->
-      <template v-if="result && !isAnalyzing">
+        <template v-if="result && !isAnalyzing">
         <section class="section cv-roast-results">
           <div class="w-layout-blockcontainer container w-container">
             <div class="results-score-block">
@@ -218,14 +218,14 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
                     :class="result.score > 70 ? 'score-good' : result.score > 40 ? 'score-mid' : 'score-low'"
                     :stroke-dasharray="327"
                     :stroke-dashoffset="327 - (327 * result.score) / 100" />
-                </svg>
+                            </svg>
                 <div class="score-value">{{ result.score }}</div>
                 <span class="score-label">{{ t('free_cv.score_label') }}</span>
-              </div>
+                            </div>
               <h2 class="fsize-m">{{ result.score > 70 ? t('free_cv.score_good') : t('free_cv.score_bad') }}</h2>
               <p class="fsize-body-large">{{ t('free_cv.flaws_found', { count: result.flaws.length }) }}</p>
-            </div>
-
+                        </div>
+                        
             <div class="faq-list flaws-list">
               <div v-for="(item, idx) in result.flaws.slice(0, 8)" :key="'f-'+idx"
                 class="accordion-item"
@@ -234,43 +234,43 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
                   <div class="flaw-title">
                     <span class="flaw-num">0{{ idx + 1 }}</span>
                     <span class="flaw-text">{{ item.flaw || item }}</span>
-                  </div>
+                    </div>
                   <div class="accordion-toggle">
                     <div class="cross-h"></div>
                     <div class="cross-v"></div>
-                  </div>
-                </div>
+                                    </div>
+                                </div>
                 <div class="accordion-content">
                   <div v-if="item.correction" class="correction-block">
                     <CheckCircleIcon class="correction-icon" />
-                    <div>
+                                        <div>
                       <span class="correction-label">{{ t('free_cv.correction_title') }}</span>
                       <p class="accordion-content-text">{{ item.correction }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                        </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             <!-- Flaws locked (fomo) -->
             <div v-if="result.flaws.length > 8" class="locked-flaws">
               <div class="locked-overlay">
                 <LockClosedIcon class="locked-icon" />
                 <span class="locked-text">{{ t('free_cv.locked_count_cta', { count: result.flaws.length - 8 }) }}</span>
-              </div>
+                                </div>
               <div class="locked-list">
                 <div v-for="(flaw, idx) in result.flaws.slice(8)" :key="'locked-'+idx" class="locked-item">
                   <LockClosedIcon class="locked-item-icon" />
                   <span>{{ t('free_cv.locked_fails') }}</span>
-                </div>
-              </div>
-            </div>
-
+                                </div>
+                            </div>
+                        </div>
+                        
             <div class="reveal-content-wrap cta-results-wrap">
               <button type="button" @click="goToRegister" class="button-default w-button button-default--accent">
                 {{ t('free_cv.cta_unlock_button') }} <ArrowRightIcon class="btn-icon-inline" />
-              </button>
-            </div>
+                        </button>
+                    </div>
             <button type="button" @click="resetScan" class="cv-roast-rescan">{{ t('free_cv.scan_another') }}</button>
           </div>
         </section>
@@ -289,7 +289,7 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
               <div class="card-text-content-home1">
                 <h4 class="fsize-xxs">{{ t('free_cv.bento_feature1_title') }}</h4>
                 <p>{{ t('free_cv.bento_feature1_desc') }}</p>
-              </div>
+                </div>
             </div>
             <div class="card-item-home1">
               <div class="card-item-img-wrap card-item-img-wrap--num">2</div>
@@ -304,8 +304,8 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
                 <h4 class="fsize-xxs">{{ t('free_cv.bento_feature3_title') }}</h4>
                 <p>{{ t('free_cv.bento_feature3_desc') }}</p>
               </div>
-            </div>
-          </div>
+                        </div>
+                    </div>
         </div>
       </section>
 
@@ -317,7 +317,7 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
           <div class="ats-intro">
             <p class="ats-intro-p">{{ t('free_cv.seo_article_p1') }}</p>
             <p class="ats-intro-p">{{ t('free_cv.seo_article_p2') }}</p>
-          </div>
+                </div>
 
           <h3 class="ats-subtitle">{{ t('free_cv.seo_article_h3') }}</h3>
           <div class="ats-reasons-grid">
@@ -331,7 +331,7 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
               <h4 class="ats-reason-title">{{ reason.title }}</h4>
               <p class="ats-reason-desc">{{ reason.desc }}</p>
             </article>
-          </div>
+                </div>
 
           <div class="ats-faq-wrap">
             <h3 class="ats-faq-heading">
@@ -350,8 +350,8 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
               </div>
             </div>
           </div>
-        </div>
-      </section>
+                    </div>
+            </section>
 
       <!-- CTA FINAL (identique landing cta-v1) -->
       <section class="section cta-v1">
@@ -370,8 +370,8 @@ const resetScan = () => { result.value = null; file.value = null; expandedIdx.va
           <div class="background-cta">
             <img class="cta-img-bg" src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6939c21874a51449ee9fd368_background.avif" alt="" loading="lazy" />
           </div>
-        </div>
-      </section>
+            </div>
+        </section>
     </main>
 
     <Footer />

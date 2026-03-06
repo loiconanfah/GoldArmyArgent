@@ -210,7 +210,7 @@ class GeminiClient:
 
 
     async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """Simulation mode chat."""
+        """Simulation mode chat. Supports model, max_tokens, temperature for faster/short replies."""
         model = kwargs.get("model", self.default_model)
         contents = [{"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]} for m in messages if m["role"] != "system"]
         system_text = next((m["content"] for m in messages if m["role"] == "system"), None)
@@ -218,9 +218,18 @@ class GeminiClient:
         payload = {"contents": contents}
         if system_text:
             payload["systemInstruction"] = {"parts": [{"text": system_text}]}
-            
+        gen_config = {}
+        if kwargs.get("max_tokens") is not None:
+            gen_config["maxOutputTokens"] = kwargs["max_tokens"]
+        if kwargs.get("temperature") is not None:
+            gen_config["temperature"] = kwargs["temperature"]
+        if gen_config:
+            payload["generationConfig"] = gen_config
+
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
-        async with aiohttp.ClientSession() as session:
+        timeout_sec = kwargs.get("timeout") or 45
+        timeout = aiohttp.ClientTimeout(total=timeout_sec)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(url, json=payload) as response:
                 if response.status != 200:
                     err_text = await response.text()
@@ -232,11 +241,14 @@ class GeminiClient:
                     if not candidates:
                         logger.error(f"Erreur de parsing Gemini: zéro candidats - {data}")
                         raise Exception("Format de réponse Gemini inattendu: pas de candidats")
-                    # Thinking models: iterate parts to find actual text
+                    # Thinking models: last part with "text" is the actual reply (first can be thought)
                     parts = candidates[0].get("content", {}).get("parts", [])
+                    text_out = ""
                     for part in parts:
                         if "text" in part and part["text"]:
-                            return part["text"]
+                            text_out = part["text"]
+                    if text_out:
+                        return text_out
                     raise Exception("Aucun texte dans la réponse Gemini")
                 except KeyError:
                     logger.error(f"Erreur de parsing Gemini: {data}")
