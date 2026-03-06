@@ -4,18 +4,37 @@ import { useRouter } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import { useI18n } from 'vue-i18n'
 import Footer from '../components/Footer.vue'
+import LandingNav from '../components/LandingNav.vue'
 import {
   MicrophoneIcon,
   StopIcon,
   PlayIcon,
   VideoCameraIcon,
   PhoneXMarkIcon,
-  SparklesIcon
+  SparklesIcon,
+  CpuChipIcon,
+  ChartBarIcon,
+  PencilSquareIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/vue/24/solid'
 import { ShieldCheckIcon } from '@heroicons/vue/24/outline'
 
 const { t, locale } = useI18n()
 const router = useRouter()
+
+onMounted(() => {
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = '/orvimo-landing.css'
+  link.id = 'orvimo-landing-css'
+  document.head.appendChild(link)
+  document.documentElement.classList.add('w-mod-ix3')
+})
+onUnmounted(() => {
+  const link = document.getElementById('orvimo-landing-css')
+  if (link) link.remove()
+  document.documentElement.classList.remove('w-mod-ix3')
+})
 
 // SEO optimization using @unhead/vue
 useHead({
@@ -55,9 +74,25 @@ const question = ref('')
 const userAnswer = ref('')
 const feedback = ref(null)
 
-// NEW: Interview Type Selection
 const interviewType = ref('Général')
 const interviewTypes = ['Général', 'Technique', 'Ressources Humaines', 'Culture Fit', 'Management']
+const openFaqIndex = ref(null)
+
+const faqItems = computed(() => [
+  { q: t('free_interview.faq_q1'), a: t('free_interview.faq_a1') },
+  { q: t('free_interview.faq_q2'), a: t('free_interview.faq_a2') },
+  { q: t('free_interview.faq_q3'), a: t('free_interview.faq_a3') }
+])
+const interviewReasons = computed(() => {
+  const li1 = t('free_interview.seo_article_li1')
+  const li2 = t('free_interview.seo_article_li2')
+  const li3 = t('free_interview.seo_article_li3')
+  const split = (s) => {
+    const i = s.indexOf(': ')
+    return i >= 0 ? { title: s.slice(0, i).trim(), desc: s.slice(i + 2).trim() } : { title: s, desc: '' }
+  }
+  return [split(li1), split(li2), split(li3)]
+})
 
 // Web Speech API references
 let synthesis = null
@@ -254,127 +289,56 @@ const endCall = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#0a0a12] text-white flex flex-col font-display relative overflow-x-hidden selection:bg-indigo-500/30">
-    
-    <!-- Background Elements with CSS Animations -->
-    <div class="fixed inset-0 bg-[#0a0a12] pointer-events-none z-0"></div>
-    <div class="fixed top-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600/10 blur-[150px] mix-blend-screen animate-blob pointer-events-none z-0"></div>
-    <div class="fixed bottom-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/10 blur-[150px] mix-blend-screen animate-blob pointer-events-none z-0" style="animation-delay: 2s"></div>
-    <div class="fixed top-[40%] left-[20%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/10 blur-[150px] mix-blend-screen animate-blob pointer-events-none z-0" style="animation-delay: 4s"></div>
-    <div class="fixed inset-0 opacity-20 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-transparent to-transparent pointer-events-none z-0"></div>
-
-    <!-- ─── NAVBAR ─── -->
-    <nav class="fixed top-6 inset-x-0 z-[100] px-6">
-      <div class="max-w-7xl mx-auto flex items-center justify-between
-                  bg-white/5 backdrop-blur-2xl border border-white/10
-                  rounded-2xl px-6 py-4 shadow-2xl shadow-black/40">
-        <!-- Logo -->
-        <router-link to="/" class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl overflow-hidden border border-violet-500/30 shadow-[0_0_20px_rgba(124,58,237,0.4)]">
-            <img src="/logo.png" alt="Logo" class="w-full h-full object-cover" />
+  <div class="page-wrapper page-wrapper--interview">
+    <LandingNav />
+    <main class="main dark-secondary">
+    <!-- Simulator full-page when intro: show hero + card; when connecting/interviewing/feedback: show that view -->
+    <template v-if="step === 'intro'">
+      <section class="section hero-1">
+        <div class="hero-content">
+          <div class="w-layout-grid hero1-grid interview-hero-grid">
+            <div class="hero-left-col">
+              <div class="hero-text-wrap">
+                <span class="interview-badge">{{ t('free_interview.hero_badge') }}</span>
+                <h1 class="hero-heading interview-hero-heading">
+                  <span class="interview-hero-line1">{{ t('free_interview.hero_title_part1') }}</span>
+                  <span class="tertiary-color-emphasis interview-hero-emphasis">{{ t('free_interview.hero_title_italic') }}</span>
+                  <span class="interview-hero-line2">{{ t('free_interview.hero_title_highlight') }}</span>
+                </h1>
+                <p class="hero-paragraph">{{ t('free_interview.hero_subtitle') }}</p>
+                <div class="interview-trust">
+                  <span class="trust-item"><MicrophoneIcon class="trust-icon" /> {{ t('free_interview.mic_required') }}</span>
+                  <span class="trust-item"><ShieldCheckIcon class="trust-icon" /> {{ t('free_interview.no_recording') }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="interview-intro-col">
+              <div class="interview-intro-card">
+                <div class="interview-type-wrap">
+                  <button v-for="type in interviewTypes" :key="type" type="button" @click="interviewType = type" :class="['interview-type-btn', { 'interview-type-btn--active': interviewType === type }]">{{ type }}</button>
+                </div>
+                <input v-model="jobTitle" @keyup.enter="startCall" type="text" :placeholder="t('free_interview.job_placeholder')" class="interview-job-input" />
+                <button type="button" @click="startCall" :disabled="!jobTitle.trim()" class="interview-start-btn">
+                  <VideoCameraIcon class="btn-icon-svg" /> {{ t('free_interview.start_button') }}
+                </button>
+              </div>
+            </div>
           </div>
-          <span class="text-lg font-black tracking-tight uppercase text-white hover:text-violet-400 transition-colors">GoldArmy</span>
-        </router-link>
-        <!-- Links -->
-        <div class="hidden md:flex items-center gap-6">
-          <router-link to="/free-cv-roast" class="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1.5">
-             {{ t('landing.nav.audit_cv') }}
-          </router-link>
-          <router-link to="/free-interview" class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5">
-             {{ t('landing.nav.simulation') }}
-          </router-link>
-          <div class="h-4 w-px bg-white/10 mx-2"></div>
-          <router-link to="/blog" class="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-400 hover:text-fuchsia-300 transition-colors">
-            {{ t('landing.nav.blog') }}
-          </router-link>
         </div>
-        <!-- CTA -->
-        <div class="flex items-center gap-3">
-          <router-link to="/login" class="hidden sm:block text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">
-            {{ t('landing.nav.login') }}
-          </router-link>
-          <router-link to="/register"
-            class="bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-black uppercase tracking-[0.25em]
-                   px-5 py-2.5 rounded-xl shadow-lg shadow-violet-600/30
-                   transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95">
-            {{ t('landing.nav.get_started') }} →
-          </router-link>
+      </section>
+    </template>
+    <template v-else-if="step === 'connecting'">
+      <section class="section interview-connecting">
+        <div class="interview-connecting-card">
+          <div class="interview-spinner"></div>
+          <h2 class="interview-connecting-title">{{ t('free_interview.connecting') }}</h2>
+          <p class="interview-connecting-sub">{{ t('free_interview.secure_channel') }}</p>
         </div>
-      </div>
-    </nav>
-
-    <!-- Main Content wrapper -->
-    <main class="relative z-10 w-full flex-1 flex flex-col pt-32 pb-20 px-4 md:px-6">
-        
-        <!-- Simulator Container -->
-        <div class="w-full max-w-5xl mx-auto min-h-[80vh] border border-surface-800 rounded-[2rem] bg-surface-950/80 backdrop-blur-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] flex flex-col relative overflow-hidden">
-            
-            <!-- MAIN VIEWS -->
-    
-    <!-- 1. INTRO (Hero Section Split/Centered) -->
-    <div v-if="step === 'intro'" class="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-4xl mx-auto z-10 w-full mb-20">
-        
-        <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-surface-900/80 border border-white/5 backdrop-blur-md mb-8 shadow-2xl">
-            <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-            <span class="text-xs font-bold text-slate-300 tracking-widest uppercase">{{ t('free_interview.hero_badge') }}</span>
-        </div>
-
-        <h1 class="text-5xl sm:text-6xl md:text-7xl font-black mb-6 tracking-tighter leading-[1.1]">
-            {{ t('free_interview.hero_title1') }} <span class="italic text-slate-500 font-display">{{ t('free_interview.hero_title1_italic') }}</span><br/>
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-rose-400 pb-2">{{ t('free_interview.hero_title2') }}</span>
-        </h1>
-        
-        <p class="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
-            {{ t('free_interview.hero_subtitle') }}
-        </p>
-        
-        <div class="w-full max-w-2xl relative group flex flex-col items-center">
-            
-            <!-- Type Selector -->
-            <div class="flex flex-wrap justify-center gap-2 mb-8">
-                <button v-for="type in interviewTypes" :key="type"
-                        @click="interviewType = type"
-                        :class="[
-                            'px-4 py-2 rounded-xl text-sm font-bold tracking-wide transition-all border',
-                            interviewType === type 
-                                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.3)]' 
-                                : 'bg-surface-800 text-slate-400 border-white/5 hover:bg-surface-700 hover:text-white'
-                        ]">
-                    {{ type }}
-                </button>
-            </div>
-
-            <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-fuchsia-500 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200 top-20"></div>
-            <div class="relative bg-surface-950/80 backdrop-blur-xl border border-white/10 rounded-3xl p-2 sm:p-3 flex flex-col sm:flex-row gap-2 shadow-2xl overflow-hidden w-full">
-                <input v-model="jobTitle" @keyup.enter="startCall" type="text" :placeholder="t('free_interview.job_placeholder')" class="flex-1 bg-transparent px-6 py-4 text-lg font-bold text-white placeholder-slate-500 focus:outline-none text-center sm:text-left" />
-                
-                <button @click="startCall" :disabled="!jobTitle.trim()" class="bg-white text-indigo-950 disabled:opacity-50 disabled:cursor-not-allowed font-black uppercase tracking-widest py-4 px-8 rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 z-10">
-                    <VideoCameraIcon class="w-5 h-5 text-indigo-600" /> {{ t('free_interview.start_button') }}
-                </button>
-            </div>
-        </div>
-        
-        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-sm font-bold text-slate-500">
-            <div class="flex items-center gap-2 bg-surface-900/50 py-2 px-5 rounded-full border border-white/5 shadow-sm">
-                <MicrophoneIcon class="w-5 h-5 text-fuchsia-400" />
-                <span>{{ t('free_interview.mic_required') }}</span>
-            </div>
-            <div class="flex items-center gap-2 bg-surface-900/50 py-2 px-5 rounded-full border border-white/5 shadow-sm">
-                <ShieldCheckIcon class="w-5 h-5 text-emerald-500" />
-                <span>{{ t('free_interview.privacy_promise') }}</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. CONNECTING -->
-    <div v-if="step === 'connecting'" class="flex-1 flex flex-col items-center justify-center z-10">
-        <div class="w-32 h-32 rounded-full border-4 border-surface-800 border-t-indigo-500 animate-spin mb-8"></div>
-        <h2 class="text-2xl font-bold animate-pulse">{{ t('free_interview.connecting_title') }}</h2>
-        <p class="text-slate-500 mt-2 font-mono text-sm">{{ t('free_interview.connecting_subtitle') }}</p>
-    </div>
-
-    <!-- 3. INTERVIEWING (HUD/Glassmorphism UI) -->
-    <div v-if="step === 'interviewing' || step === 'feedback'" class="flex-1 flex flex-col z-10 pt-16 pb-32 px-4 sm:px-12 w-full max-w-[1600px] mx-auto relative">
+      </section>
+    </template>
+    <div v-else-if="step === 'interviewing' || step === 'feedback'" class="interview-simulator-wrap">
+      <div class="interview-simulator-container">
+      <div class="interview-panels flex-1 flex flex-col z-10 pt-8 pb-32 px-4 sm:px-8 w-full max-w-6xl mx-auto relative">
         
         <!-- Glowing Ambient Lights for HUD -->
         <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 blur-[100px] pointer-events-none rounded-full"></div>
@@ -430,7 +394,7 @@ const endCall = () => {
                          <!-- User speaking radar -->
                         <div v-if="isListening" class="absolute inset-0 bg-gradient-to-t from-rose-500/10 to-transparent animate-pulse"></div>
                         <div class="w-24 h-24 rounded-full bg-slate-800/80 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-2xl relative z-10">
-                            <span class="text-2xl text-slate-400 font-bold uppercase tracking-widest">{{ t('free_interview.user_label') }}</span>
+                            <span class="text-2xl text-slate-400 font-bold uppercase tracking-widest">{{ t('free_interview.you_label') }}</span>
                         </div>
                     </div>
                 </div>
@@ -461,16 +425,16 @@ const endCall = () => {
                         <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-fuchsia-600 rounded-3xl flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(139,92,246,0.4)]">
                             <SparklesIcon class="w-10 h-10 text-white" />
                         </div>
-                        <h3 class="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight">{{ t('free_interview.end_title') }}</h3>
+                        <h3 class="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight">{{ t('free_interview.end_simulation_title') }}</h3>
                         <p class="text-slate-400 text-lg md:text-xl mb-12 max-w-xl leading-relaxed">
-                            {{ t('free_interview.end_subtitle') }}
+                            {{ t('free_interview.end_simulation_desc') }}
                         </p>
                         
                         <button @click="router.push('/register')" class="bg-white text-indigo-950 font-black uppercase tracking-widest text-sm px-12 py-6 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-[1.02] active:scale-95 transition-all mb-6">
-                            {{ t('free_interview.end_cta') }}
+                            {{ t('free_interview.create_account') }}
                         </button>
                         <button @click="endCall" class="text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors py-2">
-                            {{ t('free_interview.end_exit') }}
+                            {{ t('free_interview.exit_call') }}
                         </button>
                     </div>
                 </div>
@@ -488,7 +452,7 @@ const endCall = () => {
                         <MicrophoneIcon class="w-7 h-7 sm:w-8 sm:h-8" v-if="!isListening" />
                         <StopIcon class="w-7 h-7 sm:w-8 sm:h-8" v-else />
                     </button>
-                    <span class="text-xs font-bold mt-3 uppercase tracking-widest hidden sm:block transition-colors" :class="isListening ? 'text-rose-400' : 'text-slate-500'">{{ isListening ? t('free_interview.stop_label') : t('free_interview.speak_label') }}</span>
+                    <span class="text-xs font-bold mt-3 uppercase tracking-widest hidden sm:block transition-colors" :class="isListening ? 'text-rose-400' : 'text-slate-500'">{{ isListening ? t('free_interview.dock_stop') : t('free_interview.dock_talk') }}</span>
                 </div>
 
                 <div class="w-px h-12 bg-white/10 mx-2"></div>
@@ -498,7 +462,7 @@ const endCall = () => {
                     <button @click="submitAnswer" :disabled="step !== 'interviewing' || !userAnswer || isProcessing" class="px-8 h-14 sm:h-16 rounded-2xl flex items-center gap-3 transition-all duration-300 shadow-lg text-sm sm:text-base font-black tracking-wide uppercase" :class="userAnswer && !isProcessing ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.3)]' : 'bg-surface-800 text-slate-500 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed'">
                         <span v-if="isProcessing" class="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin"></span>
                         <PlayIcon v-else class="w-5 h-5" />
-                        {{ isProcessing ? t('free_interview.analyzing_label') : t('free_interview.validate_label') }}
+                        {{ isProcessing ? t('free_interview.dock_analyzing') : t('free_interview.dock_validate') }}
                     </button>
                     <span class="text-[10px] font-bold text-transparent mt-2 hidden sm:block">.</span>
                 </div>
@@ -510,128 +474,108 @@ const endCall = () => {
                     <button @click="endCall" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition-all duration-300 shadow-[0_0_20px_rgba(225,29,72,0.3)]">
                         <PhoneXMarkIcon class="w-6 h-6 sm:w-7 sm:h-7" />
                     </button>
-                    <span class="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest hidden sm:block">{{ t('free_interview.exit_label') }}</span>
+                    <span class="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-widest hidden sm:block">{{ t('free_interview.dock_exit') }}</span>
                 </div>
             </div>
         </div>
 
     </div>
+      </div>
+    </div>
 
-        </div> <!-- End Simulator Container -->
-
-        <!-- Bento Box Explanatory Section -->
-        <section class="max-w-[1400px] mx-auto w-full pt-20 border-t border-white/5 relative z-10">
-            <div class="text-center mb-20">
-                <span class="text-indigo-400 text-xs font-black uppercase tracking-[0.2em] mb-4 block">{{ t('free_interview.bento_tagline') }}</span>
-                <h2 class="text-4xl md:text-6xl font-black mb-6 tracking-tight">{{ t('free_interview.bento_title1') }} <span class="italic font-display text-slate-500">{{ t('free_interview.bento_title2') }}</span></h2>
+    <!-- 3 colonnes (bento) -->
+    <section class="section home1-3col">
+      <div class="w-layout-blockcontainer container w-container">
+        <div class="_3cols-heading">
+          <h3 class="center-align">{{ t('free_interview.bento_title1') }} <span class="tertiary-color-emphasis">{{ t('free_interview.bento_title2') }}</span></h3>
+          <p class="fsize-body-large center-align">{{ t('free_interview.bento_tagline') }}</p>
+        </div>
+        <div class="w-layout-grid home1-3cols">
+          <div class="card-item-home1">
+            <div class="card-item-img-wrap card-item-img-wrap--num">1</div>
+            <div class="card-text-content-home1">
+              <h4 class="fsize-xxs">{{ t('free_interview.bento_feature1_title') }}</h4>
+              <p>{{ t('free_interview.bento_feature1_desc') }}</p>
             </div>
-
-            <!-- Asymmetrical Bento Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6 h-auto md:h-[600px] mb-32">
-                
-                <!-- BENTO 1: Large Audio Visualizer Feature -->
-                <div class="md:col-span-2 md:row-span-2 bg-gradient-to-br from-surface-900 to-[#0a0a12] border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
-                    <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-indigo-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    <div class="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400 font-black text-2xl mb-8 border border-indigo-500/20 shadow-[0_0_30px_rgba(99,102,241,0.2)]">1</div>
-                    <h3 class="text-3xl font-black mb-4">{{ t('free_interview.bento_feature1_title') }}</h3>
-                    <p class="text-slate-400 text-lg leading-relaxed max-w-md">
-                        {{ t('free_interview.bento_feature1_desc') }}
-                    </p>
-                    <div class="mt-10 h-32 bg-surface-950 rounded-2xl border border-surface-800 flex items-center justify-center p-4 overflow-hidden relative">
-                        <!-- Abstract sound waves -->
-                        <div class="flex items-center gap-1 w-full max-w-[250px] h-16">
-                            <div v-for="i in 15" :key="i" class="flex-1 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_10px_#6366f1]" :style="`height: ${Math.random() * 100}%; animation-delay: ${i * 0.1}s; animation-duration: ${0.5 + Math.random()}s`"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BENTO 2: Top Right Small -->
-                <div class="md:col-span-2 md:row-span-1 bg-surface-900 border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden">
-                    <div class="w-12 h-12 bg-fuchsia-500/10 rounded-xl flex items-center justify-center text-fuchsia-400 font-black text-xl mb-4 border border-fuchsia-500/20">2</div>
-                    <h3 class="text-2xl font-black mb-3 text-white">{{ t('free_interview.bento_feature2_title') }}</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed max-w-sm">
-                        {{ t('free_interview.bento_feature2_desc') }}
-                    </p>
-                </div>
-
-                <!-- BENTO 3: Bottom Right Small -->
-                <div class="md:col-span-2 md:row-span-1 bg-surface-900 border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-gradient-to-r from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <div class="w-12 h-12 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-400 font-black text-xl mb-4 border border-rose-500/20">3</div>
-                    <h3 class="text-2xl font-black mb-3 text-white">{{ t('free_interview.bento_feature3_title') }}</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed max-w-sm">
-                        {{ t('free_interview.bento_feature3_desc') }}
-                    </p>
-                </div>
-
+          </div>
+          <div class="card-item-home1">
+            <div class="card-item-img-wrap card-item-img-wrap--num">2</div>
+            <div class="card-text-content-home1">
+              <h4 class="fsize-xxs">{{ t('free_interview.bento_feature2_title') }}</h4>
+              <p>{{ t('free_interview.bento_feature2_desc') }}</p>
             </div>
-
-            <!-- Massive SEO Content: How It Works & FAQ -->
-            <section class="max-w-4xl mx-auto w-full pt-12 pb-24 text-left px-4">
-                <article class="prose prose-invert prose-lg max-w-none">
-                    <h2 class="text-3xl font-black text-white mb-6">{{ t('free_interview.seo_article_title') }}</h2>
-                    <p class="text-slate-400 mb-6 leading-relaxed">
-                        {{ t('free_interview.seo_article_p1') }}
-                    </p>
-                    
-                    <h3 class="text-2xl font-bold text-white mt-12 mb-4">{{ t('free_interview.seo_article_h3') }}</h3>
-                    <ul class="text-slate-400 mb-10 space-y-3 list-disc pl-6 marker:text-indigo-500">
-                        <li>{{ t('free_interview.seo_article_li1') }}</li>
-                        <li>{{ t('free_interview.seo_article_li2') }}</li>
-                        <li>{{ t('free_interview.seo_article_li3') }}</li>
-                    </ul>
-
-                    <h2 class="text-3xl font-black text-white mt-16 mb-8">{{ t('free_interview.faq_title') }}</h2>
-                    
-                    <div class="space-y-6">
-                        <details class="bg-surface-900/50 border border-white/5 rounded-2xl p-6 group cursor-pointer hover:bg-surface-800/50 transition-colors">
-                            <summary class="text-xl font-bold text-white list-none flex justify-between items-center">
-                                {{ t('free_interview.faq_q1') }}
-                                <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
-                            </summary>
-                            <p class="text-slate-400 mt-4 leading-relaxed">
-                                {{ t('free_interview.faq_a1') }}
-                            </p>
-                        </details>
-                        
-                        <details class="bg-surface-900/50 border border-white/5 rounded-2xl p-6 group cursor-pointer hover:bg-surface-800/50 transition-colors">
-                            <summary class="text-xl font-bold text-white list-none flex justify-between items-center">
-                                {{ t('free_interview.faq_q2') }}
-                                <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
-                            </summary>
-                            <p class="text-slate-400 mt-4 leading-relaxed">
-                                {{ t('free_interview.faq_a2') }}
-                            </p>
-                        </details>
-
-                        <details class="bg-surface-900/50 border border-white/5 rounded-2xl p-6 group cursor-pointer hover:bg-surface-800/50 transition-colors">
-                            <summary class="text-xl font-bold text-white list-none flex justify-between items-center">
-                                {{ t('free_interview.faq_q3') }}
-                                <span class="text-indigo-400 group-open:rotate-180 transition-transform">▼</span>
-                            </summary>
-                            <p class="text-slate-400 mt-4 leading-relaxed">
-                                {{ t('free_interview.faq_a3') }}
-                            </p>
-                        </details>
-                    </div>
-                </article>
-            </section>
-
-            <!-- Massive Footer CTA -->
-            <div class="relative w-full rounded-[3rem] p-16 md:p-24 text-center overflow-hidden border border-white/10 bg-surface-950">
-                <!-- Glowing orb behind -->
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-indigo-500/20 via-rose-500/20 to-indigo-500/20 blur-[120px] rounded-full pointer-events-none animate-spin-slow"></div>
-                
-                <h3 class="text-4xl md:text-6xl font-black mb-6 tracking-tight relative z-10 text-white">{{ t('free_interview.final_cta_title') }}</h3>
-                <p class="text-slate-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto relative z-10">
-                    {{ t('free_interview.final_cta_desc') }}
-                </p>
-                
-                <router-link to="/register" class="relative z-10 inline-flex items-center justify-center bg-white text-black font-black uppercase tracking-widest text-sm px-12 py-6 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-105 hover:shadow-[0_0_60px_rgba(255,255,255,0.4)] active:scale-95 transition-all">
-                    {{ t('free_interview.final_cta_button') }}
-                </router-link>
+          </div>
+          <div class="card-item-home1">
+            <div class="card-item-img-wrap card-item-img-wrap--num">3</div>
+            <div class="card-text-content-home1">
+              <h4 class="fsize-xxs">{{ t('free_interview.bento_feature3_title') }}</h4>
+              <p>{{ t('free_interview.bento_feature3_desc') }}</p>
             </div>
-        </section>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bloc SEO + FAQ (design type ATS) -->
+    <section class="interview-ats-block">
+      <div class="ats-block-inner">
+        <div class="ats-badge">IA & Voix</div>
+        <h2 class="ats-main-title">{{ t('free_interview.seo_article_h2') }}</h2>
+        <div class="ats-intro">
+          <p class="ats-intro-p">{{ t('free_interview.seo_article_p1') }}</p>
+        </div>
+        <h3 class="ats-subtitle">{{ t('free_interview.seo_article_h3') }}</h3>
+        <div class="ats-reasons-grid">
+          <article v-for="(reason, idx) in interviewReasons" :key="idx" class="ats-reason-card">
+            <div class="ats-reason-icon" :class="'ats-reason-icon--' + (idx + 1)">
+              <CpuChipIcon v-if="idx === 0" class="ats-reason-svg" />
+              <ChartBarIcon v-else-if="idx === 1" class="ats-reason-svg" />
+              <PencilSquareIcon v-else class="ats-reason-svg" />
+            </div>
+            <span class="ats-reason-num">0{{ idx + 1 }}</span>
+            <h4 class="ats-reason-title">{{ reason.title }}</h4>
+            <p class="ats-reason-desc">{{ reason.desc }}</p>
+          </article>
+        </div>
+        <div class="ats-faq-wrap">
+          <h3 class="ats-faq-heading">
+            <QuestionMarkCircleIcon class="ats-faq-heading-icon" />
+            {{ t('free_interview.faq_title') }}
+          </h3>
+          <div class="ats-faq-list">
+            <div v-for="(faq, i) in faqItems" :key="i" class="ats-faq-item" :class="{ 'ats-faq-item--open': openFaqIndex === i }">
+              <button type="button" class="ats-faq-q" @click="openFaqIndex = openFaqIndex === i ? null : i">
+                <span>{{ faq.q }}</span>
+                <span class="ats-faq-chevron" aria-hidden="true"></span>
+              </button>
+              <div class="ats-faq-a">
+                <p>{{ faq.a }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA final -->
+    <section class="section cta-v1">
+      <div class="cta1-wrapper">
+        <div class="w-layout-grid cta1-content">
+          <div class="cta-text-wrapper-left">
+            <h2 class="heading-cta">{{ t('free_interview.final_cta_title') }}</h2>
+          </div>
+          <div class="cta-text-wrapper-right">
+            <div class="cta-text-right">{{ t('free_interview.final_cta_desc') }}</div>
+            <div class="reveal-content-wrap">
+              <router-link to="/register" class="button-default w-button">{{ t('free_interview.final_cta_button') }}</router-link>
+            </div>
+          </div>
+        </div>
+        <div class="background-cta">
+          <img class="cta-img-bg" src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/6939c21874a51449ee9fd368_background.avif" alt="" loading="lazy" />
+        </div>
+      </div>
+    </section>
 
     </main>
 
@@ -641,5 +585,408 @@ const endCall = () => {
 </template>
 
 <style scoped>
-/* Optional specific styling */
+.page-wrapper--interview {
+  min-height: 100vh;
+  overflow-x: clip;
+  --_theme---bodybackground: #2e2e2e;
+  --_theme---textcolor--primarytext: #ffffff;
+  --_theme---textcolor--secondarytext: #e8e8e8;
+  --_theme---textcolor--tertiarytext: #b8b8b8;
+  --_theme---background--primarybackground: #2e2e2e;
+  --_theme---background--secondarybackground: #1f1f1f;
+  background-color: var(--_theme---bodybackground);
+  color: var(--_theme---textcolor--primarytext);
+}
+.page-wrapper--interview :deep(.main) {
+  padding-top: 0;
+}
+.page-wrapper--interview :deep(.hero-heading),
+.page-wrapper--interview :deep(.hero-paragraph),
+.page-wrapper--interview :deep(.heading-cta),
+.page-wrapper--interview :deep(.cta-text-right),
+.page-wrapper--interview :deep(h1), .page-wrapper--interview :deep(h2),
+.page-wrapper--interview :deep(h3), .page-wrapper--interview :deep(h4),
+.page-wrapper--interview :deep(._3cols-heading h3), .page-wrapper--interview :deep(._3cols-heading p),
+.page-wrapper--interview :deep(.card-text-content-home1 h4), .page-wrapper--interview :deep(.card-text-content-home1 p),
+.page-wrapper--interview :deep(.ats-main-title), .page-wrapper--interview :deep(.ats-reason-title),
+.page-wrapper--interview :deep(.ats-faq-q) {
+  color: var(--_theme---textcolor--primarytext);
+}
+.page-wrapper--interview :deep(.tertiary-color-emphasis) {
+  color: var(--_theme---textcolor--tertiarytext);
+}
+
+/* Hero title: lisibilité et mise en valeur de "faiblesses" */
+.interview-hero-heading {
+  font-size: clamp(1.75rem, 4.5vw, 2.75rem);
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem;
+  max-width: 22ch;
+}
+.interview-hero-heading .interview-hero-line1,
+.interview-hero-heading .interview-hero-line2 {
+  display: inline;
+}
+.interview-hero-heading .interview-hero-emphasis {
+  font-style: italic;
+  color: var(--_theme---textcolor--tertiarytext);
+}
+@media (min-width: 768px) {
+  .interview-hero-heading {
+    max-width: none;
+    font-size: clamp(2rem, 3.2vw, 2.85rem);
+    line-height: 1.2;
+  }
+}
+
+.interview-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: var(--_size---paddingsize--large, 2rem);
+}
+@media (max-width: 991px) {
+  .interview-hero-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+}
+.interview-badge {
+  display: inline-block;
+  font-size: var(--_size---fonts--xxs, 0.75rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--_theme---textcolor--accenttext1);
+  margin-bottom: 0.75rem;
+}
+.interview-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--_size---paddingsize--medium, 1rem);
+  margin-top: var(--_size---paddingsize--medium, 1rem);
+}
+.interview-trust .trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--_size---fonts--xs, 0.875rem);
+  color: var(--_theme---textcolor--secondarytext);
+}
+.interview-trust .trust-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--_theme---textcolor--accenttext1);
+}
+
+.interview-intro-col {
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--_size---paddingsize--small, 1rem);
+}
+.interview-intro-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 1.75rem;
+  border-radius: var(--radius--m, 1rem);
+  background-color: var(--_theme---background--secondarybackground);
+  border: 1px solid var(--_theme---border--mediumalpha);
+}
+.interview-type-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.interview-type-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: var(--radius--xs, 0.5rem);
+  border: 1px solid var(--_theme---border--mediumalpha);
+  background: var(--_theme---background--tertiarybackground);
+  color: var(--_theme---textcolor--secondarytext);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+.interview-type-btn--active {
+  border-color: var(--_theme---textcolor--accenttext1);
+  background: rgba(255, 111, 0, 0.12);
+  color: var(--_theme---textcolor--primarytext);
+}
+.interview-job-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  border-radius: var(--radius--xs, 0.5rem);
+  border: 1px solid var(--_theme---border--mediumalpha);
+  background: var(--_theme---background--primarybackground);
+  color: var(--_theme---textcolor--primarytext);
+  outline: none;
+}
+.interview-job-input::placeholder {
+  color: var(--_theme---textcolor--tertiarytext);
+}
+.interview-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: var(--_theme---textcolor--accenttext1);
+  border: 1px solid var(--_theme---textcolor--accenttext1);
+  border-radius: var(--radius--xs, 0.5rem);
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+.interview-start-btn:hover:not(:disabled) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+.interview-start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-icon-svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.interview-connecting {
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.interview-connecting-card {
+  text-align: center;
+  padding: 2.5rem;
+  border-radius: var(--radius--m, 1rem);
+  background: var(--_theme---background--secondarybackground);
+  border: 1px solid var(--_theme---border--mediumalpha);
+}
+.interview-spinner {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1.5rem;
+  border: 3px solid var(--_theme---background--tertiarybackground);
+  border-top-color: var(--_theme---textcolor--accenttext1);
+  border-radius: 50%;
+  animation: interview-spin 0.8s linear infinite;
+}
+@keyframes interview-spin {
+  to { transform: rotate(360deg); }
+}
+.interview-connecting-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--_theme---textcolor--primarytext);
+  margin: 0 0 0.5rem;
+}
+.interview-connecting-sub {
+  font-size: 0.875rem;
+  color: var(--_theme---textcolor--tertiarytext);
+  margin: 0;
+}
+
+.interview-simulator-wrap {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+.interview-simulator-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.interview-panels :deep(.fsize-body-large),
+.interview-panels :deep(p) {
+  color: var(--_theme---textcolor--secondarytext);
+}
+
+/* Bloc ATS/FAQ (réutilise structure Free CV Roast) */
+.interview-ats-block {
+  background: linear-gradient(180deg, #252530 0%, #1c1c24 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 3.5rem 1.5rem 4rem;
+}
+.interview-ats-block .ats-block-inner { max-width: 900px; margin: 0 auto; }
+.interview-ats-block .ats-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--_theme---textcolor--accenttext1, #ff6f00);
+  margin-bottom: 0.75rem;
+}
+.interview-ats-block .ats-main-title {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffffff;
+  margin: 0 0 1.5rem;
+}
+.interview-ats-block .ats-intro { margin-bottom: 2.5rem; }
+.interview-ats-block .ats-intro-p {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #e0e0e0;
+  margin: 0 0 1rem;
+}
+.interview-ats-block .ats-subtitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(255, 111, 0, 0.4);
+  display: inline-block;
+}
+.interview-ats-block .ats-reasons-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-bottom: 3rem;
+}
+@media (min-width: 768px) {
+  .interview-ats-block .ats-reasons-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+.interview-ats-block .ats-reason-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+}
+.interview-ats-block .ats-reason-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+.interview-ats-block .ats-reason-icon--1 { background: rgba(255, 111, 0, 0.15); color: #ff8c42; }
+.interview-ats-block .ats-reason-icon--2 { background: rgba(0, 94, 255, 0.15); color: #4d9aff; }
+.interview-ats-block .ats-reason-icon--3 { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+.interview-ats-block .ats-reason-svg { width: 1.5rem; height: 1.5rem; }
+.interview-ats-block .ats-reason-num {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.35);
+}
+.interview-ats-block .ats-reason-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.5rem;
+}
+.interview-ats-block .ats-reason-desc {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #b8b8b8;
+  margin: 0;
+}
+.interview-ats-block .ats-faq-wrap {
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.interview-ats-block .ats-faq-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 1.25rem;
+}
+.interview-ats-block .ats-faq-heading-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--_theme---textcolor--accenttext1);
+}
+.interview-ats-block .ats-faq-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.interview-ats-block .ats-faq-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.interview-ats-block .ats-faq-item--open {
+  border-color: rgba(255, 111, 0, 0.3);
+}
+.interview-ats-block .ats-faq-q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: none;
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+.interview-ats-block .ats-faq-chevron {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  margin-top: -4px;
+  transition: transform 0.2s;
+  opacity: 0.7;
+}
+.interview-ats-block .ats-faq-item--open .ats-faq-chevron {
+  transform: rotate(-135deg);
+  margin-top: 4px;
+}
+.interview-ats-block .ats-faq-a {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease-out;
+}
+.interview-ats-block .ats-faq-item--open .ats-faq-a {
+  max-height: 500px;
+}
+.interview-ats-block .ats-faq-a p {
+  margin: 0;
+  padding: 0 1.25rem 1rem 1.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #c8c8c8;
+}
+
+.page-wrapper--interview :deep(.card-item-img-wrap--num) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--_theme---textcolor--accenttext1);
+  background-color: var(--_theme---background--tertiarybackground);
+}
 </style>

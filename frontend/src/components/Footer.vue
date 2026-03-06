@@ -3,82 +3,67 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const router = useRouter()
 const currentYear = new Date().getFullYear()
+
+function goToSection(hash) {
+  if (router.currentRoute.value.path === '/' && hash) {
+    const el = document.getElementById(hash)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  } else if (hash) {
+    router.push(`/#${hash}`)
+  }
+}
 </script>
 
 <template>
-  <footer class="footer landing-footer" role="contentinfo">
-    <div class="footer-content-wrapper">
-      <div class="w-layout-grid footer-links-grid">
-        <!-- Product -->
-        <div class="footer-links-list-wrapper">
-          <div class="footer-links-heading">{{ t('footer_global.product_title') }}</div>
-          <div class="footer-list-wrapper">
-            <ul role="list" class="footer-links-list">
-              <li class="footer-list-item">
-                <a href="#agents" class="footer-link-item">{{ t('landing.nav.features') }}</a>
-              </li>
-              <li class="footer-list-item">
-                <a href="#agents" class="footer-link-item">{{ t('landing.nav.agents') }}</a>
-              </li>
-              <li class="footer-list-item">
-                <a href="#pricing" class="footer-link-item">{{ t('landing.nav.pricing') }}</a>
-              </li>
-              <li class="footer-list-item">
-                <a href="#avis" class="footer-link-item">{{ t('landing.nav.reviews') }}</a>
-              </li>
-              <li class="footer-list-item">
-                <a href="#blog" class="footer-link-item">{{ t('landing.nav.blog') }}</a>
-              </li>
-            </ul>
-          </div>
+  <footer class="footer-tech" role="contentinfo">
+    <div class="footer-tech__glow"></div>
+    <div class="footer-tech__container">
+      <div class="footer-tech__grid">
+        <div class="footer-tech__brand-col">
+          <router-link to="/" class="footer-tech__brand">
+            <img src="/logo.png" alt="GoldArmy" class="footer-tech__logo" width="48" height="48" loading="lazy" />
+            <span class="footer-tech__name">GoldArmy</span>
+          </router-link>
+          <p class="footer-tech__tagline">{{ t('landing.footer.description') }}</p>
+          <div class="footer-tech__accent-line"></div>
         </div>
-        <!-- Free Tools -->
-        <div class="footer-links-list-wrapper">
-          <div class="footer-links-heading">{{ t('footer_global.tools_title') }}</div>
-          <div class="footer-list-wrapper">
-            <ul role="list" class="footer-links-list">
-              <li class="footer-list-item">
-                <router-link to="/free-cv-roast" class="footer-link-item">{{ t('landing.nav.cv_audit') }}</router-link>
-              </li>
-              <li class="footer-list-item">
-                <router-link to="/free-interview" class="footer-link-item">{{ t('landing.nav.simulation') }}</router-link>
-              </li>
-            </ul>
-          </div>
+
+        <div class="footer-tech__col">
+          <span class="footer-tech__heading">{{ t('footer_global.product_title') }}</span>
+          <ul class="footer-tech__list">
+            <li><a href="#" @click.prevent="goToSection('agents')" class="footer-tech__link">{{ t('landing.nav.features') }}</a></li>
+            <li><a href="#" @click.prevent="goToSection('agents')" class="footer-tech__link">{{ t('landing.nav.agents') }}</a></li>
+            <li><a href="#" @click.prevent="goToSection('pricing')" class="footer-tech__link">{{ t('landing.nav.pricing') }}</a></li>
+            <li><a href="#" @click.prevent="goToSection('avis')" class="footer-tech__link">{{ t('landing.nav.reviews') }}</a></li>
+            <li><router-link to="/blog" class="footer-tech__link">{{ t('landing.nav.blog') }}</router-link></li>
+          </ul>
         </div>
-        <!-- Account -->
-        <div class="footer-links-list-wrapper">
-          <div class="footer-links-heading">{{ t('footer_global.platform_title') }}</div>
-          <div class="footer-list-wrapper">
-            <ul role="list" class="footer-links-list">
-              <li class="footer-list-item">
-                <router-link to="/login" class="footer-link-item">{{ t('landing.nav.login') }}</router-link>
-              </li>
-              <li class="footer-list-item">
-                <router-link to="/register" class="footer-link-item">{{ t('footer_global.create_account') }}</router-link>
-              </li>
-              <li class="footer-list-item">
-                <router-link to="/blog" class="footer-link-item">{{ t('footer_global.blog_link') }}</router-link>
-              </li>
-            </ul>
-          </div>
+
+        <div class="footer-tech__col">
+          <span class="footer-tech__heading">{{ t('footer_global.tools_title') }}</span>
+          <ul class="footer-tech__list">
+            <li><router-link to="/free-cv-roast" class="footer-tech__link">{{ t('landing.nav.cv_audit') }}</router-link></li>
+            <li><router-link to="/free-interview" class="footer-tech__link">{{ t('landing.nav.simulation') }}</router-link></li>
+          </ul>
+        </div>
+
+        <div class="footer-tech__col">
+          <span class="footer-tech__heading">{{ t('footer_global.platform_title') }}</span>
+          <ul class="footer-tech__list">
+            <li><router-link to="/login" class="footer-tech__link">{{ t('landing.nav.login') }}</router-link></li>
+            <li><router-link to="/register" class="footer-tech__link">{{ t('footer_global.create_account') }}</router-link></li>
+          </ul>
         </div>
       </div>
 
-      <div class="w-layout-grid footer-bottom">
-        <div class="footer-logo-wrapper">
-          <router-link to="/" class="footer-logo-link" aria-label="GoldArmy Home">
-            <img src="/logo.png" alt="GoldArmy" loading="lazy" class="logo-footer" />
-          </router-link>
-          <p class="footer-tagline">{{ t('landing.footer.description') }}</p>
-        </div>
-        <div class="footer-legal">
-          <p class="footer-copyright">{{ t('footer_global.rights', { year: currentYear }) }}</p>
-          <div class="footer-legal-links">
-            <a href="#" class="footer-link-item">{{ t('footer_global.privacy') }}</a>
-            <a href="#" class="footer-link-item">{{ t('footer_global.terms') }}</a>
-          </div>
+      <div class="footer-tech__bottom">
+        <p class="footer-tech__copy">{{ t('footer_global.rights', { year: currentYear }) }}</p>
+        <div class="footer-tech__legal">
+          <a href="#" class="footer-tech__legal-link">{{ t('footer_global.privacy') }}</a>
+          <span class="footer-tech__dot" aria-hidden="true"></span>
+          <a href="#" class="footer-tech__legal-link">{{ t('footer_global.terms') }}</a>
         </div>
       </div>
     </div>
@@ -86,180 +71,151 @@ const currentYear = new Date().getFullYear()
 </template>
 
 <style scoped>
-/* Fallback when orvimo-landing.css is not loaded (e.g. other pages) */
-.landing-footer {
-  padding-top: var(--_size---paddingsize--large, 3rem);
-  background-color: var(--_theme---background--secondarybackground, #0f0f18);
-  color: var(--_theme---textcolor--primarytext, #f1f1f4);
-  font-size: var(--_textstyle---fontsize, 1rem);
-  line-height: 1.5;
+.footer-tech {
   position: relative;
-  bottom: 0;
+  margin-top: auto;
+  padding: 4rem 0 2rem;
+  background: linear-gradient(180deg, #0d0d12 0%, #08080c 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
 }
-
-.footer-content-wrapper {
-  max-width: var(--_size---site--maxwidth, 75rem);
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: var(--_size---site--sitepadding, 1.5rem);
-  padding-right: var(--_size---site--sitepadding, 1.5rem);
-  box-sizing: border-box;
+.footer-tech__glow {
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 200px;
+  background: radial-gradient(ellipse 80% 50% at 50% 100%, rgba(255, 111, 0, 0.12) 0%, transparent 70%);
+  pointer-events: none;
 }
-
-.footer-links-grid {
+.footer-tech__container {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+.footer-tech__grid {
   display: grid;
-  grid-template-columns: 0.25fr 0.25fr 1fr;
-  gap: 2rem;
-  padding-bottom: var(--_size---paddingsize--small, 1.5rem);
+  grid-template-columns: 1.2fr 1fr 1fr 1fr;
+  gap: 3rem 2rem;
+  padding-bottom: 3rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
-
-.footer-links-heading {
-  font-size: var(--_size---fonts--xxs, 0.75rem);
+@media (max-width: 991px) {
+  .footer-tech__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 567px) {
+  .footer-tech__grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding-bottom: 2rem;
+  }
+}
+.footer-tech__brand-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.footer-tech__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  transition: color 0.2s;
+}
+.footer-tech__brand:hover {
+  color: #ff8c42;
+}
+.footer-tech__logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.footer-tech__tagline {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 320px;
+  margin: 0;
+}
+.footer-tech__accent-line {
+  width: 48px;
+  height: 3px;
+  background: linear-gradient(90deg, #ff6f00, transparent);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+}
+.footer-tech__col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.footer-tech__heading {
+  font-size: 0.6875rem;
+  font-weight: 700;
   text-transform: uppercase;
-  color: var(--_theme---textcolor--tertiarytext, #6b6b7b);
-  margin-bottom: 0.75rem;
-  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: rgba(255, 111, 0, 0.95);
 }
-
-.footer-links-list {
+.footer-tech__list {
   list-style: none;
   padding: 0;
   margin: 0;
-}
-
-.footer-list-item {
-  margin-bottom: 0.5rem;
-}
-
-.footer-link-item {
-  color: var(--_theme---textcolor--primarytext, #f1f1f4);
-  text-decoration: none;
-  font-size: 0.9375rem;
-  transition: opacity 0.2s ease;
-}
-
-.footer-link-item:hover {
-  opacity: 0.8;
-}
-
-.footer-bottom {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  padding-top: 2rem;
-  padding-bottom: 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  align-items: end;
-}
-
-.footer-logo-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
-
-.footer-logo-link {
-  display: inline-block;
+.footer-tech__link {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: color 0.2s, padding-left 0.2s;
 }
-
-.logo-footer {
-  width: 70%;
-  max-width: 140px;
-  height: auto;
-  display: block;
+.footer-tech__link:hover {
+  color: #ff8c42;
+  padding-left: 4px;
 }
-
-.footer-tagline {
-  font-size: 0.875rem;
-  color: var(--_theme---textcolor--secondarytext, #a1a1aa);
-  max-width: 28rem;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.footer-legal {
+.footer-tech__bottom {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
-  gap: 1rem 1.5rem;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 2rem;
 }
-
-.footer-copyright {
-  font-size: 0.75rem;
-  color: var(--_theme---textcolor--tertiarytext, #6b6b7b);
+.footer-tech__copy {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.4);
   margin: 0;
 }
-
-.footer-legal-links {
+.footer-tech__legal {
   display: flex;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.75rem;
 }
-
-.footer-legal-links .footer-link-item {
-  font-size: 0.75rem;
-  color: var(--_theme---textcolor--tertiarytext, #6b6b7b);
+.footer-tech__legal-link {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.45);
+  text-decoration: none;
+  transition: color 0.2s;
 }
-
-.footer-legal-links .footer-link-item:hover {
-  color: var(--_theme---textcolor--primarytext, #f1f1f4);
+.footer-tech__legal-link:hover {
+  color: #ff8c42;
 }
-
-@media screen and (max-width: 991px) {
-  .footer-links-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .footer-bottom {
-    grid-template-columns: 1fr;
-    grid-auto-flow: dense;
-    gap: 2.5rem;
-  }
-  .logo-footer {
-    width: 60%;
-  }
-}
-
-@media screen and (max-width: 767px) {
-  .footer-links-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .footer-legal {
-    justify-content: flex-start;
-  }
-}
-
-/* 479px: align with home (2-col links, full-width logo) */
-@media screen and (max-width: 479px) {
-  .landing-footer {
-    padding-top: var(--_size---paddingsize--small, 1.5rem);
-  }
-  .footer-links-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-  }
-  .footer-list-wrapper.three-cols {
-    grid-template-columns: 1fr 1fr;
-  }
-  .logo-footer {
-    width: 100%;
-    max-width: 120px;
-  }
-  .footer-bottom {
-    gap: 1.5rem;
-    grid-template-columns: 1fr;
-    padding-bottom: var(--_size---paddingsize--small, 1.5rem);
-  }
-  .footer-legal {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-/* Prevent footer from causing horizontal scroll */
-.landing-footer {
-  overflow-x: hidden;
-  width: 100%;
-  box-sizing: border-box;
+.footer-tech__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
 }
 </style>

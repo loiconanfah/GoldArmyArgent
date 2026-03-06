@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Footer from '../components/Footer.vue'
+import LandingNav from '../components/LandingNav.vue'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -19,7 +20,6 @@ useHead({
   ]
 })
 
-const navOpen = ref(false)
 const rootRef = ref(null)
 
 const arrowPath = 'M6.64774 0.127319C6.8175 -0.0424396 7.09266 -0.0424396 7.26242 0.127319L12.9678 5.83267C12.9972 5.8621 13.0199 5.89563 13.0391 5.9303C13.0604 5.96873 13.0777 6.00981 13.0866 6.05426C13.0979 6.11054 13.0978 6.16861 13.0866 6.22491C13.0778 6.26941 13.0604 6.31038 13.0391 6.34886C13.0198 6.38377 12.9974 6.41774 12.9678 6.44735L7.26242 12.1527C7.09267 12.3224 6.81749 12.3224 6.64774 12.1527C6.47799 11.9829 6.478 11.7078 6.64774 11.538L11.611 6.5747H0.434693C0.194629 6.5747 1.76984e-05 6.38007 0 6.14001C0 5.89993 0.194618 5.70531 0.434693 5.70531H11.611L6.64774 0.742002C6.47799 0.572249 6.478 0.297078 6.64774 0.127319Z'
@@ -52,11 +52,6 @@ const faqItems = computed(() => [
   { q: t('landing.faq_items.q4'), a: t('landing.faq_items.a4') },
   { q: t('landing.faq_items.q5'), a: t('landing.faq_items.a5') }
 ])
-
-watch(navOpen, (open) => {
-  document.body.style.overflow = open ? 'hidden' : ''
-  document.body.style.touchAction = open ? 'none' : ''
-})
 
 let gsapCtx
 
@@ -170,48 +165,7 @@ function closeNav() {
 
 <template>
   <div ref="rootRef" class="page-wrapper">
-    <!-- NAVIGATION - identique home.html -->
-    <div class="navigation">
-      <header class="navbar w-nav" role="banner" data-collapse="medium" data-animation="default">
-        <div class="nav-wrapper">
-          <div class="nav-container">
-            <div class="nav-left">
-              <router-link to="/" class="brand-logo w-nav-brand" aria-current="page">
-                <img src="/logo.png" alt="GoldArmy" class="logo-nav" loading="eager" />
-              </router-link>
-            </div>
-            <nav class="nav-menu w-nav-menu" :class="{ 'w--open': navOpen }" role="navigation">
-              <div class="default-nav-links big-menu">
-                <a href="#agents" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.features') }}</a>
-                <a href="#agents" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.agents') }}</a>
-                <a href="#pricing" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.pricing') }}</a>
-                <a href="#avis" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.reviews') }}</a>
-                <router-link to="/free-cv-roast" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.cv_audit') }}</router-link>
-                <router-link to="/free-interview" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.simulation') }}</router-link>
-                <a href="#blog" class="nav-link w-nav-link" @click="closeNav">{{ t('landing.nav.blog') }}</a>
-                <div class="nav-right-sign-cta-wrap">
-                  <router-link to="/login" class="menu-sign-btn w-nav-link" @click="closeNav">{{ t('landing.nav.login') }}</router-link>
-                  <router-link to="/register" class="btn-menu" @click="closeNav">{{ t('landing.nav.get_started') }}</router-link>
-                </div>
-              </div>
-            </nav>
-            <div class="nav-right">
-              <router-link to="/login" class="menu-sign-btn w-nav-link desktop-only">{{ t('landing.nav.login') }}</router-link>
-              <router-link to="/register" class="btn-menu desktop-only">{{ t('landing.nav.get_started') }}</router-link>
-              <button type="button" class="burger w-nav-button" aria-label="Menu" :class="{ 'w--open': navOpen }" :aria-expanded="navOpen" @click="navOpen = !navOpen">
-                <div class="icon-wrapper">
-                  <div class="burger-icon">
-                    <div class="line1"></div>
-                    <div class="line2"></div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-    </div>
-
+    <LandingNav />
     <main class="main">
       <!-- HERO 1 -->
       <section class="section hero-1">
