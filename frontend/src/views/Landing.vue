@@ -21,6 +21,7 @@ useHead({
 })
 
 const rootRef = ref(null)
+const heroLogoRef = ref(null)
 
 const arrowPath = 'M6.64774 0.127319C6.8175 -0.0424396 7.09266 -0.0424396 7.26242 0.127319L12.9678 5.83267C12.9972 5.8621 13.0199 5.89563 13.0391 5.9303C13.0604 5.96873 13.0777 6.00981 13.0866 6.05426C13.0979 6.11054 13.0978 6.16861 13.0866 6.22491C13.0778 6.26941 13.0604 6.31038 13.0391 6.34886C13.0198 6.38377 12.9974 6.41774 12.9678 6.44735L7.26242 12.1527C7.09267 12.3224 6.81749 12.3224 6.64774 12.1527C6.47799 11.9829 6.478 11.7078 6.64774 11.538L11.611 6.5747H0.434693C0.194629 6.5747 1.76984e-05 6.38007 0 6.14001C0 5.89993 0.194618 5.70531 0.434693 5.70531H11.611L6.64774 0.742002C6.47799 0.572249 6.478 0.297078 6.64774 0.127319Z'
 
@@ -65,6 +66,26 @@ onMounted(async () => {
   await nextTick()
   const root = rootRef.value
   if (!root) return
+  const heroLogoEl = heroLogoRef.value
+  if (heroLogoEl) {
+    gsap.set(heroLogoEl, { opacity: 0, scale: 0.88, y: 20 })
+    gsap.to(heroLogoEl, {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      duration: 1.1,
+      ease: 'power3.out',
+      delay: 0.25
+    })
+    gsap.to(heroLogoEl, {
+      y: -8,
+      duration: 2.2,
+      ease: 'sine.inOut',
+      repeat: -1,
+      yoyo: true,
+      delay: 1.4
+    })
+  }
   gsapCtx = gsap.context(() => {
     const section = root.querySelector('#agents')
     const stickyCol = root.querySelector('.home1-left-sticky')
@@ -193,6 +214,9 @@ function closeNav() {
                 <div class="blue-gradient" gradient="true"></div>
                 <div class="orange-gradient" gradient="true"></div>
                 <div class="light" gradient="true"></div>
+              </div>
+              <div ref="heroLogoRef" class="hero-logo-wrap">
+                <img src="/images/logosansfond.png" alt="GoldArmy" class="hero-logo" />
               </div>
             </div>
           </div>
@@ -818,6 +842,37 @@ function closeNav() {
 </template>
 
 <style scoped>
+/* Hero: logo à droite, animé par GSAP */
+.page-wrapper :deep(.hero-logo-wrap) {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  pointer-events: none;
+  z-index: 2;
+}
+.page-wrapper :deep(.hero-logo) {
+  max-width: min(42vw, 380px);
+  max-height: min(55vh, 320px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.35));
+}
+@media screen and (max-width: 991px) {
+  .page-wrapper :deep(.hero-logo-wrap) {
+    position: relative;
+    min-height: 200px;
+    padding: 1.5rem 1rem;
+  }
+  .page-wrapper :deep(.hero-logo) {
+    max-width: 220px;
+    max-height: 180px;
+  }
+}
+
 /* overflow-x: clip so position:sticky works in #agents (overflow-x: hidden breaks it) */
 .page-wrapper {
   min-height: 100vh;

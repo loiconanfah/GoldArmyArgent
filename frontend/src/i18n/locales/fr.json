@@ -415,7 +415,8 @@
         "details": "Détails",
         "confirm": "Confirmer",
         "total": "Total",
-        "network_error": "Erreur réseau : impossible de joindre le serveur."
+        "network_error": "Erreur réseau : impossible de joindre le serveur.",
+        "server_error": "Connexion au serveur impossible."
     },
     "auth": {
         "login_title": "Connexion à GoldArmy",

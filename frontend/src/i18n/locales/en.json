@@ -463,7 +463,8 @@
         "details": "Details",
         "confirm": "Confirm",
         "total": "Total",
-        "network_error": "Network error: unable to reach the server."
+        "network_error": "Network error: unable to reach the server.",
+        "server_error": "Unable to connect to server."
     },
     "auth": {
         "login_title": "Login to GoldArmy",
