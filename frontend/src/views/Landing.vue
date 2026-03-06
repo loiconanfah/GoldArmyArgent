@@ -190,7 +190,21 @@ function closeNav() {
     <main class="main">
       <!-- HERO 1 -->
       <section class="section hero-1">
-        <div class="hero-content">
+        <!-- Mobile-first hero (visible only < 992px) -->
+        <div class="hero-mobile">
+          <div class="hero-mobile__logo-wrap">
+            <img src="/images/logosansfond.png" alt="GoldArmy" class="hero-mobile__logo" />
+          </div>
+          <span class="hero-mobile__badge">{{ t('landing.hero.badge') }}</span>
+          <h1 class="hero-mobile__title">{{ t('landing.hero.title_1') }} <span class="hero-mobile__title-accent">{{ t('landing.hero.title_2') }}</span> {{ t('landing.hero.title_3') }}</h1>
+          <p class="hero-mobile__desc">{{ t('landing.hero.description') }}</p>
+          <router-link to="/register" class="hero-mobile__cta" aria-label="CTA">
+            <span>{{ t('landing.hero.cta_main') }}</span>
+            <svg class="hero-mobile__cta-arrow" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+          </router-link>
+        </div>
+        <!-- Desktop hero (visible >= 992px) -->
+        <div class="hero-content hero-content--desktop">
           <div class="w-layout-grid hero1-grid">
             <div class="hero-left-col">
               <div class="hero-text-wrap">
@@ -215,7 +229,7 @@ function closeNav() {
                 <div class="orange-gradient" gradient="true"></div>
                 <div class="light" gradient="true"></div>
               </div>
-              <div ref="heroLogoRef" class="hero-logo-wrap">
+              <div ref="heroLogoRef" class="hero-logo-wrap hero-logo-wrap--desktop">
                 <img src="/images/logosansfond.png" alt="GoldArmy" class="hero-logo" />
               </div>
             </div>
@@ -842,7 +856,10 @@ function closeNav() {
 </template>
 
 <style scoped>
-/* Hero: logo à droite, animé par GSAP */
+/* Hero desktop: logo à droite, animé par GSAP */
+.page-wrapper :deep(.hero-content--desktop) {
+  display: flex;
+}
 .page-wrapper :deep(.hero-logo-wrap) {
   position: absolute;
   inset: 0;
@@ -861,16 +878,128 @@ function closeNav() {
   object-fit: contain;
   filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.35));
 }
+
+/* ─── Mobile hero (design dédié, fun & UX) ─── */
+.hero-mobile {
+  display: none;
+}
 @media screen and (max-width: 991px) {
-  .page-wrapper :deep(.hero-logo-wrap) {
-    position: relative;
-    min-height: 200px;
-    padding: 1.5rem 1rem;
+  .page-wrapper :deep(.section.hero-1) {
+    min-height: 0;
+    padding-top: 1rem;
+    padding-bottom: 2rem;
   }
-  .page-wrapper :deep(.hero-logo) {
-    max-width: 220px;
-    max-height: 180px;
+  .page-wrapper :deep(.hero-content--desktop) {
+    display: none !important;
   }
+  .hero-mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem 1.25rem 2.5rem;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .hero-mobile__logo-wrap {
+    width: 88px;
+    height: 88px;
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+    animation: hero-mobile-logo-float 4s ease-in-out infinite;
+  }
+  .hero-mobile__logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 24px rgba(99, 102, 241, 0.25));
+  }
+  .hero-mobile__badge {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    padding: 0.4rem 0.85rem;
+    border-radius: 9999px;
+    margin-bottom: 1.25rem;
+  }
+  .hero-mobile__title {
+    font-size: clamp(1.5rem, 5.5vw, 2rem);
+    font-weight: 800;
+    line-height: 1.2;
+    color: #fff;
+    margin: 0 0 0.75rem;
+    letter-spacing: -0.02em;
+  }
+  .hero-mobile__title-accent {
+    background: linear-gradient(135deg, #a5b4fc, #c4b5fd);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-mobile__desc {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.75);
+    margin: 0 0 1.5rem;
+    max-width: 36ch;
+  }
+  .hero-mobile__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 320px;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 16px;
+    text-decoration: none;
+    box-shadow: 0 10px 40px rgba(99, 102, 241, 0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .hero-mobile__cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 48px rgba(99, 102, 241, 0.45);
+  }
+  .hero-mobile__cta:active {
+    transform: translateY(0);
+  }
+  .hero-mobile__cta-arrow {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+@media screen and (max-width: 479px) {
+  .hero-mobile {
+    padding: 1.25rem 1rem 2rem;
+  }
+  .hero-mobile__logo-wrap {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 0.875rem;
+  }
+  .hero-mobile__title {
+    font-size: clamp(1.375rem, 5vw, 1.75rem);
+  }
+  .hero-mobile__desc {
+    font-size: 0.875rem;
+  }
+  .hero-mobile__cta {
+    padding: 0.9375rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+}
+@keyframes hero-mobile-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 /* overflow-x: clip so position:sticky works in #agents (overflow-x: hidden breaks it) */

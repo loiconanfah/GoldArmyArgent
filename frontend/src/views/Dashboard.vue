@@ -206,11 +206,9 @@ onMounted(() => {
           <!-- Premium SVG Line Chart -->
           <div class="mt-2 w-full" style="height:220px;">
             <svg
-              class="dashboard-chart"
+              class="dashboard-chart w-full h-full"
               :viewBox="`0 0 ${W} ${H}`"
               preserveAspectRatio="xMidYMid meet"
-              class="w-full h-full"
-              style="overflow:visible"
             >
               <defs>
                 <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -346,6 +344,9 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.dashboard-chart {
+  overflow: visible;
+}
 .animate-fade-in-up {
   animation: fadeInUp 0.5s ease-out forwards;
 }
