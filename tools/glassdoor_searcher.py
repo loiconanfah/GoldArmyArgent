@@ -88,7 +88,7 @@ class GlassdoorSearcher:
                 "location": job.get("location") or job.get("jobLocation") or "N/A",
                 "url": job.get("job_url") or job.get("url") or job.get("jobLink") or "",
                 "source": "Glassdoor",
-                "description": job.get("job_description") or job.get("snippet") or job.get("description", ""),
+                "description": (job.get("job_description") or job.get("snippet") or job.get("description", "") or "").strip() or f"Poste : {title}. Entreprise : {company}. Consultez le lien pour la description complète.",
                 "posted_date": job.get("posted_at") or job.get("posted_date") or "",
                 "salary": job.get("salary_range") or job.get("salary") or "",
             })

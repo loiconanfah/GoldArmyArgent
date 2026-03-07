@@ -117,7 +117,7 @@ class JSearchSearcher:
                     "title": job.get("job_title", "Titre non spécifié"),
                     "company": job.get("employer_name", "Confidentiel"),
                     "location": self._job_location(job),
-                    "description": job.get("job_description", ""),
+                    "description": (job.get("job_description") or "").strip() or f"Poste : {job.get('job_title', 'Offre')}. Entreprise : {job.get('employer_name', '')}. Consultez le lien pour la description complète.",
                     "url": job.get("job_apply_link", job.get("job_google_link")),
                     "source": "JSearch",
                     "posted_date": job.get("job_posted_at_datetime_utc", datetime.now().isoformat()),

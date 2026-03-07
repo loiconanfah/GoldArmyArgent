@@ -130,8 +130,10 @@ class LinkedInJobsSearcher:
                 # Description courte (Snippet)
                 snippet_tag = card.find("p", class_=re.compile("snippet|description")) or \
                               card.find(class_=re.compile("job-search-card__snippet"))
-                snippet = snippet_tag.get_text(strip=True) if snippet_tag else ""
-                
+                snippet = (snippet_tag.get_text(strip=True) if snippet_tag else "").strip()
+                if len(snippet) < 50:
+                    snippet = f"Poste : {title}. Entreprise : {company}. Consultez le lien pour la description complète."
+
                 jobs.append({
                     "id": f"linkedin-{i}",
                     "title": title,

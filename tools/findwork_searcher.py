@@ -50,7 +50,7 @@ class FindWorkSearcher:
                                 "company": item.get("company_name", "Entreprise Anonyme"),
                                 "location": item.get("location", location),
                                 "url": item.get("url", ""), # Assuming 'url' field exists or we link to the platform
-                                "description": item.get("text", "") or item.get("description", ""),
+                                "description": (item.get("text", "") or item.get("description", "") or "").strip() or f"Poste : {item.get('role', 'Offre')}. Entreprise : {item.get('company_name', '')}. Consultez le lien pour la description complète.",
                                 "source": "FindWork.dev",
                                 "match_score": 0,
                                 "raw_contract_type": item.get("employment_type", ""), # To help local filtering

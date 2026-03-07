@@ -348,31 +348,37 @@ class HunterAgent(BaseAgent):
             logger.error(f"Emploi.cm Error: {e}")
             return []
 
-    async def enrich_jobs(self, jobs: List[Dict[str, Any]], limit: int = 15) -> List[Dict[str, Any]]:
-        """Enrichit les offres avec des descriptions complètes (priorité LinkedIn)."""
-        to_enrich = [j for j in jobs if not j.get("description") and "linkedin" in j.get("source", "").lower()]
-        to_enrich = to_enrich[:limit]
-        
+    async def enrich_jobs(self, jobs: List[Dict[str, Any]], limit: int = 25) -> List[Dict[str, Any]]:
+        """Enrichit toutes les offres sans description (ou très courte) en récupérant la description depuis l'URL."""
+        MIN_DESC_LEN = 100
+        def needs_description(j):
+            d = (j.get("description") or "").strip()
+            return len(d) < MIN_DESC_LEN and j.get("url")
+        to_enrich = [j for j in jobs if needs_description(j)][:limit]
         if not to_enrich:
             return jobs
-            
-        logger.info(f"✨ Enrichment: Récupération des détails pour {len(to_enrich)} offres LinkedIn...")
-        
+        logger.info(f"✨ Enrichment: Récupération des descriptions pour {len(to_enrich)} offres...")
         from tools.linkedin_jobs_searcher import LinkedInJobsSearcher
+        from tools.job_description_fetcher import fetch_description_from_url
         lk_searcher = LinkedInJobsSearcher()
-        
-        semaphore = asyncio.Semaphore(5) # Parallélisme modéré pour éviter les bans
+        semaphore = asyncio.Semaphore(6)
 
         async def _enrich_one(job):
             async with semaphore:
                 url = job.get("url")
-                if url:
+                if not url:
+                    return
+                source = (job.get("source") or "").lower()
+                desc = None
+                if "linkedin" in source and "linkedin.com" in url:
                     desc = await lk_searcher.fetch_full_description(url)
-                    if desc:
-                        job["description"] = desc
-        
-        tasks = [_enrich_one(j) for j in to_enrich]
-        await asyncio.gather(*tasks)
-        
+                if not desc:
+                    desc = await fetch_description_from_url(url, source)
+                if desc:
+                    job["description"] = desc
+                elif not (job.get("description") or "").strip():
+                    job["description"] = f"Poste : {job.get('title', 'Offre')}. Entreprise : {job.get('company', '')}. Consultez le lien pour la description complète."
+
+        await asyncio.gather(*[_enrich_one(j) for j in to_enrich])
         return jobs
 

@@ -125,7 +125,9 @@ class IndeedMultiSearcher:
                 # Garder seulement le lien propre sans les traqueurs
                 href = href.split("?")[0] if "/pagead/" not in href else href
 
-                description = snippet_el.get_text(separator=" ", strip=True)[:300] if snippet_el else ""
+                description = snippet_el.get_text(separator=" ", strip=True)[:500] if snippet_el else ""
+                if len(description) < 50:
+                    description = f"Poste : {title}. Entreprise : {company_el.get_text(strip=True) if company_el else 'Confidentiel'}. Consultez le lien pour la description complète."
 
                 jobs.append({
                     "id": f"indeed-{domain}-{i}",

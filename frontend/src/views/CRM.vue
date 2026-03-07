@@ -18,7 +18,9 @@ import {
   XMarkIcon,
   ClipboardDocumentIcon,
   CheckIcon,
-  TrashIcon
+  TrashIcon,
+  DocumentTextIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -47,6 +49,29 @@ const copied = ref(false)
 // Delete popup state
 const showDeletePopup = ref(false)
 const itemToDelete = ref(null)
+
+// Adapter CV popups: 1 = choice (upload / profile), 2 = theme + download
+const showAdaptCvModal = ref(false)
+const adaptCvCard = ref(null)
+const cvTextForAdapt = ref('')
+const isAdaptingCv = ref(false)
+const adaptedData = ref(null)
+const adaptCvFileInput = ref(null)
+const showDownloadCvModal = ref(false)
+const selectedCvTheme = ref('midnight')
+const isDownloadingPdf = ref(false)
+const CV_THEMES = [
+  { id: 'midnight', name: 'Midnight Pro', colors: ['#1e293b', '#38bdf8'] },
+  { id: 'emerald', name: 'Emerald Leader', colors: ['#064e3b', '#10b981'] },
+  { id: 'modern', name: 'Modern Startup', colors: ['#4c1d95', '#8b5cf6'] },
+  { id: 'minimal', name: 'Executive Minimal', colors: ['#ffffff', '#0f172a'] },
+  { id: 'bold', name: 'Creative Bold', colors: ['#000000', '#f43f5e'] },
+  { id: 'banker', name: 'Trustworthy Banker', colors: ['#1e3a8a', '#1e40af'] },
+  { id: 'tech', name: 'Tech Terminal', colors: ['#000000', '#22c55e'] },
+  { id: 'classic', name: 'Classic Academic', colors: ['#ffffff', '#451a03'] },
+  { id: 'vibrant', name: 'Vibrant Energy', colors: ['#991b1b', '#ea580c'] },
+  { id: 'luxury', name: 'Elegant Luxury', colors: ['#000000', '#ca8a04'] }
+]
 
 // Summary stats
 const totalCards = computed(() => Object.values(crmCards.value).flat().length)
@@ -200,6 +225,147 @@ const copyEmail = async () => {
 
 const closeFollowup = () => { showFollowupPopup.value = false; followupEmail.value = ''; followupCard.value = null }
 
+// ── Adapter CV (popup 1: choix CV → adapt, popup 2: modèle + télécharger) ──
+const openAdaptCvModal = (card) => {
+  adaptCvCard.value = card
+  cvTextForAdapt.value = ''
+  adaptedData.value = null
+  showAdaptCvModal.value = true
+  showDownloadCvModal.value = false
+}
+
+const useProfileCv = async () => {
+  if (!adaptCvCard.value) return
+  try {
+    const res = await authFetch('/api/profile')
+    const json = await res.json()
+    const cvText = json?.data?.cv_text
+    if (!cvText || cvText.length < 50) {
+      toastState.addToast('Aucun CV enregistré dans votre profil. Uploadez un CV d\'abord.', 'info')
+      return
+    }
+    cvTextForAdapt.value = cvText
+    await runAdapt()
+  } catch (e) {
+    toastState.addToast(t('common.network_error'), 'error')
+  }
+}
+
+const onAdaptFileSelected = async (e) => {
+  const file = e.target?.files?.[0]
+  if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+    toastState.addToast('Veuillez sélectionner un fichier PDF.', 'info')
+    return
+  }
+  const formData = new FormData()
+  formData.append('file', file)
+  try {
+    const res = await authFetch('/api/parse-pdf', { method: 'POST', body: formData })
+    const json = await res.json()
+    const text = json?.text
+    if (!text || text.length < 50) {
+      toastState.addToast('Impossible de lire le PDF ou fichier trop court.', 'error')
+      return
+    }
+    cvTextForAdapt.value = text
+    await runAdapt()
+  } catch (err) {
+    toastState.addToast(t('common.network_error'), 'error')
+  }
+  e.target.value = ''
+}
+
+const runAdapt = async () => {
+  if (!adaptCvCard.value || !cvTextForAdapt.value || cvTextForAdapt.value.length < 50) {
+    toastState.addToast('CV manquant ou trop court.', 'info')
+    return
+  }
+  isAdaptingCv.value = true
+  try {
+    const res = await authFetch('/api/adapt-cv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        job_title: adaptCvCard.value.job_title,
+        job_description: adaptCvCard.value.notes || adaptCvCard.value.job_title || '',
+        cv_text: cvTextForAdapt.value
+      })
+    })
+    const json = await res.json()
+    if (json.status === 'success' && json.data) {
+      adaptedData.value = json.data
+      showAdaptCvModal.value = false
+      showDownloadCvModal.value = true
+      selectedCvTheme.value = 'midnight'
+    } else {
+      toastState.addToast(json.detail || t('opportunities.adapt_error') || "Erreur lors de l'adaptation.", 'error')
+    }
+  } catch (e) {
+    toastState.addToast(t('common.network_error'), 'error')
+  } finally {
+    isAdaptingCv.value = false
+  }
+}
+
+const closeAdaptCvModal = () => {
+  showAdaptCvModal.value = false
+  adaptCvCard.value = null
+  cvTextForAdapt.value = ''
+  adaptedData.value = null
+}
+
+const buildCvJsonFromMarkdown = (markdown) => {
+  const lines = (markdown || '').split(/\n/).filter(Boolean)
+  const fullName = lines[0]?.replace(/^#+\s*/, '').trim() || 'Candidat'
+  return {
+    full_name: fullName,
+    summary: '',
+    experiences: [{ title: 'Expérience professionnelle', company: '', start_date: '', end_date: '', bullets: lines }],
+    skills: {},
+    education: []
+  }
+}
+
+const downloadAdaptedPdf = async () => {
+  if (!adaptedData.value?.markdown && !adaptedData.value?.cv_json) return
+  isDownloadingPdf.value = true
+  try {
+    const cvJson = adaptedData.value.cv_json && typeof adaptedData.value.cv_json === 'object'
+      ? adaptedData.value.cv_json
+      : buildCvJsonFromMarkdown(adaptedData.value.markdown || '')
+    const filename = `CV_Adapte_${(adaptCvCard.value?.job_title || 'offre').replace(/\s+/g, '_').slice(0, 30)}`
+    const res = await authFetch('/api/generate-cv-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cv_json: JSON.stringify(cvJson), filename, theme_id: selectedCvTheme.value })
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      toastState.addToast(err.detail || 'Erreur génération PDF', 'error')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename + '.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+    toastState.addToast('CV téléchargé.', 'success')
+    showDownloadCvModal.value = false
+    adaptedData.value = null
+  } catch (e) {
+    toastState.addToast('Erreur lors du téléchargement.', 'error')
+  } finally {
+    isDownloadingPdf.value = false
+  }
+}
+
+const closeDownloadCvModal = () => {
+  showDownloadCvModal.value = false
+  adaptedData.value = null
+}
+
 onMounted(() => { fetchCrmData() })
 </script>
 
@@ -347,7 +513,7 @@ onMounted(() => { fetchCrmData() })
               <!-- CTA Footer -->
               <div class="mt-3 pt-3 border-t border-surface-800">
                 <!-- TO_APPLY: AI CV Adaption -->
-                <button v-if="col.id === 'TO_APPLY'" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg w-full text-center transition-all flex items-center justify-center gap-1 border hover:opacity-80" :class="col.tagStyle">
+                <button v-if="col.id === 'TO_APPLY'" @click.stop="openAdaptCvModal(card)" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg w-full text-center transition-all flex items-center justify-center gap-1 border hover:opacity-80" :class="col.tagStyle">
                   <SparklesIcon class="w-3 h-3" />Adapter CV IA
                 </button>
 
@@ -438,6 +604,85 @@ onMounted(() => { fetchCrmData() })
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ POPUP 1 : Adapter le CV – Choix du CV (upload ou profil) ═══ -->
+    <div v-if="showAdaptCvModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="closeAdaptCvModal"></div>
+      <div class="relative z-10 bg-surface-900 border border-surface-700 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
+        <div class="px-6 pt-6 pb-4 border-b border-surface-800 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+              <SparklesIcon class="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h3 class="font-bold text-white">Adapter le CV pour cette offre</h3>
+              <p class="text-xs text-slate-500 mt-0.5">{{ adaptCvCard?.job_title }} — {{ adaptCvCard?.company_name }}</p>
+            </div>
+          </div>
+          <button @click="closeAdaptCvModal" class="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-surface-800"><XMarkIcon class="w-5 h-5" /></button>
+        </div>
+        <div class="p-6">
+          <div v-if="isAdaptingCv" class="flex flex-col items-center py-10 gap-4">
+            <ArrowPathIcon class="w-12 h-12 text-amber-500 animate-spin" />
+            <p class="text-sm font-bold text-white">Adaptation en cours (conformité ~95% à l'offre)...</p>
+          </div>
+          <div v-else class="space-y-4">
+            <p class="text-sm text-slate-400">Choisissez le CV à adapter :</p>
+            <input ref="adaptCvFileInput" type="file" accept=".pdf" class="hidden" @change="onAdaptFileSelected" />
+            <button type="button" @click="adaptCvFileInput?.click()" class="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl border-2 border-dashed border-surface-600 hover:border-amber-500/50 bg-surface-800/50 text-slate-300 hover:text-amber-400 transition-all">
+              <ArrowUpTrayIcon class="w-6 h-6" />
+              <span class="font-bold">Uploader un CV (PDF)</span>
+            </button>
+            <button type="button" @click="useProfileCv" class="w-full flex items-center justify-center gap-3 px-5 py-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all font-bold">
+              <DocumentTextIcon class="w-6 h-6" />
+              Utiliser le CV du profil
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ POPUP 2 : Choisir le modèle et télécharger le CV adapté ═══ -->
+    <div v-if="showDownloadCvModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="closeDownloadCvModal"></div>
+      <div class="relative z-10 bg-surface-900 border border-surface-700 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-scale-in">
+        <div class="px-6 pt-6 pb-4 border-b border-surface-800 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+              <DocumentTextIcon class="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h3 class="font-bold text-white">Télécharger le CV adapté</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Choisissez un modèle puis téléchargez le PDF</p>
+            </div>
+          </div>
+          <button @click="closeDownloadCvModal" class="p-1.5 text-slate-500 hover:text-white rounded-lg hover:bg-surface-800"><XMarkIcon class="w-5 h-5" /></button>
+        </div>
+        <div class="p-6 space-y-6">
+          <div v-if="adaptedData?.markdown" class="max-h-32 overflow-y-auto rounded-xl bg-surface-950 border border-surface-800 p-4 text-sm text-slate-400 whitespace-pre-wrap">{{ adaptedData.markdown.slice(0, 400) }}{{ adaptedData.markdown.length > 400 ? '…' : '' }}</div>
+          <div>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Modèle du CV</p>
+            <div class="flex flex-wrap gap-2">
+              <button v-for="theme in CV_THEMES" :key="theme.id" type="button" @click="selectedCvTheme = theme.id"
+                class="h-10 w-10 rounded-lg border-2 transition-all overflow-hidden shrink-0"
+                :class="selectedCvTheme === theme.id ? 'border-amber-500 ring-2 ring-amber-500/30' : 'border-surface-700 hover:border-surface-600'">
+                <div class="flex w-full h-full">
+                  <div class="w-1/2 h-full" :style="{ backgroundColor: theme.colors[0] }"></div>
+                  <div class="w-1/2 h-full" :style="{ backgroundColor: theme.colors[1] }"></div>
+                </div>
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2">{{ CV_THEMES.find(th => th.id === selectedCvTheme)?.name }}</p>
+          </div>
+          <button @click="downloadAdaptedPdf" :disabled="isDownloadingPdf"
+            class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-60 text-surface-950 font-bold rounded-xl shadow-lg transition-all">
+            <ArrowUpTrayIcon v-if="!isDownloadingPdf" class="w-5 h-5 rotate-180" />
+            <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
+            {{ isDownloadingPdf ? 'Génération…' : 'Télécharger le PDF' }}
+          </button>
         </div>
       </div>
     </div>

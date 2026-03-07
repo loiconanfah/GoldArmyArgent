@@ -234,8 +234,8 @@ class JobSearchAgent(BaseAgent):
         
         # --- ENRICHISSEMENT FINAL (Détails pour les meilleurs matchs) ---
         if top_jobs:
-            logger.info(f"✨ Enrichissement des {min(20, len(top_jobs))} meilleurs résultats...")
-            top_jobs = await hunter.enrich_jobs(top_jobs, limit=20)
+            logger.info(f"✨ Enrichissement des descriptions pour les {min(25, len(top_jobs))} meilleurs résultats...")
+            top_jobs = await hunter.enrich_jobs(top_jobs, limit=25)
         
         logger.success(f"💎 Sniper Swarm terminé : {len(top_jobs)} offres pertinentes sur {len(unique_final)} trouvées.")
 

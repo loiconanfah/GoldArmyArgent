@@ -60,15 +60,16 @@ class JoobleSearcher:
                 # Jooble fields: title, location, snippet, salary, source, type, link, company, updated
                 
                 # Nettoyage du HTML dans le snippet
-                snippet = job.get("snippet", "")
-                snippet = snippet.replace("&nbsp;", " ").replace("<b>", "").replace("</b>", "")
-                
+                snippet = (job.get("snippet") or "").replace("&nbsp;", " ").replace("<b>", "").replace("</b>", "").strip()
+                if len(snippet) < 50:
+                    snippet = f"Poste : {job.get('title', 'Offre')}. Entreprise : {job.get('company', '')}. Consultez le lien pour la description complète."
+
                 normalized_job = {
                     "id": f"jooble-{job.get('id', hash(job.get('link', '')))}",
                     "title": job.get("title", "Titre non spécifié"),
                     "company": job.get("company", "Confidentiel"),
                     "location": job.get("location", "Non spécifié"),
-                    "description": snippet, # Description courte initale
+                    "description": snippet,
                     "url": job.get("link"),
                     "source": "Jooble",
                     "posted_date": job.get("updated", datetime.now().isoformat()),

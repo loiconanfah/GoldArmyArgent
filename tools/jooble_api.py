@@ -111,7 +111,8 @@ class JoobleClient:
             location_raw = j.get("location") or j.get("region") or j.get("city") or ""
             location = (location_raw.strip() or "Non spécifié") if isinstance(location_raw, str) else "Non spécifié"
             url = j.get("link") or j.get("url") or j.get("applyLink") or ""
-            snippet = j.get("snippet") or j.get("description") or j.get("summary") or ""
+            snippet = (j.get("snippet") or j.get("description") or j.get("summary") or "").strip()
+            desc = snippet if len(snippet) >= 50 else f"Poste : {title}. Entreprise : {company}. Consultez le lien pour la description complète."
 
             normalized.append(
                 {
@@ -120,7 +121,7 @@ class JoobleClient:
                     "company": company,
                     "location": location,
                     "url": url,
-                    "description": snippet,
+                    "description": desc,
                     "source": "Jooble",
                     "required_skills": [],
                     "match_score": 0,

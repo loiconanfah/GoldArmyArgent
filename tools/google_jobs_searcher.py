@@ -120,7 +120,7 @@ class GoogleJobsSearcher:
                         "company": "Via Google",
                         "location": "Non spécifié",
                         "url": href if href.startswith("http") else f"https://www.google.com{href}",
-                        "description": snippet.get_text(strip=True)[:300] if snippet else "",
+                        "description": (snippet.get_text(strip=True)[:500] if snippet else "") or f"Poste : {t}. Consultez le lien pour la description complète.",
                         "source": "Google Search",
                         "match_score": 0,
                     })
@@ -163,7 +163,7 @@ class GoogleJobsSearcher:
                             "company": companies[i] if i < len(companies) else "Confidentiel",
                             "location": "Non spécifié",
                             "url": urls[i] if i < len(urls) else f"https://www.google.com/search?q={urllib.parse.quote_plus(title)}",
-                            "description": descriptions[i].replace("\\n", " ").replace("\\u", " ")[:300] if i < len(descriptions) else "",
+                            "description": (descriptions[i].replace("\\n", " ").replace("\\u", " ")[:500] if i < len(descriptions) else "") or f"Poste : {title}. Consultez le lien pour la description complète.",
                             "source": "Google Jobs",
                             "match_score": 0,
                         })
@@ -194,7 +194,9 @@ class GoogleJobsSearcher:
         description = data.get("description", "")
         # Nettoyer la description HTML
         description = re.sub(r"<[^>]+>", " ", description)
-        description = re.sub(r"\s+", " ", description).strip()[:400]
+        description = re.sub(r"\s+", " ", description).strip()[:800]
+        if len(description) < 50:
+            description = f"Poste : {title}. Entreprise : {company}. Consultez le lien pour la description complète."
         return {
             "id": f"google-jsonld-{hash(title + company)}",
             "title": title,
