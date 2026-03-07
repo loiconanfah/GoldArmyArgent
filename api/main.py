@@ -27,10 +27,19 @@ from core.database import get_db
 app.include_router(auth_router)
 app.include_router(interview_router)
 
-# Enable CORS
+# Enable CORS (allow_credentials=True exige des origines explicites, pas "*")
+_cors_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+# En prod, ajouter l’origine du front (ex. https://ton-site.com) ou la lire depuis .env
+if os.getenv("CORS_ORIGIN"):
+    _cors_origins.append(os.getenv("CORS_ORIGIN").strip())
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

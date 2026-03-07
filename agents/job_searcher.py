@@ -135,6 +135,7 @@ class JobSearchAgent(BaseAgent):
         
         action_plan = {
             "task_id": task.get("id", "unknown"),
+            "query": task.get("query", ""),
             "criteria": {
                 "keywords_list": profile_data.get("keywords_list", [task.get("query")]),
                 "exclude_list": profile_data.get("exclude_list", []),
@@ -180,6 +181,7 @@ class JobSearchAgent(BaseAgent):
         criteria_loc = action_plan.get("criteria", {})
         cv_profile["target_location"] = criteria_loc.get("location", "Paris, France")
         cv_profile["target_job_type"] = criteria_loc.get("job_type", "emploi")
+        cv_profile["search_query"] = action_plan.get("query", "")
         
         # --- PARALLÉLISME MASSIF : JUDGE 1 + HUNTER 2 ---
         logger.info("⚡ Lancement concurrent du Jugement Vague 1 et de la Traque Vague 2...")
@@ -226,14 +228,14 @@ class JobSearchAgent(BaseAgent):
         # Tri final par pertinence
         unique_final.sort(key=lambda x: x.get("match_score", 0), reverse=True)
         
-        # Limite finale (Max 200)
-        top_jobs = unique_final[:200]
+        # Limite finale : respecte nb_results demandé par l'utilisateur (défaut 50)
+        target_limit = min(500, action_plan.get("limit") or 50)
+        top_jobs = unique_final[:target_limit]
         
         # --- ENRICHISSEMENT FINAL (Détails pour les meilleurs matchs) ---
-        # On ne le fait que pour les 15 premiers pour la vitesse
         if top_jobs:
-            logger.info(f"✨ Enrichissement des {min(15, len(top_jobs))} meilleurs résultats...")
-            top_jobs = await hunter.enrich_jobs(top_jobs, limit=15)
+            logger.info(f"✨ Enrichissement des {min(20, len(top_jobs))} meilleurs résultats...")
+            top_jobs = await hunter.enrich_jobs(top_jobs, limit=20)
         
         logger.success(f"💎 Sniper Swarm terminé : {len(top_jobs)} offres pertinentes sur {len(unique_final)} trouvées.")
 

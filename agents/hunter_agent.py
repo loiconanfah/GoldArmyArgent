@@ -53,9 +53,9 @@ class HunterAgent(BaseAgent):
         location = plan.get("location", "")
         apis = plan.get("apis", [])
         
-        # SNIPER SWARM 7.1: Volume agressif (60 par API) pour les vagues.
+        # SNIPER SWARM: Volume x10 — 100 offres par API
         limit = plan.get("limit", 10)
-        api_limit = 60 
+        api_limit = 100 
         job_type = plan.get("job_type", "emploi")
         exclude = [e.lower().strip() for e in plan.get("exclude", [])]
         
@@ -65,14 +65,15 @@ class HunterAgent(BaseAgent):
         logger.info(f"🚀 SWARM ACTIVÉ: Traque massive sur {len(apis)} sources | Localisation: {location}")
         logger.info(f"📝 Mots-clés: {keywords} | Exclusions locales: {exclude[:5]}...")
 
-        # Sémaphores pour stabiliser Render
-        semaphore = asyncio.Semaphore(15)
+        # Sémaphore élevé pour traiter plus d'APIs en parallèle (vitesse)
+        semaphore = asyncio.Semaphore(25)
 
         async def _swarm_search(kw: str, api: str):
             async with semaphore:
-                search_queries = [kw]
                 if job_type in ["alternance", "stage"]:
-                    search_queries.append(f"{kw} {job_type}")
+                    search_queries = [f"{kw} {job_type}"]
+                else:
+                    search_queries = [kw]
                 
                 tasks = []
                 for sq in search_queries:

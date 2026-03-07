@@ -353,12 +353,12 @@ const addToCrmAndApply = async (job) => {
            <div class="flex items-center gap-2 bg-surface-900 border border-surface-800 p-1.5 rounded-xl shadow-sm">
               <span class="text-slate-400 ml-3 text-sm font-medium">{{ t('opportunities.max_results') }}</span>
               <select v-model="resultLimit" @change="performSearch" class="bg-transparent text-white focus:outline-none focus:ring-0 cursor-pointer pr-4 font-bold appearance-none text-sm border-l border-surface-700/50 pl-2">
-                <option class="text-slate-900" :value="5">5</option>
                 <option class="text-slate-900" :value="10">10</option>
-                <option class="text-slate-900" :value="15">15</option>
                 <option class="text-slate-900" :value="20">20</option>
-                <option class="text-slate-900" :value="30">30</option>
-                <option class="text-slate-900" :value="40">40</option>
+                <option class="text-slate-900" :value="50">50</option>
+                <option class="text-slate-900" :value="100">100</option>
+                <option class="text-slate-900" :value="150">150</option>
+                <option class="text-slate-900" :value="200">200</option>
               </select>
            </div>
        </div>

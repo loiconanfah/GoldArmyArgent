@@ -41,7 +41,7 @@ class ProfileAgent(BaseAgent):
         query_lower = query.lower()
         if any(k in query_lower for k in ["alternance", "apprentissage"]):
             cv_profile["target_level"] = "alternance"
-        elif "stage" in query_lower or "intern" in query_lower:
+        elif any(k in query_lower for k in ["stage", "intern", "stagiaire", "internship"]):
             cv_profile["target_level"] = "stage"
         elif any(k in query_lower for k in ["senior", "lead", "principal", "expert"]) and cv_profile.get("target_level") not in ["stage", "alternance"]:
             cv_profile["target_level"] = "senior"
