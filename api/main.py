@@ -189,13 +189,25 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
             raise HTTPException(status_code=400, detail="cv_json manquant")
 
         if isinstance(cv_data_input, str):
+            cv_data_input = cv_data_input.strip()
+            if cv_data_input.startswith("```json"):
+                cv_data_input = cv_data_input[7:].strip()
+            if cv_data_input.endswith("```"):
+                cv_data_input = cv_data_input[:-3].strip()
+                
             try:
                 cv_data = json.loads(cv_data_input)
             except json.JSONDecodeError as e:
                 import re
+                import logging
+                logging.warning(f"Initial JSON decode failed: {e}. Attempting regex extraction.")
                 match = re.search(r'\{.*\}', cv_data_input, re.DOTALL)
                 if match:
-                    cv_data = json.loads(match.group(0))
+                    try:
+                        cv_data = json.loads(match.group(0))
+                    except json.JSONDecodeError as e2:
+                        logging.error(f"Regex JSON decode failed: {e2}")
+                        raise e2
                 else:
                     raise e
         elif isinstance(cv_data_input, dict):
@@ -203,6 +215,9 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
         else:
             cv_data = {}
 
+        import logging
+        logging.info(f"Generating PDF for theme {theme_id} with data keys: {list(cv_data.keys())}")
+        
         pdf_bytes = generate_cv_pdf(cv_data, theme_id=theme_id)
         if not filename.endswith(".pdf"):
             filename += ".pdf"

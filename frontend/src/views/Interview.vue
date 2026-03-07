@@ -713,7 +713,7 @@ onUnmounted(() => {
       <!-- ═══ PANNEAU GAUCHE : Salle d'appel ═══ -->
       <div class="flex-1 flex flex-col min-w-0 relative">
         <!-- Fond ambiant (salle sombre) -->
-        <div class="absolute inset-0 z-0 bg-gradient-to-b from-slate-950/95 via-slate-950 to-black">
+        <div class="interview-room-bg absolute inset-0 z-0 bg-gradient-to-b from-slate-950/95 via-slate-950 to-black">
           <div class="absolute inset-0 interview-room-grain pointer-events-none"></div>
         </div>
 
@@ -825,7 +825,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Bandeau parole live (réaliste) -->
-        <div class="relative z-10 mx-4 mb-3 p-3.5 rounded-xl bg-black/50 backdrop-blur-xl border border-white/[0.06] flex items-center gap-4 shadow-lg">
+        <div class="interview-room-speech-bar relative z-10 mx-4 mb-3 p-3.5 rounded-xl bg-black/50 backdrop-blur-xl border border-white/[0.06] flex items-center gap-4 shadow-lg">
           <div class="flex-shrink-0 flex items-center gap-1 h-8">
             <template v-if="isSpeaking">
               <span class="w-1 h-4 bg-emerald-400 rounded-full animate-waveform" style="animation-delay: 0ms"></span>
@@ -855,7 +855,7 @@ onUnmounted(() => {
 
         <!-- Barre de contrôles (style pro) -->
         <div class="relative z-20 px-4 pb-6 flex items-center justify-center">
-          <div class="inline-flex items-center gap-1 p-2 rounded-[2rem] bg-black/70 backdrop-blur-xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+          <div class="interview-room-controls inline-flex items-center gap-1 p-2 rounded-[2rem] bg-black/70 backdrop-blur-xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
             <button @click="showChat = !showChat" 
               :class="showChat ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'"
               class="p-3.5 rounded-full transition-all duration-200" title="Transcription">
@@ -884,8 +884,8 @@ onUnmounted(() => {
       </div>
 
       <!-- ═══ PANNEAU DROIT : Transcription (style chat pro) ═══ -->
-      <div v-show="showChat" class="w-full md:w-[380px] lg:w-[420px] shrink-0 flex flex-col bg-[#111113] border-l border-white/[0.06] shadow-2xl">
-        <div class="p-4 border-b border-white/[0.06] flex items-center justify-between bg-black/30">
+      <div v-show="showChat" class="interview-room-chat w-full md:w-[380px] lg:w-[420px] shrink-0 flex flex-col bg-[#111113] border-l border-white/[0.06] shadow-2xl">
+        <div class="interview-room-chat-header p-4 border-b border-white/[0.06] flex items-center justify-between bg-black/30">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
               <DocumentTextIcon class="w-4 h-4 text-indigo-400" />
@@ -931,7 +931,7 @@ onUnmounted(() => {
       <!-- Note analyste (overlay discret) -->
       <transition enter-active-class="transition duration-300 ease-out" leave-active-class="transition duration-200 ease-in" enter-from-class="opacity-0 translate-y-2" leave-to-class="opacity-0 translate-y-2">
         <div v-if="analystNote" class="absolute left-4 bottom-28 z-30 max-w-xs md:left-6">
-          <div class="bg-black/80 backdrop-blur-xl border border-amber-500/20 p-4 rounded-2xl shadow-2xl">
+          <div class="interview-analyst-note bg-black/80 backdrop-blur-xl border border-amber-500/20 p-4 rounded-2xl shadow-2xl">
             <div class="flex items-center gap-2 mb-2">
               <SparklesIcon class="w-4 h-4 text-amber-400" />
               <span class="text-[10px] font-bold text-amber-400/80 uppercase">Conseil live</span>

@@ -330,9 +330,23 @@ const downloadAdaptedPdf = async () => {
   if (!adaptedData.value?.markdown && !adaptedData.value?.cv_json) return
   isDownloadingPdf.value = true
   try {
-    const cvJson = adaptedData.value.cv_json && typeof adaptedData.value.cv_json === 'object'
-      ? adaptedData.value.cv_json
-      : buildCvJsonFromMarkdown(adaptedData.value.markdown || '')
+    let cvJson = null;
+    if (adaptedData.value.cv_json) {
+        if (typeof adaptedData.value.cv_json === 'object') {
+            cvJson = adaptedData.value.cv_json;
+        } else if (typeof adaptedData.value.cv_json === 'string') {
+            try {
+                cvJson = JSON.parse(adaptedData.value.cv_json);
+            } catch (e) {
+                console.warn("Failed to parse cv_json string, falling back to markdown", e);
+            }
+        }
+    }
+    
+    if (!cvJson) {
+        cvJson = buildCvJsonFromMarkdown(adaptedData.value.markdown || '');
+    }
+
     const filename = `CV_Adapte_${(adaptCvCard.value?.job_title || 'offre').replace(/\s+/g, '_').slice(0, 30)}`
     const res = await authFetch('/api/generate-cv-pdf', {
       method: 'POST',

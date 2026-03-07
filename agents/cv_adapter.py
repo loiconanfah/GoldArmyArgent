@@ -89,7 +89,27 @@ RÈGLES OBLIGATOIRES :
 2. N'AJOUTE JAMAIS de section ni de titre du type "Résumé adapté à l'offre", "Profil ciblé", "Profil ciblé pour ce poste", "Résumé adapté", etc. Aucune inscription de ce genre dans le CV. Enrichis uniquement le contenu EXISTANT (bullet points, phrases) avec les mots-clés de l'offre.
 3. Pour correspondre à l'offre : insère les mots-clés dans les sections existantes, reformule légèrement une phrase pour y intégrer un terme de l'offre, sans créer de nouvelle section générique.
 
-Tu dois aussi produire "cv_json" pour un PDF bien structuré : extrais du CV adapté full_name, summary, experiences, skills, education. Pas de titre "Résumé adapté à l'offre".
+Tu dois aussi produire "cv_json" pour un PDF bien structuré. Structure EXACTE requise :
+{
+  "full_name": "...",
+  "title": "Titre du poste visé",
+  "email": "...", "phone": "...", "location": "...", "linkedin": "...", "github": "...",
+  "summary": "Résumé de profil enrichi",
+  "experiences": [ 
+    {"title": "...", "company": "...", "start_date": "...", "end_date": "...", "location": "...", "bullets": ["...", "..."]}
+  ],
+  "projects": [
+    {"name": "...", "description": "...", "bullets": ["..."]}
+  ],
+  "education": [
+    {"degree": "...", "institution": "...", "year": "...", "location": "..."}
+  ],
+  "skills": {
+    "Catégorie (ex: Langages)": ["Compétence 1", "Compétence 2"]
+  },
+  "languages": [{"language": "Anglais", "proficiency": "Courant"}],
+  "certifications": [{"name": "...", "issuer": "...", "year": "..."}]
+}
 
 FORMAT DE RÉPONSE OBLIGATOIRE (pour éviter les erreurs d'échappement JSON) :
 
@@ -98,7 +118,7 @@ FORMAT DE RÉPONSE OBLIGATOIRE (pour éviter les erreurs d'échappement JSON) :
 ---END MARKDOWN---
 
 ---JSON---
-{"projects": [{"title": "...", "desc": "..."}], "cv_json": {"full_name": "...", "summary": "...", "experiences": [...], "skills": {}, "education": [...]}}
+{"projects": [{"title": "...", "desc": "..."}], "cv_json": { ... STRUCTURE CI-DESSUS ... }}
 ---END JSON---
 
 Important : le CV markdown va entre ---MARKDOWN--- et ---END MARKDOWN--- (pas dans une chaîne JSON). Le JSON (projects + cv_json) va entre ---JSON--- et ---END JSON---. Échappe correctement les guillemets dans le JSON (pas de retours à la ligne bruts dans les chaînes).
@@ -117,7 +137,13 @@ Produis la réponse en 2 blocs : (1) Entre ---MARKDOWN--- et ---END MARKDOWN--- 
         
         try:
             # We explicitly use gemini by forcing the model tag or relying on UnifiedClient priority
-            response = await self.generate_response(prompt=user_prompt, system=system_prompt, model="gemini-2.0-flash")
+            # Increased max_tokens to 8192 to prevent the massive JSON payload from dropping midway
+            response = await self.generate_response(
+                prompt=user_prompt, 
+                system=system_prompt, 
+                model="gemini-3.1-pro-preview",
+                max_tokens=8192
+            )
             
             logger.debug(f"Adapt Raw Gemini response length: {len(response)}")
             
@@ -140,7 +166,13 @@ Produis la réponse en 2 blocs : (1) Entre ---MARKDOWN--- et ---END MARKDOWN--- 
 
             if json_match:
                 try:
-                    obj = json.loads(json_match.group(1).strip())
+                    raw_json_str = json_match.group(1).strip()
+                    if raw_json_str.startswith("```json"):
+                        raw_json_str = raw_json_str[7:].strip()
+                    if raw_json_str.endswith("```"):
+                        raw_json_str = raw_json_str[:-3].strip()
+                        
+                    obj = json.loads(raw_json_str)
                     projects = obj.get("projects", [])
                     cv_json = obj.get("cv_json")
                 except json.JSONDecodeError as e:

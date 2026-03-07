@@ -236,3 +236,160 @@
 #app.theme-light .dashboard-chart line {
   stroke: #cbd5e1 !important;
 }
+
+/* ═══ Entretien vocal : thème clair (lisibilité) ═══ */
+#app.theme-light .interview-room {
+  background-color: #f1f5f9 !important;
+}
+#app.theme-light .interview-room-bg {
+  background: linear-gradient(to bottom, #e2e8f0 0%, #f1f5f9 50%, #f8fafc 100%) !important;
+}
+#app.theme-light .interview-room header {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  border-bottom-color: rgba(15, 23, 42, 0.12) !important;
+}
+#app.theme-light .interview-room header .bg-white\/5,
+#app.theme-light .interview-room header .hover\:bg-white\/10:hover {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+}
+#app.theme-light .interview-room header .hover\:bg-white\/10:hover {
+  background-color: rgba(15, 23, 42, 0.1) !important;
+}
+#app.theme-light .interview-room header .text-white\/90,
+#app.theme-light .interview-room header .text-white {
+  color: #0f172a !important;
+}
+#app.theme-light .interview-room header .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.15) !important;
+}
+#app.theme-light .interview-room header .text-slate-400,
+#app.theme-light .interview-room header .text-slate-500 {
+  color: #475569 !important;
+}
+#app.theme-light .interview-room .interview-video-frame {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+}
+#app.theme-light .interview-room .interview-video-frame .bg-black\/60 {
+  background-color: rgba(15, 23, 42, 0.75) !important;
+}
+#app.theme-light .interview-room .interview-video-frame .border-white\/10 {
+  border-color: rgba(15, 23, 42, 0.2) !important;
+}
+#app.theme-light .interview-room .interview-video-frame .text-white,
+#app.theme-light .interview-room .interview-video-frame .text-slate-400 {
+  color: #f8fafc !important;
+}
+#app.theme-light .interview-room .interview-video-frame .bg-black\/40 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+}
+#app.theme-light .interview-room .interview-video-frame .bg-slate-900\/95 {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+}
+#app.theme-light .interview-room .interview-video-frame .text-slate-500,
+#app.theme-light .interview-room .interview-video-frame .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+/* Bandeau parole live */
+#app.theme-light .interview-room-speech-bar {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+#app.theme-light .interview-room-speech-bar .text-slate-300,
+#app.theme-light .interview-room-speech-bar .text-slate-500 {
+  color: #334155 !important;
+}
+#app.theme-light .interview-room-speech-bar .text-rose-200\/90 {
+  color: #be123c !important;
+}
+/* Barre de contrôles */
+#app.theme-light .interview-room-controls {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(15, 23, 42, 0.15) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12) !important;
+}
+#app.theme-light .interview-room-controls .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+}
+#app.theme-light .interview-room-controls .hover\:bg-white\/10:hover {
+  background-color: rgba(15, 23, 42, 0.12) !important;
+}
+#app.theme-light .interview-room-controls .text-slate-400 {
+  color: #475569 !important;
+}
+#app.theme-light .interview-room-controls .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+#app.theme-light .interview-room-controls .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.12) !important;
+}
+#app.theme-light .interview-room-controls .hover\:bg-white\/20:hover {
+  background-color: rgba(15, 23, 42, 0.18) !important;
+}
+#app.theme-light .interview-room p.text-rose-400 {
+  color: #e11d48 !important;
+}
+#app.theme-light .interview-room .text-pink-400 {
+  color: #db2777 !important;
+}
+/* Panneau transcription (droite) */
+#app.theme-light .interview-room-chat {
+  background-color: #f8fafc !important;
+  border-left-color: rgba(15, 23, 42, 0.12) !important;
+}
+#app.theme-light .interview-room-chat-header {
+  background-color: #f1f5f9 !important;
+  border-bottom-color: rgba(15, 23, 42, 0.1) !important;
+}
+#app.theme-light .interview-room-chat-header .text-white {
+  color: #0f172a !important;
+}
+#app.theme-light .interview-room-chat .hover\:bg-white\/10:hover {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+}
+#app.theme-light .interview-room-chat .text-slate-400 {
+  color: #475569 !important;
+}
+#app.theme-light .interview-room-chat .interview-msg-recruiter {
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+#app.theme-light .interview-room-chat .interview-msg-recruiter .text-slate-200 {
+  color: #0f172a !important;
+}
+#app.theme-light .interview-room-chat .border-white\/\[0\.08\] {
+  border-color: #cbd5e1 !important;
+}
+#app.theme-light .interview-room-chat .border-white\/20 {
+  border-color: #94a3b8 !important;
+}
+#app.theme-light .interview-room-chat .text-slate-300 {
+  color: #334155 !important;
+}
+#app.theme-light .interview-room-chat .text-rose-200 {
+  color: #9f1239 !important;
+}
+/* Note analyste (overlay) */
+#app.theme-light .interview-analyst-note {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+#app.theme-light .interview-analyst-note .text-white {
+  color: #0f172a !important;
+}
+/* Scorecard modal */
+#app.theme-light .interview-room .bg-surface-900.border.border-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+#app.theme-light .interview-room .border-white\/5 {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+#app.theme-light .interview-room .bg-black\/20 {
+  background-color: rgba(248, 250, 252, 0.6) !important;
+}
+#app.theme-light .interview-room .text-white\/5 {
+  color: #e2e8f0 !important;
+}
+#app.theme-light .interview-room circle.text-white\/5 {
+  stroke: #e2e8f0 !important;
+}
