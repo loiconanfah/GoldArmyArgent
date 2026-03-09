@@ -613,7 +613,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-[60] bg-surface-950 overflow-y-auto custom-scrollbar flex flex-col">
+  <div class="interview-page fixed inset-0 z-[60] bg-surface-950 overflow-y-auto custom-scrollbar flex flex-col">
     <!-- CONFIGURATION WIZARD -->
     <div v-if="!isInterviewStarted" class="p-6 md:p-10 max-w-4xl mx-auto animate-fade-in-up space-y-8 flex flex-col w-full">
      <div class="flex items-center gap-4 border-b border-surface-800 pb-6 mb-8 mt-6">

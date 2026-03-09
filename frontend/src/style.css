@@ -121,6 +121,25 @@
 #app {
   transition: background-color 0.35s ease, color 0.35s ease;
 }
+
+/* Article de blog : mêmes couleurs que le site en thème clair */
+#app.theme-light .page-wrapper--article {
+  --_theme---bodybackground: #f8fafc;
+  --_theme---textcolor--primarytext: #0f172a;
+  --_theme---textcolor--secondarytext: #1e293b;
+  --_theme---textcolor--tertiarytext: #475569;
+  --_theme---background--primarybackground: #f8fafc;
+  --_theme---background--secondarybackground: #f1f5f9;
+  --_theme---textcolor--accenttext1: #ea580c;
+  --_theme---border--mediumalpha: rgba(15, 23, 42, 0.12);
+}
+#app.theme-light .page-wrapper--article .article-body :deep(.text-indigo-400),
+#app.theme-light .page-wrapper--article .article-body :deep(.text-indigo-300) {
+  color: #4338ca !important;
+}
+#app.theme-light .page-wrapper--article .article-body :deep(a:hover) {
+  color: #c2410c !important;
+}
 #app.theme-light,
 #app.theme-light .bg-surface-950 {
   background-color: #f8fafc !important;

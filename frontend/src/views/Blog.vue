@@ -10,8 +10,8 @@ import Footer from '@/components/Footer.vue'
 const { t } = useI18n()
 const router = useRouter()
 
-const featuredArticle = computed(() => articles[0] ?? null)
-const otherFeatured = computed(() => articles.slice(1, 6))
+const featuredArticle = computed(() => articles.find(a => a.featured) ?? articles[0] ?? null)
+const otherFeatured = computed(() => articles.filter(a => a.id !== featuredArticle.value?.id).slice(0, 5))
 const recentArticles = computed(() => articles)
 
 onMounted(() => {
