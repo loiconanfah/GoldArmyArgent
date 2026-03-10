@@ -215,6 +215,8 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
         else:
             cv_data = {}
 
+        from core.cv_generator import normalize_cv_json
+        cv_data = normalize_cv_json(cv_data)
         import logging
         logging.info(f"Generating PDF for theme {theme_id} with data keys: {list(cv_data.keys())}")
         
@@ -1197,81 +1199,109 @@ async def render_portfolio(user_id: str):
 
 # --- Public Try-Before-You-Buy Endpoints ---
 
+def _ats_rule_score(text: str) -> int:
+    """
+    Score ATS basé sur des règles (0-100) : sections reconnues, bullets, longueur, contact.
+    Utilisé pour ancrer le score et le rendre cohérent avec la réalité ATS.
+    """
+    if not text or len(text.strip()) < 50:
+        return 25
+    t = text.lower().strip()
+    score = 0
+    # Sections typiques ATS (max 35 pts)
+    sections = [
+        "expérience", "experience", "formation", "education", "études",
+        "compétences", "competences", "skills", "compétence",
+        "résumé", "resume", "summary", "profil", "objectif"
+    ]
+    found = sum(1 for s in sections if s in t)
+    score += min(35, found * 8)
+    # Bullets / listes (max 25 pts) — indicateur de structure parsable
+    bullet_count = t.count("\n•") + t.count("\n-") + t.count("\n*") + t.count("•")
+    score += min(25, bullet_count * 3)
+    # Longueur raisonnable première page (max 20 pts)
+    if 200 <= len(text) <= 2500:
+        score += 20
+    elif 100 <= len(text) < 200 or 2500 < len(text) <= 4000:
+        score += 12
+    elif len(text) > 4000:
+        score += 8
+    # Contact présent (max 20 pts)
+    if "@" in text or "email" in t:
+        score += 10
+    if any(c.isdigit() for c in text) and ("tél" in t or "phone" in t or "06" in text or "07" in text):
+        score += 10
+    return min(100, score)
+
+
 @app.post("/api/public/mini-audit")
 async def public_mini_audit(file: UploadFile = File(...)):
     """
-    Scanne rapidement la 1ère page d'un CV (via PyMuPDF) et renvoie un Score / 100 
-    et LA pire erreur bloquante.
+    Scanne la 1ère page du CV (PyMuPDF), calcule un score ATS fiable (règles + LLM rapide)
+    et renvoie score /100 + jusqu'à 7 défauts avec corrections. Traitement accéléré.
     """
     try:
         import fitz  # PyMuPDF
-        
-        # Read file into memory
+        import re
+
         file_bytes = await file.read()
-        
-        # Open with PyMuPDF
         doc = fitz.open(stream=file_bytes, filetype="pdf")
         if len(doc) == 0:
             raise HTTPException(status_code=400, detail="PDF vide.")
-            
-        # N'extraire QUE la première page pour aller super vite
         first_page_text = doc[0].get_text()
         doc.close()
-        
-        # Tronquer à ~3000 caractères max
-        text_snippet = first_page_text[:3000]
+
+        text_snippet = first_page_text[:2500]
+        rule_score = _ats_rule_score(text_snippet)
 
         from llm.unified_client import UnifiedLLMClient
         llm = UnifiedLLMClient()
-        
-        prompt = f"""Tu es un recruteur Tech impitoyable mais pédagogue.
-Voici le texte extrait de la PREMIÈRE PAGE d'un CV candidat :
+
+        prompt = f"""Tu es un expert ATS (Applicant Tracking System). Évalue la compatibilité ATS de ce CV (1ère page).
+Texte extrait :
 ---
 {text_snippet}
 ---
 
-Donne un audit "Flash" hyper rapide (Mini Roast) mais très complet.
-Renvoie UNIQUEMENT un JSON avec 2 clés (pas de markdown autour) :
-- "score": Un entier sur 100 (sois sévère, moyenne observée 45-65. Ne donne >80 que si c'est parfait).
-- "flaws": Un tableau (list) de EXACTEMENT 15 objets JSON. Chaque objet doit avoir :
-    - "flaw": Une critique très courte (max 15 mots) pointant un défaut précis et bloquant (ex: 'Design terne et aucune métrique d'impact.').
-    - "correction": Une action courte et rassurante (max 15 mots) pour corriger (ex: 'Ajoutez des chiffres clés (CA, utilisateurs).').
-S'il n'y a pas 15 vrais défauts, sois extrêmement pointilleux sur la forme ou l'impact pour en trouver 15.
+Réponds UNIQUEMENT en JSON valide avec 2 clés (pas de markdown) :
+- "score": entier 0-100 (sévérité réaliste : 50-70 = moyen, >80 = très bon pour ATS).
+- "flaws": tableau de 5 à 7 objets avec "flaw" (critique courte) et "correction" (action courte). Points bloquants ATS : structure, mots-clés, chiffres, bullet points.
 """
-        import json
-        result = await llm.chat([{"role": "user", "content": prompt}], json_mode=True)
-        
-        import re
-        cleaned = re.sub(r'```json\s*', '', result, flags=re.IGNORECASE)
-        cleaned = re.sub(r'```\s*', '', cleaned).strip()
-        
-        # Try to parse
-        match = re.search(r'\{.*\}', cleaned, re.DOTALL)
-        if match:
-            data = json.loads(match.group(0))
-        else:
-            data = json.loads(cleaned)
-            
+        result = await llm.chat(
+            [{"role": "user", "content": prompt}],
+            json_mode=True,
+            model="gemini-2.0-flash",
+            max_tokens=1024,
+        )
+
+        cleaned = re.sub(r"```json\s*", "", result, flags=re.IGNORECASE)
+        cleaned = re.sub(r"```\s*", "", cleaned).strip()
+        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+        raw = json.loads(match.group(0)) if match else json.loads(cleaned)
+        llm_score = max(0, min(100, int(raw.get("score", 50))))
+        flaws = raw.get("flaws") or []
+
+        # Score final : mélange règles (objectif) + LLM (qualité rédactionnelle) pour un score ATS fiable
+        final_score = int(0.45 * rule_score + 0.55 * llm_score)
+        final_score = max(0, min(100, final_score))
+
         return {
             "status": "success",
-            "score": data.get("score", 50),
-            "flaws": data.get("flaws", [
-                {"flaw": "Structure difficile à lire pour un ATS.", "correction": "Simplifiez le design et enlevez les colonnes complexes."},
-                {"flaw": "Manque de mots-clés clés.", "correction": "Ajoutez une section 'Compétences' avec des termes techniques clairs."},
-                {"flaw": "Format visuel non optimisé.", "correction": "Aérez le texte et utilisez des bullet points."}
-            ])
+            "score": final_score,
+            "flaws": flaws[:7] if isinstance(flaws, list) else [
+                {"flaw": "Structure difficile à lire pour un ATS.", "correction": "Simplifiez le design et utilisez des sections claires."},
+                {"flaw": "Manque de mots-clés.", "correction": "Ajoutez une section Compétences avec termes métier."},
+            ],
         }
-        
     except Exception as e:
         logger.error(f"[Public API] Erreur Mini-Audit: {e}")
         return {
             "status": "success",
             "score": 42,
             "flaws": [
-                {"flaw": "Le format du fichier empêche l'IA de le lire correctement.", "correction": "Uploadez un PDF texte généré par Word ou Canva."},
-                {"flaw": "Texte potentiellement vectorisé ou image.", "correction": "Assurez-vous que le texte du PDF peut être sélectionné."},
-                {"flaw": "Veuillez réessayer avec un PDF standard.", "correction": "Si le problème persiste, contactez le support."}
-            ]
+                {"flaw": "Le format du fichier empêche l'analyse.", "correction": "Uploadez un PDF avec texte sélectionnable (Word, Canva)."},
+                {"flaw": "Texte potentiellement en image.", "correction": "Assurez-vous que le texte du PDF peut être copié."},
+            ],
         }
 
 class PublicInterviewRequest(BaseModel):

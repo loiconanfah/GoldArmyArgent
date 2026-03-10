@@ -82,14 +82,15 @@ class CVAdapterAgent(BaseAgent):
         et des projets recommandés en JSON.
         """
         
-        system_prompt = """Tu es un expert en recrutement. Tu adaptes le CV à une offre en CONSERVANT tout et en AJOUTANT uniquement ce qui manque.
+        system_prompt = """Tu es un expert recrutement et ATS (Applicant Tracking System). Tu ADAPTES et CORRIGES le CV pour qu'il passe les filtres ATS tout en conservant le contenu du candidat.
 
-RÈGLES OBLIGATOIRES :
-1. NE SUPPRIME RIEN du CV. Le "markdown" doit contenir l'intégralité du CV (identité, expériences, compétences, formation, projets) — chaque section et paragraphe du candidat doit apparaître.
-2. N'AJOUTE JAMAIS de section ni de titre du type "Résumé adapté à l'offre", "Profil ciblé", "Profil ciblé pour ce poste", "Résumé adapté", etc. Aucune inscription de ce genre dans le CV. Enrichis uniquement le contenu EXISTANT (bullet points, phrases) avec les mots-clés de l'offre.
-3. Pour correspondre à l'offre : insère les mots-clés dans les sections existantes, reformule légèrement une phrase pour y intégrer un terme de l'offre, sans créer de nouvelle section générique.
+RÈGLES ATS OBLIGATOIRES (le CV téléchargé doit être vraiment optimisé) :
+1. CONSERVE tout le contenu du candidat mais CORRIGE : structure plate (sections standard : Expérience professionnelle, Formation, Compétences), pas de colonnes/tableaux, pas d'icônes ou graphiques. Utilise des titres de section clairs et reconnus par les ATS.
+2. ENRICHIS avec les mots-clés de l'offre : insère-les dans les bullet points et le résumé existants. Utilise des verbes d'action (développer, piloter, concevoir, etc.) et des chiffres (%, montants, délais) quand c'est possible.
+3. N'AJOUTE JAMAIS de section "Résumé adapté à l'offre" ou "Profil ciblé". Enrichis uniquement le contenu EXISTANT.
+4. cv_json doit être COMPLET et VALIDE : chaque expérience doit avoir title, company, start_date, end_date, bullets (tableau de chaînes). Les compétences en objet { "Catégorie": ["item1", "item2"] }. Formation avec degree, institution, year.
 
-Tu dois aussi produire "cv_json" pour un PDF bien structuré. Structure EXACTE requise :
+Tu produis "cv_json" pour génération PDF/DOCX. Structure EXACTE requise :
 {
   "full_name": "...",
   "title": "Titre du poste visé",
@@ -127,22 +128,21 @@ Important : le CV markdown va entre ---MARKDOWN--- et ---END MARKDOWN--- (pas da
         user_prompt = f"""
 OFFRE : {job_title}
 DESCRIPTION DE L'OFFRE :
-{job_desc[:3000]}
+{job_desc[:2500]}
 
-CV DU CANDIDAT (à adapter sans rien retirer, sans ajouter de section "Résumé adapté" ou "Profil ciblé") :
-{cv_text[:5000]}
+CV DU CANDIDAT (adapter et corriger pour ATS, conserver le contenu, pas de section "Résumé adapté") :
+{cv_text[:4000]}
 
-Produis la réponse en 2 blocs : (1) Entre ---MARKDOWN--- et ---END MARKDOWN--- : le CV COMPLET en markdown. (2) Entre ---JSON--- et ---END JSON--- : un seul objet JSON avec "projects" et "cv_json". Aucun titre "Résumé adapté à l'offre" dans le CV.
+Produis en 2 blocs : (1) ---MARKDOWN--- ... ---END MARKDOWN--- : CV complet en markdown, corrigé ATS. (2) ---JSON--- ... ---END JSON--- : objet avec "projects" et "cv_json" (structure complète pour PDF).
 """
         
         try:
-            # We explicitly use gemini by forcing the model tag or relying on UnifiedClient priority
-            # Increased max_tokens to 8192 to prevent the massive JSON payload from dropping midway
+            # Modèle rapide pour réduire le temps de traitement (flash) tout en gardant la qualité
             response = await self.generate_response(
                 prompt=user_prompt, 
                 system=system_prompt, 
-                model="gemini-3.1-pro-preview",
-                max_tokens=8192
+                model="gemini-2.0-flash",
+                max_tokens=6144
             )
             
             logger.debug(f"Adapt Raw Gemini response length: {len(response)}")

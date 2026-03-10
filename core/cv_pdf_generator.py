@@ -130,6 +130,77 @@ def _on(bg: HexColor) -> HexColor:
     return white if _lum(bg) < 0.25 else black
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ATS DUAL-LAYER INJECTION (INVISIBLE TEXT)
+# ─────────────────────────────────────────────────────────────────────────────
+def _inject_invisible_ats_layer(canvas, doc, cv_data: Dict[str, Any]):
+    """
+    Injects the raw CV text into the background layer in a single vertical column.
+    The text color is fully transparent (or white on white) with a miniature font.
+    This ensures that basic ATS parsers (like PyPDF2 or pdftotext) read the perfectly 
+    ordered linear text FIRST before getting lost in the complex UI frames.
+    """
+    canvas.saveState()
+    
+    # Text object set to almost invisible tiny font
+    textobject = canvas.beginText()
+    textobject.setTextOrigin(10, doc.pagesize[1] - 10)
+    textobject.setFont("Helvetica", 1)
+    # Using white color to make it practically invisible on standard backgrounds
+    textobject.setFillColor(rl_colors.white)
+    
+    # 1. HEADER & CONTACT (Most critical for ATS to read first)
+    textobject.textLine(cv_data.get("full_name", ""))
+    textobject.textLine(cv_data.get("title", ""))
+    textobject.textLine(cv_data.get("email", ""))
+    textobject.textLine(cv_data.get("phone", ""))
+    textobject.textLine(cv_data.get("location", ""))
+    textobject.textLine(cv_data.get("linkedin", ""))
+    textobject.textLine(cv_data.get("github", ""))
+    
+    # 2. SUMMARY
+    textobject.textLine("PROFESSIONAL SUMMARY")
+    textobject.textLine(cv_data.get("summary", ""))
+    
+    # 3. WORK EXPERIENCE
+    textobject.textLine("WORK EXPERIENCE")
+    for exp in cv_data.get("experiences", []):
+        textobject.textLine(f"{exp.get('title', '')} at {exp.get('company', '')}")
+        textobject.textLine(f"{exp.get('location', '')} | {exp.get('start_date', '')} - {exp.get('end_date', '')}")
+        for bullet in exp.get("bullets", []):
+            # Clean bullets for ATS
+            clean_bullet = bullet.replace("•", "").strip()
+            textobject.textLine(clean_bullet)
+            
+    # 4. EDUCATION
+    textobject.textLine("EDUCATION")
+    for edu in cv_data.get("education", []):
+        textobject.textLine(f"{edu.get('degree', '')} - {edu.get('institution', '')} - {edu.get('year', '')}")
+        
+    # 5. SKILLS
+    textobject.textLine("SKILLS")
+    skills = cv_data.get("skills", {})
+    if isinstance(skills, dict):
+        for category, items in skills.items():
+            if items:
+                textobject.textLine(f"{category}: " + ", ".join(items))
+    elif isinstance(skills, list):
+         textobject.textLine(", ".join(skills))
+         
+    # 6. PROJECTS & CERTIFICATIONS
+    for proj in cv_data.get("projects", []):
+        textobject.textLine(f"Project: {proj.get('name', '')} - {proj.get('description', '')}")
+    
+    if cv_data.get("certifications"):
+        textobject.textLine("CERTIFICATIONS: " + ", ".join(cv_data.get("certifications", [])))
+        
+    if cv_data.get("languages"):
+        textobject.textLine("LANGUAGES: " + ", ".join(cv_data.get("languages", [])))
+
+    canvas.drawText(textobject)
+    canvas.restoreState()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # STYLES TYPOGRAPHIQUES (varient selon le thème pour un rendu unique)
 # ─────────────────────────────────────────────────────────────────────────────
 def _get_styles(c, theme_dict=None):
@@ -470,6 +541,7 @@ def _render_modern_sidebar(cv_data, doc, story, styles, c):
     SW = PW * 0.32
 
     def on_page(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
         canvas.saveState()
         canvas.setFillColor(c["SIDEBAR_BG"])
         canvas.rect(0, 0, SW, PH, fill=1, stroke=0)
@@ -501,6 +573,7 @@ def _render_reverse_sidebar(cv_data, doc, story, styles, c):
     SW = PW * 0.32
 
     def on_page(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
         canvas.saveState()
         canvas.setFillColor(c["SIDEBAR_BG"])
         canvas.rect(PW - SW, 0, SW, PH, fill=1, stroke=0)
@@ -524,9 +597,12 @@ def _render_reverse_sidebar(cv_data, doc, story, styles, c):
 def _render_classic_single(cv_data, doc, story, styles, c):
     """Colonne unique classique, bien hiérarchisée."""
     M = styles["M"]
+    def on_page(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
+
     frame = Frame(50, 36, LETTER[0] - 100, LETTER[1] - 72,
                   leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-    doc.addPageTemplates([PageTemplate(id='L', frames=[frame])])
+    doc.addPageTemplates([PageTemplate(id='L', frames=[frame], onPage=on_page)])
     _build_main_full(cv_data, story, M, c)
 
 
@@ -538,6 +614,7 @@ def _render_executive_band(cv_data, doc, story, styles, c):
     HD    = 88   # hauteur du bandeau
 
     def on_p1(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
         canvas.saveState()
         canvas.setFillColor(c["SIDEBAR_BG"])
         canvas.rect(0, PH - HD, PW, HD, fill=1, stroke=0)
@@ -601,6 +678,7 @@ def _render_terminal_code(cv_data, doc, story, styles, c):
     PW, PH = LETTER
 
     def on_page(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
         canvas.saveState()
         canvas.setFillColor(HexColor("#0a0a0a"))
         canvas.rect(0, 0, PW, PH, fill=1, stroke=0)
@@ -674,8 +752,11 @@ def _render_grid_bento(cv_data, doc, story, styles, c):
     f_r  = Frame(half + 4, 24, half - 28,  PH - 48, leftPadding=10, rightPadding=18, topPadding=24, bottomPadding=24, id='r')
     f_p2 = Frame(24,      24, PW - 48,    PH - 48, leftPadding=18, rightPadding=18, topPadding=28, bottomPadding=24)
 
+    def on_p1(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
+
     doc.addPageTemplates([
-        PageTemplate(id='P1', frames=[f_l, f_r]),
+        PageTemplate(id='P1', frames=[f_l, f_r], onPage=on_p1),
         PageTemplate(id='P2', frames=[f_p2])
     ])
 
@@ -703,9 +784,12 @@ def _render_centered_minimal(cv_data, doc, story, styles, c):
     s_sub  = ParagraphStyle("cs", parent=M["subtitle"], alignment=TA_CENTER)
     s_con  = ParagraphStyle("cc", parent=M["contact"], alignment=TA_CENTER)
 
+    def on_page(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
+
     frame = Frame(48, 36, LETTER[0] - 96, LETTER[1] - 72,
                   leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-    doc.addPageTemplates([PageTemplate(id='L', frames=[frame])])
+    doc.addPageTemplates([PageTemplate(id='L', frames=[frame], onPage=on_page)])
 
     story.append(Paragraph(cv_data.get("full_name", "").upper(), s_name))
     if cv_data.get("title"):
@@ -736,6 +820,7 @@ def _render_split_equal(cv_data, doc, story, styles, c):
     half = PW / 2.0
 
     def on_p1(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
         canvas.saveState()
         canvas.setFillColor(c["SIDEBAR_BG"])
         canvas.rect(0, 0, half, PH, fill=1, stroke=0)
@@ -772,6 +857,7 @@ def _render_compact_tight(cv_data, doc, story, styles, c):
     PW, PH = LETTER
 
     def on_page(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
         # Bandeau latéral gauche fin (barre décorative)
         canvas.saveState()
         canvas.setFillColor(c["SIDEBAR_BG"])

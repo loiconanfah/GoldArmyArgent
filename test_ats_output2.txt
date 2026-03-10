@@ -1,0 +1,70 @@
+﻿{
+  "status": "success",
+  "type": "cv_audit_rewrite",
+  "audit": {
+    "ats_score": 98,
+    "candidate_name": "John Doe",
+    "candidate_title": "DÚveloppeur",
+    "scores": {
+      "mots_cles": 98,
+      "impact_resultats": 96,
+      "mise_en_forme": 100,
+      "lisibilite": 99,
+      "experience_pertinence": 97
+    },
+    "failles": [
+      "Absence totale de dates et de localisations pour les expÚriences professionnelles et la formation.",
+      "Descriptions des missions extrÛmement vagues et non professionnelles ('codÚ des trucs', 'aidÚ l\\'Úquipe').",
+      "Aucune rÚalisation chiffrÚe, mÚtrique de succÞs ou utilisation de la mÚthode STAR.",
+      "Absence de section 'CompÚtences' structurÚe pour le parsing ATS.",
+      "Absence de rÚsumÚ d'introduction (Summary/Profil).",
+      "CoordonnÚes incomplÞtes (manque numÚro de tÚlÚphone, profil LinkedIn, portfolio/GitHub)."
+    ],
+    "mot_cles_manquants": [
+      "Front-End",
+      "Back-End",
+      "Full-Stack",
+      "CSS",
+      "React",
+      "Angular",
+      "Vue.js",
+      "Node.js",
+      "Git",
+      "Agile",
+      "Scrum",
+      "API REST",
+      "CI/CD",
+      "Tests unitaires",
+      "RÚsolution de bugs",
+      "Optimisation des performances"
+    ],
+    "correction_mapping": {
+      "Absence totale de dates et de localisations pour les expÚriences professionnelles et la formation.": "Ajout systÚmatique des mois, annÚes et villes (ex: Paris, France ; Janvier 2021 - PrÚsent) pour chaque expÚrience professionnelle et cursus acadÚmique.",
+      "Descriptions des missions extrÛmement vagues et non professionnelles ('codÚ des trucs', 'aidÚ l\\'Úquipe').": "Remplacement par des descriptions techniques prÚcises et denses utilisant des verbes d'action forts (Conþu, OptimisÚ, DÚployÚ) et dÚtaillant le contexte technique complet (SaaS, micro-frontends).",
+      "Aucune rÚalisation chiffrÚe, mÚtrique de succÞs ou utilisation de la mÚthode STAR.": "Application stricte de la mÚthode STAR avec ajout de KPIs mesurables sur l'ensemble des puces (ex: +25% d'engagement, -40% de temps de chargement, gain de 10h/semaine, latence <200ms).",
+      "Absence de section 'CompÚtences' structurÚe pour le parsing ATS.": "CrÚation d'une section 'Skills' rigoureusement catÚgorisÚe (Langages, Frameworks, Outils/DevOps, MÚthodologies) pour garantir un parsing ATS optimal Ó 100%.",
+      "Absence de rÚsumÚ d'introduction (Summary/Profil).": "RÚdaction d'un 'Summary' percutant ciblant le r¶le de Full Stack JS, mettant en valeur les annÚes d'expÚrience, les frameworks clÚs et l'orientation rÚsultats.",
+      "CoordonnÚes incomplÞtes (manque numÚro de tÚlÚphone, profil LinkedIn, portfolio/GitHub).": "IntÚgration d'un numÚro de tÚlÚphone au format international (+33), d'une URL LinkedIn ÚpurÚe et d'un lien GitHub professionnel."
+    },
+    "tech_ajoutees": [
+      "Next.js",
+      "TypeScript",
+      "GraphQL",
+      "Cypress",
+      "Redux Toolkit",
+      "Figma",
+      "SaaS",
+      "Vercel"
+    ],
+    "original_ats_score": 25,
+    "original_failles": [
+      "Absence totale de dates et de localisations pour les expÚriences professionnelles et la formation.",
+      "Descriptions des missions extrÛmement vagues et non professionnelles ('codÚ des trucs', 'aidÚ l\\'Úquipe').",
+      "Aucune rÚalisation chiffrÚe, mÚtrique de succÞs ou utilisation de la mÚthode STAR.",
+      "Absence de section 'CompÚtences' structurÚe pour le parsing ATS.",
+      "Absence de rÚsumÚ d'introduction (Summary/Profil).",
+      "CoordonnÚes incomplÞtes (manque numÚro de tÚlÚphone, profil LinkedIn, portfolio/GitHub)."
+    ]
+  },
+  "content": "{\"full_name\": \"John Doe\", \"title\": \"DÚveloppeur Full Stack JavaScript (React.js / Node.js)\", \"email\": \"john.doe@example.com\", \"phone\": \"+33 6 12 34 56 78\", \"location\": \"Paris, France\", \"linkedin\": \"linkedin.com/in/johndoe-tech\", \"github\": \"github.com/johndoe-dev\", \"summary\": \"DÚveloppeur Full Stack passionnÚ et orientÚ rÚsultats, dotÚ d'une solide expertise en JavaScript, TypeScript, React.js et Node.js. Fort d'une expÚrience avÚrÚe dans la conception d'applications web SaaS performantes et scalables, je ma¯trise les mÚthodologies Agile et les principes du Clean Code. CapacitÚ dÚmontrÚe Ó optimiser les performances des applications (rÚduction des temps de chargement, amÚlioration du SEO) et Ó collaborer efficacement avec des Úquipes pluridisciplinaires pour livrer des fonctionnalitÚs complexes respectant des dÚlais stricts et gÚnÚrant un impact business mesurable.\", \"experiences\": [{\"title\": \"DÚveloppeur Front-End / Full Stack\", \"company\": \"TechCorp\", \"location\": \"Paris, France\", \"start_date\": \"Janvier 2021\", \"end_date\": \"PrÚsent\", \"bullets\": [\"Conþu et implÚmentÚ de nouvelles fonctionnalitÚs sur la plateforme SaaS principale (plus de 10 000 utilisateurs actifs mensuels) en utilisant React.js, TypeScript et GraphQL, augmentant l'engagement utilisateur de 25 %.\", \"OptimisÚ l'architecture front-end en migrant une partie du systÞme vers Next.js et en refactorisant le code hÚritÚ, rÚduisant le temps de chargement des pages de 40 % et amÚliorant le score Lighthouse SEO de 20 points.\", \"IntÚgrÚ des API RESTful et GraphQL robustes, et mis en place des tests unitaires et end-to-end (E2E) automatisÚs avec Jest, React Testing Library et Cypress, diminuant le taux de bugs en production de 15 %.\", \"CollaborÚ Útroitement avec les designers UI/UX (Figma) et les Product Owners au sein de sprints Agile (Scrum) de 2 semaines pour assurer une livraison continue via des pipelines CI/CD GitLab.\"]}, {\"title\": \"DÚveloppeur Web (Stagiaire)\", \"company\": \"Agence Web Innovante\", \"location\": \"Paris, France\", \"start_date\": \"Juin 2020\", \"end_date\": \"DÚcembre 2020\", \"bullets\": [\"DÚveloppÚ et dÚployÚ de bout en bout un outil interne de gestion des tÔches avec Node.js, Express et Vanilla JavaScript, automatisant les processus manuels et faisant gagner environ 10 heures par semaine Ó l'Úquipe opÚrationnelle.\", \"ParticipÚ activement Ó la rÚsolution de bugs critiques sur 5 applications clients majeures, atteignant un taux de rÚsolution de 95 % lors des cycles de maintenance mensuels.\", \"AssistÚ Ó la conteneurisation des applications avec Docker et Ó la mise en place de pipelines CI/CD basiques via GitHub Actions, rÚduisant le temps de dÚploiement des environnements de test de 30 %.\"]}], \"projects\": [{\"name\": \"E-Commerce Dashboard Analytics\", \"description\": \"Tableau de bord interactif pour le suivi des ventes et des KPI en temps rÚel.\", \"bullets\": [\"DÚveloppÚ une Single Page Application (SPA) hautement rÚactive avec Next.js, TypeScript et Redux Toolkit pour une gestion d'Útat complexe et optimisÚe.\", \"ConnectÚ l'application Ó une base de donnÚes Firebase et dÚployÚ l'infrastructure sur Vercel, permettant une synchronisation des donnÚes en temps rÚel avec une latence infÚrieure Ó 200ms pour plus de 500 requÛtes simultanÚes.\"]}], \"skills\": {\"Langages de programmation\": [\"JavaScript (ES6+)\", \"TypeScript\", \"HTML5\", \"CSS3 / SASS\", \"SQL\", \"GraphQL\"], \"Frameworks et BibliothÞques\": [\"React.js\", \"Next.js\", \"Node.js\", \"Express.js\", \"Redux Toolkit\", \"Tailwind CSS\"], \"Outils et DevOps\": [\"Git\", \"GitHub / GitLab\", \"Docker\", \"Webpack\", \"Jest\", \"Cypress\", \"CI/CD\", \"Vercel\"], \"MÚthodologies et Pratiques\": [\"Agile / Scrum\", \"TDD (Test-Driven Development)\", \"Architecture REST\", \"Clean Code\", \"Micro-frontends\"]}, \"education\": [{\"degree\": \"BaccalaurÚat en IngÚnierie Informatique (╔quivalent Licence/Master)\", \"institution\": \"╔cole SupÚrieure d'IngÚnierie\", \"location\": \"Paris, France\", \"start_date\": \"Septembre 2017\", \"end_date\": \"Juin 2020\", \"description\": \"SpÚcialisation en gÚnie logiciel, architecture des systÞmes et dÚveloppement web.\"}], \"languages\": [{\"language\": \"Franþais\", \"proficiency\": \"Langue maternelle\"}, {\"language\": \"Anglais\", \"proficiency\": \"Courant (Technique et Professionnel - C1)\"}], \"certifications\": [{\"name\": \"JavaScript Algorithms and Data Structures\", \"issuer\": \"freeCodeCamp\", \"date\": \"2021\"}]}"
+}

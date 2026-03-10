@@ -64,53 +64,64 @@ class MentorAgent(BaseAgent):
         for i in range(1, iterations + 1):
             logger.info(f"[Mentor] Passe {i}/{iterations} en cours...")
             
-            # Ajustement du prompt selon l'itération
-            phase_instruction = ""
-            context_data = ""
-            
             if i == 1:
-                phase_instruction = "PHASE 1 : Diagnostic & Premier Draft. Trouve toutes les failles et propose une version rectifiée complète."
+                # PHASE 1: DIAGNOSTIC ONLY
+                phase_instruction = "PHASE 1 : Diagnostic strict du CV original. Tu DOIS UNIQUEMENT évaluer le CV fourni et lister ses failles réelles. Ne génère AUCUN `cv_data`."
                 context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
-            elif i == 2:
-                phase_instruction = "PHASE 2 : Critique Interne & Enrichissement Tech. Analyse ton propre draft précédent, trouve ce qui manque pour atteindre 80, et injecte plus de profondeur technique et de résultats chiffrés."
-                context_data = f"[PREVIOUS_DRAFT_JSON]\n{json.dumps(current_cv_data, ensure_ascii=False)}"
-            else:
-                phase_instruction = f"PHASE 3 : Polissage Final & Score 80+. Voici les failles initiales identifiées : {original_failles}. Tu DOIS impérativement mapper ces failles spécifiques dans ton 'correction_mapping' final pour montrer comment elles ont été résolues."
-                context_data = f"[PREVIOUS_DRAFT_JSON]\n{json.dumps(current_cv_data, ensure_ascii=False)}"
-
-            prompt = f"""Tu es le \"GoldArmy Mentor\" en mode Optimisation Itérative (Triple Pass).
-{phase_instruction}
-
-**RÈGLES D'OR :**
-1. **Chain-of-Correction :** Chaque faille identifiée doit avoir une résolution directe dans le `cv_data`. Remplis `correction_mapping` avec des paires explicitant le changement (ex: "Résumé trop court" -> "Résumé étendu avec KPIs").
-2. **Score Target :** Le but final est d'atteindre un score ATS de 80+.
-3. **Zéro Perte :** Conserve précieusement tous les contacts, liens, dates et lieux.
-4. **ORDRE DES SECTIONS :** Tu DOIS structurer le JSON `cv_data` dans cet ordre logique : Profil/Summary -> Experiences -> Projects -> Skills -> Education -> Languages/Certifications.
-
-**STRUCTURE DU JSON :**
-{{
-  "audit": {{
+                json_structure = """{
+  "audit": {
     "ats_score": 0,
     "candidate_name": "...",
     "candidate_title": "...",
-    "scores": {{ "mots_cles": 0, "impact_resultats": 0, "mise_en_forme": 0, "lisibilite": 0, "experience_pertinence": 0 }},
-    "failles": ["Failles restant à corriger"],
-    "correction_mapping": {{ "Faille identifiée": "Solution précise appliquée dans le nouveau CV" }},
-    "tech_manquantes": ["Technologies ajoutées"]
-  }},
-  "cv_data": {{
+    "scores": { "mots_cles": 0, "impact_resultats": 0, "mise_en_forme": 0, "lisibilite": 0, "experience_pertinence": 0 },
+    "failles": ["Failles trouvées dans le CV original"],
+    "mot_cles_manquants": ["Mots-clés importants absents"]
+  }
+}"""
+            elif i == 2:
+                # PHASE 2: FIRST DRAFT REWRITE
+                phase_instruction = f"PHASE 2 : Réécriture Complète (Draft 1). En te basant sur le diagnostic précédent (Failles: {original_failles}), réécris le CV original. Ton but est d'HYPER-OPTIMISER le CV. Corrige les failles, injecte massivement des mots-clés techniques avancés, transforme les listes de tâches en réalisations avec des KPIs (Méthode STAR), et utilise des verbes d'action forts. IMPORTANT : Corrige TOUTES les fautes d'orthographe/grammaire. Le niveau de langue doit être parfait."
+                context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
+                json_structure = """{
+  "cv_data": {
     "full_name": "...", "title": "...", "email": "...", "phone": "...", "location": "...", "linkedin": "...", "github": "...",
-    "summary": "...",
-    "experiences": [ {{ "title": "...", "company": "...", "location": "...", "start_date": "...", "end_date": "...", "bullets": ["..."] }} ],
-    "projects": [ {{ "name": "...", "description": "...", "bullets": [] }} ],
-    "skills": {{ "Expertises": [], "Outils": [] }},
+    "summary": "Résumé percutant riche en mots-clés...",
+    "experiences": [ { "title": "...", "company": "...", "location": "...", "start_date": "...", "end_date": "...", "bullets": ["Verbe d'action + contexte + Résultat/KPI"] } ],
+    "projects": [ { "name": "...", "description": "...", "bullets": [] } ],
+    "skills": { "Catégorie 1 (ex: Langages)": ["..."], "Catégorie 2 (ex: Outils)": ["..."], "Catégorie 3": ["..."] },
     "education": [], "languages": [], "certifications": []
-  }}
-}}
+  }
+}"""
+            else:
+                # PHASE 3: FINAL SCORING AND MAPPING
+                phase_instruction = f"PHASE 3 : Vérification Finale & Mapping. Analyse le CV hyper-optimisé que tu viens de générer. Assure-toi qu'il corrige bien TOUTES les failles initiales : {original_failles}. Génère le `correction_mapping` pour prouver tes actions. Évalue de manière stricte mais réaliste le NOUVEAU score ATS de ce CV généré (qui doit impérativement s'approcher de 100/100 vu les optimisations appliquées). NE REGÉNÈRE PAS LE CV."
+                context_data = f"[PREVIOUS_DRAFT_JSON]\n{json.dumps(current_cv_data, ensure_ascii=False)}"
+                json_structure = """{
+  "audit": {
+    "ats_score": 0,
+    "scores": { "mots_cles": 0, "impact_resultats": 0, "mise_en_forme": 0, "lisibilite": 0, "experience_pertinence": 0 },
+    "correction_mapping": { "Faille identifiée dans l'original": "Solution appliquée dans le nouveau CV" },
+    "tech_ajoutees": ["Technologies ou mots-clés injectés"]
+  }
+}"""
 
+            prompt = f"""Tu es un Expert Recruteur Tech \"GoldArmy Mentor\" en mode Optimisation Itérative (Triple Pass).
+{phase_instruction}
+
+**RÈGLES D'OR :**
+1. **Intégrité Absolue :** Le Score de l'audit Phase 1 doit être basé STRICTEMENT sur le texte fourni, souvent faible (ex: 40-60). Ne l'invente pas.
+2. **Action & Résultats :** Transforme systématiquement les responsabilités passives en réalisations chiffrées (quantifie intelligemment avec le contexte). Utilise la méthode STAR (Situation, Task, Action, Result) avec des verbes d'action forts (Planiﬁé, Développé, Optimisé...).
+3. **Hyper-Optimisation ATS :** Injecte pertinemment tous les mots-clés techniques, outils, méthodologies et frameworks attendus pour le poste visé. Ne résume pas à l'excès ! Les descriptions doivent être détaillées, denses et professionnelles.
+4. **Zéro Perte & Zéro Faute :** Conserve précieusement les contacts, liens, dates et lieux. Formate les numéros de téléphone (+xx...) et emails pour les ATS. La grammaire et l'orthographe doivent être d'un niveau professionnel PARFAIT.
+5. **Structure Stricte :** Le `cv_data` doit suivre l'ordre : Profil/Summary -> Experiences -> Projects -> Skills -> Education -> Languages/Certifications.
+
+**STRUCTURE DU JSON ATTENDU POUR CETTE PHASE :**
+{json_structure}
+
+**CONTEXTE :**
 {context_data}
 
-Réponds UNIQUEMENT en JSON pur.
+Réponds UNIQUEMENT en JSON pur. N'inclus aucun texte avant ou après.
 """
             response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)
             
@@ -124,15 +135,17 @@ Réponds UNIQUEMENT en JSON pur.
                     cleaned = response
 
                 parsed = json.loads(cleaned)
-                last_audit = parsed.get("audit", {})
-                current_cv_data = parsed.get("cv_data", current_cv_data)
                 
-                # Capturer le score et les failles initiales dès la première passe
                 if i == 1:
+                    last_audit = parsed.get("audit", {})
                     original_ats_score = last_audit.get("ats_score", 0)
                     original_failles = last_audit.get("failles", [])
+                elif i == 2:
+                    current_cv_data = parsed.get("cv_data", {})
+                else:
+                    last_audit.update(parsed.get("audit", {})) # Update audit with final config
                 
-                logger.debug(f"[Mentor] Passe {i} terminée. Score ATS: {last_audit.get('ats_score')}")
+                logger.debug(f"[Mentor] Passe {i} terminée. Score ATS reporté: {parsed.get('audit', {}).get('ats_score')}")
                 
             except Exception as e:
                 logger.error(f"[Mentor] Erreur parsing passe {i}: {e}")
@@ -165,7 +178,8 @@ Ta mission : réécrire ce CV pour qu'il soit PARFAIT pour passer les filtres AT
 - Quantifie les réalisations (%, chiffres, délais) quand possible ou ajoute [À quantifier]
 - Sections standardisées : Résumé, Expériences, Compétences, Formation, Certifications
 - Pas de tableaux, pas de colonnes, pas d'images (les ATS ne lisent pas ça)
-- Langage professionnel, concis, sans faute
+- Langage professionnel, concis, ZERO FAUTE (corrige impérativement toute faute de grammaire/orthographe du CV original)
+- Format de contact standardisé pour une extraction ATS (ex: email explicite, téléphone au format international si possible)
 
 **Renvoie ta réponse UNIQUEMENT en JSON valide avec cette structure exacte :**
 {{

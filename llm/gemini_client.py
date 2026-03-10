@@ -223,6 +223,8 @@ class GeminiClient:
             gen_config["maxOutputTokens"] = kwargs["max_tokens"]
         if kwargs.get("temperature") is not None:
             gen_config["temperature"] = kwargs["temperature"]
+        if kwargs.get("json_mode"):
+            gen_config["responseMimeType"] = "application/json"
         if gen_config:
             payload["generationConfig"] = gen_config
 

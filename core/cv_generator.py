@@ -4,9 +4,80 @@ Utilise python-docx pour créer un fichier Word propre et parsable par les ATS.
 """
 import io
 import json
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from docx import Document
+
+
+def normalize_cv_json(cv_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalise cv_data pour que DOCX/PDF génèrent correctement : bullets en listes,
+    skills en dict de listes, education/languages/certifications en listes.
+    """
+    if not cv_data or not isinstance(cv_data, dict):
+        return cv_data or {}
+    data = dict(cv_data)
+    # experiences: bullets must be list of strings
+    exps = data.get("experiences") or []
+    if not isinstance(exps, list):
+        exps = []
+    out_exps = []
+    for exp in exps:
+        if not isinstance(exp, dict):
+            continue
+        e = dict(exp)
+        bullets = e.get("bullets")
+        if isinstance(bullets, str):
+            e["bullets"] = [b.strip() for b in bullets.split("\n") if b.strip()] or [bullets.strip()]
+        elif not isinstance(bullets, list):
+            e["bullets"] = []
+        else:
+            e["bullets"] = [str(b).strip() for b in bullets if str(b).strip()]
+        out_exps.append(e)
+    data["experiences"] = out_exps
+    # projects: same for bullets
+    projs = data.get("projects") or []
+    if not isinstance(projs, list):
+        projs = []
+    out_projs = []
+    for p in projs:
+        if not isinstance(p, dict):
+            continue
+        pr = dict(p)
+        bullets = pr.get("bullets")
+        if isinstance(bullets, str):
+            pr["bullets"] = [b.strip() for b in bullets.split("\n") if b.strip()] or [bullets.strip()]
+        elif not isinstance(bullets, list):
+            pr["bullets"] = []
+        else:
+            pr["bullets"] = [str(b).strip() for b in bullets if str(b).strip()]
+        out_projs.append(pr)
+    data["projects"] = out_projs
+    # skills: must be dict with list values
+    skills = data.get("skills") or {}
+    if isinstance(skills, list):
+        data["skills"] = {"Compétences": [str(s) for s in skills]}
+    elif isinstance(skills, dict):
+        out_skills = {}
+        for k, v in skills.items():
+            if isinstance(v, list):
+                out_skills[str(k)] = [str(x) for x in v]
+            else:
+                out_skills[str(k)] = [str(v)] if v else []
+        data["skills"] = out_skills
+    else:
+        data["skills"] = {"Compétences": [str(skills)]}
+    for key in ["education", "languages", "certifications"]:
+        val = data.get(key)
+        if isinstance(val, list):
+            data[key] = val
+        elif val is not None and str(val).strip():
+            data[key] = [str(val)]
+        else:
+            data[key] = []
+    return data
+
+
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
@@ -58,6 +129,7 @@ def generate_cv_docx(cv_data: Dict[str, Any]) -> bytes:
     Génère un fichier DOCX ATS-optimisé à partir des données structurées du CV.
     Retourne les bytes du fichier.
     """
+    cv_data = normalize_cv_json(cv_data)
     doc = Document()
 
     # ── Marges serrées (ATS friendly) ──────────────────────────────────

@@ -1,0 +1,26 @@
+﻿PDF gÚnÚrÚ. Test d'extraction :
+--------------------------------------------------
+JEAN DUPONT
+IngÚnieur Logiciel
+jean@test.com À +33 6 12 34 56 78 À Paris, France
+PROFIL PROFESSIONNEL
+DÚveloppeur passionnÚ avec 5 ans d'expÚrience.
+EXP╔RIENCES PROFESSIONNELLES
+DÚveloppeur Backend @ Tech SA
+Jan 2020 ? PrÚsent À Paris
+ CrÚation d'APIs REST utilisant FastAPI.
+JEAN
+DUPONT
+IngÚnieur Logiciel
+EMAIL
+jean@test.com
+T╔L.
++33 6 12 34 56 78
+VILLE
+Paris, France
+COMP╔TENCES
+LANGAGES
+Python À JavaScript
+
+--------------------------------------------------
+ECHEC : Les competences apparaissent avant le nom ou texte non trouve.
