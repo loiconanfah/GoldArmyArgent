@@ -102,7 +102,20 @@ OBLIGATIONS ABSOLUES :
     - Technologies capitalisées ? (Python, Docker, AWS, React, PostgreSQL)
 [C] Injecte massivement les mots-clés techniques manquants identifiés en Phase 1.
     Chaque poste doit nommer AU MOINS 3-4 technologies différentes dans ses bullets.
-[D] Conserve TOUS les contacts, dates, lieux sans exception."""
+[D] Conserve TOUS les contacts, dates, lieux sans exception.
+[E] ZÉRO RÉPÉTITION — Règle anti-rebrassage STRICTE :
+    - Chaque bullet DOIT commencer par un verbe d'action DIFFÉRENT des autres bullets du même poste.
+    - Banque de verbes imposée (varie obligatoirement) : Développé, Conçu, Architecturé, Optimisé,
+      Déployé, Automatisé, Réduit, Augmenté, Piloté, Intégré, Refactorisé, Implémenté,
+      Migré, Sécurisé, Coordonné, Livré, Encadré, Amélioré, Standardisé, Monitoré.
+    - INTERDIT : répéter le même verbe dans le même poste.
+    - INTERDIT : répéter les mêmes formulations génériques ("gérer", "assurer", "améliorer") 2x ou +.
+[F] AUTO-RÉVISION OBLIGATOIRE avant de retourner le JSON :
+    Parcours mentalement chaque bullet et vérifie :
+    1. Verbes d'action tous différents dans un même poste ? Si non → remplace.
+    2. Fautes d'accord ou d'accent ? Si oui → corrige.
+    3. Bullets sans KPI ? Si oui → ajoute un chiffre.
+    Seulement si les 3 tests sont OK → retourne le JSON."""
                 context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
                 json_structure = """{
   "cv_data": {
