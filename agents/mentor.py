@@ -80,7 +80,29 @@ class MentorAgent(BaseAgent):
 }"""
             elif i == 2:
                 # PHASE 2: FIRST DRAFT REWRITE
-                phase_instruction = f"PHASE 2 : Réécriture Complète (Draft 1). En te basant sur le diagnostic précédent (Failles: {original_failles}), réécris le CV original. Ton but est d'HYPER-OPTIMISER le CV. Corrige les failles, injecte massivement des mots-clés techniques avancés, transforme les listes de tâches en réalisations avec des KPIs (Méthode STAR), et utilise des verbes d'action forts. IMPORTANT : Corrige TOUTES les fautes d'orthographe/grammaire. Le niveau de langue doit être parfait."
+                phase_instruction = f"""PHASE 2 : Réécriture Hyperprofessionnelle (Draft 1).
+Objectif : Produire un CV digne d'un TOP recruteur FAANG — zéro faute, impact maximal.
+Basé sur les failles détectées : {original_failles}
+
+OBLIGATIONS ABSOLUES :
+[A] CHAQUE bullet point DOIT contenir UN KPI/métrique chiffré(e) obligatoire.
+    Format imposé : Verbe d'action + Contexte technique + Résultat quantifié
+    Exemples CORRECTS :
+    - "Développé 12 microservices FastAPI réduisant la latence P99 de 340ms à 180ms (-47%)"
+    - "Automatisé le pipeline CI/CD GitHub Actions → 0 downtime deploy, fréquence x3"
+    - "Conçu un cache Redis multicouche atteignant 98% hit-rate, économie 40% coûts DB"
+    Si tu ne connais PAS le chiffre exact, ESTIME intelligemment à partir du contexte.
+    UN BULLET SANS KPI = ÉCHEC.
+[B] ZÉRO faute d'orthographe ou de grammaire — AUTO-VÉRIFIE chaque bullet avant de l'écrire.
+    Checklist obligatoire pour chaque phrase :
+    - Accord sujet/verbe correct ? (ex: "les APIs sont" pas "les APIs est")
+    - Accents corrects ? (développé, créé, géré, intégré, déployé, amélioré)
+    - Verbe à l'infinitif ou participe passé uniformément dans la section ?
+    - Aucun anglicisme mal accordé ? ("performantes" pas "performants" si féminin)
+    - Technologies capitalisées ? (Python, Docker, AWS, React, PostgreSQL)
+[C] Injecte massivement les mots-clés techniques manquants identifiés en Phase 1.
+    Chaque poste doit nommer AU MOINS 3-4 technologies différentes dans ses bullets.
+[D] Conserve TOUS les contacts, dates, lieux sans exception."""
                 context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
                 json_structure = """{
   "cv_data": {
@@ -105,30 +127,32 @@ class MentorAgent(BaseAgent):
   }
 }"""
 
-            prompt = f"""Tu es un Expert Recruteur Tech \"GoldArmy Mentor\" en mode Optimisation Itérative (Triple Pass).
+            prompt = f"""Tu es l'Expert Recruteur Tech \"GoldArmy Mentor\" — mode Optimisation Triple Pass.
 {phase_instruction}
 
-**RÈGLES D'OR ABSOLUES (NON NÉGOCIABLES) :**
-1. **Intégrité Absolue :** Le Score Phase 1 doit être basé STRICTEMENT sur le texte fourni (souvent 25-55). Ne l'invente jamais.
-2. **Action & Résultats :** Transforme TOUTES les responsabilités passives en réalisations chiffrées. Méthode STAR obligatoire. KPIs concrets (ex: -40% latence, +25% throughput, x3 déploiements). Verbes d'action forts.
-3. **Hyper-Optimisation ATS :** Injecte massivement mots-clés techniques, frameworks, outils, méthodologies. Chaque bullet doit nommer AU MOINS 2 technologies. Descriptions denses et professionnelles.
-4. **CORRECTION GRAMMAIRE & ORTHOGRAPHE — PRIORITÉ ABSOLUE #1 :**
-   - Corrige TOUTES les fautes d'orthographe (ex: "developper" → "développer", "gestion" correctement accentué)
-   - Corrige accords, conjugaisons, temps verbaux et ponctuation
-   - Uniformise le temps verbal dans chaque section (infinitif ou passé composé)
-   - Capitalise correctement : technologies (Python, FastAPI, AWS, CI/CD, Docker, React), noms propres
-   - Supprime gallicismes et anglicismes mal utilisés
-   - Le CV final DOIT avoir ZÉRO faute — comme s'il était relu par un correcteur professionnel
-5. **Zéro Perte :** Conserve TOUS contacts, liens, dates, lieux. Formate tél. (+xx xxx xxx xxxx) et emails ATS.
-6. **Structure Obligatoire :** Summary → Experiences → Projects → Skills → Education → Languages → Certifications.
+**RÈGLES D'OR ABSOLUES :**
+1. **Score Honnête (Phase 1) :** Basé STRICTEMENT sur le CV fourni (généralement 25-55/100). Jamais inventé.
+2. **KPI OBLIGATOIRE sur chaque bullet :** Chaque réalisation DOIT montrer un impact chiffré.
+   Formule : [Verbe fort] + [Technologie(s)] + [Résultat % / $ / x / ms / jours].
+   Si absent dans l'original : estime intelligemment. AUCUN bullet sans métrique = rejeté.
+3. **ATS Max :** Mots-clés techniques, frameworks, outils, certifications. Min. 3 techs par bullet.
+4. **GRAMMAIRE & ORTHOGRAPHE — PRIORITÉ #1 — AUTO-VÉRIFICATION PHRASE PAR PHRASE :**
+   ✓ Accents obligatoires : développé, intégré, réalisé, géré, déployé, amélioré, créé
+   ✓ Accord correct : sujet/verbe, adjectifs (ex: "APIs performantes" pas "performants")
+   ✓ Temps verbal uniforme dans chaque section (infinitif OU passé composé, pas les deux)
+   ✓ Majuscules technos : Python, FastAPI, Docker, Kubernetes, AWS, GCP, React, TypeScript
+   ✓ Zéro gallicisme mal formé, zéro anglicisme non accordé
+   ✓ Avant de finaliser : relis mentalement chaque bullet comme si tu étais le correcteur
+5. **Conservation totale :** Contacts, emails, téléphones, dates, lieux — rien ne disparaît.
+6. **Structure :** Summary → Experiences → Projects → Skills → Education → Languages → Certs.
 
-**STRUCTURE JSON POUR CETTE PHASE :**
+**JSON ATTENDU :**
 {json_structure}
 
 **CONTEXTE :**
 {context_data}
 
-Réponds UNIQUEMENT en JSON pur. N'inclus aucun texte avant ou après.
+Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
 """
             response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)
             
