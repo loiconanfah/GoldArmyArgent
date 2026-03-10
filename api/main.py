@@ -171,7 +171,7 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
     Génère un PDF avec le design du thème choisi (midnight, emerald, modern, etc.).
     """
     try:
-        from core.cv_pdf_generator import generate_cv_pdf
+        from core.cv_ats_generator import generate_ats_cv_pdf
 
         body = await raw_request.json()
         cv_data_input = body.get("cv_json")
@@ -220,7 +220,7 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
         import logging
         logging.info(f"Generating PDF for theme {theme_id} with data keys: {list(cv_data.keys())}")
         
-        pdf_bytes = generate_cv_pdf(cv_data, theme_id=theme_id)
+        pdf_bytes = generate_ats_cv_pdf(cv_data, theme_id=theme_id)
         if not filename.endswith(".pdf"):
             filename += ".pdf"
 
