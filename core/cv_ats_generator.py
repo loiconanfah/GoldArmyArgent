@@ -131,10 +131,15 @@ def _build_styles(theme: dict) -> dict:
             fontName=fb, fontSize=12, leading=16,
             textColor=hdr_sub, spaceAfter=5,
         ),
+        "CONTACT_LABEL": ParagraphStyle(
+            "cv_contact_label", parent=base["Normal"],
+            fontName=fbd, fontSize=8.5, leading=13,
+            textColor=acc, spaceAfter=0,
+        ),
         "CONTACT": ParagraphStyle(
             "cv_contact", parent=base["Normal"],
             fontName=fb, fontSize=8.5, leading=13,
-            textColor=hdr_sub, spaceAfter=0,
+            textColor=hdr_txt, spaceAfter=2,
         ),
         # ── Body section header ───────────────────────────────────────────────
         "SECTION": ParagraphStyle(
@@ -274,8 +279,25 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
     story.append(Paragraph(name, styles["NAME"]))
     if title:
         story.append(Paragraph(title, styles["TITLE"]))
-    if contact_parts:
-        story.append(Paragraph("   |   ".join(contact_parts), styles["CONTACT"]))
+
+    # ── Each contact field on its OWN LINE with label — critical for ATS parsers ──
+    email    = _clean(cv_data.get("email", ""))
+    phone    = _clean(cv_data.get("phone", ""))
+    location = _clean(cv_data.get("location", ""))
+    linkedin = _clean(cv_data.get("linkedin", ""))
+    github   = _clean(cv_data.get("github", ""))
+
+    if email:
+        story.append(Paragraph(f"Email: {email}", styles["CONTACT"]))
+    if phone:
+        story.append(Paragraph(f"Phone: {phone}", styles["CONTACT"]))
+    if location:
+        story.append(Paragraph(f"Address: {location}", styles["CONTACT"]))
+    if linkedin:
+        story.append(Paragraph(f"LinkedIn: {linkedin}", styles["CONTACT"]))
+    if github:
+        story.append(Paragraph(f"GitHub: {github}", styles["CONTACT"]))
+
     story.append(Spacer(1, 10))
 
     # Helper: section separator
