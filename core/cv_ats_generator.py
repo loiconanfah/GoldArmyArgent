@@ -381,18 +381,61 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
     hdr_bg_c = HexColor(theme["header_bg"])
     body_bg_c = HexColor(theme["body_bg"])
 
-    # ── Page background + header callbacks ────────────────────────────────────
+    # Pre-compute contact info for canvas drawing
+    lang = _detect_lang(cv_data)
+    lbl  = SECTION_LABELS[lang]
+    name     = _c(cv_data.get("full_name", "")).upper()
+    job_title = _c(cv_data.get("title", ""))
+    contact_lines = []
+    for key in ["email", "phone", "address", "linkedin", "github"]:
+        src = "location" if key == "address" else key
+        val = _c(cv_data.get(src, ""))
+        if val:
+            contact_lines.append(f"{lbl[key]}: {val}")
+
+    hdr_txt   = HexColor(theme["header_text"])
+    hdr_sub_c = HexColor(theme["header_sub"])
+    font_bold = theme["font_bold"]
+    font_body = theme["font_body"]
+
+    # ── Page callbacks — draw header text directly on canvas ──
     def _page1(canvas, doc):
         canvas.saveState()
-        # Body background (for ivory/tech themes with non-white body)
+        # 1. Body background
         canvas.setFillColor(body_bg_c)
         canvas.rect(0, 0, PAGE_W, PAGE_H - HEADER_H - ACCENT_BAR, fill=1, stroke=0)
-        # Header band
+        # 2. Header colored band
         canvas.setFillColor(hdr_bg_c)
         canvas.rect(0, PAGE_H - HEADER_H, PAGE_W, HEADER_H, fill=1, stroke=0)
-        # Accent stripe under header
+        # 3. Accent bar below header
         canvas.setFillColor(acc_c)
         canvas.rect(0, PAGE_H - HEADER_H - ACCENT_BAR, PAGE_W, ACCENT_BAR, fill=1, stroke=0)
+
+        # 4. Draw header text directly inside the colored band
+        PAD_X    = MAR_L
+        name_y   = PAGE_H - MAR_T - 0.38 * inch
+        title_y  = name_y - 0.30 * inch
+        contact_y_start = title_y - 0.22 * inch
+
+        # Name
+        canvas.setFillColor(hdr_txt)
+        canvas.setFont(font_bold, 24)
+        canvas.drawString(PAD_X, name_y, name)
+
+        # Job title
+        if job_title:
+            canvas.setFillColor(hdr_sub_c)
+            canvas.setFont(font_body, 12)
+            canvas.drawString(PAD_X, title_y, job_title)
+
+        # Contacts — each on its own line, clearly labeled
+        canvas.setFillColor(hdr_txt)
+        canvas.setFont(font_body, 8.5)
+        cy = contact_y_start
+        for line in contact_lines:
+            canvas.drawString(PAD_X, cy, line)
+            cy -= 13
+
         canvas.restoreState()
 
     def _page2(canvas, doc):
@@ -430,36 +473,40 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
         PageTemplate(id="P2", frames=[frame_p2], onPage=_page2),
     ])
 
-    # Detect language and wire section labels
-    lang = _detect_lang(cv_data)
-    lbl  = SECTION_LABELS[lang]
+    # Detect language — already done above for canvas header
+    # lbl and lang are available from canvas closure
 
     story: List = []
 
-    # ═══════════════════════════════════════════════════════════════════
-    # 1. HEADER — Name + Job Title + Labeled Contacts (language-aware)
-    # Each contact on its own labeled line for maximum ATS detection
-    # ═══════════════════════════════════════════════════════════════════
-    name  = _c(cv_data.get("full_name", ""))
-    title = _c(cv_data.get("title", ""))
+    # Note: Name, Title, Contacts are drawn on canvas in _page1 callback.
+    # Story starts with body content only.
+    # The ATS text layer must still include contact info for parsers.
+    # We inject it as invisible 1pt white text at top-left (safe, not spam —
+    # it duplicates the canvas text which ATS reads via glyph extraction).
+    from reportlab.platypus import Flowable
 
-    story.append(Paragraph(name.upper(), styles["NAME"]))
-    if title:
-        story.append(Paragraph(title, styles["JOB_TITLE_HDR"]))
+    class _ATSInvisibleContact(Flowable):
+        """Invisible ATS anchor: injects name+contact as 1pt white text so
+        text-layer-based ATS (like Jobscan) can also extract the header info."""
+        def __init__(self, lines: List[str]):
+            Flowable.__init__(self)
+            self.lines = lines
+            self.height = 0   # takes no visual space
+            self.width  = 0
 
-    # Individual labeled contact lines — CRITICAL for ATS detection
-    contact_map = [
-        (lbl["email"],    cv_data.get("email",    "")),
-        (lbl["phone"],    cv_data.get("phone",    "")),
-        (lbl["address"],  cv_data.get("location", "")),
-        (lbl["linkedin"], cv_data.get("linkedin", "")),
-        (lbl["github"],   cv_data.get("github",   "")),
-    ]
-    for label, val in contact_map:
-        if _c(val):
-            story.append(Paragraph(f"{label}: {_c(val)}", styles["CONTACT_LINE"]))
+        def draw(self):
+            c = self.canv
+            c.saveState()
+            c.setFillColor(white)
+            c.setFont("Helvetica", 1)
+            y = 0
+            for line in self.lines:
+                c.drawString(0, y, line)
+                y += 1
+            c.restoreState()
 
-    story.append(Spacer(1, 12))
+    ats_header_lines = [name, job_title] + contact_lines
+    story.append(_ATSInvisibleContact(ats_header_lines))
 
     # ── Section separator helper ───────────────────────────────────────────────
     def add_section(title_text: str):
