@@ -4,11 +4,6 @@ Ingenieur Logiciel Senior
 Email: jean@test.com
 Phone: +33 6 12 34 56 78
 Address: Montreal, QC
-JEAN DUPONT
-Ingenieur Logiciel Senior
-Email: jean@test.com
-Phone: +33 6 12 34 56 78
-Address: Montreal, QC
 PROFESSIONAL SUMMARY
 Expert backend avec 5 ans experience FastAPI, microservices, CI/CD
 WORK EXPERIENCE
@@ -23,15 +18,21 @@ Bac. Genie Info
  Polytechnique Montreal
 TECHNICAL SKILLS
 LANGAGES
-Python · TypeScrip
+Python · TypeScript · Go
+FRAMEWORKS
+FastAPI · React · Docker
+BASES DE DONNEES
+PostgreSQL · MongoDB · Redis
+LANGUAGES
+■ Franc
 
 ---
 Name at pos    : 0
 Email: at pos  : 38
 Phone: at pos  : 59
 Address: at pos: 84
-Exp at pos     : 316
-Skills at pos  : 582
-PDF size       : 2963 bytes
+Exp at pos     : 210
+Skills at pos  : 476
+PDF size       : 2959 bytes
 
 PERFECT: Nom, Email, Phone, Address -> Experience -> Skills - ORDER 100% CORRECT

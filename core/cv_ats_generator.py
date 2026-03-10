@@ -1,35 +1,38 @@
 """
-ATS-Optimized CV PDF Generator — 10 Premium Dribbble-Inspired Designs.
+ATS-Optimized CV PDF Generator — Premium Designs (Canva/Novoresume/Dribbble Style)
 
-Key design principles from modern CV design trends (Dribbble/Freepik):
-  • Generous white space and margins (15-20mm)
-  • Clear typographic hierarchy: Name (26pt) > Title (13pt) > Section (11pt) > Body (10pt)
-  • Section headers: UPPERCASE + bold + HR separator underneath
-  • Contact info: Each field on its own labeled line (Email:, Phone:, Address:)
-  • Skills: Categorized, not dumped in one list
-  • Strong accent colors used sparingly for section markers and dividers
+Architecture (fixes all previous visibility issues):
+  • ALL text lives in the ReportLab story (Paragraph flowables) → always readable
+  • Canvas onPage only draws DECORATIVE elements (color bars, backgrounds) — NO text
+  • White or near-white body background → text is ALWAYS dark on light
+  • Header area uses a *light tint* background with DARK text (no contrast issue)
+  • 10 distinct themes across 3 design families
 
-Single-column layout ensures 100% ATS parsing compatibility.
-Text flows perfectly: Name → Contact → Summary → Experience → Projects →
-Education → Skills → Languages → Certifications
+Design families:
+  A) "Clean Corporate" — white bg, name top-left in dark, contact info as row under title,
+     section headers are bold uppercase + full-width accent line
+  B) "Left-Bar Modern" — thin 5pt left accent stripe, white body, clean typography
+  C) "Top-Band Tinted" — subtle light-tinted header area (NOT dark), dark text on it,
+     strong visual structure with accent lines
+
+ATS text order: Name → Email → Phone → Address → Summary →
+Experience → Projects → Education → Skills → Languages → Certifications
 """
 import io, re
 from typing import Dict, Any, List
 
-from reportlab.lib.pagesizes import LETTER, A4
-from reportlab.lib.colors import HexColor, black, white, Color
+from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.colors import HexColor, black, white
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
-from reportlab.lib.units import inch, mm
+from reportlab.lib.units import inch
 from reportlab.platypus import (
     BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer,
-    HRFlowable, KeepTogether, NextPageTemplate, Table, TableStyle
+    HRFlowable, KeepTogether, Table, TableStyle
 )
-from reportlab.lib import colors as rl_colors
-
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LANGUAGE DETECTION & BILINGUAL SECTION LABELS
+# LANGUAGE DETECTION
 # ─────────────────────────────────────────────────────────────────────────────
 _FR_MARKERS = [
     r"\bje\b", r"\bles\b", r"\bdes\b", r"\bune\b", r"\bdans\b",
@@ -38,609 +41,557 @@ _FR_MARKERS = [
     r"\bde\b", r"\bla\b", r"expérience", r"compétences", r"formation",
 ]
 
-
 def _detect_lang(cv_data: Dict[str, Any]) -> str:
-    """
-    Detect whether the CV is in French or English.
-    Returns 'fr' or 'en'.
-    """
-    # 1. Check explicit language field
     lang_field = str(cv_data.get("language", "") or cv_data.get("lang", "")).lower()
-    if "fr" in lang_field or "french" in lang_field or "fran" in lang_field:
+    if any(x in lang_field for x in ["fr", "french", "fran"]):
         return "fr"
-    if "en" in lang_field or "english" in lang_field:
+    if any(x in lang_field for x in ["en", "english"]):
         return "en"
-
-    # 2. Scan summary + title for French keywords
     sample = " ".join([
         cv_data.get("summary", "") or "",
         cv_data.get("title",   "") or "",
         " ".join(cv_data.get("languages", [])),
     ]).lower()
-
     fr_hits = sum(1 for p in _FR_MARKERS if re.search(p, sample))
     return "fr" if fr_hits >= 3 else "en"
 
-
 SECTION_LABELS = {
     "fr": {
-        "summary":   "Profil Professionnel",
-        "experience":"Expériences Professionnelles",
-        "projects":  "Projets & Réalisations",
-        "education": "Formation",
-        "skills":    "Compétences Techniques",
-        "languages": "Langues",
-        "certs":     "Certifications",
-        # Contact labels
-        "email":     "E-mail",
-        "phone":     "Téléphone",
-        "address":   "Adresse",
-        "linkedin":  "LinkedIn",
-        "github":    "GitHub",
+        "summary": "Profil Professionnel", "experience": "Expériences Professionnelles",
+        "projects": "Projets & Réalisations", "education": "Formation",
+        "skills": "Compétences Techniques", "languages": "Langues",
+        "certs": "Certifications",
+        "email": "E-mail", "phone": "Téléphone", "address": "Adresse",
+        "linkedin": "LinkedIn", "github": "GitHub",
     },
     "en": {
-        "summary":   "Professional Summary",
-        "experience":"Work Experience",
-        "projects":  "Projects & Achievements",
-        "education": "Education",
-        "skills":    "Technical Skills",
-        "languages": "Languages",
-        "certs":     "Certifications",
-        # Contact labels
-        "email":     "Email",
-        "phone":     "Phone",
-        "address":   "Address",
-        "linkedin":  "LinkedIn",
-        "github":    "GitHub",
+        "summary": "Professional Summary", "experience": "Work Experience",
+        "projects": "Projects & Achievements", "education": "Education",
+        "skills": "Technical Skills", "languages": "Languages",
+        "certs": "Certifications",
+        "email": "Email", "phone": "Phone", "address": "Address",
+        "linkedin": "LinkedIn", "github": "GitHub",
     },
 }
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# 10 PREMIUM THEMES
+# 10 THEMES — 3 design families
 # ─────────────────────────────────────────────────────────────────────────────
-ATS_THEMES = {
-    # 1. Clean Navy Executive — dark navy header, white body, gold accent
+# Design family key: "A" = Clean Corporate, "B" = Left-Bar, "C" = Tinted Header
+THEMES = {
+    # ── FAMILY A: Clean Corporate (bright white, dark text, accent on sections) ──
     "midnight": {
-        "name": "Navy Executive",
-        "header_bg":   "#112240",   # deep navy
-        "header_text": "#CCD6F6",   # light lavender-white
-        "header_sub":  "#8892B0",   # muted blue-grey
-        "accent":      "#64FFDA",   # teal-mint accent
-        "body_bg":     "#FFFFFF",
-        "body_text":   "#1A1A2E",   # almost black
-        "section_title": "#112240", # matches header
-        "hr_color":    "#64FFDA",
-        "font_name":   "Helvetica-Bold",
-        "font_body":   "Helvetica",
-        "font_bold":   "Helvetica-Bold",
+        "family": "A",
+        "name_color":    "#0F172A",  # near-black navy
+        "title_color":   "#1E40AF",  # blue
+        "contact_color": "#374151",
+        "section_color": "#0F172A",
+        "hr_color":      "#1E40AF",
+        "body_text":     "#1F2937",
+        "meta_color":    "#6B7280",
+        "accent":        "#1E40AF",
+        "body_bg":       "#FFFFFF",
+        "header_tint":   "#F0F4FF",  # very light blue tint for header area
+        "left_bar":      None,
+        "font_name":     "Helvetica-Bold",
+        "font_body":     "Helvetica",
+        "font_bold":     "Helvetica-Bold",
     },
-    # 2. Emerald Success — dark green header, clean white body
     "emerald": {
-        "name": "Emerald Executive",
-        "header_bg":   "#044D37",
-        "header_text": "#ECFDF5",
-        "header_sub":  "#6EE7B7",
-        "accent":      "#10B981",
-        "body_bg":     "#FFFFFF",
-        "body_text":   "#1F2937",
-        "section_title":"#044D37",
-        "hr_color":    "#10B981",
-        "font_name":   "Helvetica-Bold",
-        "font_body":   "Helvetica",
-        "font_bold":   "Helvetica-Bold",
+        "family": "A",
+        "name_color":    "#064E3B",
+        "title_color":   "#059669",
+        "contact_color": "#374151",
+        "section_color": "#064E3B",
+        "hr_color":      "#059669",
+        "body_text":     "#1F2937",
+        "meta_color":    "#6B7280",
+        "accent":        "#059669",
+        "body_bg":       "#FFFFFF",
+        "header_tint":   "#ECFDF5",
+        "left_bar":      None,
+        "font_name":     "Helvetica-Bold",
+        "font_body":     "Helvetica",
+        "font_bold":     "Helvetica-Bold",
     },
-    # 3. Violet Modern — rich purple header, clean body
     "modern": {
-        "name": "Violet Modern",
-        "header_bg":   "#3B0764",
-        "header_text": "#F5F3FF",
-        "header_sub":  "#C4B5FD",
-        "accent":      "#8B5CF6",
-        "body_bg":     "#FFFFFF",
-        "body_text":   "#1E1B4B",
-        "section_title":"#3B0764",
-        "hr_color":    "#8B5CF6",
-        "font_name":   "Helvetica-Bold",
-        "font_body":   "Helvetica",
-        "font_bold":   "Helvetica-Bold",
+        "family": "A",
+        "name_color":    "#2E1065",
+        "title_color":   "#7C3AED",
+        "contact_color": "#374151",
+        "section_color": "#2E1065",
+        "hr_color":      "#7C3AED",
+        "body_text":     "#1F2937",
+        "meta_color":    "#6B7280",
+        "accent":        "#7C3AED",
+        "body_bg":       "#FFFFFF",
+        "header_tint":   "#F5F3FF",
+        "left_bar":      None,
+        "font_name":     "Helvetica-Bold",
+        "font_body":     "Helvetica",
+        "font_bold":     "Helvetica-Bold",
     },
-    # 4. Clean Professional — light grey header, strong blue accent (ATS #1 pick)
-    "minimal": {
-        "name": "Clean Professional",
-        "header_bg":   "#F8FAFC",
-        "header_text": "#0F172A",
-        "header_sub":  "#475569",
-        "accent":      "#1D4ED8",
-        "body_bg":     "#FFFFFF",
-        "body_text":   "#1E293B",
-        "section_title":"#1D4ED8",
-        "hr_color":    "#1D4ED8",
-        "font_name":   "Times-Bold",
-        "font_body":   "Times-Roman",
-        "font_bold":   "Times-Bold",
-    },
-    # 5. Rose Creative — dark charcoal header, rose-red accent
-    "bold": {
-        "name": "Rose Creative",
-        "header_bg":   "#1C1C1E",
-        "header_text": "#F9FAFB",
-        "header_sub":  "#9CA3AF",
-        "accent":      "#E11D48",
-        "body_bg":     "#FFFFFF",
-        "body_text":   "#111827",
-        "section_title":"#1C1C1E",
-        "hr_color":    "#E11D48",
-        "font_name":   "Helvetica-Bold",
-        "font_body":   "Helvetica",
-        "font_bold":   "Helvetica-Bold",
-    },
-    # 6. Corporate Blue — steel blue header, professional look
-    "banker": {
-        "name": "Corporate Blue",
-        "header_bg":   "#1E3A5F",
-        "header_text": "#EFF6FF",
-        "header_sub":  "#93C5FD",
-        "accent":      "#2563EB",
-        "body_bg":     "#FFFFFF",
-        "body_text":   "#1E293B",
-        "section_title":"#1E3A5F",
-        "hr_color":    "#2563EB",
-        "font_name":   "Helvetica-Bold",
-        "font_body":   "Helvetica",
-        "font_bold":   "Helvetica-Bold",
-    },
-    # 7. Tech Terminal — pure black header, neon green accent
-    "tech": {
-        "name": "Tech Terminal",
-        "header_bg":   "#090909",
-        "header_text": "#39FF14",
-        "header_sub":  "#4ADE80",
-        "accent":      "#22C55E",
-        "body_bg":     "#FAFAFA",
-        "body_text":   "#111827",
-        "section_title":"#090909",
-        "hr_color":    "#22C55E",
-        "font_name":   "Courier-Bold",
-        "font_body":   "Courier",
-        "font_bold":   "Courier-Bold",
-    },
-    # 8. Classic Ivory — white header, burgundy/deep red accent, serif
     "classic": {
-        "name": "Classic Ivory",
-        "header_bg":   "#FFFDF7",
-        "header_text": "#1C1917",
-        "header_sub":  "#78716C",
-        "accent":      "#9B2335",
-        "body_bg":     "#FFFFFF",
-        "body_text":   "#1C1917",
-        "section_title":"#9B2335",
-        "hr_color":    "#9B2335",
-        "font_name":   "Times-Bold",
-        "font_body":   "Times-Roman",
-        "font_bold":   "Times-Bold",
+        "family": "A",
+        "name_color":    "#1C1917",
+        "title_color":   "#9B2335",
+        "contact_color": "#44403C",
+        "section_color": "#9B2335",
+        "hr_color":      "#9B2335",
+        "body_text":     "#1C1917",
+        "meta_color":    "#78716C",
+        "accent":        "#9B2335",
+        "body_bg":       "#FFFFFF",
+        "header_tint":   "#FFF7F7",
+        "left_bar":      None,
+        "font_name":     "Times-Bold",
+        "font_body":     "Times-Roman",
+        "font_bold":     "Times-Bold",
     },
-    # 9. Sunset Vibrant — deep red header, warm orange accent
+    # ── FAMILY B: Left-Bar Modern ─────────────────────────────────────────────
+    "bold": {
+        "family": "B",
+        "name_color":    "#111827",
+        "title_color":   "#E11D48",
+        "contact_color": "#374151",
+        "section_color": "#111827",
+        "hr_color":      "#E11D48",
+        "body_text":     "#1F2937",
+        "meta_color":    "#6B7280",
+        "accent":        "#E11D48",
+        "body_bg":       "#FFFFFF",
+        "header_tint":   "#FFFFFF",
+        "left_bar":      "#E11D48",
+        "font_name":     "Helvetica-Bold",
+        "font_body":     "Helvetica",
+        "font_bold":     "Helvetica-Bold",
+    },
+    "banker": {
+        "family": "B",
+        "name_color":    "#1E3A5F",
+        "title_color":   "#2563EB",
+        "contact_color": "#374151",
+        "section_color": "#1E3A5F",
+        "hr_color":      "#2563EB",
+        "body_text":     "#1E293B",
+        "meta_color":    "#6B7280",
+        "accent":        "#2563EB",
+        "body_bg":       "#FFFFFF",
+        "header_tint":   "#FFFFFF",
+        "left_bar":      "#1E3A5F",
+        "font_name":     "Helvetica-Bold",
+        "font_body":     "Helvetica",
+        "font_bold":     "Helvetica-Bold",
+    },
     "vibrant": {
-        "name": "Sunset Vibrant",
-        "header_bg":   "#7F1D1D",
-        "header_text": "#FFF7ED",
-        "header_sub":  "#FCA5A5",
-        "accent":      "#F97316",
-        "body_bg":     "#FFFFFF",
-        "body_text":   "#1C0A00",
-        "section_title":"#7F1D1D",
-        "hr_color":    "#F97316",
-        "font_name":   "Helvetica-Bold",
-        "font_body":   "Helvetica",
-        "font_bold":   "Helvetica-Bold",
+        "family": "B",
+        "name_color":    "#7F1D1D",
+        "title_color":   "#F97316",
+        "contact_color": "#374151",
+        "section_color": "#7F1D1D",
+        "hr_color":      "#F97316",
+        "body_text":     "#1C1917",
+        "meta_color":    "#78716C",
+        "accent":        "#F97316",
+        "body_bg":       "#FFFFFF",
+        "header_tint":   "#FFFFFF",
+        "left_bar":      "#F97316",
+        "font_name":     "Helvetica-Bold",
+        "font_body":     "Helvetica",
+        "font_bold":     "Helvetica-Bold",
     },
-    # 10. Gold Luxury — near-black header, warm gold accent, serif body
+    # ── FAMILY C: Tinted Header (light tint bg on header, dark text) ──────────
+    "minimal": {
+        "family": "C",
+        "name_color":    "#0F172A",
+        "title_color":   "#475569",
+        "contact_color": "#374151",
+        "section_color": "#1D4ED8",
+        "hr_color":      "#1D4ED8",
+        "body_text":     "#1E293B",
+        "meta_color":    "#6B7280",
+        "accent":        "#1D4ED8",
+        "body_bg":       "#FFFFFF",
+        "header_tint":   "#F1F5F9",  # slate-100
+        "left_bar":      None,
+        "font_name":     "Times-Bold",
+        "font_body":     "Times-Roman",
+        "font_bold":     "Times-Bold",
+    },
+    "tech": {
+        "family": "C",
+        "name_color":    "#022C22",
+        "title_color":   "#15803D",
+        "contact_color": "#374151",
+        "section_color": "#15803D",
+        "hr_color":      "#15803D",
+        "body_text":     "#111827",
+        "meta_color":    "#6B7280",
+        "accent":        "#15803D",
+        "body_bg":       "#FFFFFF",
+        "header_tint":   "#F0FDF4",  # green-50
+        "left_bar":      None,
+        "font_name":     "Courier-Bold",
+        "font_body":     "Courier",
+        "font_bold":     "Courier-Bold",
+    },
     "luxury": {
-        "name": "Gold Luxury",
-        "header_bg":   "#1A1208",
-        "header_text": "#FEF3C7",
-        "header_sub":  "#FCD34D",
-        "accent":      "#D97706",
-        "body_bg":     "#FFFBF0",
-        "body_text":   "#1C1208",
-        "section_title":"#92400E",
-        "hr_color":    "#D97706",
-        "font_name":   "Times-Bold",
-        "font_body":   "Times-Roman",
-        "font_bold":   "Times-Bold",
+        "family": "C",
+        "name_color":    "#1C1208",
+        "title_color":   "#92400E",
+        "contact_color": "#44403C",
+        "section_color": "#92400E",
+        "hr_color":      "#D97706",
+        "body_text":     "#1C1208",
+        "meta_color":    "#78716C",
+        "accent":        "#D97706",
+        "body_bg":       "#FFFDF5",
+        "header_tint":   "#FEF3C7",  # amber-100
+        "left_bar":      None,
+        "font_name":     "Times-Bold",
+        "font_body":     "Times-Roman",
+        "font_bold":     "Times-Bold",
     },
 }
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
 def _c(s) -> str:
-    """Strip and return empty string for None."""
     return (s or "").strip()
 
-
-def _fmt_bullet(item) -> str:
-    """Strip leading bullet chars from a bullet string."""
+def _fmt(item) -> str:
     if isinstance(item, str):
         return item.strip().lstrip("•·▸▹-–—").strip()
     return str(item)
 
-
-def _build_styles(theme: dict) -> dict:
-    """Build all paragraph styles from the theme config."""
-    fb  = theme["font_body"]
-    fbd = theme["font_bold"]
-    fn  = theme["font_name"]        # name/display font
-    acc = HexColor(theme["accent"])
-    txt = HexColor(theme["body_text"])
-    sec = HexColor(theme["section_title"])
-    h_txt = HexColor(theme["header_text"])
-    h_sub = HexColor(theme["header_sub"])
-
-    base = getSampleStyleSheet()
-    N    = base["Normal"]
+def _styles(t: dict) -> dict:
+    fb  = t["font_body"]
+    fbd = t["font_bold"]
+    fn  = t["font_name"]
+    N   = getSampleStyleSheet()["Normal"]
+    txt = HexColor(t["body_text"])
+    sec = HexColor(t["section_color"])
+    met = HexColor(t["meta_color"])
+    nmc = HexColor(t["name_color"])
+    tic = HexColor(t["title_color"])
+    ctc = HexColor(t["contact_color"])
 
     return {
-        # ── Header area (sits on top colored band) ────────────────────────────
-        "NAME": ParagraphStyle("ats_name", parent=N,
-            fontName=fn, fontSize=28, leading=33,
-            textColor=h_txt, spaceAfter=4,
-            textTransform="uppercase", letterSpacing=2,
+        # ── Header block ──────────────────────────────────────────────────────
+        "NAME": ParagraphStyle("cv_name", parent=N,
+            fontName=fn, fontSize=28, leading=32,
+            textColor=nmc, spaceAfter=4,
+            textTransform="uppercase", letterSpacing=1.5,
         ),
-        "JOB_TITLE_HDR": ParagraphStyle("ats_job_hdr", parent=N,
-            fontName=fb, fontSize=13, leading=17,
-            textColor=h_sub, spaceAfter=8,
-            letterSpacing=0.5,
+        "JOB_TITLE": ParagraphStyle("cv_job_hdr", parent=N,
+            fontName=fbd, fontSize=13, leading=17,
+            textColor=tic, spaceAfter=6,
         ),
-        "CONTACT_LINE": ParagraphStyle("ats_contact", parent=N,
-            fontName=fb, fontSize=9, leading=14,
-            textColor=h_txt, spaceAfter=1,
+        "CONTACT_ITEM": ParagraphStyle("cv_contact_item", parent=N,
+            fontName=fb, fontSize=9, leading=13,
+            textColor=ctc, spaceAfter=1,
+        ),
+        "CONTACT_INLINE": ParagraphStyle("cv_contact_inline", parent=N,
+            fontName=fb, fontSize=9, leading=13,
+            textColor=ctc, spaceAfter=0,
         ),
         # ── Section title ─────────────────────────────────────────────────────
-        "SECTION": ParagraphStyle("ats_section", parent=N,
-            fontName=fbd, fontSize=10.5, leading=13,
-            textColor=sec, spaceBefore=14, spaceAfter=2,
-            textTransform="uppercase", letterSpacing=2,
+        "SECTION": ParagraphStyle("cv_section", parent=N,
+            fontName=fbd, fontSize=11, leading=14,
+            textColor=sec, spaceBefore=14, spaceAfter=1,
+            textTransform="uppercase", letterSpacing=1.8,
         ),
         # ── Experience entry ──────────────────────────────────────────────────
-        "EXP_TITLE": ParagraphStyle("ats_exp_title", parent=N,
-            fontName=fbd, fontSize=10.5, leading=14,
+        "EXP_TITLE": ParagraphStyle("cv_exp", parent=N,
+            fontName=fbd, fontSize=11, leading=15,
             textColor=txt, spaceBefore=7, spaceAfter=1,
         ),
-        "EXP_COMPANY": ParagraphStyle("ats_company", parent=N,
-            fontName=fb, fontSize=9.5, leading=13,
-            textColor=HexColor("#4B5563"), spaceAfter=2,
+        "EXP_META": ParagraphStyle("cv_meta", parent=N,
+            fontName=fb, fontSize=9, leading=12,
+            textColor=met, spaceAfter=3,
         ),
-        "EXP_META": ParagraphStyle("ats_meta", parent=N,
-            fontName=fb, fontSize=8.5, leading=12,
-            textColor=HexColor("#6B7280"), spaceAfter=3,
-        ),
-        # ── Body text & bullet ────────────────────────────────────────────────
-        "BODY": ParagraphStyle("ats_body", parent=N,
+        # ── Body ──────────────────────────────────────────────────────────────
+        "BODY": ParagraphStyle("cv_body", parent=N,
             fontName=fb, fontSize=10, leading=15,
             textColor=txt, spaceAfter=3,
         ),
-        "BULLET": ParagraphStyle("ats_bullet", parent=N,
+        "BULLET": ParagraphStyle("cv_bullet", parent=N,
             fontName=fb, fontSize=9.5, leading=14,
             textColor=txt, spaceAfter=2,
-            leftIndent=12, firstLineIndent=-8,
+            leftIndent=14, firstLineIndent=-10,
         ),
-        # ── Skill category & values ───────────────────────────────────────────
-        "SKILL_CAT": ParagraphStyle("ats_skill_cat", parent=N,
+        # ── Skills ────────────────────────────────────────────────────────────
+        "SKILL_CAT": ParagraphStyle("cv_skill_cat", parent=N,
             fontName=fbd, fontSize=9.5, leading=13,
             textColor=sec, spaceBefore=4, spaceAfter=1,
         ),
-        "SKILL_VAL": ParagraphStyle("ats_skill_val", parent=N,
+        "SKILL_VAL": ParagraphStyle("cv_skill_val", parent=N,
             fontName=fb, fontSize=9.5, leading=13,
-            textColor=txt, spaceAfter=5,
+            textColor=txt, spaceAfter=4,
         ),
     }
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN GENERATOR
+# ─────────────────────────────────────────────────────────────────────────────
 def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> bytes:
     """
-    Generate a premium, single-column ATS-compatible PDF CV.
+    Generate a premium ATS-compatible PDF CV.
 
-    Visual design (Dribbble-inspired):
-      ┌───────────────────────────────────────────────────────────┐
-      │  ██████  HEADER BAND (name, title, labeled contacts)     │
-      │  ██████  Background: theme header_bg color               │
-      ├─ accent line ─────────────────────────────────────────────┤
-      │                                                           │
-      │  PROFESSIONAL SUMMARY                                     │
-      │  ─────────────────────                                    │
-      │  Body text...                                             │
-      │                                                           │
-      │  WORK EXPERIENCE                                          │
-      │  ─────────────────────                                    │
-      │  Job Title          Company       Date Range             │
-      │  • Bullet with strong action verb + tech + metric         │
-      │                                                           │
-      │  TECHNICAL SKILLS                                         │
-      │  ─────────────────────                                    │
-      │  CATEGORY: Item · Item · Item                            │
-      └───────────────────────────────────────────────────────────┘
+    ALL text flows through the story (ReportLab Paragraph flowables) — never
+    drawn on canvas — so every theme is guaranteed readable.
 
-    ATS text order: Name → Email → Phone → Address → Summary →
-    Experience → Projects → Education → Skills → Languages → Certs
+    Canvas onPage only adds lightweight decorative elements:
+    Family A: light tinted rectangle behind name/header area
+    Family B: thin 5pt colored vertical bar on the left edge
+    Family C: same light tinted rectangle + thin bottom accent line
     """
-    theme  = ATS_THEMES.get(theme_id, ATS_THEMES["midnight"])
-    styles = _build_styles(theme)
+    t      = THEMES.get(theme_id, THEMES["midnight"])
+    S      = _styles(t)
+    lang   = _detect_lang(cv_data)
+    lbl    = SECTION_LABELS[lang]
+    family = t["family"]
 
     buf    = io.BytesIO()
     PAGE_W, PAGE_H = LETTER
 
-    # ── Layout measurements ────────────────────────────────────────────────────
-    MAR_L    = 0.7  * inch
-    MAR_R    = 0.7  * inch
-    MAR_T    = 0.5  * inch
-    MAR_B    = 0.5  * inch
-    HEADER_H = 1.45 * inch     # colored band height on page 1
-    ACCENT_BAR = 3             # bottom accent bar of header
+    # ── Margins ───────────────────────────────────────────────────────────────
+    MAR_L  = 0.7 * inch
+    MAR_R  = 0.7 * inch
+    MAR_T  = 0.5 * inch
+    MAR_B  = 0.55 * inch
+    BAR_W  = 5           # left bar width for family B (points)
 
-    acc_c    = HexColor(theme["accent"])
-    hdr_bg_c = HexColor(theme["header_bg"])
-    body_bg_c = HexColor(theme["body_bg"])
+    acc_c      = HexColor(t["accent"])
+    body_bg_c  = HexColor(t["body_bg"])
+    tint_c     = HexColor(t["header_tint"])
+    bar_c      = HexColor(t["left_bar"]) if t["left_bar"] else None
 
-    # Pre-compute contact info for canvas drawing
-    lang = _detect_lang(cv_data)
-    lbl  = SECTION_LABELS[lang]
-    name     = _c(cv_data.get("full_name", "")).upper()
-    job_title = _c(cv_data.get("title", ""))
-    contact_lines = []
-    for key in ["email", "phone", "address", "linkedin", "github"]:
-        src = "location" if key == "address" else key
-        val = _c(cv_data.get(src, ""))
-        if val:
-            contact_lines.append(f"{lbl[key]}: {val}")
+    # Estimated header height = name(32) + title(17) + contacts(13 * up to 5) + spacers
+    HEADER_H = 1.55 * inch    # visual header block height (used for tint rect only)
 
-    hdr_txt   = HexColor(theme["header_text"])
-    hdr_sub_c = HexColor(theme["header_sub"])
-    font_bold = theme["font_bold"]
-    font_body = theme["font_body"]
-
-    # ── Page callbacks — draw header text directly on canvas ──
-    def _page1(canvas, doc):
+    # ── Page decorations (NO text on canvas) ─────────────────────────────────
+    def _decorate_p1(canvas, doc):
         canvas.saveState()
-        # 1. Body background
+        # Full page body background
         canvas.setFillColor(body_bg_c)
-        canvas.rect(0, 0, PAGE_W, PAGE_H - HEADER_H - ACCENT_BAR, fill=1, stroke=0)
-        # 2. Header colored band
-        canvas.setFillColor(hdr_bg_c)
-        canvas.rect(0, PAGE_H - HEADER_H, PAGE_W, HEADER_H, fill=1, stroke=0)
-        # 3. Accent bar below header
-        canvas.setFillColor(acc_c)
-        canvas.rect(0, PAGE_H - HEADER_H - ACCENT_BAR, PAGE_W, ACCENT_BAR, fill=1, stroke=0)
+        canvas.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
 
-        # 4. Draw header text directly inside the colored band
-        PAD_X    = MAR_L
-        name_y   = PAGE_H - MAR_T - 0.38 * inch
-        title_y  = name_y - 0.30 * inch
-        contact_y_start = title_y - 0.22 * inch
-
-        # Name
-        canvas.setFillColor(hdr_txt)
-        canvas.setFont(font_bold, 24)
-        canvas.drawString(PAD_X, name_y, name)
-
-        # Job title
-        if job_title:
-            canvas.setFillColor(hdr_sub_c)
-            canvas.setFont(font_body, 12)
-            canvas.drawString(PAD_X, title_y, job_title)
-
-        # Contacts — each on its own line, clearly labeled
-        canvas.setFillColor(hdr_txt)
-        canvas.setFont(font_body, 8.5)
-        cy = contact_y_start
-        for line in contact_lines:
-            canvas.drawString(PAD_X, cy, line)
-            cy -= 13
-
+        if family in ("A", "C"):
+            # Light tinted header area rectangle
+            canvas.setFillColor(tint_c)
+            canvas.rect(0, PAGE_H - HEADER_H - MAR_T, PAGE_W, HEADER_H + MAR_T, fill=1, stroke=0)
+            if family == "C":
+                # Accent bottom border of header tint
+                canvas.setFillColor(acc_c)
+                canvas.rect(0, PAGE_H - HEADER_H - MAR_T - 3, PAGE_W, 3, fill=1, stroke=0)
+        elif family == "B" and bar_c:
+            # Thin vertical left bar — full page height
+            canvas.setFillColor(bar_c)
+            canvas.rect(0, 0, BAR_W, PAGE_H, fill=1, stroke=0)
         canvas.restoreState()
 
-    def _page2(canvas, doc):
+    def _decorate_p2(canvas, doc):
         canvas.saveState()
         canvas.setFillColor(body_bg_c)
         canvas.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
-        # Subtle top accent line on continuation pages
+        # Thin accent top bar on continuation pages
         canvas.setFillColor(acc_c)
         canvas.rect(0, PAGE_H - 4, PAGE_W, 4, fill=1, stroke=0)
+        if family == "B" and bar_c:
+            canvas.setFillColor(bar_c)
+            canvas.rect(0, 0, BAR_W, PAGE_H, fill=1, stroke=0)
         canvas.restoreState()
 
     # ── Frames ────────────────────────────────────────────────────────────────
-    body_x = MAR_L
-    body_w = PAGE_W - MAR_L - MAR_R
+    content_x = MAR_L + (BAR_W + 4 if family == "B" else 0)
+    content_w = PAGE_W - content_x - MAR_R
 
-    frame_p1 = Frame(
-        body_x, MAR_B, body_w, PAGE_H - MAR_T - MAR_B,
-        leftPadding=0, rightPadding=0,
-        topPadding=HEADER_H + ACCENT_BAR + 8,
-        bottomPadding=0, id="f_p1",
-    )
-    frame_p2 = Frame(
-        body_x, MAR_B, body_w, PAGE_H - MAR_T - MAR_B,
-        leftPadding=0, rightPadding=0,
-        topPadding=12, bottomPadding=0, id="f_p2",
-    )
+    frame_p1 = Frame(content_x, MAR_B, content_w, PAGE_H - MAR_T - MAR_B,
+                     leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0, id="p1")
+    frame_p2 = Frame(content_x, MAR_B, content_w, PAGE_H - MAR_T - MAR_B,
+                     leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0, id="p2")
 
-    doc = BaseDocTemplate(
-        buf, pagesize=LETTER,
-        leftMargin=MAR_L, rightMargin=MAR_R,
-        topMargin=MAR_T, bottomMargin=MAR_B,
-    )
+    doc = BaseDocTemplate(buf, pagesize=LETTER,
+                          leftMargin=MAR_L, rightMargin=MAR_R,
+                          topMargin=MAR_T, bottomMargin=MAR_B)
     doc.addPageTemplates([
-        PageTemplate(id="P1", frames=[frame_p1], onPage=_page1),
-        PageTemplate(id="P2", frames=[frame_p2], onPage=_page2),
+        PageTemplate(id="P1", frames=[frame_p1], onPage=_decorate_p1),
+        PageTemplate(id="P2", frames=[frame_p2], onPage=_decorate_p2),
     ])
-
-    # Detect language — already done above for canvas header
-    # lbl and lang are available from canvas closure
 
     story: List = []
 
-    # Note: Name, Title, Contacts are drawn on canvas in _page1 callback.
-    # Story starts with body content only.
-    # The ATS text layer must still include contact info for parsers.
-    # We inject it as invisible 1pt white text at top-left (safe, not spam —
-    # it duplicates the canvas text which ATS reads via glyph extraction).
-    from reportlab.platypus import Flowable
+    # ═══════════════════════════════════════════════════════
+    # HEADER — Name, Title, Contacts (all inside story)
+    # ═══════════════════════════════════════════════════════
+    name        = _c(cv_data.get("full_name", ""))
+    job_title   = _c(cv_data.get("title", ""))
+    email       = _c(cv_data.get("email",    ""))
+    phone       = _c(cv_data.get("phone",    ""))
+    location    = _c(cv_data.get("location", ""))
+    linkedin    = _c(cv_data.get("linkedin", ""))
+    github      = _c(cv_data.get("github",   ""))
 
-    class _ATSInvisibleContact(Flowable):
-        """Invisible ATS anchor: injects name+contact as 1pt white text so
-        text-layer-based ATS (like Jobscan) can also extract the header info."""
-        def __init__(self, lines: List[str]):
-            Flowable.__init__(self)
-            self.lines = lines
-            self.height = 0   # takes no visual space
-            self.width  = 0
+    story.append(Paragraph(name.upper(), S["NAME"]))
+    if job_title:
+        story.append(Paragraph(job_title, S["JOB_TITLE"]))
 
-        def draw(self):
-            c = self.canv
-            c.saveState()
-            c.setFillColor(white)
-            c.setFont("Helvetica", 1)
-            y = 0
-            for line in self.lines:
-                c.drawString(0, y, line)
-                y += 1
-            c.restoreState()
+    # Contact info: compact two-column table for Families A,C; vertical list for B
+    contact_items = []
+    if email:    contact_items.append(f"{lbl['email']}: {email}")
+    if phone:    contact_items.append(f"{lbl['phone']}: {phone}")
+    if location: contact_items.append(f"{lbl['address']}: {location}")
+    if linkedin: contact_items.append(f"{lbl['linkedin']}: {linkedin}")
+    if github:   contact_items.append(f"{lbl['github']}: {github}")
 
-    ats_header_lines = [name, job_title] + contact_lines
-    story.append(_ATSInvisibleContact(ats_header_lines))
+    if contact_items:
+        if family in ("A", "C") and len(contact_items) >= 2:
+            # 2-column contact table (max 3 items per column)
+            left_col  = contact_items[:3]
+            right_col = contact_items[3:]
+            rows = max(len(left_col), len(right_col))
+            data = []
+            for i in range(rows):
+                l = Paragraph(left_col[i],  S["CONTACT_INLINE"]) if i < len(left_col)  else Paragraph("", S["CONTACT_INLINE"])
+                r = Paragraph(right_col[i], S["CONTACT_INLINE"]) if i < len(right_col) else Paragraph("", S["CONTACT_INLINE"])
+                data.append([l, r])
+            ct = Table(data, colWidths=[content_w * 0.52, content_w * 0.48])
+            ct.setStyle(TableStyle([
+                ("VALIGN",       (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING",  (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING",   (0, 0), (-1, -1), 1),
+                ("BOTTOMPADDING",(0, 0), (-1, -1), 1),
+            ]))
+            story.append(ct)
+        else:
+            for item in contact_items:
+                story.append(Paragraph(item, S["CONTACT_ITEM"]))
 
-    # ── Section separator helper ───────────────────────────────────────────────
-    def add_section(title_text: str):
-        story.append(Paragraph(title_text, styles["SECTION"]))
-        story.append(HRFlowable(
-            width="100%", thickness=1.0, color=acc_c,
-            spaceBefore=2, spaceAfter=6,
-        ))
+    story.append(Spacer(1, 14))
 
-    # ════════════════════════════════════════════
-    # 2. PROFESSIONAL SUMMARY
-    # ════════════════════════════════════════════
+    # ── Section separator ─────────────────────────────────────────────────────
+    def add_section(label: str):
+        story.append(Paragraph(label, S["SECTION"]))
+        story.append(HRFlowable(width="100%", thickness=1.2, color=acc_c,
+                                spaceBefore=2, spaceAfter=7))
+
+    # ─────────────────────────────────────────────────────
+    # PROFESSIONAL SUMMARY
+    # ─────────────────────────────────────────────────────
     summary = _c(cv_data.get("summary", ""))
     if summary:
         add_section(lbl["summary"])
-        story.append(Paragraph(summary, styles["BODY"]))
+        story.append(Paragraph(summary, S["BODY"]))
         story.append(Spacer(1, 4))
 
-    # ════════════════════════════════════════════
-    # 3. WORK EXPERIENCE
-    # ════════════════════════════════════════════
+    # ─────────────────────────────────────────────────────
+    # WORK EXPERIENCE
+    # ─────────────────────────────────────────────────────
     experiences = cv_data.get("experiences", [])
     if experiences:
         add_section(lbl["experience"])
         for exp in experiences:
-            role    = _c(exp.get("title",      ""))
-            company = _c(exp.get("company",    ""))
-            loc     = _c(exp.get("location",   ""))
+            role    = _c(exp.get("title", ""))
+            company = _c(exp.get("company", ""))
+            loc     = _c(exp.get("location", ""))
             start   = _c(exp.get("start_date", ""))
-            end     = _c(exp.get("end_date",   ""))
+            end     = _c(exp.get("end_date", ""))
             bullets = exp.get("bullets", [])
-
-            date_range = f"{start} – {end}" if start and end else start or end
+            date_str = f"{start} – {end}" if start and end else start or end
 
             block = []
-            # Row 1: Job title |  date range right-aligned
-            if date_range:
-                # Use a two-column mini-table for title + date alignment
-                title_para = Paragraph(f"<b>{role}</b>", styles["EXP_TITLE"])
-                date_para  = Paragraph(date_range, ParagraphStyle(
-                    "exp_date_r", parent=styles["EXP_META"],
-                    alignment=TA_RIGHT, spaceBefore=8, spaceAfter=1,
-                ))
-                tbl = Table([[title_para, date_para]],
-                            colWidths=[body_w * 0.68, body_w * 0.32])
+            # Title + date on same row (table for right-alignment of date)
+            t_para = Paragraph(f"<b>{role}</b>", S["EXP_TITLE"])
+            d_para = Paragraph(date_str, ParagraphStyle("exp_date", parent=S["EXP_META"],
+                                alignment=TA_RIGHT, spaceBefore=8, spaceAfter=1))
+            if date_str:
+                tbl = Table([[t_para, d_para]], colWidths=[content_w * 0.65, content_w * 0.35])
                 tbl.setStyle(TableStyle([
-                    ("VALIGN",      (0, 0), (-1, -1), "BOTTOM"),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                    ("RIGHTPADDING",(0, 0), (-1, -1), 0),
-                    ("TOPPADDING",  (0, 0), (-1, -1), 0),
-                    ("BOTTOMPADDING",(0, 0),(-1, -1), 0),
+                    ("VALIGN", (0,0),(-1,-1),"BOTTOM"),
+                    ("LEFTPADDING", (0,0),(-1,-1),0),
+                    ("RIGHTPADDING",(0,0),(-1,-1),0),
+                    ("TOPPADDING",  (0,0),(-1,-1),0),
+                    ("BOTTOMPADDING",(0,0),(-1,-1),0),
                 ]))
                 block.append(tbl)
             else:
-                block.append(Paragraph(f"<b>{role}</b>", styles["EXP_TITLE"]))
+                block.append(t_para)
 
-            # Row 2: Company + location
-            co_line = company
-            if loc:
-                co_line += f"  ·  {loc}" if co_line else loc
-            if co_line:
-                block.append(Paragraph(co_line, styles["EXP_COMPANY"]))
+            # Company · Location
+            co_meta = "  ·  ".join(filter(None, [company, loc]))
+            if co_meta:
+                block.append(Paragraph(co_meta, S["EXP_META"]))
 
-            # Bullets
             for b in bullets:
-                clean_b = _fmt_bullet(b)
-                if clean_b:
-                    block.append(Paragraph(f"▸  {clean_b}", styles["BULLET"]))
+                txt_b = _fmt(b)
+                if txt_b:
+                    block.append(Paragraph(f"▸  {txt_b}", S["BULLET"]))
             block.append(Spacer(1, 5))
             story.append(KeepTogether(block))
 
-    # ════════════════════════════════════════════
-    # 4. PROJECTS
-    # ════════════════════════════════════════════
+    # ─────────────────────────────────────────────────────
+    # PROJECTS
+    # ─────────────────────────────────────────────────────
     projects = cv_data.get("projects", [])
     if projects:
         add_section(lbl["projects"])
         for proj in projects:
-            pname    = _c(proj.get("name",        ""))
-            pdesc    = _c(proj.get("description", ""))
-            pbullets = proj.get("bullets", [])
-            block = [Paragraph(f"<b>{pname}</b>", styles["EXP_TITLE"])]
+            pname = _c(proj.get("name", ""))
+            pdesc = _c(proj.get("description", ""))
+            block = [Paragraph(f"<b>{pname}</b>", S["EXP_TITLE"])]
             if pdesc:
-                block.append(Paragraph(pdesc, styles["BODY"]))
-            for b in pbullets:
-                clean_b = _fmt_bullet(b)
-                if clean_b:
-                    block.append(Paragraph(f"▸  {clean_b}", styles["BULLET"]))
+                block.append(Paragraph(pdesc, S["BODY"]))
+            for b in proj.get("bullets", []):
+                txt_b = _fmt(b)
+                if txt_b:
+                    block.append(Paragraph(f"▸  {txt_b}", S["BULLET"]))
             block.append(Spacer(1, 5))
             story.append(KeepTogether(block))
 
-    # ════════════════════════════════════════════
-    # 5. EDUCATION
-    # ════════════════════════════════════════════
+    # ─────────────────────────────────────────────────────
+    # EDUCATION
+    # ─────────────────────────────────────────────────────
     education = cv_data.get("education", [])
     if education:
         add_section(lbl["education"])
         for edu in education:
-            deg    = _c(edu.get("degree",      ""))
-            school = _c(edu.get("institution", ""))
-            yr     = _c(edu.get("year",        ""))
-            eloc   = _c(edu.get("location",    ""))
+            deg   = _c(edu.get("degree", ""))
+            school= _c(edu.get("institution", ""))
+            yr    = _c(edu.get("year", ""))
+            eloc  = _c(edu.get("location", ""))
+
+            d_para = Paragraph(f"<b>{deg}</b>", S["EXP_TITLE"])
+            y_para = Paragraph(yr, ParagraphStyle("edu_yr", parent=S["EXP_META"],
+                               alignment=TA_RIGHT, spaceBefore=8, spaceAfter=1))
 
             block = []
             if yr:
-                deg_para  = Paragraph(f"<b>{deg}</b>", styles["EXP_TITLE"])
-                yr_para   = Paragraph(yr, ParagraphStyle(
-                    "edu_yr", parent=styles["EXP_META"],
-                    alignment=TA_RIGHT, spaceBefore=8, spaceAfter=1,
-                ))
-                tbl = Table([[deg_para, yr_para]],
-                            colWidths=[body_w * 0.72, body_w * 0.28])
+                tbl = Table([[d_para, y_para]], colWidths=[content_w * 0.72, content_w * 0.28])
                 tbl.setStyle(TableStyle([
-                    ("VALIGN",       (0, 0), (-1, -1), "BOTTOM"),
-                    ("LEFTPADDING",  (0, 0), (-1, -1), 0),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                    ("TOPPADDING",   (0, 0), (-1, -1), 0),
-                    ("BOTTOMPADDING",(0, 0), (-1, -1), 0),
+                    ("VALIGN",(0,0),(-1,-1),"BOTTOM"),
+                    ("LEFTPADDING",(0,0),(-1,-1),0),
+                    ("RIGHTPADDING",(0,0),(-1,-1),0),
+                    ("TOPPADDING",(0,0),(-1,-1),0),
+                    ("BOTTOMPADDING",(0,0),(-1,-1),0),
                 ]))
                 block.append(tbl)
             else:
-                block.append(Paragraph(f"<b>{deg}</b>", styles["EXP_TITLE"]))
+                block.append(d_para)
 
-            co_line = school
-            if eloc:
-                co_line += f"  ·  {eloc}" if co_line else eloc
-            if co_line:
-                block.append(Paragraph(co_line, styles["EXP_COMPANY"]))
+            co_meta = "  ·  ".join(filter(None, [school, eloc]))
+            if co_meta:
+                block.append(Paragraph(co_meta, S["EXP_META"]))
             block.append(Spacer(1, 5))
             story.append(KeepTogether(block))
 
-    # ════════════════════════════════════════════
-    # 6. TECHNICAL SKILLS
-    # ════════════════════════════════════════════
+    # ─────────────────────────────────────────────────────
+    # TECHNICAL SKILLS
+    # ─────────────────────────────────────────────────────
     skills = cv_data.get("skills", {})
     if skills:
         add_section(lbl["skills"])
@@ -648,38 +599,33 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
             for cat, items in skills.items():
                 if not items:
                     continue
-                vals = "  ·  ".join([_fmt_bullet(i) for i in items]) \
-                       if isinstance(items, list) else str(items)
-                block = [
-                    Paragraph(f"<b>{cat.upper()}</b>", styles["SKILL_CAT"]),
-                    Paragraph(vals, styles["SKILL_VAL"]),
-                ]
-                story.append(KeepTogether(block))
+                vals = "  ·  ".join([_fmt(i) for i in items]) if isinstance(items, list) else str(items)
+                story.append(KeepTogether([
+                    Paragraph(f"<b>{cat.upper()}</b>", S["SKILL_CAT"]),
+                    Paragraph(vals, S["SKILL_VAL"]),
+                ]))
         elif isinstance(skills, list):
-            story.append(Paragraph(
-                "  ·  ".join([_fmt_bullet(i) for i in skills]),
-                styles["SKILL_VAL"]
-            ))
+            story.append(Paragraph("  ·  ".join([_fmt(i) for i in skills]), S["SKILL_VAL"]))
         story.append(Spacer(1, 4))
 
-    # ════════════════════════════════════════════
-    # 7. LANGUAGES
-    # ════════════════════════════════════════════
+    # ─────────────────────────────────────────────────────
+    # LANGUAGES
+    # ─────────────────────────────────────────────────────
     languages = cv_data.get("languages", [])
     if languages:
         add_section(lbl["languages"])
-        for lang in languages:
-            story.append(Paragraph(f"▸  {_fmt_bullet(lang)}", styles["BULLET"]))
+        for lang_item in languages:
+            story.append(Paragraph(f"▸  {_fmt(lang_item)}", S["BULLET"]))
         story.append(Spacer(1, 4))
 
-    # ════════════════════════════════════════════
-    # 8. CERTIFICATIONS
-    # ════════════════════════════════════════════
+    # ─────────────────────────────────────────────────────
+    # CERTIFICATIONS
+    # ─────────────────────────────────────────────────────
     certs = cv_data.get("certifications", [])
     if certs:
         add_section(lbl["certs"])
         for cert in certs:
-            story.append(Paragraph(f"▸  {_fmt_bullet(cert)}", styles["BULLET"]))
+            story.append(Paragraph(f"▸  {_fmt(cert)}", S["BULLET"]))
         story.append(Spacer(1, 4))
 
     doc.build(story)
