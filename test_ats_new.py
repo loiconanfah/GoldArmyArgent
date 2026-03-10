@@ -46,21 +46,36 @@ text = reader.pages[0].extract_text()
 text_lower = text.lower()
 
 name_pos  = text_lower.find('jean dupont')
+email_pos = text_lower.find('email:')
+phone_pos = text_lower.find('phone:')
+addr_pos  = text_lower.find('address:')
 exp_pos   = text_lower.find('dev backend')
 skill_pos = text_lower.find('python')
 
-print("=== ATS Text Extraction (first 600 chars) ===")
-print(text[:600])
-print("---")
-print(f"Name at pos  : {name_pos}")
-print(f"Exp at pos   : {exp_pos}")
-print(f"Skills at pos: {skill_pos}")
+# Write result to UTF-8 file to avoid console encoding issues
+with open('test_ats_result.txt', 'w', encoding='utf-8') as out:
+    out.write("=== ATS Text Extraction (first 600 chars) ===\n")
+    out.write(text[:600])
+    out.write("\n\n---\n")
+    out.write(f"Name at pos    : {name_pos}\n")
+    out.write(f"Email: at pos  : {email_pos}\n")
+    out.write(f"Phone: at pos  : {phone_pos}\n")
+    out.write(f"Address: at pos: {addr_pos}\n")
+    out.write(f"Exp at pos     : {exp_pos}\n")
+    out.write(f"Skills at pos  : {skill_pos}\n")
+    out.write(f"PDF size       : {len(pdf)} bytes\n\n")
 
-if name_pos != -1 and exp_pos != -1 and skill_pos != -1 and name_pos < exp_pos < skill_pos:
-    print("PERFECT: Nom -> Experience -> Skills - Ordre ATS 100% parfait")
-elif name_pos != -1 and skill_pos != -1 and name_pos < skill_pos:
-    print("GOOD: Nom before Skills - Acceptable ATS order")
-else:
-    print("FAIL: Wrong order")
+    ok = (name_pos == 0 and email_pos != -1 and phone_pos != -1 
+          and addr_pos != -1 and name_pos < exp_pos < skill_pos)
+    if ok:
+        out.write("PERFECT: Nom, Email, Phone, Address -> Experience -> Skills - ORDER 100% CORRECT\n")
+    else:
+        out.write("FAIL: ATS order is wrong\n")
+        if email_pos == -1:
+            out.write("  - Email NOT found!\n")
+        if phone_pos == -1:
+            out.write("  - Phone NOT found!\n")
+        if addr_pos == -1:
+            out.write("  - Address NOT found!\n")
 
-print(f"PDF size: {len(pdf)} bytes")
+print("Done. See test_ats_result.txt for results.")
