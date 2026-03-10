@@ -13,7 +13,7 @@ Single-column layout ensures 100% ATS parsing compatibility.
 Text flows perfectly: Name → Contact → Summary → Experience → Projects →
 Education → Skills → Languages → Certifications
 """
-import io
+import io, re
 from typing import Dict, Any, List
 
 from reportlab.lib.pagesizes import LETTER, A4
@@ -26,6 +26,74 @@ from reportlab.platypus import (
     HRFlowable, KeepTogether, NextPageTemplate, Table, TableStyle
 )
 from reportlab.lib import colors as rl_colors
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LANGUAGE DETECTION & BILINGUAL SECTION LABELS
+# ─────────────────────────────────────────────────────────────────────────────
+_FR_MARKERS = [
+    r"\bje\b", r"\bles\b", r"\bdes\b", r"\bune\b", r"\bdans\b",
+    r"\bavec\b", r"\bpour\b", r"\bsur\b", r"\bdu\b", r"\ben\b",
+    r"d'expérience", r"d'expertise", r"logiciel", r"développeur",
+    r"\bde\b", r"\bla\b", r"expérience", r"compétences", r"formation",
+]
+
+
+def _detect_lang(cv_data: Dict[str, Any]) -> str:
+    """
+    Detect whether the CV is in French or English.
+    Returns 'fr' or 'en'.
+    """
+    # 1. Check explicit language field
+    lang_field = str(cv_data.get("language", "") or cv_data.get("lang", "")).lower()
+    if "fr" in lang_field or "french" in lang_field or "fran" in lang_field:
+        return "fr"
+    if "en" in lang_field or "english" in lang_field:
+        return "en"
+
+    # 2. Scan summary + title for French keywords
+    sample = " ".join([
+        cv_data.get("summary", "") or "",
+        cv_data.get("title",   "") or "",
+        " ".join(cv_data.get("languages", [])),
+    ]).lower()
+
+    fr_hits = sum(1 for p in _FR_MARKERS if re.search(p, sample))
+    return "fr" if fr_hits >= 3 else "en"
+
+
+SECTION_LABELS = {
+    "fr": {
+        "summary":   "Profil Professionnel",
+        "experience":"Expériences Professionnelles",
+        "projects":  "Projets & Réalisations",
+        "education": "Formation",
+        "skills":    "Compétences Techniques",
+        "languages": "Langues",
+        "certs":     "Certifications",
+        # Contact labels
+        "email":     "E-mail",
+        "phone":     "Téléphone",
+        "address":   "Adresse",
+        "linkedin":  "LinkedIn",
+        "github":    "GitHub",
+    },
+    "en": {
+        "summary":   "Professional Summary",
+        "experience":"Work Experience",
+        "projects":  "Projects & Achievements",
+        "education": "Education",
+        "skills":    "Technical Skills",
+        "languages": "Languages",
+        "certs":     "Certifications",
+        # Contact labels
+        "email":     "Email",
+        "phone":     "Phone",
+        "address":   "Address",
+        "linkedin":  "LinkedIn",
+        "github":    "GitHub",
+    },
+}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -362,10 +430,14 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
         PageTemplate(id="P2", frames=[frame_p2], onPage=_page2),
     ])
 
+    # Detect language and wire section labels
+    lang = _detect_lang(cv_data)
+    lbl  = SECTION_LABELS[lang]
+
     story: List = []
 
     # ═══════════════════════════════════════════════════════════════════
-    # 1. HEADER — Name + Job Title + Labeled Contacts
+    # 1. HEADER — Name + Job Title + Labeled Contacts (language-aware)
     # Each contact on its own labeled line for maximum ATS detection
     # ═══════════════════════════════════════════════════════════════════
     name  = _c(cv_data.get("full_name", ""))
@@ -377,11 +449,11 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
 
     # Individual labeled contact lines — CRITICAL for ATS detection
     contact_map = [
-        ("Email",    cv_data.get("email",    "")),
-        ("Phone",    cv_data.get("phone",    "")),
-        ("Address",  cv_data.get("location", "")),
-        ("LinkedIn", cv_data.get("linkedin", "")),
-        ("GitHub",   cv_data.get("github",   "")),
+        (lbl["email"],    cv_data.get("email",    "")),
+        (lbl["phone"],    cv_data.get("phone",    "")),
+        (lbl["address"],  cv_data.get("location", "")),
+        (lbl["linkedin"], cv_data.get("linkedin", "")),
+        (lbl["github"],   cv_data.get("github",   "")),
     ]
     for label, val in contact_map:
         if _c(val):
@@ -402,7 +474,7 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
     # ════════════════════════════════════════════
     summary = _c(cv_data.get("summary", ""))
     if summary:
-        add_section("Professional Summary")
+        add_section(lbl["summary"])
         story.append(Paragraph(summary, styles["BODY"]))
         story.append(Spacer(1, 4))
 
@@ -411,7 +483,7 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
     # ════════════════════════════════════════════
     experiences = cv_data.get("experiences", [])
     if experiences:
-        add_section("Work Experience")
+        add_section(lbl["experience"])
         for exp in experiences:
             role    = _c(exp.get("title",      ""))
             company = _c(exp.get("company",    ""))
@@ -464,7 +536,7 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
     # ════════════════════════════════════════════
     projects = cv_data.get("projects", [])
     if projects:
-        add_section("Projects & Achievements")
+        add_section(lbl["projects"])
         for proj in projects:
             pname    = _c(proj.get("name",        ""))
             pdesc    = _c(proj.get("description", ""))
@@ -484,7 +556,7 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
     # ════════════════════════════════════════════
     education = cv_data.get("education", [])
     if education:
-        add_section("Education")
+        add_section(lbl["education"])
         for edu in education:
             deg    = _c(edu.get("degree",      ""))
             school = _c(edu.get("institution", ""))
@@ -524,7 +596,7 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
     # ════════════════════════════════════════════
     skills = cv_data.get("skills", {})
     if skills:
-        add_section("Technical Skills")
+        add_section(lbl["skills"])
         if isinstance(skills, dict):
             for cat, items in skills.items():
                 if not items:
@@ -548,7 +620,7 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
     # ════════════════════════════════════════════
     languages = cv_data.get("languages", [])
     if languages:
-        add_section("Languages")
+        add_section(lbl["languages"])
         for lang in languages:
             story.append(Paragraph(f"▸  {_fmt_bullet(lang)}", styles["BULLET"]))
         story.append(Spacer(1, 4))
@@ -558,7 +630,7 @@ def generate_ats_cv_pdf(cv_data: Dict[str, Any], theme_id: str = "midnight") -> 
     # ════════════════════════════════════════════
     certs = cv_data.get("certifications", [])
     if certs:
-        add_section("Certifications")
+        add_section(lbl["certs"])
         for cert in certs:
             story.append(Paragraph(f"▸  {_fmt_bullet(cert)}", styles["BULLET"]))
         story.append(Spacer(1, 4))
