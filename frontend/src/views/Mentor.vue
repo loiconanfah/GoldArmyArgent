@@ -21,14 +21,6 @@ const mentorFeatures = [
     actionPromptKey: 'mentor.features.cv_audit_prompt'
   },
   {
-    titleKey: 'mentor.features.portfolio_title',
-    descKey: 'mentor.features.portfolio_desc',
-    icon: CodeBracketIcon,
-    color: 'from-emerald-500 to-teal-500',
-    locked: true,
-    actionPromptKey: 'mentor.features.portfolio_prompt'
-  },
-  {
     titleKey: 'mentor.features.interview_title',
     descKey: 'mentor.features.interview_desc',
     icon: AcademicCapIcon,
