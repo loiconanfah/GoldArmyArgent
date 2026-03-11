@@ -146,7 +146,7 @@ const selectHr = (name) => {
 }
 
 const draftEmail = async () => {
-    if (!company) {
+    if (!companyName.value) {
         draftError.value = t('network_osint.company_required')
         return
     }
@@ -161,7 +161,7 @@ const draftEmail = async () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                company_name: company,
+                company_name: companyName.value,
                 company_description: '',
                 hr_name: selectedHrName.value,
                 request_type: requestType.value,
