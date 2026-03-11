@@ -54,6 +54,8 @@ const pendingFinish = ref(false)
 const callStartTime = ref(null)
 const callElapsed = ref('00:00')
 let callTimerInterval = null
+const interviewStartedAt = ref(null)  // ISO timestamp for session save
+const showPaywall = ref(false)         // Free tier limit reached
 
 // Visual audio pulse simulation
 const audioLevel = ref(0)
@@ -73,8 +75,10 @@ const startInterview = async () => {
     }
 
     errorMsg.value = ""
+    showPaywall.value = false
     isInterviewStarted.value = true
     callStartTime.value = Date.now()
+    interviewStartedAt.value = new Date().toISOString()
     callTimerInterval = setInterval(() => {
         if (!callStartTime.value) return
         const s = Math.floor((Date.now() - callStartTime.value) / 1000)
@@ -288,6 +292,15 @@ const connectWebSocket = () => {
                 const endKeywords = ['au revoir', 'bonne journée', 'bonne chance', 'merci pour votre temps', 'bientôt', 'clôturer', 'fini cet entretien']
                 if (endKeywords.some(k => content.toLowerCase().includes(k))) pendingFinish.value = true
                 scrollToBottom()
+            } else if (msg.type === 'paywall') {
+                // Free tier limit reached — reset to config screen and show paywall message
+                isInterviewStarted.value = false
+                showPaywall.value = true
+                stopWebcam()
+                stopAudioPulse()
+                if (recognition) try { recognition.stop() } catch(e) {}
+                if (window.speechSynthesis) window.speechSynthesis.cancel()
+                conversation.value = []
             } else if (msg.type === 'analysis') {
                 analystNote.value = msg.payload
                 setTimeout(() => { analystNote.value = null }, 8000)
@@ -589,13 +602,19 @@ const finishInterview = async () => {
         const response = await authFetch('/api/interview/analyze', {
             method: 'POST',
             body: JSON.stringify({
-                history: conversation.value,
-                jobTitle: config.value.jobTitle
+                history:       conversation.value,
+                jobTitle:      config.value.jobTitle,
+                company:       config.value.company,
+                interviewType: config.value.interviewType,
+                recruiterId:   config.value.recruiterId,
+                startedAt:     interviewStartedAt.value,
+                endedAt:       new Date().toISOString(),
             })
         })
         const result = await response.json()
         if (result.status === 'success') {
             scorecard.value = result.analysis
+            scorecard.value._session_id = result.session_id  // keep for history link
         } else {
             errorMsg.value = "L'analyse a échoué."
         }
@@ -690,6 +709,23 @@ onUnmounted(() => {
       
       <div v-if="errorMsg" class="mt-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 font-semibold text-sm text-center animate-shake">
           {{ errorMsg }}
+      </div>
+
+      <!-- Paywall banner: shown when free tier reached -->
+      <div v-if="showPaywall" class="mt-4 p-5 rounded-2xl bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border border-indigo-500/40 flex flex-col items-center gap-4 text-center">
+          <div class="text-3xl">🔒</div>
+          <div>
+              <p class="font-bold text-white text-lg">Limite d'entretiens gratuits atteinte</p>
+              <p class="text-slate-400 text-sm mt-1">Vous avez utilisé vos 2 entretiens gratuits. Passez à l'abonnement <strong class="text-indigo-400">PRO</strong> pour des entretiens illimités.</p>
+          </div>
+          <div class="flex items-center gap-3 flex-wrap justify-center">
+              <router-link to="/settings" class="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-xl text-sm hover:opacity-90 transition-opacity">
+                  🚀 Passer à PRO
+              </router-link>
+              <router-link to="/interview/history" class="px-5 py-2.5 bg-white/5 border border-white/10 text-slate-300 font-semibold rounded-xl text-sm hover:bg-white/10 transition-colors">
+                  📋 Voir mon historique
+              </router-link>
+          </div>
       </div>
 
       <div class="mt-8 pt-8 border-t border-surface-800 flex items-center justify-between">
@@ -1043,6 +1079,9 @@ onUnmounted(() => {
 
               <!-- Footer -->
               <div class="p-8 bg-black/20 flex justify-end gap-4">
+                  <router-link to="/interview/history" class="px-6 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 font-bold rounded-2xl transition-all flex items-center gap-2">
+                      📋 Mon Historique
+                  </router-link>
                   <button @click="stopInterview" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:scale-105 active:scale-95 text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-500/20">
                       Retour au Dashboard
                   </button>

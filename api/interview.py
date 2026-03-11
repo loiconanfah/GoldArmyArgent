@@ -3,14 +3,17 @@ import json
 import asyncio
 import base64
 import re
+import uuid as uuid_lib
 import edge_tts
+from datetime import datetime, timezone
 from dotenv import load_dotenv
-load_dotenv() # Load from .env file
+load_dotenv()
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 import google.generativeai as genai
 from core.database import get_db
 from config.settings import settings
+from api.auth import get_current_user
 
 # Configure Gemini from central settings
 if settings.gemini_api_key:
@@ -20,17 +23,101 @@ else:
 
 from llm.unified_client import UnifiedLLMClient
 
-# Entretien propulsé par Gemini 3.1 (dialogue + analyse)
 INTERVIEW_LLM_MODEL = "gemini-3.1-pro-preview"
-llm_client = UnifiedLLMClient()  # Utilise Gemini 3.1 si GEMINI_API_KEY est défini
+llm_client = UnifiedLLMClient()
+
+# Free tier: max complete interviews before paywall
+FREE_TIER_INTERVIEW_LIMIT = 2
 
 router = APIRouter(prefix="/api/interview", tags=["Interview Simulator"])
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPER: count completed interviews for a user
+# ─────────────────────────────────────────────────────────────────────────────
+async def _count_user_sessions(user_id: str) -> int:
+    db = get_db()
+    return await db.interview_sessions.count_documents({"user_id": user_id})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /usage — check free tier status before starting
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/usage")
+async def get_interview_usage(current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
+    tier = current_user.get("subscription_tier", "FREE")
+    is_free = tier not in ("PRO", "PREMIUM", "ADMIN")
+
+    count = await _count_user_sessions(user_id)
+    can_start = (not is_free) or (count < FREE_TIER_INTERVIEW_LIMIT)
+
+    return {
+        "count":     count,
+        "limit":     FREE_TIER_INTERVIEW_LIMIT if is_free else None,
+        "is_free":   is_free,
+        "can_start": can_start,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /history — paginated interview history
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/history")
+async def get_interview_history(
+    skip: int = 0,
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user["id"]
+    db = get_db()
+
+    cursor = (
+        db.interview_sessions
+        .find({"user_id": user_id}, {"_id": 0})
+        .sort("created_at", -1)
+        .skip(skip)
+        .limit(limit)
+    )
+    sessions = await cursor.to_list(length=limit)
+
+    # Convert datetime to ISO string for JSON serialization
+    for s in sessions:
+        if isinstance(s.get("created_at"), datetime):
+            s["created_at"] = s["created_at"].isoformat()
+
+    total = await _count_user_sessions(user_id)
+    return {"total": total, "sessions": sessions}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /history/{session_id} — full detail of one session
+# ─────────────────────────────────────────────────────────────────────────────
+@router.get("/history/{session_id}")
+async def get_interview_session(
+    session_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user["id"]
+    db = get_db()
+
+    session = await db.interview_sessions.find_one(
+        {"session_id": session_id, "user_id": user_id}, {"_id": 0}
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Session introuvable")
+
+    if isinstance(session.get("created_at"), datetime):
+        session["created_at"] = session["created_at"].isoformat()
+
+    return session
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /test-voice
+# ─────────────────────────────────────────────────────────────────────────────
 @router.post("/test-voice")
 async def test_voice_hd(data: dict):
-    """
-    Generates a high-quality test audio sample using edge-tts.
-    """
     text = data.get("text", "Ceci est un test sonore en Haute Définition.")
     recruiter_id = data.get("recruiterId", "tech")
     
@@ -49,42 +136,47 @@ async def test_voice_hd(data: dict):
                 audio_data += chunk["data"]
         
         if audio_data:
-            return {
-                "status": "success",
-                "audio": base64.b64encode(audio_data).decode('utf-8')
-            }
+            return {"status": "success", "audio": base64.b64encode(audio_data).decode('utf-8')}
         return {"status": "error", "message": "Failed to generate audio"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /analyze — analyze interview + save to history
+# ─────────────────────────────────────────────────────────────────────────────
 @router.post("/analyze")
-async def analyze_interview(data: dict):
+async def analyze_interview(data: dict, current_user: dict = Depends(get_current_user)):
     """
-    Analyzes the full interview history and returns a structured scorecard.
+    Analyzes the full interview history and saves result in interview_sessions.
     """
-    history = data.get("history", [])
-    job_title = data.get("jobTitle", "le poste")
-    
+    history     = data.get("history", [])
+    job_title   = data.get("jobTitle", "le poste")
+    company     = data.get("company", "")
+    interview_type = data.get("interviewType", "rh")
+    recruiter_id   = data.get("recruiterId", "tech")
+    started_at_iso = data.get("startedAt", None)     # ISO string sent from frontend
+    ended_at_iso   = data.get("endedAt", None)
+
     if not history:
         return {"status": "error", "message": "Aucun historique à analyser"}
 
-    # Format history for Gemini
     formatted_history = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in history])
 
     analysis_prompt = f"""Tu es un évaluateur RH expert. Analyse cet entretien d'embauche pour le poste de {job_title} et produis un bilan structuré pour le candidat.
 
 RÈGLES D'ANALYSE :
-- Base-toi UNIQUEMENT sur ce qui a été dit dans l'historique (réponses du candidat, clarté, pertinence, exemples donnés).
-- technical (0-10) : compétences techniques, maîtrise du sujet, qualité des exemples (si entretien technique) ; sinon cohérence et précision des réponses.
+- Base-toi UNIQUEMENT sur ce qui a été dit dans l'historique.
+- technical (0-10) : compétences techniques, maîtrise du sujet, qualité des exemples.
 - communication (0-10) : clarté, fluidité, concision, qualité de l'expression orale.
 - soft_skills (0-10) : attitude, écoute, réactivité, gestion des questions, professionnalisme.
-- overall (0-10) : note globale reflétant l'ensemble (moyenne pondérée cohérente avec les 3 scores).
-- points_forts : 2 à 4 points concrets tirés de l'entretien (citations ou paraphrases des réponses).
-- points_amelioration : 2 à 4 axes d'amélioration précis et bienveillants, basés sur ce qui a été dit ou manqué.
-- conseils : un paragraphe court (2-4 phrases) de conseils personnalisés pour les prochains entretiens, en lien avec ce qui s'est passé.
-- decision : exactement une des trois chaînes "Favorable", "Réservé" ou "Défavorable", en cohérence avec les scores.
+- overall (0-10) : note globale (moyenne pondérée cohérente avec les 3 scores).
+- points_forts : 2 à 4 points concrets tirés de l'entretien.
+- points_amelioration : 2 à 4 axes d'amélioration précis et bienveillants.
+- conseils : un paragraphe court (2-4 phrases) de conseils personnalisés.
+- decision : exactement une des trois chaînes "Favorable", "Réservé" ou "Défavorable".
 
-Réponds EXCLUSIVEMENT en JSON valide, sans texte avant ou après, avec cette structure exacte :
+Réponds EXCLUSIVEMENT en JSON valide, sans texte avant ou après :
 {{
   "scores": {{
     "technical": <nombre 0-10>,
@@ -110,25 +202,59 @@ HISTORIQUE DE L'ENTRETIEN :
         model = genai.GenerativeModel(INTERVIEW_LLM_MODEL)
         response = await asyncio.to_thread(model.generate_content, analysis_prompt)
         raw_text = getattr(response, "text", None) or ""
-        if not raw_text or not raw_text.strip():
+        if not raw_text.strip():
             return {"status": "error", "message": "Réponse vide du modèle d'analyse"}
-        clean_json = raw_text.replace("```json", "").replace("```", "").strip()
-        clean_json = re.sub(r"^[^{]*", "", clean_json).strip()  # drop leading non-JSON
+
+        clean_json = re.sub(r"^[^{]*", "", raw_text.replace("```json", "").replace("```", "").strip()).strip()
         analysis_result = json.loads(clean_json)
+
+        # ── Save to interview_sessions ───────────────────────────────────────
+        now = datetime.now(timezone.utc)
+        session_id = str(uuid_lib.uuid4())
+
+        # Compute duration if timestamps provided
+        duration_minutes = None
+        try:
+            if started_at_iso and ended_at_iso:
+                from datetime import timedelta
+                s = datetime.fromisoformat(started_at_iso.replace("Z", "+00:00"))
+                e = datetime.fromisoformat(ended_at_iso.replace("Z", "+00:00"))
+                duration_minutes = round((e - s).total_seconds() / 60, 1)
+        except Exception:
+            pass
+
+        session_doc = {
+            "session_id":      session_id,
+            "user_id":         current_user["id"],
+            "created_at":      now,
+            "job_title":       job_title,
+            "company":         company,
+            "interview_type":  interview_type,
+            "recruiter_id":    recruiter_id,
+            "scores":          analysis_result.get("scores", {}),
+            "feedback":        analysis_result.get("feedback", {}),
+            "decision":        analysis_result.get("decision", "Réservé"),
+            "duration_minutes":duration_minutes,
+        }
+        db = get_db()
+        await db.interview_sessions.insert_one(session_doc)
+
         return {
-            "status": "success",
-            "analysis": analysis_result
+            "status":     "success",
+            "session_id": session_id,
+            "analysis":   analysis_result,
         }
     except json.JSONDecodeError as e:
         return {"status": "error", "message": f"Format d'analyse invalide: {e}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# WebSocket /ws — real-time interview (with free-tier gate)
+# ─────────────────────────────────────────────────────────────────────────────
 @router.websocket("/ws")
 async def websocket_interview(websocket: WebSocket, token: str):
-    """
-    WebSocket endpoint for real-time Siri-like voice interview.
-    """
     await websocket.accept()
 
     from api.auth import ALGORITHM, SECRET_KEY
@@ -156,7 +282,22 @@ async def websocket_interview(websocket: WebSocket, token: str):
         await websocket.close(code=1008)
         return
 
-    # 2. Setup
+    # 2. Free-tier gate — check BEFORE setup to fail fast
+    tier = user.get("subscription_tier", "FREE")
+    is_free = tier not in ("PRO", "PREMIUM", "ADMIN")
+    if is_free:
+        session_count = await _count_user_sessions(user_id)
+        if session_count >= FREE_TIER_INTERVIEW_LIMIT:
+            await websocket.send_json({
+                "type": "paywall",
+                "message": "Vous avez atteint la limite de 2 entretiens gratuits. Passez à l'abonnement PRO pour continuer.",
+                "count": session_count,
+                "limit": FREE_TIER_INTERVIEW_LIMIT,
+            })
+            await websocket.close(code=4003)
+            return
+
+    # 3. Setup
     try:
         setup_data = await websocket.receive_text()
         setup_payload = json.loads(setup_data)
@@ -165,31 +306,30 @@ async def websocket_interview(websocket: WebSocket, token: str):
              return
              
         cfg = setup_payload.get("payload", {})
-        cv_content = cfg.get("cv", "Non renseigné")
-        job_title = cfg.get("jobTitle", "Poste général")
-        company = cfg.get("company", "L'entreprise")
-        job_details = cfg.get("jobDetails", "Pas de détails")
+        cv_content     = cfg.get("cv", "Non renseigné")
+        job_title      = cfg.get("jobTitle", "Poste général")
+        company        = cfg.get("company", "L'entreprise")
+        job_details    = cfg.get("jobDetails", "Pas de détails")
         interview_type = cfg.get("interviewType", "general")
-        recruiter_id = cfg.get("recruiterId", "tech")
+        recruiter_id   = cfg.get("recruiterId", "tech")
 
-        # Voix alignées avec le frontend : Sophie (tech), Marc (HR), Alice (CEO)
         voice_map = {
-            "tech": "fr-FR-DeniseNeural",   # Sophie - Tech Lead (voix féminine)
-            "hr": "fr-FR-HenriNeural",      # Marc - HR
-            "ceo": "fr-FR-EloiseNeural"     # Alice - CEO
+            "tech": "fr-FR-DeniseNeural",
+            "hr":   "fr-FR-HenriNeural",
+            "ceo":  "fr-FR-EloiseNeural"
         }
-        selected_voice = voice_map.get(recruiter_id, "fr-FR-DeniseNeural")
+        selected_voice  = voice_map.get(recruiter_id, "fr-FR-DeniseNeural")
         recruiter_names = {"tech": "Sophie", "hr": "Marc", "ceo": "Alice"}
-        recruiter_name = recruiter_names.get(recruiter_id, "Sophie")
+        recruiter_name  = recruiter_names.get(recruiter_id, "Sophie")
 
     except Exception as e:
         logger.error(f"WS Setup Error: {e}")
         await websocket.close(code=1008)
         return
 
-    # 3. LLM Instructions — différenciation claire RH vs Technique + tous les éléments demandés
+    # 4. LLM Instructions
     is_technical = interview_type == "technical"
-    job_context = f"\nDétails du poste / offre: {job_details[:800]}" if job_details and job_details.strip() not in ("", "Pas de détails") else ""
+    job_context  = f"\nDétails du poste / offre: {job_details[:800]}" if job_details.strip() not in ("", "Pas de détails") else ""
 
     if is_technical:
         role_desc = "le CTO ou Lead Tech qui évalue les compétences techniques et la façon de raisonner."
@@ -234,9 +374,9 @@ CONSIGNES COMMUNES (RH et Technique):
 ENTRETIEN COMPLET : Mène l'entretien de bout en bout. Après avoir couvert les thèmes essentiels (présentation, motivation, expérience/compétences, situation), conclus clairement : remercie le candidat, fais un très bref résumé si pertinent, indique les prochaines étapes (ex. "Nous vous recontacterons sous peu.") puis salue. Ainsi l'entretien est complet et le candidat sait qu'il est terminé.
 """
 
-    # 4. Starting greeting (accord selon le prénom)
+    # 5. Starting greeting
     enchanter = "Ravie de vous rencontrer" if recruiter_name in ("Sophie", "Alice") else "Ravi de vous rencontrer"
-    greeting = f"Bonjour ! Je suis {recruiter_name} pour le poste de {job_title} chez {company}. {enchanter}. Pouvez-vous vous présenter ?"
+    greeting  = f"Bonjour ! Je suis {recruiter_name} pour le poste de {job_title} chez {company}. {enchanter}. Pouvez-vous vous présenter ?"
     
     await websocket.send_json({
         "type": "recruiter_response",
@@ -244,7 +384,6 @@ ENTRETIEN COMPLET : Mène l'entretien de bout en bout. Après avoir couvert les 
         "recruiter_name": recruiter_name
     })
 
-    # Async voice: collect all chunks then send one "voice" message (frontend expects type "voice" + key "audio")
     async def _speak(text):
         try:
             communicate = edge_tts.Communicate(text, selected_voice)
@@ -261,25 +400,22 @@ ENTRETIEN COMPLET : Mène l'entretien de bout en bout. Après avoir couvert les 
     asyncio.create_task(_speak(greeting))
     
     conversation_history = [
-        {"role": "system", "content": system_prompt},
+        {"role": "system",    "content": system_prompt},
         {"role": "assistant", "content": greeting}
     ]
 
-    # 5. Loop
+    # 6. Main loop
     try:
         while True:
             data = await websocket.receive_text()
-            payload = json.loads(data)
-            user_msg = payload.get("text", "")
+            payload_msg = json.loads(data)
+            user_msg = payload_msg.get("text", "")
             if not user_msg:
                 continue
             
-            # Feedback immédiat : le candidat voit que sa réponse est bien reçue
             await websocket.send_json({"type": "thinking"})
             conversation_history.append({"role": "user", "content": user_msg})
             
-            # Generate response
-            # Format prompt for UnifiedLLMClient
             full_prompt = "\n".join([f"{m['role']}: {m['content']}" for m in conversation_history])
             
             try:
@@ -289,8 +425,6 @@ ENTRETIEN COMPLET : Mène l'entretien de bout en bout. Après avoir couvert les 
             except Exception as llm_err:
                 logger.error(f"LLM Error in interview: {llm_err}")
                 response_text = "⚠️ Désolé, j'ai rencontré un problème technique pour générer ma réponse. Pouvons-nous reprendre ?"
-                
-                # Send error notice to frontend so it doesn't just hang
                 await websocket.send_json({
                     "type": "error",
                     "message": "Erreur technique LLM. L'entretien peut être instable.",
@@ -299,14 +433,11 @@ ENTRETIEN COMPLET : Mène l'entretien de bout en bout. Après avoir couvert les 
 
             conversation_history.append({"role": "assistant", "content": response_text})
             
-            # Send text
             await websocket.send_json({
                 "type": "recruiter_response",
                 "text": response_text,
                 "recruiter_name": recruiter_name
             })
-            
-            # Send voice
             asyncio.create_task(_speak(response_text))
             
     except WebSocketDisconnect:
@@ -314,10 +445,7 @@ ENTRETIEN COMPLET : Mène l'entretien de bout en bout. Après avoir couvert les 
     except Exception as e:
         logger.error(f"WS Loop Error: {e}")
         try:
-            # Try to notify the user before final crash
             await websocket.send_json({"type": "error", "message": f"Erreur critique: {str(e)}"})
             await websocket.close()
         except:
             pass
-
-

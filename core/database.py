@@ -21,8 +21,6 @@ def get_db_client():
                 tz_aware=True,
                 tlsAllowInvalidCertificates=True
             )
-            # Test connection (commented out as it requires async context)
-            # await _client.admin.command('ping')
             logger.info("✅ Client MongoDB Atlas initialisé!")
         except Exception as e:
             logger.error(f"❌ Erreur de connexion MongoDB: {e}")
@@ -54,6 +52,10 @@ async def init_db():
         # Index Collections Usage Logs (SaaS Limits Enforcement)
         await db.usage_logs.create_index("user_id")
         await db.usage_logs.create_index([("user_id", 1), ("feature", 1), ("used_at", 1)])
+        
+        # Index Collections Interview Sessions (History + Free Tier Gating)
+        await db.interview_sessions.create_index("user_id")
+        await db.interview_sessions.create_index([("user_id", 1), ("created_at", -1)])
         
         logger.info("✅ Index MongoDB vérifiés et créés avec succès.")
     except Exception as e:
