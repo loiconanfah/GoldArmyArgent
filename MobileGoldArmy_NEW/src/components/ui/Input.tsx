@@ -130,19 +130,19 @@ export function Input({
             ]}
             pointerEvents="none"
           >
-            <Animated.Text
-              style={[
-                styles.label,
-                {
-                  color: error
-                    ? theme.colors.error
-                    : isFocused
-                    ? theme.colors.primary
-                    : theme.colors.textMuted,
-                  backgroundColor: theme.colors.background,
-                },
-              ]}
-            >
+          <Animated.Text
+            style={[
+              styles.label,
+              {
+                color: error
+                  ? theme.colors.error
+                  : isFocused
+                  ? theme.colors.primary
+                  : theme.colors.textMuted,
+                backgroundColor: 'transparent',
+              },
+            ]}
+          >
               {label}
             </Animated.Text>
           </Animated.View>
@@ -174,6 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     minHeight: 52,
     position: 'relative',
   },
