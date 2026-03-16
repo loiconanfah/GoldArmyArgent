@@ -2,7 +2,13 @@
  * Types for Onboarding feature
  */
 
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
+
+export type OnboardingIconName =
+  | 'search-outline'
+  | 'chatbubbles-outline'
+  | 'clipboard-outline'
+  | 'mail-outline';
 
 export interface SlideData {
   id: string;
@@ -10,6 +16,7 @@ export interface SlideData {
   title: string;
   subtitle: string;
   illustration: ReactElement;
+  icon: OnboardingIconName;
   hasHighlight?: boolean;
   highlightContent?: ReactElement;
   imageUrl?: string;

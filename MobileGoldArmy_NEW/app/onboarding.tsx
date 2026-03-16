@@ -3,8 +3,17 @@
  * First-launch onboarding with 4 slides
  */
 
-import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import * as React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Dimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ListRenderItemInfo,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import * as Haptics from 'expo-haptics';
@@ -18,22 +27,22 @@ import type { SlideData } from '../src/types/onboarding.types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Theme colors
+// Couleurs alignées sur le thème global de l'app (voir src/theme/colors.ts)
 const C = {
-  primary: '#FF6B35',
-  primarySoft: '#FF8C5A',
-  primaryPale: '#FFF0EB',
-  primaryDeep: '#E8521A',
-  accent: '#FF3D00',
-  bg: '#FAFAF8',
+  primary: '#F5D061', // gold / couleur principale du logo
+  primarySoft: '#F8DC8A',
+  primaryPale: '#FFF8DC',
+  primaryDeep: '#E6A32F',
+  accent: '#3B82F6', // bleu secondaire de l'app
+  bg: '#FFFFFF',
   surface: '#FFFFFF',
-  surfaceAlt: '#F5F4F0',
-  border: '#EAEAE6',
-  text: '#1A1A18',
-  textMid: '#4A4A46',
-  textMuted: '#9A9A94',
+  surfaceAlt: '#F5F5F5',
+  border: '#E0E0E0',
+  text: '#1A1A1A',
+  textMid: '#666666',
+  textMuted: '#999999',
   white: '#FFFFFF',
-  shadow: 'rgba(255,107,53,0.20)',
+  shadow: 'rgba(0,0,0,0.10)',
   shadowNeutral: 'rgba(0,0,0,0.07)',
 };
 
@@ -81,7 +90,8 @@ const createHighlightContent = (type: 'confidence' | 'applications') => {
 const SLIDES: SlideData[] = [
   {
     id: '1',
-    badge: '🔍 Recherche intelligente',
+    badge: 'Recherche intelligente',
+    icon: 'search-outline',
     title: 'Trouve ton\nprochain emploi',
     subtitle:
       'Des milliers d\'offres analysées et filtrées selon ton profil, tes compétences et tes ambitions.',
@@ -89,7 +99,8 @@ const SLIDES: SlideData[] = [
   },
   {
     id: '2',
-    badge: '🤖 IA Coach Personnel',
+    badge: 'IA Coach Personnel',
+    icon: 'chatbubbles-outline',
     title: 'Prépare chaque\nentretien',
     subtitle:
       'Simule des entretiens réels avec notre IA. Reçois un feedback instantané sur tes réponses et ta posture.',
@@ -103,7 +114,8 @@ const SLIDES: SlideData[] = [
   },
   {
     id: '3',
-    badge: '📋 Suivi Automatisé',
+    badge: 'Suivi Automatisé',
+    icon: 'clipboard-outline',
     title: 'Tes candidatures,\ntout en ordre',
     subtitle:
       'Suis chaque candidature en temps réel. Relances automatiques, rappels et historique complet inclus.',
@@ -122,7 +134,8 @@ const SLIDES: SlideData[] = [
   },
   {
     id: '4',
-    badge: '✉️ Génération par IA',
+    badge: 'Génération par IA',
+    icon: 'mail-outline',
     title: 'Construis ton\nréseau LinkedIn',
     subtitle:
       'Messages de connexion personnalisés, mails de candidature percutants et profil LinkedIn optimisé générés par IA en quelques secondes.',
@@ -136,11 +149,11 @@ const SLIDES: SlideData[] = [
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const flatListRef = useRef<FlatList>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const isScrolling = useRef(false);
+  const flatListRef = React.useRef<FlatList>(null);
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const isScrolling = React.useRef(false);
 
-  const handleNext = useCallback(async () => {
+  const handleNext = React.useCallback(async () => {
     if (currentIndex < SLIDES.length - 1) {
       const nextIndex = currentIndex + 1;
       flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
@@ -161,7 +174,7 @@ export default function OnboardingScreen() {
     }
   }, [currentIndex, router]);
 
-  const handleSkip = useCallback(async () => {
+  const handleSkip = React.useCallback(async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
@@ -171,7 +184,7 @@ export default function OnboardingScreen() {
     router.replace('/(auth)/login');
   }, [router]);
 
-  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const handleScroll = React.useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (isScrolling.current) {
       const offsetX = event.nativeEvent.contentOffset.x;
       const index = Math.round(offsetX / SCREEN_WIDTH);
@@ -181,11 +194,11 @@ export default function OnboardingScreen() {
     }
   }, [currentIndex]);
 
-  const handleMomentumScrollBegin = useCallback(() => {
+  const handleMomentumScrollBegin = React.useCallback(() => {
     isScrolling.current = true;
   }, []);
 
-  const handleMomentumScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const handleMomentumScrollEnd = React.useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     isScrolling.current = false;
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / SCREEN_WIDTH);
@@ -194,7 +207,7 @@ export default function OnboardingScreen() {
     }
   }, []);
 
-  const getItemLayout = useCallback(
+  const getItemLayout = React.useCallback(
     (_: any, index: number) => ({
       length: SCREEN_WIDTH,
       offset: SCREEN_WIDTH * index,
@@ -203,8 +216,8 @@ export default function OnboardingScreen() {
     []
   );
 
-  const renderItem = useCallback(
-    ({ item, index }: { item: SlideData; index: number }) => (
+  const renderItem = React.useCallback(
+    ({ item, index }: ListRenderItemInfo<SlideData>) => (
       <OnboardingSlide
         slide={item}
         isActive={index === currentIndex}
@@ -234,7 +247,7 @@ export default function OnboardingScreen() {
         onMomentumScrollBegin={handleMomentumScrollBegin}
         onMomentumScrollEnd={handleMomentumScrollEnd}
         getItemLayout={getItemLayout}
-        onScrollToIndexFailed={(info) => {
+        onScrollToIndexFailed={(info: { index: number }) => {
           const wait = new Promise((resolve) => setTimeout(resolve, 500));
           wait.then(() => {
             flatListRef.current?.scrollToIndex({ index: info.index, animated: false });

@@ -7,25 +7,27 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { OnboardingSlideProps } from '../../types/onboarding.types';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Theme colors for onboarding
+// Couleurs alignées sur le thème global de l'app (même palette que onboarding.tsx)
 const C = {
-  primary: '#FF6B35',
-  primarySoft: '#FF8C5A',
-  primaryPale: '#FFF0EB',
-  primaryDeep: '#E8521A',
-  accent: '#FF3D00',
-  bg: '#FAFAF8',
+  primary: '#F5D061', // gold / couleur principale du logo
+  primarySoft: '#F8DC8A',
+  primaryPale: '#FFF8DC',
+  primaryDeep: '#E6A32F',
+  accent: '#F5D061', // même teinte que le logo (pas de bleu)
+  bg: '#FFFFFF',
   surface: '#FFFFFF',
-  surfaceAlt: '#F5F4F0',
-  border: '#EAEAE6',
-  text: '#1A1A18',
-  textMid: '#4A4A46',
-  textMuted: '#9A9A94',
+  surfaceAlt: '#F5F5F5',
+  border: '#E0E0E0',
+  text: '#1A1A1A',
+  textMid: '#666666',
+  textMuted: '#999999',
   white: '#FFFFFF',
-  shadow: 'rgba(255,107,53,0.20)',
+  shadow: 'rgba(0,0,0,0.10)',
   shadowNeutral: 'rgba(0,0,0,0.07)',
 };
 
@@ -151,6 +153,15 @@ export function OnboardingSlide({
 
   return (
     <View style={styles.container}>
+      {/* Logo en haut, aligné avec l'identité visuelle de l'app */}
+      <View style={styles.logoWrapper}>
+        <Image
+          source={require('../../../assets/logosansfond.png')}
+          style={styles.logoImage}
+          contentFit="contain"
+        />
+      </View>
+
       {/* Skip link (slides 1-3 only) */}
       {!isLast && (
         <TouchableOpacity onPress={onSkip} style={styles.skipButton}>
@@ -171,7 +182,7 @@ export function OnboardingSlide({
 
       {/* Content zone */}
       <View style={styles.content}>
-        {/* Badge */}
+        {/* Badge + icône */}
         <Animated.View
           style={[
             styles.badge,
@@ -181,6 +192,12 @@ export function OnboardingSlide({
             },
           ]}
         >
+          <Ionicons
+            name={slide.icon}
+            size={18}
+            color={C.primaryDeep}
+            style={styles.badgeIcon}
+          />
           <Text style={styles.badgeText}>{slide.badge}</Text>
         </Animated.View>
 
@@ -237,7 +254,7 @@ export function OnboardingSlide({
         >
           <TouchableOpacity onPress={onNext} style={styles.button} activeOpacity={0.8}>
             <LinearGradient
-              colors={[C.primary, C.accent]}
+              colors={[C.primaryDeep, C.primary]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.buttonGradient}
@@ -265,6 +282,17 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
     backgroundColor: C.bg,
+  },
+  logoWrapper: {
+    position: 'absolute',
+    top: 48,
+    left: SP.xl,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  logoImage: {
+    width: 40,
+    height: 40,
   },
   skipButton: {
     position: 'absolute',
@@ -297,6 +325,11 @@ const styles = StyleSheet.create({
     paddingVertical: SP.xs,
     borderRadius: R.full,
     marginBottom: SP.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badgeIcon: {
+    marginRight: SP.xs,
   },
   badgeText: {
     fontSize: 12,
