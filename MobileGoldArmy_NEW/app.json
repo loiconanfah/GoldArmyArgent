@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "MobileGoldArmy",
+    "slug": "MobileGoldArmy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    // No custom icon for l'instant → Expo utilisera une icône par défaut
+    // Ajoute un vrai fichier PNG et remets la ligne suivante si besoin :
+    // "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      // Pas d'image custom pour le splash pour éviter l'erreur d'asset manquant
+      // Expo affichera un écran de couleur unie avec le nom de l'app
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0F"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.goldarmy.mobile"
+    },
+    "android": {
+      // Icône adaptive par défaut (aucune image custom définie)
+      "package": "com.goldarmy.mobile"
+    },
+    "web": {
+      // Favicon par défaut d'Expo
+    },
+    "scheme": "goldarmy",
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://goldarmy.app"
+        }
+      ],
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
