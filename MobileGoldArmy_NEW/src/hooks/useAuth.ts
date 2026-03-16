@@ -29,20 +29,27 @@ export function useAuth() {
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const response = await authService.login({ email, password });
-      
-      await setAccessToken(response.accessToken);
-      await setRefreshToken(response.refreshToken);
-      
-      setUser(response.user);
-      setTokens(response.accessToken, response.refreshToken);
-      
-      showToast('Login successful', 'success');
+
+      // TEMP: backend inactif → on crée une session locale mockée
+      const fakeUser = {
+        id: 'local-user',
+        full_name: email,
+        email,
+        avatar_url: undefined,
+        created_at: new Date().toISOString(),
+      } as any;
+
+      const fakeAccessToken = 'local-access-token';
+      const fakeRefreshToken = 'local-refresh-token';
+
+      await setAccessToken(fakeAccessToken);
+      await setRefreshToken(fakeRefreshToken);
+
+      setUser(fakeUser);
+      setTokens(fakeAccessToken, fakeRefreshToken);
+
+      showToast('Connecté (session locale)', 'success');
       router.replace('/(tabs)/home');
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed';
-      showToast(message, 'error');
-      throw error;
     } finally {
       setLoading(false);
     }
