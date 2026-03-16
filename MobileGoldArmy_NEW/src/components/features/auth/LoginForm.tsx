@@ -4,12 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@hooks/useAuth';
 import { useTheme } from '@hooks/useTheme';
-import { Button } from '@components/ui/Button';
 import { Input } from '@components/ui/Input';
 import { loginSchema, type LoginFormData } from '@utils/validators';
 import { spacing } from '@theme/spacing';
@@ -55,7 +54,7 @@ export function LoginForm() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
-            leftIcon={<Ionicons name="mail-outline" size={20} color={theme.colors.textMuted} />}
+            leftIcon={<Ionicons name="mail-outline" size={20} color="#222222" />}
           />
         )}
       />
@@ -73,13 +72,13 @@ export function LoginForm() {
             secureTextEntry={!showPassword}
             autoCapitalize="none"
             autoComplete="password"
-            leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textMuted} />}
+            leftIcon={<Ionicons name="lock-closed-outline" size={20} color="#222222" />}
             rightIcon={
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color={theme.colors.textMuted}
+                  color="#222222"
                 />
               </TouchableOpacity>
             }
@@ -87,13 +86,20 @@ export function LoginForm() {
         )}
       />
 
-      <Button
-        title="Se connecter"
+      <TouchableOpacity
         onPress={handleSubmit(onSubmit)}
-        loading={isLoading}
-        fullWidth
-        style={styles.button}
-      />
+        activeOpacity={0.85}
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        disabled={isLoading}
+      >
+        <View style={styles.buttonGradient}>
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>Se connecter</Text>
+          )}
+        </View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -104,5 +110,24 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: spacing.lg,
+    borderRadius: 999,
+    overflow: 'hidden',
+    height: 54,
+    backgroundColor: '#FF8C3A',
+    justifyContent: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: '#FFFFFF',
   },
 });

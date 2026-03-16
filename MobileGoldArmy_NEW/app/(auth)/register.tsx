@@ -47,7 +47,7 @@ export default function RegisterScreen() {
     <ScreenWrapper>
       {/* Fond ivoire + cercle décoratif */}
       <View style={StyleSheet.absoluteFill}>
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: C.bg }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F3EEE7' }]} />
         <View
           style={{
             position: 'absolute',

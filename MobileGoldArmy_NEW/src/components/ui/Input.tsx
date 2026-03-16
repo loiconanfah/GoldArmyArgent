@@ -31,7 +31,7 @@ export function Input({
   const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [hasValue, setHasValue] = useState(!!value);
-  
+
   const borderColor = useRef(new Animated.Value(0)).current;
   const labelPosition = useRef(new Animated.Value(hasValue ? 1 : 0)).current;
   const labelScale = useRef(new Animated.Value(hasValue ? 0.85 : 1)).current;
@@ -39,7 +39,7 @@ export function Input({
   useEffect(() => {
     const hasContent = !!value && value.length > 0;
     setHasValue(hasContent);
-    
+
     Animated.parallel([
       Animated.timing(labelPosition, {
         toValue: hasContent || isFocused ? 1 : 0,
@@ -58,7 +58,7 @@ export function Input({
     let toValue = 0;
     if (error) toValue = 2;
     else if (isFocused) toValue = 1;
-    
+
     Animated.timing(borderColor, {
       toValue,
       duration: 200,
@@ -96,19 +96,23 @@ export function Input({
       <Animated.View
         style={[
           styles.inputContainer,
-          { borderColor: borderColorInterpolate },
+          {
+            borderColor: borderColorInterpolate,
+            backgroundColor: '#F1E4D7', // beige légèrement plus foncé que la page pour bien détacher le champ
+          },
           error && styles.inputError,
         ]}
       >
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
-        
+
         <TextInput
           {...props}
           value={value}
           onFocus={handleFocus}
           onBlur={handleBlur}
           placeholder={isFocused || hasValue ? undefined : label}
-          placeholderTextColor={theme.colors.textMuted}
+          // Placeholder gris foncé (légèrement plus doux que le texte plein)
+          placeholderTextColor="#555555"
           style={[
             styles.input,
             leftIcon && styles.inputWithLeftIcon,
@@ -117,8 +121,8 @@ export function Input({
             style,
           ]}
         />
-        
-        {label && (
+
+        {label && (isFocused || hasValue || !!error) && (
           <Animated.View
             style={[
               styles.labelContainer,
@@ -130,27 +134,24 @@ export function Input({
             ]}
             pointerEvents="none"
           >
-          <Animated.Text
-            style={[
-              styles.label,
-              {
-                color: error
-                  ? theme.colors.error
-                  : isFocused
-                  ? theme.colors.primary
-                  : theme.colors.textMuted,
-                backgroundColor: 'transparent',
-              },
-            ]}
-          >
+            <Animated.Text
+              style={[
+                styles.label,
+                {
+                  // Label noir légèrement adouci (ou rouge en erreur)
+                  color: error ? theme.colors.error : '#222222',
+                  backgroundColor: 'transparent',
+                },
+              ]}
+            >
               {label}
             </Animated.Text>
           </Animated.View>
         )}
-        
+
         {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
       </Animated.View>
-      
+
       {(error || helperText) && (
         <Text
           style={[
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // fond neutre, lisible sur fond ivoire
     minHeight: 52,
     position: 'relative',
   },
@@ -186,6 +187,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     fontSize: 16,
+    fontWeight: '500',
   },
   inputWithLeftIcon: {
     paddingLeft: spacing.sm,
@@ -205,8 +207,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   label: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
   },
   helperText: {
     fontSize: 12,

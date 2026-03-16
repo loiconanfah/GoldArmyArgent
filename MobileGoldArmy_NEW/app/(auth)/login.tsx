@@ -46,7 +46,7 @@ export default function LoginScreen() {
     <ScreenWrapper>
       {/* Fond ivoire + cercle décoratif orange pâle */}
       <View style={StyleSheet.absoluteFill}>
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: C.bg }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F3EEE7' }]} />
         <View
           style={{
             position: 'absolute',
@@ -167,9 +167,9 @@ const styles = StyleSheet.create({
     marginBottom: SP.sm,
   },
   subtitle: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: C.textMid,
+    fontSize: 15,
+    lineHeight: 24,
+    color: C.text,
     textAlign: 'center',
     marginBottom: SP.xxl,
   },

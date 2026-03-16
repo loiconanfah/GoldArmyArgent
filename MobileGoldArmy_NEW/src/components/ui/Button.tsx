@@ -127,7 +127,8 @@ export function Button({
     switch (variant) {
       case 'primary':
       case 'secondary':
-        return theme.colors.textInverse;
+        // For primary/secondary buttons we force pure white text for maximum contrast
+        return '#FFFFFF';
       case 'outline':
       case 'ghost':
         return theme.colors.primary;
@@ -159,11 +160,11 @@ export function Button({
             style={[StyleSheet.absoluteFill, { borderRadius: theme.borderRadius.lg }]}
           />
         ) : null}
-        
+
         {loading ? (
-          <ActivityIndicator 
-            size="small" 
-            color={getTextColor()} 
+          <ActivityIndicator
+            size="small"
+            color={getTextColor()}
           />
         ) : (
           <Text

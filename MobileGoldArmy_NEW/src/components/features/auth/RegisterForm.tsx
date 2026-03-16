@@ -4,12 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@hooks/useAuth';
 import { useTheme } from '@hooks/useTheme';
-import { Button } from '@components/ui/Button';
 import { Input } from '@components/ui/Input';
 import { registerSchema, type RegisterFormData } from '@utils/validators';
 import { spacing } from '@theme/spacing';
@@ -59,7 +58,7 @@ export function RegisterForm() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
-            leftIcon={<Ionicons name="mail-outline" size={20} color={theme.colors.textMuted} />}
+            leftIcon={<Ionicons name="mail-outline" size={20} color="#222222" />}
           />
         )}
       />
@@ -75,7 +74,7 @@ export function RegisterForm() {
             onBlur={onBlur}
             error={errors.firstName?.message}
             autoCapitalize="words"
-            leftIcon={<Ionicons name="person-outline" size={20} color={theme.colors.textMuted} />}
+            leftIcon={<Ionicons name="person-outline" size={20} color="#222222" />}
           />
         )}
       />
@@ -91,7 +90,7 @@ export function RegisterForm() {
             onBlur={onBlur}
             error={errors.lastName?.message}
             autoCapitalize="words"
-            leftIcon={<Ionicons name="person-outline" size={20} color={theme.colors.textMuted} />}
+            leftIcon={<Ionicons name="person-outline" size={20} color="#222222" />}
           />
         )}
       />
@@ -109,13 +108,13 @@ export function RegisterForm() {
             secureTextEntry={!showPassword}
             autoCapitalize="none"
             autoComplete="password-new"
-            leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textMuted} />}
+            leftIcon={<Ionicons name="lock-closed-outline" size={20} color="#222222" />}
             rightIcon={
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color={theme.colors.textMuted}
+                  color="#222222"
                 />
               </TouchableOpacity>
             }
@@ -136,13 +135,13 @@ export function RegisterForm() {
             secureTextEntry={!showConfirmPassword}
             autoCapitalize="none"
             autoComplete="password-new"
-            leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textMuted} />}
+            leftIcon={<Ionicons name="lock-closed-outline" size={20} color="#222222" />}
             rightIcon={
               <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                 <Ionicons
                   name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color={theme.colors.textMuted}
+                  color="#222222"
                 />
               </TouchableOpacity>
             }
@@ -150,13 +149,20 @@ export function RegisterForm() {
         )}
       />
 
-      <Button
-        title="Créer mon compte"
+      <TouchableOpacity
         onPress={handleSubmit(onSubmit)}
-        loading={isLoading}
-        fullWidth
-        style={styles.button}
-      />
+        activeOpacity={0.85}
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        disabled={isLoading}
+      >
+        <View style={styles.buttonGradient}>
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>Créer mon compte</Text>
+          )}
+        </View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -167,5 +173,24 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: spacing.lg,
+    borderRadius: 999,
+    overflow: 'hidden',
+    height: 54,
+    backgroundColor: '#FF8C3A',
+    justifyContent: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: '#FFFFFF',
   },
 });
