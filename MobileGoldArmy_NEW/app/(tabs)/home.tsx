@@ -9,7 +9,6 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { MotiView } from 'moti';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/authStore';
 import { spacing } from '../../src/theme/spacing';
@@ -276,6 +275,24 @@ function ToolCard({
   // Press feedback animation for each card
   const scale = useRef(new Animated.Value(1)).current;
   const arrowAnim = useRef(new Animated.Value(0)).current;
+  const flashAnim = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(flashAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(flashAnim, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [flashAnim]);
 
   const handlePressIn = () => {
     Animated.parallel([
@@ -329,13 +346,9 @@ function ToolCard({
             </View>
           </View>
           <View style={[styles.toolHeroChip, { backgroundColor: `rgba(${hexToRgb(color)}, 0.08)` }]}>
-            <MotiView
-              from={{ opacity: 0.3 }}
-              animate={{ opacity: 1 }}
-              transition={{ loop: true, type: 'timing', duration: 1000 }}
-            >
+            <Animated.View style={{ opacity: flashAnim }}>
               <Ionicons name="flash" size={10} color={color} />
-            </MotiView>
+            </Animated.View>
             <Text style={[styles.toolHeroChipText, { color }]}>{tool.badge}</Text>
           </View>
         </View>
