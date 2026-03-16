@@ -65,6 +65,15 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="analyse"
+        options={{
+          title: 'Analyse',
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? 'analytics' : 'analytics-outline'} size={size} color={color} />
+          ),
+        }}
+      />
       {/* Cacher le Dashboard générique car l'Accueil est le nouveau Dashboard */}
       <Tabs.Screen
         name="dashboard"
