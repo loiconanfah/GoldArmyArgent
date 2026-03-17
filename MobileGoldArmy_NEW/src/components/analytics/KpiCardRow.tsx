@@ -15,7 +15,7 @@ export function KpiCardRow({ data }: KpiCardRowProps) {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.container}
       decelerationRate="fast"
-      snapToInterval={170 + 12} // Card width (170) + margin right (12)
+      snapToInterval={180 + 16} // Card width (180) + margin right (16)
     >
       {data.map((kpi, index) => (
         <KpiCard 

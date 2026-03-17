@@ -1,10 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import Svg, { Rect } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { spacing } from '../../theme/spacing';
 import { STATUS_COLORS, ApplicationStatus } from '../../types/analytics.types';
-
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 interface StatusData {
   status: ApplicationStatus;
@@ -17,179 +15,199 @@ interface StatusChartProps {
 }
 
 export function StatusChart({ data }: StatusChartProps) {
-  const growAnim = useRef(new Animated.Value(0)).current;
+  const cardAnim = useRef(new Animated.Value(0)).current;
+  const totalCount = data.reduce((acc, curr) => acc + curr.count, 0);
+  const maxCount = Math.max(...data.map(d => d.count)) || 1;
 
   useEffect(() => {
-    Animated.spring(growAnim, {
+    Animated.timing(cardAnim, {
       toValue: 1,
-      useNativeDriver: false, // SVG props cannot use native driver easily here
-      friction: 8,
-      tension: 40,
-      delay: 550, // Waits for screen and Growth chart to mostly establish
+      duration: 500,
+      delay: 200,
+      useNativeDriver: true,
     }).start();
-  }, [growAnim]);
-
-  const CHART_WIDTH = 300;
-  const CHART_HEIGHT = 160;
-  const BAR_MAX_HEIGHT = 120;
-  
-  const totalCount = data.reduce((acc, curr) => acc + curr.count, 0);
-  const maxCount = Math.max(...data.map(d => d.count)) || 1; // Prevent Div0
-  
-  const barWidth = 32;
-  const gap = (CHART_WIDTH - (data.length * barWidth)) / (data.length + 1);
+  }, [cardAnim]);
 
   return (
-    <View style={styles.card}>
+    <Animated.View style={[
+      styles.card,
+      {
+        opacity: cardAnim,
+        transform: [{ translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }]
+      }
+    ]}>
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>PIPELINE</Text>
-        <Text style={styles.title}>Par Statut</Text>
+        <View>
+          <Text style={styles.title}>Répartition par statut</Text>
+          <Text style={styles.subtitle}>{totalCount} candidatures au total</Text>
+        </View>
       </View>
 
-      {/* Custom Flex Legend replacing the bottom squeezed text */}
-      <View style={styles.legendWrapper}>
-        {data.map((item) => (
-          <View key={`leg-${item.status}`} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: STATUS_COLORS[item.status].text }]} />
-            <Text style={styles.legendText}>{item.label}</Text>
-          </View>
+      <View style={styles.statsList}>
+        {data.map((item, index) => (
+          <StatusItem
+            key={item.status}
+            item={item}
+            maxCount={maxCount}
+            totalCount={totalCount}
+            delay={index * 80}
+          />
         ))}
       </View>
+    </Animated.View>
+  );
+}
 
-      <View style={styles.chartWrapper}>
-        <Svg width="100%" height={CHART_HEIGHT} viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}>
-          {data.map((item, index) => {
-            const x = gap + (index * (barWidth + gap));
-            const targetHeight = (item.count / maxCount) * BAR_MAX_HEIGHT;
-            
-            // Interpolate height and Y position so it grows from the bottom
-            const animatedHeight = growAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, targetHeight]
-            });
-            const animatedY = growAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [CHART_HEIGHT, CHART_HEIGHT - targetHeight]
-            });
+function StatusItem({ 
+  item, 
+  maxCount, 
+  totalCount, 
+  delay 
+}: { 
+  item: StatusData; 
+  maxCount: number; 
+  totalCount: number;
+  delay: number;
+}) {
+  const widthAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const percentage = (item.count / totalCount) * 100;
+  const barWidth = (item.count / maxCount) * 100;
 
-            return (
-              <React.Fragment key={`bar-${index}`}>
-                {/* The Bar */}
-                <AnimatedRect
-                  x={x}
-                  y={animatedY}
-                  width={barWidth}
-                  height={animatedHeight}
-                  fill={STATUS_COLORS[item.status].text}
-                  rx={6} // Border radius top
-                />
-                
-                {/* Value Label above the bar */}
-                <Animated.Text
-                  style={{
-                    position: 'absolute',
-                    left: x + (barWidth / 2) - 10,
-                    top: Animated.subtract(animatedY, 20) as unknown as number,
-                    width: 20,
-                    textAlign: 'center',
-                    fontSize: 11,
-                    fontWeight: '800',
-                    color: '#1A1A1A',
-                    opacity: growAnim.interpolate({
-                      inputRange: [0.5, 1],
-                      outputRange: [0, 1]
-                    })
-                  }}
-                >
-                  {item.count}
-                </Animated.Text>
-              </React.Fragment>
-            );
-          })}
-        </Svg>
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 400,
+        delay: delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(widthAnim, {
+        toValue: barWidth,
+        duration: 800,
+        delay: delay + 200,
+        useNativeDriver: false,
+      })
+    ]).start();
+  }, [delay, barWidth]);
+
+  const statusInfo = STATUS_COLORS[item.status];
+
+  return (
+    <Animated.View style={[styles.statusItem, { opacity: opacityAnim }]}>
+      <View style={styles.statusHeader}>
+        <View style={styles.statusLeft}>
+          <View style={[styles.statusIndicator, { backgroundColor: statusInfo.text }]} />
+          <View style={styles.statusInfo}>
+            <Text style={styles.statusLabel}>{item.label}</Text>
+            <Text style={styles.statusCount}>{item.count} candidatures</Text>
+          </View>
+        </View>
+        <View style={styles.statusRight}>
+          <Text style={[styles.statusPercentage, { color: statusInfo.text }]}>
+            {Math.round(percentage)}%
+          </Text>
+        </View>
       </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Total : <Text style={styles.footerHighlight}>{totalCount}</Text> candidatures suivies
-        </Text>
+      <View style={styles.barContainer}>
+        <View style={styles.barBackground}>
+          <Animated.View 
+            style={[
+              styles.barFill, 
+              { 
+                backgroundColor: statusInfo.text,
+                width: widthAnim.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: ['0%', '100%']
+                })
+              }
+            ]} 
+          />
+        </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
-    padding: 24,
     marginHorizontal: spacing.xl,
     marginBottom: spacing.xl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: spacing.xl,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.02)',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.06,
-    shadowRadius: 32,
-    elevation: 4,
+    borderColor: '#EAEAE6',
   },
   header: {
-    marginBottom: spacing.md,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: '#F5D061',
-    textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontSize: 20,
+    fontWeight: '700',
     color: '#1A1A1A',
+    marginBottom: 4,
   },
-  legendWrapper: {
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666666',
+  },
+  statsList: {
+    gap: spacing.lg,
+  },
+  statusItem: {
+    gap: spacing.sm,
+  },
+  statusHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: spacing.lg,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  legendItem: {
+  statusLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 12,
-    marginBottom: 8,
+    flex: 1,
+    gap: spacing.md,
   },
-  legendDot: {
-    width: 8,
+  statusIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  statusInfo: {
+    flex: 1,
+  },
+  statusLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 2,
+  },
+  statusCount: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#999999',
+  },
+  statusRight: {
+    alignItems: 'flex-end',
+  },
+  statusPercentage: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  barContainer: {
+    marginTop: spacing.xs,
+  },
+  barBackground: {
     height: 8,
     borderRadius: 4,
-    marginRight: 6,
+    backgroundColor: '#F0F0F0',
+    overflow: 'hidden',
   },
-  legendText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6A6A64',
-  },
-  chartWrapper: {
-    height: 160,
-    width: '100%',
-    position: 'relative',
-  },
-  footer: {
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: '#F5F4F0',
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 11,
-    color: '#A0A0A0',
-  },
-  footerHighlight: {
-    color: '#1A1A1A',
-    fontWeight: '800',
+  barFill: {
+    height: '100%',
+    borderRadius: 4,
   },
 });

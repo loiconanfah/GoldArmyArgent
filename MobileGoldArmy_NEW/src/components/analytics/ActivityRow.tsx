@@ -16,7 +16,6 @@ function hashColor(str: string) {
 }
 
 export function ActivityRow({ item, delay = 0 }: { item: ActivityItem; delay?: number }) {
-  const slideAnim = useRef(new Animated.Value(-16)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -26,18 +25,12 @@ export function ActivityRow({ item, delay = 0 }: { item: ActivityItem; delay?: n
       Animated.parallel([
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 350,
+          duration: 300,
           useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 50,
-          friction: 7,
         }),
         Animated.timing(progressAnim, {
           toValue: item.progress,
-          duration: 900,
+          duration: 800,
           useNativeDriver: false,
         })
       ])
@@ -58,11 +51,10 @@ export function ActivityRow({ item, delay = 0 }: { item: ActivityItem; delay?: n
       styles.row,
       {
         opacity: opacityAnim,
-        transform: [{ translateX: slideAnim }]
       }
     ]}>
       {/* Left side: Avatar */}
-      <View style={[styles.avatar, { backgroundColor: `${avatarBgColor}20` }]}>
+      <View style={[styles.avatar, { backgroundColor: `${avatarBgColor}15` }]}>
         <Text style={[styles.avatarInitial, { color: avatarBgColor }]}>{initial}</Text>
       </View>
 
@@ -70,26 +62,18 @@ export function ActivityRow({ item, delay = 0 }: { item: ActivityItem; delay?: n
       <View style={styles.infoCol}>
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-          {/* Status Pill on the far right */}
-          <View style={[styles.statusPill, { backgroundColor: statusInfo.bg }]}>
-            <View style={[styles.statusDot, { backgroundColor: statusInfo.text }]} />
-            <Text style={[styles.statusText, { color: statusInfo.text }]}>
-              {item.status.replace('_', ' ').toUpperCase()}
-            </Text>
-          </View>
+          {/* Status Dot */}
+          <View style={[styles.statusDot, { backgroundColor: statusInfo.text }]} />
         </View>
 
-        <View style={styles.companyRow}>
-          <Ionicons name="business-outline" size={11} color="#A0A0A0" />
-          <Text style={styles.companyText} numberOfLines={1}>{item.company}</Text>
-        </View>
+        <Text style={styles.companyText} numberOfLines={1}>{item.company}</Text>
 
-        {/* Dynamic Progress Bar */}
+        {/* Progress Bar */}
         <View style={styles.progressRow}>
           <View style={styles.progressBg}>
-            <Animated.View style={[styles.progressFill, { width: progressWidth, backgroundColor: statusInfo.text }]} />
+            <Animated.View style={[styles.progressFill, { width: progressWidth, backgroundColor: '#F5D061' }]} />
           </View>
-          <Text style={[styles.progressValue, { color: statusInfo.text }]}>{item.progress}%</Text>
+          <Text style={styles.progressValue}>{item.progress}%</Text>
         </View>
       </View>
     </Animated.View>
@@ -102,19 +86,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: '#EAEAE6',
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
   },
   avatarInitial: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
   },
   infoCol: {
     flex: 1,
@@ -124,43 +108,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   title: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#1A1A1A',
-    letterSpacing: -0.2,
     flex: 1,
     marginRight: spacing.sm,
   },
-  companyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
   companyText: {
     fontSize: 12,
-    color: '#A0A0A0',
-    marginLeft: 4,
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
+    color: '#666666',
+    marginBottom: spacing.sm,
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 4,
-  },
-  statusText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   progressRow: {
     flexDirection: 'row',
@@ -170,7 +135,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#F5F4F0',
+    backgroundColor: '#F0F0F0',
     marginRight: spacing.sm,
     overflow: 'hidden',
   },
@@ -180,8 +145,9 @@ const styles = StyleSheet.create({
   },
   progressValue: {
     fontSize: 12,
-    fontWeight: '800',
-    width: 32, // Fixed width so text doesn't jump
+    fontWeight: '600',
+    color: '#666666',
+    width: 32,
     textAlign: 'right',
   },
 });

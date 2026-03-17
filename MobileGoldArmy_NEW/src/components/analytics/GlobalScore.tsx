@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { LinearGradient } from 'expo-linear-gradient';
 import { spacing } from '../../theme/spacing';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface GlobalScoreProps {
-  score: number; // 0 to 100
+  score: number;
   activityScore: number;
   networkScore: number;
   prepScore: number;
@@ -15,6 +14,7 @@ interface GlobalScoreProps {
 
 export function GlobalScore({ score, activityScore, networkScore, prepScore }: GlobalScoreProps) {
   const arcAnim = useRef(new Animated.Value(0)).current;
+  const cardAnim = useRef(new Animated.Value(0)).current;
   const [currentScore, setCurrentScore] = useState(0);
 
   useEffect(() => {
@@ -22,94 +22,93 @@ export function GlobalScore({ score, activityScore, networkScore, prepScore }: G
       setCurrentScore(Math.floor(value));
     });
 
-    Animated.timing(arcAnim, {
-      toValue: score,
-      duration: 1500,
-      delay: 500, // Stagger after line charts
-      useNativeDriver: false,
-    }).start();
+    Animated.parallel([
+      Animated.timing(cardAnim, {
+        toValue: 1,
+        duration: 400,
+        delay: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(arcAnim, {
+        toValue: score,
+        duration: 1500,
+        delay: 600,
+        useNativeDriver: false,
+      })
+    ]).start();
 
     return () => arcAnim.removeListener(listener);
-  }, [score, arcAnim]);
+  }, [score, arcAnim, cardAnim]);
 
-  // SVG Math for Circle
   const RADIUS = 45;
-  const STROKE_WIDTH = 10;
+  const STROKE_WIDTH = 6;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-  // Interpolate dashOffset so the circle "fills up"
   const strokeDashoffset = arcAnim.interpolate({
     inputRange: [0, 100],
     outputRange: [CIRCUMFERENCE, 0],
   });
 
   return (
-    <View style={styles.outerWrapper}>
-      <LinearGradient
-        colors={['rgba(245, 208, 97, 0.03)', 'rgba(255, 255, 255, 1)']}
-        style={styles.card}
-      >
-        <Text style={styles.title}>Ton Score Yayzoy</Text>
-        
-        <View style={styles.scoreRow}>
-          {/* SVG Circular Progress */}
-          <View style={styles.circleContainer}>
-            <Svg width="120" height="120" viewBox="0 0 120 120">
-              {/* Background Track */}
-              <Circle
-                cx="60"
-                cy="60"
-                r={RADIUS}
-                stroke="#F0F0EA"
-                strokeWidth={STROKE_WIDTH}
-                fill="none"
-              />
-              {/* Animated Progress Arc */}
-              <AnimatedCircle
-                cx="60"
-                cy="60"
-                r={RADIUS}
-                stroke="#F5D061" // Primary Gold (logo color)
-                strokeWidth={STROKE_WIDTH}
-                strokeLinecap="round"
-                fill="none"
-                strokeDasharray={CIRCUMFERENCE}
-                strokeDashoffset={strokeDashoffset}
-                // Rotate to start from top (-90 degrees)
-                transform="rotate(-90 60 60)" 
-              />
-            </Svg>
-            {/* Center Text */}
-            <View style={styles.scoreTextWrapper}>
-              <Text style={styles.scoreBig}>{currentScore}</Text>
-              <Text style={styles.scoreSmall}>/100</Text>
-            </View>
-          </View>
+    <Animated.View style={[
+      styles.card,
+      {
+        opacity: cardAnim,
+        transform: [{ scale: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) }]
+      }
+    ]}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Score Global</Text>
+      </View>
 
-          {/* Sub-Scores right side */}
-          <View style={styles.subScoresContainer}>
-            <SubScore label="Activité" value={activityScore} color="#F5D061" />
-            <SubScore label="Réseau" value={networkScore} color="#8B5CF6" />
-            <SubScore label="Préparation" value={prepScore} color="#10B981" />
+      <View style={styles.scoreRow}>
+        <View style={styles.circleWrapper}>
+          <Svg width="110" height="110" viewBox="0 0 110 110">
+            <Circle
+              cx="55"
+              cy="55"
+              r={RADIUS}
+              stroke="#F0F0F0"
+              strokeWidth={STROKE_WIDTH}
+              fill="none"
+            />
+            <AnimatedCircle
+              cx="55"
+              cy="55"
+              r={RADIUS}
+              stroke="#F5D061"
+              strokeWidth={STROKE_WIDTH}
+              strokeLinecap="round"
+              fill="none"
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={strokeDashoffset}
+              transform="rotate(-90 55 55)"
+            />
+          </Svg>
+          <View style={styles.centerContent}>
+            <Text style={styles.scoreBig}>{currentScore}</Text>
+            <Text style={styles.scoreLabel}>/100</Text>
           </View>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>🎯 Tu es dans le <Text style={{fontWeight: '700'}}>top 15%</Text> des chercheurs actifs !</Text>
+        <View style={styles.subScores}>
+          <SubScore label="Activité" value={activityScore} />
+          <SubScore label="Réseau" value={networkScore} />
+          <SubScore label="Préparation" value={prepScore} />
         </View>
-      </LinearGradient>
-    </View>
+      </View>
+    </Animated.View>
   );
 }
 
-function SubScore({ label, value, color }: { label: string, value: number, color: string }) {
+function SubScore({ label, value }: { label: string, value: number }) {
   const widthAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(widthAnim, {
       toValue: value,
       duration: 1000,
-      delay: 800,
+      delay: 1000,
       useNativeDriver: false,
     }).start();
   }, [value]);
@@ -123,108 +122,90 @@ function SubScore({ label, value, color }: { label: string, value: number, color
     <View style={styles.subScoreItem}>
       <View style={styles.subScoreHeader}>
         <Text style={styles.subScoreLabel}>{label}</Text>
-        <Text style={[styles.subScoreValue, { color }]}>{value}%</Text>
+        <Text style={styles.subScoreValue}>{value}%</Text>
       </View>
       <View style={styles.subBarBg}>
-        <Animated.View style={[styles.subBarFill, { backgroundColor: color, width }]} />
+        <Animated.View style={[styles.subBarFill, { width }]} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outerWrapper: {
+  card: {
     marginHorizontal: spacing.xl,
     marginBottom: spacing.xl,
-    borderRadius: 32,
-    shadowColor: '#F5D061',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 32,
-    elevation: 4,
-  },
-  card: {
-    borderRadius: 32,
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(245, 208, 97, 0.05)',
+    borderColor: '#EAEAE6',
+  },
+  header: {
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontSize: 18,
+    fontWeight: '700',
     color: '#1A1A1A',
-    marginBottom: spacing.md,
   },
   scoreRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: spacing.lg,
   },
-  circleContainer: {
-    width: 120,
-    height: 120,
+  circleWrapper: {
+    width: 110,
+    height: 110,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    marginRight: spacing.lg,
   },
-  scoreTextWrapper: {
+  centerContent: {
     position: 'absolute',
     alignItems: 'center',
-    justifyContent: 'center',
   },
   scoreBig: {
-    fontSize: 42,
-    fontWeight: '900',
-    letterSpacing: -2,
+    fontSize: 32,
+    fontWeight: '800',
     color: '#1A1A1A',
-    lineHeight: 46, // Tighter
+    lineHeight: 36,
   },
-  scoreSmall: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#A0A0A0',
-    marginTop: -4,
+  scoreLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#666666',
   },
-  subScoresContainer: {
+  subScores: {
     flex: 1,
+    justifyContent: 'center',
+    gap: spacing.md,
   },
   subScoreItem: {
-    marginBottom: 10,
+    gap: spacing.xs,
   },
   subScoreHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
   },
   subScoreLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#6A6A64',
+    fontWeight: '500',
+    color: '#666666',
   },
   subScoreValue: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
   subBarBg: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#F0F0EA',
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#F0F0F0',
     overflow: 'hidden',
   },
   subBarFill: {
     height: '100%',
-    borderRadius: 3,
-  },
-  footer: {
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(245, 208, 97, 0.1)',
-  },
-  footerText: {
-    fontSize: 13,
-    color: '#6A6A64',
-    fontStyle: 'italic',
+    borderRadius: 2,
+    backgroundColor: '#F5D061',
   },
 });

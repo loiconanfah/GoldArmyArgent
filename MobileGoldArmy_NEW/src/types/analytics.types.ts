@@ -27,19 +27,19 @@ export interface ActivityItem {
   date: string;
 }
 
-// Global precise palette requested by the user
+// Global precise palette using app theme colors (Gold/Orange primary)
 export const STATUS_COLORS: Record<ApplicationStatus, { text: string; bg: string }> = {
-  a_postuler: { text: '#F59E0B', bg: '#FFFBEB' }, // Ambre
-  envoye: { text: '#4A9EFF', bg: '#EBF4FF' },     // Bleu
-  entretien: { text: '#10B981', bg: '#E6FAF4' },  // Vert
-  relance: { text: '#EC4899', bg: '#FEF0F7' },    // Rose
-  offre: { text: '#F5D061', bg: '#FFF8DC' },      // Gold primary (logo color)
-  refuse: { text: '#9A9A94', bg: '#F5F4F0' },     // Gris
+  a_postuler: { text: '#A1A1AA', bg: 'rgba(161, 161, 170, 0.1)' }, // Muted Grey
+  envoye: { text: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' },     // Blue (Secondary)
+  entretien: { text: '#F5D061', bg: 'rgba(245, 208, 97, 0.15)' },  // Gold (Primary)
+  relance: { text: '#E6A32F', bg: 'rgba(230, 163, 47, 0.1)' },    // Gold Dark
+  offre: { text: '#F5D061', bg: 'rgba(245, 208, 97, 0.2)' },      // Gold (Primary) - Highlight
+  refuse: { text: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)' },     // Error Red
 };
 
 export const KPI_COLORS = {
-  candidatures: { text: '#F5D061', bg: '#FFF8DC' }, // Gold primary (logo color)
-  cv_analyses: { text: '#60A5FA', bg: '#EBF4FF' },  // Bleu (comme home)
-  entretiens: { text: '#10B981', bg: '#E6FAF4' },   // Vert
-  reseau: { text: '#BB86FC', bg: '#F3EFFE' },       // Violet (comme home)
+  candidatures: { text: '#F5D061', bg: 'rgba(245, 208, 97, 0.12)' }, // Gold (Primary)
+  cv_analyses: { text: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)' },  // Blue (Secondary)
+  entretiens: { text: '#9B59B6', bg: 'rgba(155, 89, 182, 0.12)' },   // Purple (Accent)
+  reseau: { text: '#E6A32F', bg: 'rgba(230, 163, 47, 0.12)' },       // Gold Dark
 };

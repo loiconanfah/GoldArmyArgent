@@ -1,5 +1,5 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, RefreshControl } from 'react-native';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Animated, TouchableOpacity, RefreshControl, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,8 @@ import { StatusChart } from '../../src/components/analytics/StatusChart';
 import { GlobalScore } from '../../src/components/analytics/GlobalScore';
 import { ActivityList } from '../../src/components/analytics/ActivityList';
 import { AdBanner } from '../../src/components/ui/AdBanner';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // -- MOCK DATA --
 const MOCK_KPIS: KpiData[] = [
@@ -50,54 +52,24 @@ export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
-  const [key, setKey] = useState(0); // Used to remount everything on refresh
+  const [key, setKey] = useState(0);
+  const [selectedPeriod, setSelectedPeriod] = useState<'7j' | '30j' | '90j'>('30j');
 
-  // Stagger Animations for screen load
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const headerSlideAnim = useRef(new Animated.Value(-10)).current;
+  // Animations
+  const cardsAnim = useRef(new Animated.Value(0)).current;
   const chartsAnim = useRef(new Animated.Value(0)).current;
-  const chartsSlideAnim = useRef(new Animated.Value(20)).current;
-
-  // Header dynamic greeting
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    const name = user?.firstName || (user?.email?.split('@')[0] || 'Toi');
-    
-    if (hour >= 6 && hour < 12) return `Bonjour, ${name} ☀️`;
-    if (hour >= 18 || hour < 6) return `Bonsoir, ${name} 🌙`;
-    return `Bon après-midi, ${name} 👋`;
-  }, [user]);
-
-  const startAnimations = () => {
-    // Reset
-    headerAnim.setValue(0);
-    headerSlideAnim.setValue(-10);
-    chartsAnim.setValue(0);
-    chartsSlideAnim.setValue(20);
-
-    // Stagger Sequence
-    Animated.stagger(200, [
-      Animated.parallel([
-        Animated.timing(headerAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.spring(headerSlideAnim, { toValue: 0, useNativeDriver: true })
-      ]),
-      Animated.parallel([
-        Animated.timing(chartsAnim, { toValue: 1, duration: 600, delay: 150, useNativeDriver: true }),
-        Animated.spring(chartsSlideAnim, { toValue: 0, delay: 150, useNativeDriver: true })
-      ])
-    ]).start();
-  };
 
   useEffect(() => {
-    startAnimations();
+    Animated.parallel([
+      Animated.timing(cardsAnim, { toValue: 1, duration: 600, delay: 100, useNativeDriver: true }),
+      Animated.timing(chartsAnim, { toValue: 1, duration: 700, delay: 300, useNativeDriver: true })
+    ]).start();
   }, [key]);
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    // Simulate network request
     setTimeout(() => {
       setRefreshing(false);
-      // Change key to remount all subcomponents and trigger their enter animations again
       setKey(prev => prev + 1);
     }, 1000);
   }, []);
@@ -105,8 +77,10 @@ export default function AnalyticsScreen() {
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
+      
+
       <ScrollView
-        key={`scroll-${key}`} // Easy remount
+        key={`scroll-${key}`}
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
@@ -122,59 +96,67 @@ export default function AnalyticsScreen() {
           />
         }
       >
-        {/* Abstract Background Elements */}
-        <View style={styles.bgGlowPurple} />
-        <View style={styles.bgGlowOrange} />
-
-        {/* SECTION 1: HEADER */}
-        <Animated.View style={[
-          styles.headerSection, 
-          { 
-            opacity: headerAnim,
-            transform: [{ translateY: headerSlideAnim }]
-          }
-        ]}>
-          <View style={styles.headerLeft}>
-            <View style={styles.headerTitleRow}>
-              <Text style={styles.headerTitle}>Organise tes recherches</Text>
-              <Ionicons name="flame" size={22} color="#F5D061" style={{ marginLeft: 8 }} />
-            </View>
-            <Text style={styles.subtitle}>Gère facilement tes candidatures, suis tes entretiens et atteins tes objectifs au même endroit.</Text>
+        {/* Period Selector - Simple Top Bar */}
+        <View style={styles.topBar}>
+          <View style={styles.periodSelector}>
+            {(['7j', '30j', '90j'] as const).map((period) => (
+              <TouchableOpacity
+                key={period}
+                style={[
+                  styles.periodBtn,
+                  selectedPeriod === period && styles.periodBtnActive
+                ]}
+                onPress={() => setSelectedPeriod(period)}
+              >
+                <Text style={[
+                  styles.periodBtnText,
+                  selectedPeriod === period && styles.periodBtnTextActive
+                ]}>
+                  {period}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-          <TouchableOpacity style={styles.periodFilter}>
-            <Ionicons name="calendar-outline" size={14} color="#F5D061" />
-            <Text style={styles.periodText}>30j</Text>
+          <TouchableOpacity style={styles.notificationBtn}>
+            <Ionicons name="notifications-outline" size={22} color="#1A1A1A" />
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>3</Text>
+            </View>
           </TouchableOpacity>
-        </Animated.View>
-
-        {/* SECTION 2: KPIs */}
-        <View style={styles.kpiSection}>
-          <KpiCardRow data={MOCK_KPIS} />
         </View>
 
-        {/* SECTION 3 & 4: CHARTS */}
-        <Animated.View style={{
-          opacity: chartsAnim,
-          transform: [{ translateY: chartsSlideAnim }]
-        }}>
+        {/* KPIs Section */}
+        <Animated.View style={[styles.section, { opacity: cardsAnim }]}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Vue d'ensemble</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllLink}>Voir tout →</Text>
+            </TouchableOpacity>
+          </View>
+          <KpiCardRow data={MOCK_KPIS} />
+        </Animated.View>
+
+        {/* Charts Section */}
+        <Animated.View style={[styles.section, { opacity: chartsAnim }]}>
           <GrowthChart data={MOCK_GROWTH} />
-          
-          {/* SECTION: GLOBAL SCORE (NEW) */}
           <GlobalScore 
-             score={74} 
-             activityScore={82} 
-             networkScore={68} 
-             prepScore={71} 
+            score={74} 
+            activityScore={82} 
+            networkScore={68} 
+            prepScore={71} 
           />
-          
           <StatusChart data={MOCK_STATUSES} />
         </Animated.View>
 
-        {/* SECTION 5: AD BANNER */}
-        <AdBanner />
+        {/* Ad Banner */}
+        <Animated.View style={{ opacity: chartsAnim }}>
+          <AdBanner />
+        </Animated.View>
 
-        {/* SECTION 6: RECENT ACTIVITY */}
-        <ActivityList data={MOCK_ACTIVITY} />
+        {/* Activity Section */}
+        <Animated.View style={[styles.section, { opacity: chartsAnim }]}>
+          <ActivityList data={MOCK_ACTIVITY} />
+        </Animated.View>
 
       </ScrollView>
     </View>
@@ -190,89 +172,89 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    // padding Bottom is handled by ActivityList to clear the Tab bar completely
+    paddingBottom: 100,
   },
-  bgGlowPurple: {
-    position: 'absolute',
-    top: 50,
-    right: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: '#F5D061',
-    opacity: 0.04,
-    transform: [{ scale: 1.5 }],
-  },
-  bgGlowOrange: {
-    position: 'absolute',
-    top: 300,
-    left: -150,
-    width: 350,
-    height: 350,
-    borderRadius: 175,
-    backgroundColor: '#60A5FA',
-    opacity: 0.03,
-    transform: [{ scale: 1.2 }],
-  },
-  headerSection: {
+  topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: spacing.xl,
-    marginBottom: spacing['2xl'],
+    marginBottom: spacing.xl,
   },
-  headerLeft: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  headerTitleRow: {
+  periodSelector: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    color: '#1A1A18',
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-    color: '#1A1A1A',
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#4A4A46',
-    lineHeight: 22,
-    maxWidth: '90%',
-  },
-  periodFilter: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    gap: spacing.sm,
     backgroundColor: '#FFFFFF',
+    padding: 4,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#EAEAE6',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
-  periodText: {
-    fontSize: 12,
+  periodBtn: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  periodBtnActive: {
+    backgroundColor: '#F5D061',
+  },
+  periodBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#666666',
+  },
+  periodBtnTextActive: {
+    color: '#1A1A1A',
+  },
+  notificationBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#EAEAE6',
+  },
+  badge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FAFAF8',
+  },
+  badgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  section: {
+    marginBottom: spacing['2xl'],
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    color: '#1A1A1A',
+  },
+  seeAllLink: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#F5D061',
-    marginLeft: 6,
-  },
-  kpiSection: {
-    marginBottom: spacing['2xl'],
-    // We do NOT have horizontal padding here because KpiCardRow uses ScrollView padding 
-    // to allow cards to bleed to the edge during scroll.
   },
 });
