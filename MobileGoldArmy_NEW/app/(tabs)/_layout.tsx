@@ -91,6 +91,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="reseaux"
+        options={{
+          title: 'Réseaux',
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? 'share-social' : 'share-social-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="crm"
         options={{
           title: 'Suivi',
