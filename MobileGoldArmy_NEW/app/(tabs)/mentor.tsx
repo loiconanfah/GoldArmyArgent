@@ -77,7 +77,8 @@ export default function MentorScreen() {
   }, [heroAnim, cardsAnim, listAnim]);
 
   const handleOpenAuditCv = () => {
-    router.push('/(tabs)/mentor-audit-cv');
+    // Page dédiée définie dans app/mentor-audit-cv.tsx
+    router.push('/mentor-audit-cv');
   };
 
   const handleOpenSimulator = () => {
