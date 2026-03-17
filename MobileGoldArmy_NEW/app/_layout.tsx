@@ -11,6 +11,7 @@ import { QueryProvider } from '../src/providers/QueryProvider';
 import { ThemeProvider } from '../src/providers/ThemeProvider';
 import { AuthProvider } from '../src/providers/AuthProvider';
 import { ToastContainer } from '../src/components/ui/Toast';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -46,23 +47,25 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: 'transparent' },
-            }}
-          >
-            <Stack.Screen name="index" options={{ gestureEnabled: false }} />
-            <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-          <ToastContainer />
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: 'transparent' },
+              }}
+            >
+              <Stack.Screen name="index" options={{ gestureEnabled: false }} />
+              <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+            <ToastContainer />
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryProvider>
+    </GestureHandlerRootView>
   );
 }
