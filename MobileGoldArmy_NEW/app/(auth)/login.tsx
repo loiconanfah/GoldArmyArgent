@@ -3,7 +3,7 @@
  * UI premium selon la spec (logo, fond ivoire, cercle décoratif, Google, liens)
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,11 +14,14 @@ import {
   Platform,
 } from 'react-native';
 import { Link } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenWrapper } from '../../src/components/layout/ScreenWrapper';
 import { LoginForm } from '../../src/components/features/auth/LoginForm';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../src/hooks/useAuth';
 
 const C = {
   primary: '#FF6B35',
@@ -41,7 +44,30 @@ const C = {
 const SP = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 };
 const R = { sm: 8, md: 14, lg: 20, xl: 28, full: 999 };
 
+WebBrowser.maybeCompleteAuthSession();
+
 export default function LoginScreen() {
+  const { loginWithGoogle, isLoading } = useAuth();
+
+  // Utiliser le même client ID que ton backend (settings.google_client_id)
+  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: googleClientId,
+    iosClientId: googleClientId,
+    androidClientId: googleClientId,
+  });
+
+  useEffect(() => {
+    const handleGoogleResponse = async () => {
+      if (response?.type === 'success' && response.authentication?.idToken) {
+        const idToken = response.authentication.idToken;
+        await loginWithGoogle(idToken);
+      }
+    };
+    void handleGoogleResponse();
+  }, [response, loginWithGoogle]);
+
   return (
     <ScreenWrapper>
       {/* Fond ivoire + cercle décoratif orange pâle */}
@@ -104,8 +130,19 @@ export default function LoginScreen() {
               <View style={styles.separatorLine} />
             </View>
 
-            {/* Bouton Google (UI seulement, logique OAuth à brancher) */}
-            <TouchableOpacity style={styles.googleButton} activeOpacity={0.8}>
+            {/* Bouton Google */}
+            <TouchableOpacity
+              style={[styles.googleButton, (!request || isLoading) && styles.googleButtonDisabled]}
+              activeOpacity={0.8}
+              disabled={!request || isLoading}
+              onPress={() => {
+                if (!googleClientId) {
+                  console.warn('EXPO_PUBLIC_GOOGLE_CLIENT_ID manquant dans le .env');
+                  return;
+                }
+                promptAsync();
+              }}
+            >
               <View style={styles.googleLogo}>
                 <View style={[styles.googleCircle, { backgroundColor: '#EA4335' }]} />
                 <View style={[styles.googleCircle, { backgroundColor: '#FBBC04' }]} />
@@ -226,6 +263,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: C.text,
+  },
+  googleButtonDisabled: {
+    opacity: 0.6,
   },
   footer: {
     flexDirection: 'row',

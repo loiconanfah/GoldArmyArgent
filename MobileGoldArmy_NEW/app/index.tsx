@@ -1,6 +1,7 @@
 /**
  * Index Route
- * Force l'affichage de l'onboarding en premier, pour simplifier
+ * Affiche toujours l'onboarding en premier (splash onboarding),
+ * puis redirige vers le login depuis l'onboarding lui-même.
  */
 
 import React, { useEffect } from 'react';
@@ -11,10 +12,9 @@ export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    // Pour l'instant, on force TOUJOURS l'onboarding en premier
     router.replace('/onboarding');
   }, [router]);
 
-  // On ne rend rien ici, c'est juste une route de redirection
+  // Route de redirection silencieuse
   return <View />;
 }

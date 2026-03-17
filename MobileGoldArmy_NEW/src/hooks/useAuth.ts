@@ -30,26 +30,53 @@ export function useAuth() {
     try {
       setLoading(true);
 
-      // TEMP: backend inactif → on crée une session locale mockée
-      const fakeUser = {
-        id: 'local-user',
-        full_name: email,
-        email,
-        avatar_url: undefined,
-        created_at: new Date().toISOString(),
-      } as any;
+      const response = await authService.login({ email, password });
 
-      const fakeAccessToken = 'local-access-token';
-      const fakeRefreshToken = 'local-refresh-token';
+      // Stocker les tokens JWT réels
+      await setAccessToken(response.accessToken);
+      await setRefreshToken(response.refreshToken);
 
-      await setAccessToken(fakeAccessToken);
-      await setRefreshToken(fakeRefreshToken);
+      setUser(response.user);
+      setTokens(response.accessToken, response.refreshToken);
 
-      setUser(fakeUser);
-      setTokens(fakeAccessToken, fakeRefreshToken);
-
-      showToast('Connecté (session locale)', 'success');
+      showToast('Connecté avec succès', 'success');
       router.replace('/(tabs)/home');
+    } catch (error: any) {
+      const message =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        'Connexion impossible. Vérifie tes identifiants.';
+      showToast(message, 'error');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Login via Google OAuth (ID token)
+   */
+  const loginWithGoogle = async (credential: string) => {
+    try {
+      setLoading(true);
+
+      const response = await authService.loginWithGoogle(credential);
+
+      await setAccessToken(response.accessToken);
+      await setRefreshToken(response.refreshToken);
+
+      setUser(response.user);
+      setTokens(response.accessToken, response.refreshToken);
+
+      showToast('Connecté avec Google', 'success');
+      router.replace('/(tabs)/home');
+    } catch (error: any) {
+      const message =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        'Connexion Google impossible. Réessaie.';
+      showToast(message, 'error');
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -117,6 +144,7 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     login,
+    loginWithGoogle,
     register,
     logout,
     refreshToken,
