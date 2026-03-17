@@ -121,17 +121,17 @@ export function StatusChart({ data }: StatusChartProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: spacing.lg,
+    borderRadius: 32,
+    padding: 24,
     marginHorizontal: spacing.xl,
     marginBottom: spacing.xl,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderColor: 'rgba(0,0,0,0.02)',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.06,
+    shadowRadius: 32,
+    elevation: 4,
   },
   header: {
     marginBottom: spacing.md,
@@ -145,9 +145,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '800',
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
     color: '#1A1A1A',
   },
   legendWrapper: {

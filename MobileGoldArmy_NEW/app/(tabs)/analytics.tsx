@@ -12,6 +12,7 @@ import { GrowthChart } from '../../src/components/analytics/GrowthChart';
 import { StatusChart } from '../../src/components/analytics/StatusChart';
 import { GlobalScore } from '../../src/components/analytics/GlobalScore';
 import { ActivityList } from '../../src/components/analytics/ActivityList';
+import { AdBanner } from '../../src/components/ui/AdBanner';
 
 // -- MOCK DATA --
 const MOCK_KPIS: KpiData[] = [
@@ -169,7 +170,10 @@ export default function AnalyticsScreen() {
           <StatusChart data={MOCK_STATUSES} />
         </Animated.View>
 
-        {/* SECTION 5: RECENT ACTIVITY */}
+        {/* SECTION 5: AD BANNER */}
+        <AdBanner />
+
+        {/* SECTION 6: RECENT ACTIVITY */}
         <ActivityList data={MOCK_ACTIVITY} />
 
       </ScrollView>

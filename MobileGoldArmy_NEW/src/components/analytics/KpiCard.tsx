@@ -70,40 +70,48 @@ export function KpiCard({ data, delay = 0 }: { data: KpiData; delay?: number }) 
       {
         opacity: opacityAnim,
         transform: [{ scale: scaleAnim }],
-        // Adding a very subtle colored shadow matching the metric
         shadowColor: data.color,
       }
     ]}>
-      {/* HEADER: Icon & Trend */}
+      {/* HEADER: Icon Circle - Large & Prominent */}
       <View style={styles.header}>
-        <View style={[styles.iconBox, { backgroundColor: data.colorPale }]}>
-          <Ionicons name={data.icon as any} size={20} color={data.color} />
+        <View style={[styles.iconCircle, { backgroundColor: data.colorPale }]}>
+          <Ionicons name={data.icon as any} size={24} color={data.color} />
         </View>
-        <View style={[styles.trendPill, { backgroundColor: trendBg }]}>
+        <View style={[styles.trendBadge, { backgroundColor: trendBg }]}>
+          <Ionicons 
+            name={isUp ? 'trending-up' : isDown ? 'trending-down' : 'remove'} 
+            size={10} 
+            color={trendColor} 
+            style={{ marginRight: 2 }}
+          />
           <Text style={[styles.trendText, { color: trendColor }]}>
-            {trendPrefix}{data.trend}%
+            {Math.abs(data.trend)}%
           </Text>
         </View>
       </View>
 
-      {/* BODY: Value & Label */}
+      {/* BODY: Value & Label - Better Typography */}
       <View style={styles.body}>
-        <Text style={[styles.value, { color: data.color }]}>{currentValue}</Text>
-        <Text style={[styles.label, { color: data.color }]}>{data.label}</Text>
+        <Text style={styles.value}>{currentValue}</Text>
+        <Text style={styles.label}>{data.label}</Text>
       </View>
 
-      {/* FOOTER: Progress Bar & SubLabel */}
+      {/* FOOTER: Progress Indicator & SubLabel */}
       <View style={styles.footer}>
-        <View style={[styles.progressBarBg, { backgroundColor: data.colorPale }]}>
-          <Animated.View 
-            style={[
-              styles.progressBarFill, 
-              { 
-                backgroundColor: data.color, 
-                width: progressWidth 
-              }
-            ]} 
-          />
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressBarBg, { backgroundColor: data.colorPale }]}>
+            <Animated.View 
+              style={[
+                styles.progressBarFill, 
+                { 
+                  backgroundColor: data.color, 
+                  width: progressWidth 
+                }
+              ]} 
+            />
+          </View>
+          <Text style={styles.progressPercent}>{data.progress}%</Text>
         </View>
         <Text style={styles.subLabel}>{data.subLabel}</Text>
       </View>
@@ -113,73 +121,97 @@ export function KpiCard({ data, delay = 0 }: { data: KpiData; delay?: number }) 
 
 const styles = StyleSheet.create({
   card: {
-    width: 160,
+    width: 170,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginRight: 12,
+    borderRadius: 32,
+    padding: 24,
+    marginRight: spacing.md,
+    // Premium soft float shadow
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 32,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-    // Neutral shadow combined with the dynamic colored shadow injected inline
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08, // Very subtle colorful glow
-    shadowRadius: 12,
-    elevation: 3,
+    borderColor: 'rgba(0,0,0,0.02)',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  iconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    // Subtle inner shadow effect
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  trendPill: {
+  trendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: 12,
   },
   trendText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
+    letterSpacing: 0.3,
   },
   body: {
     marginBottom: spacing.lg,
   },
   value: {
-    fontSize: 36,
+    fontSize: 42,
     fontWeight: '900',
-    letterSpacing: -1,
-    marginBottom: 2,
+    letterSpacing: -1.5,
+    color: '#1A1A18',
+    marginBottom: spacing.xs,
+    lineHeight: 48,
   },
   label: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4A4A46',
+    lineHeight: 20,
   },
   footer: {
     marginTop: 'auto',
   },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
   progressBarBg: {
-    height: 3,
-    borderRadius: 1.5,
-    width: '100%',
-    marginBottom: 8,
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    marginRight: spacing.xs,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 1.5,
+    borderRadius: 2,
+  },
+  progressPercent: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#1A1A18',
+    minWidth: 32,
+    textAlign: 'right',
   },
   subLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: '#A0A0A0',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9A9A94',
+    letterSpacing: 0.2,
   },
 });
