@@ -5,6 +5,9 @@ export interface SniperJob {
   location: string;
   source: string;
   match_score: number;
+  salary?: string;
+  type?: string;
+  posted_date?: string;
   url?: string;
   description?: string;
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Animated, ActivityIndicator, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Input } from '../../src/components/ui/Input';
@@ -10,10 +10,12 @@ import { cvService, CvUploadError } from '../../src/services/cvService';
 import { SniperJob } from '../../src/types/sniper.types';
 import { useUIStore } from '../../src/stores/uiStore';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 
 export default function SniperScreen() {
   const insets = useSafeAreaInsets();
   const { showToast } = useUIStore();
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
   const [limit, setLimit] = useState(20);
@@ -321,7 +323,7 @@ export default function SniperScreen() {
               <View style={styles.resultsList}>
                 {jobs.map((job, index) => (
                   <Animated.View 
-                    key={job.id || `job-${index}`} 
+                    key={`${job.id || 'job'}-${index}`} 
                     style={[
                       styles.jobCard,
                       {
@@ -337,10 +339,10 @@ export default function SniperScreen() {
                     <TouchableOpacity 
                       activeOpacity={0.7}
                       onPress={() => {
-                        if (job.url) {
-                          // TODO: Ouvrir le lien dans un navigateur
-                          showToast('Ouverture du lien...', 'info');
-                        }
+                        router.push({
+                          pathname: '/opportunity-details',
+                          params: { job: JSON.stringify(job) },
+                        });
                       }}
                     >
                       <View style={styles.jobContent}>
@@ -354,6 +356,34 @@ export default function SniperScreen() {
                             <Ionicons name="location-outline" size={14} color="#999999" style={{marginRight: 4}} />
                             <Text style={styles.jobLocation}>{job.location}</Text>
                           </View>
+                          {job.salary && (
+                            <View style={styles.jobSalaryRow}>
+                              <Ionicons name="cash-outline" size={14} color="#15803D" style={{ marginRight: 4 }} />
+                              <Text style={styles.jobSalary}>{job.salary}</Text>
+                            </View>
+                          )}
+                          <View style={styles.jobMetaRow}>
+                            {job.type && (
+                              <View style={styles.jobMetaPill}>
+                                <Ionicons name="briefcase-outline" size={12} color="#4B5563" style={{ marginRight: 4 }} />
+                                <Text style={styles.jobMetaText}>{job.type}</Text>
+                              </View>
+                            )}
+                            {job.posted_date && (
+                              <View style={styles.jobMetaPill}>
+                                <Ionicons name="time-outline" size={12} color="#4B5563" style={{ marginRight: 4 }} />
+                                <Text style={styles.jobMetaText}>{job.posted_date}</Text>
+                              </View>
+                            )}
+                          </View>
+                          {job.description && (
+                            <Text
+                              numberOfLines={2}
+                              style={styles.jobSnippet}
+                            >
+                              {job.description}
+                            </Text>
+                          )}
                         </View>
                         <View style={styles.jobRight}>
                           {/* Premium Match Badge */}
@@ -365,6 +395,39 @@ export default function SniperScreen() {
                             <Text style={styles.sourceText}>{job.source || 'N/A'}</Text>
                           </View>
                         </View>
+                      </View>
+                      {/* Actions */}
+                      <View style={styles.cardActionsRow}>
+                        <TouchableOpacity
+                          style={styles.applyButton}
+                          activeOpacity={0.85}
+                          onPress={() => {
+                            if (job.url) {
+                              Linking.openURL(job.url).catch(() => {
+                                showToast("Impossible d'ouvrir le lien de l'offre.", 'error');
+                              });
+                            } else {
+                              showToast("Lien de l'offre indisponible.", 'warning');
+                            }
+                          }}
+                        >
+                          <Ionicons name="paper-plane-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                          <Text style={styles.applyButtonText}>Postuler</Text>
+                        </TouchableOpacity>
+                        {job.url && (
+                          <TouchableOpacity
+                            style={styles.secondaryButton}
+                            activeOpacity={0.85}
+                            onPress={() => {
+                              router.push({
+                                pathname: '/opportunity-details',
+                                params: { job: JSON.stringify(job) },
+                              });
+                            }}
+                          >
+                            <Text style={styles.secondaryButtonText}>Voir l'offre</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </TouchableOpacity>
                   </Animated.View>
@@ -596,6 +659,41 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#777777',
   },
+  jobSalaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  jobSalary: {
+    fontSize: 13,
+    color: '#15803D',
+    fontWeight: '600',
+  },
+  jobMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+  },
+  jobMetaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#F3F4F6',
+  },
+  jobMetaText: {
+    fontSize: 11,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+  jobSnippet: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
   jobRight: {
     alignItems: 'flex-end',
     gap: 8,
@@ -625,6 +723,43 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#999999',
+  },
+  cardActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.md,
+  },
+  applyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F97316',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  applyButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  secondaryButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  secondaryButtonText: {
+    fontSize: 12,
+    color: '#4B5563',
+    fontWeight: '500',
   },
   errorCard: {
     flexDirection: 'row',

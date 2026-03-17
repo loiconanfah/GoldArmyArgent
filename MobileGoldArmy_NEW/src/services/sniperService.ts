@@ -23,7 +23,9 @@ export class SniperError extends Error {
 export const sniperService = {
   async searchJobs({ query, location, limit, cv_text, cv_filename }: SniperSearchPayload): Promise<SniperSearchResult> {
     const payload: any = {
-      message: `Je cherche des offres d'emploi pour le poste suivant : ${query}. Retourne uniquement des résultats d'offres d'emploi pertinents.`,
+      // Aligner strictement avec le frontend web (Opportunities.vue)
+      // pour que l'orchestrateur détecte correctement "job_search"
+      message: query,
       nb_results: limit,
       location,
       session_id: 'sniper-mobile',

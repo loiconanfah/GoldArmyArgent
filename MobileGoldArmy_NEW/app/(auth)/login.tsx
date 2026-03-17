@@ -14,14 +14,16 @@ import {
   Platform,
 } from 'react-native';
 import { Link } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
-import { LinearGradient } from 'expo-linear-gradient';
+import * as AuthSession from 'expo-auth-session';
 import { ScreenWrapper } from '../../src/components/layout/ScreenWrapper';
 import { LoginForm } from '../../src/components/features/auth/LoginForm';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/hooks/useAuth';
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const C = {
   primary: '#FF6B35',
@@ -44,25 +46,49 @@ const C = {
 const SP = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 };
 const R = { sm: 8, md: 14, lg: 20, xl: 28, full: 999 };
 
-WebBrowser.maybeCompleteAuthSession();
-
 export default function LoginScreen() {
   const { loginWithGoogle, isLoading } = useAuth();
 
-  // Utiliser le même client ID que ton backend (settings.google_client_id)
-  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+  
+  // CRUCIAL: Pour utiliser le proxy auth.expo.io sur iOS/Android, 
+  // Google doit croire qu'il  // On force l'URI Web car c'est la seule reconnue par le proxy auth.expo.io
+  const redirectUri = 'https://auth.expo.io/@nanfahwa/MobileGoldArmy';
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: googleClientId,
-    iosClientId: googleClientId,
-    androidClientId: googleClientId,
+    clientId: webClientId,
+    redirectUri,
+    scopes: ['profile', 'email'],
+    // On repasse en mode normal 'code' pour voir si le proxy d'Expo le traite mieux
   });
 
   useEffect(() => {
+    console.log('[Auth] webClientId:', webClientId);
+    console.log('[Auth] Force Redirect URI:', redirectUri);
+    // Diagnostic pour comprendre pourquoi le proxy auto ne marche pas
+    import('expo-constants').then(c => {
+      console.log('[Auth] App Ownership:', c.default.appOwnership);
+    });
+  }, [webClientId, redirectUri]);
+
+  useEffect(() => {
     const handleGoogleResponse = async () => {
-      if (response?.type === 'success' && response.authentication?.idToken) {
-        const idToken = response.authentication.idToken;
-        await loginWithGoogle(idToken);
+      try {
+        if (response) {
+          console.log('[Auth] Google Response:', response);
+          
+          if (response.type === 'success') {
+            const idToken = response.params?.id_token || response.authentication?.idToken;
+            if (idToken) {
+              console.log('[Auth] Token found, logging in...');
+              await loginWithGoogle(idToken);
+            } else {
+              console.error('[Auth] Success but no ID Token found.');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Auth] Error handling Google response:', err);
       }
     };
     void handleGoogleResponse();
@@ -135,12 +161,18 @@ export default function LoginScreen() {
               style={[styles.googleButton, (!request || isLoading) && styles.googleButtonDisabled]}
               activeOpacity={0.8}
               disabled={!request || isLoading}
-              onPress={() => {
-                if (!googleClientId) {
-                  console.warn('EXPO_PUBLIC_GOOGLE_CLIENT_ID manquant dans le .env');
-                  return;
+              onPress={async () => {
+                try {
+                  if (!webClientId) {
+                    console.warn('EXPO_PUBLIC_GOOGLE_CLIENT_ID manquant');
+                    return;
+                  }
+                  console.log('[Auth] Opening Google Auth with URL:', request?.url);
+                  // On force le proxy au moment du prompt pour Expo Go
+                  await promptAsync();
+                } catch (err) {
+                  console.error('[Auth] Prompt Error:', err);
                 }
-                promptAsync();
               }}
             >
               <View style={styles.googleLogo}>
