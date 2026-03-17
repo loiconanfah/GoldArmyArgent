@@ -82,7 +82,7 @@ export default function MentorScreen() {
   };
 
   const handleOpenSimulator = () => {
-    console.log('[Mentor] Simulateur d’entretien cliqué');
+    router.push('/mentor-simulator');
   };
 
   return (
