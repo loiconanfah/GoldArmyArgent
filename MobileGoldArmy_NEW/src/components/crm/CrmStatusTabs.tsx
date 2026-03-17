@@ -81,7 +81,7 @@ export const CrmStatusTabs: React.FC<Props> = ({ active, onChange, counts }) => 
 
 const styles = StyleSheet.create({
   row: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
   },
   tab: {
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   progressRow: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',

@@ -36,7 +36,7 @@ export const CrmStatsBand: React.FC<Props> = ({ counts }) => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
   },
   card: {

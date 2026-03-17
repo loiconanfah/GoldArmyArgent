@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, Text } from 'react-native';
-import { ScreenWrapper } from '../../src/components/layout/ScreenWrapper';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from '../../src/theme/spacing';
 import { CrmHeader } from '../../src/components/crm/CrmHeader';
 import { CrmUrlInput } from '../../src/components/crm/CrmUrlInput';
@@ -72,6 +72,7 @@ const INITIAL_DATA: Candidature[] = [
 ];
 
 export default function CrmScreen() {
+  const insets = useSafeAreaInsets();
   const [candidatures, setCandidatures] = useState<Candidature[]>(INITIAL_DATA);
   const [activeStatus, setActiveStatus] = useState<StatusKey>('a_postuler');
   const [url, setUrl] = useState('');
@@ -198,69 +199,80 @@ export default function CrmScreen() {
     // Placeholder for future API refresh; currently no-op
   };
 
+  const renderHeader = () => (
+    <View>
+      <CrmHeader onRefresh={handleRefresh} />
+      <CrmUrlInput url={url} onChangeUrl={setUrl} onSubmit={handleQuickAdd} loading={adding} />
+      <CrmStatsBand counts={counts} />
+      <CrmStatusTabs active={activeStatus} onChange={setActiveStatus} counts={counts} />
+    </View>
+  );
+
   return (
-    <ScreenWrapper>
+    <View style={styles.root}>
       <StatusBar style="dark" />
-      <View style={styles.root}>
-        <CrmHeader onRefresh={handleRefresh} />
-        <CrmUrlInput url={url} onChangeUrl={setUrl} onSubmit={handleQuickAdd} loading={adding} />
-        <CrmStatsBand counts={counts} />
-        <CrmStatusTabs active={activeStatus} onChange={setActiveStatus} counts={counts} />
-
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-          ListEmptyComponent={<CrmEmptyState status={activeStatus} />}
-          renderItem={({ item }) => (
-            <CandidatureCard
-              item={item}
-              onPressStatus={() => handleOpenStatusSheet(item)}
-              onSwipePrev={() => handleSwipePrev(item)}
-              onSwipeNext={() => handleSwipeNext(item)}
-            />
-          )}
-        />
-
-        {/* FAB */}
-        <TouchableOpacity
-          style={styles.fab}
-          activeOpacity={0.9}
-          onPress={() => setAddModalVisible(true)}
-        >
-          <Text style={styles.fabIcon}>＋</Text>
-        </TouchableOpacity>
-
-        {selected && (
-          <StatusBottomSheet
-            visible={bottomVisible}
-            onClose={() => setBottomVisible(false)}
-            currentStatus={selected.status}
-            title={selected.title}
-            company={selected.company}
-            onSelect={handleSelectStatus}
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        style={styles.list}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingTop: insets.top + spacing.xl },
+        ]}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={<CrmEmptyState status={activeStatus} />}
+        renderItem={({ item }) => (
+          <CandidatureCard
+            item={item}
+            onPressStatus={() => handleOpenStatusSheet(item)}
+            onSwipePrev={() => handleSwipePrev(item)}
+            onSwipeNext={() => handleSwipeNext(item)}
           />
         )}
+        showsVerticalScrollIndicator={false}
+      />
 
-        <AddCandidatureModal
-          visible={addModalVisible}
-          onClose={() => setAddModalVisible(false)}
-          onSubmit={handleAddModalSubmit}
+      {/* FAB */}
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.9}
+        onPress={() => setAddModalVisible(true)}
+      >
+        <Text style={styles.fabIcon}>＋</Text>
+      </TouchableOpacity>
+
+      {selected && (
+        <StatusBottomSheet
+          visible={bottomVisible}
+          onClose={() => setBottomVisible(false)}
+          currentStatus={selected.status}
+          title={selected.title}
+          company={selected.company}
+          onSelect={handleSelectStatus}
         />
-      </View>
-    </ScreenWrapper>
+      )}
+
+      <AddCandidatureModal
+        visible={addModalVisible}
+        onClose={() => setAddModalVisible(false)}
+        onSubmit={handleAddModalSubmit}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FAFAF8',
+    backgroundColor: '#F3EEE7',
+  },
+  list: {
+    flex: 1,
   },
   listContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxxl,
     paddingTop: spacing.sm,
   },
   fab: {

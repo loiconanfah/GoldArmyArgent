@@ -128,7 +128,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 18,
     backgroundColor: '#FFFFFF',
-    padding: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     shadowColor: 'rgba(15,23,42,0.06)',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 1,
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   avatar: {
     width: 40,
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F4F0',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   description: {
     fontSize: 13,
@@ -190,6 +191,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: spacing.xs,
   },
   statusPill: {
     flexDirection: 'row',

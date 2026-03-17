@@ -65,15 +65,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="analytics"
-        options={{
-          title: 'Analytics',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? 'analytics' : 'analytics-outline'} size={size} color={color} />
-          ),
-        }}
-      />
       {/* Cacher le Dashboard générique car l'Accueil est le nouveau Dashboard */}
       <Tabs.Screen
         name="dashboard"
@@ -113,15 +104,6 @@ export default function TabsLayout() {
         name="entretien"
         options={{
           href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profil',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
-          ),
         }}
       />
     </Tabs>
