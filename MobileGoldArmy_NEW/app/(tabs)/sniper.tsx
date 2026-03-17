@@ -1,54 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Input } from '../../src/components/ui/Input';
 import { spacing } from '../../src/theme/spacing';
 import { StatusBar } from 'expo-status-bar';
-
-interface SniperJob {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  source: string;
-  match: number;
-}
-
-const MOCK_JOBS: SniperJob[] = [
-  {
-    id: '1',
-    title: 'Product Designer Senior',
-    company: 'Stripe',
-    location: 'Remote · Montréal',
-    source: 'LinkedIn',
-    match: 92,
-  },
-  {
-    id: '2',
-    title: 'UX/UI Designer',
-    company: 'Figma',
-    location: 'Hybrid · Paris',
-    source: 'Indeed',
-    match: 88,
-  },
-  {
-    id: '3',
-    title: 'Product Designer',
-    company: 'Airbnb',
-    location: 'Remote · Europe',
-    source: 'Direct',
-    match: 84,
-  },
-];
+import { sniperService, SniperError } from '../../src/services/sniperService';
+import { cvService, CvUploadError } from '../../src/services/cvService';
+import { SniperJob } from '../../src/types/sniper.types';
+import { useUIStore } from '../../src/stores/uiStore';
+import * as Haptics from 'expo-haptics';
 
 export default function SniperScreen() {
   const insets = useSafeAreaInsets();
-  const [query, setQuery] = useState('Product Designer');
-  const [location, setLocation] = useState('Montréal');
-  const [limit, setLimit] = useState('20');
+  const { showToast } = useUIStore();
+  const [query, setQuery] = useState('');
+  const [location, setLocation] = useState('');
+  const [limit, setLimit] = useState(20);
   const [isSearching, setIsSearching] = useState(false);
   const [cvFileName, setCvFileName] = useState<string | null>(null);
+  const [cvText, setCvText] = useState<string | null>(null);
+  const [isUploadingCv, setIsUploadingCv] = useState(false);
+  const [jobs, setJobs] = useState<SniperJob[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
   // Animations
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -74,13 +49,53 @@ export default function SniperScreen() {
     ).start();
   }, []);
 
-  const handleUploadCv = () => {
-    setCvFileName('mon_cv.pdf');
+  const handleUploadCv = async () => {
+    if (isUploadingCv) return;
+
+    setIsUploadingCv(true);
+    
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      // Sélectionner et uploader le CV
+      const result = await cvService.pickAndUploadCv();
+      
+      // Stocker les infos du CV
+      setCvFileName(result.filename);
+      setCvText(result.text);
+      
+      showToast('CV uploadé avec succès !', 'success');
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error: any) {
+      console.error('[Sniper][CV Upload Error]', error);
+      
+      if (error instanceof CvUploadError) {
+        if (error.code === 'CANCELLED') {
+          // L'utilisateur a annulé, pas besoin d'afficher d'erreur
+          return;
+        }
+        showToast(error.message, 'error');
+      } else {
+        showToast('Erreur lors de l\'upload du CV', 'error');
+      }
+      
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsUploadingCv(false);
+    }
   };
 
-  const handleSearch = () => {
-    if (isSearching) return;
+  const handleSearch = async () => {
+    if (isSearching || !query.trim()) {
+      if (!query.trim()) {
+        showToast('Veuillez saisir un poste à rechercher', 'warning');
+      }
+      return;
+    }
+
     setIsSearching(true);
+    setError(null);
+    setHasSearched(true);
     
     // Press animation
     Animated.sequence([
@@ -88,13 +103,68 @@ export default function SniperScreen() {
       Animated.timing(searchBtnAnim, { toValue: 1, duration: 100, useNativeDriver: true })
     ]).start();
 
-    // Hide results, wait, show results
-    Animated.timing(resultsAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
-      setTimeout(() => {
-        setIsSearching(false);
-        Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-      }, 1500);
-    });
+    // Hide results
+    Animated.timing(resultsAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+
+    try {
+      // Haptic feedback
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      // Appel API avec CV si disponible
+      const result = await sniperService.searchJobs({
+        query: query.trim(),
+        location: location.trim() || 'Montréal',
+        limit,
+        cv_text: cvText || undefined,
+        cv_filename: cvFileName || undefined,
+      });
+
+      // Success
+      setJobs(result.matched_jobs || []);
+      
+      if (result.matched_jobs && result.matched_jobs.length > 0) {
+        showToast(`${result.total_jobs_found} offres trouvées !`, 'success');
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        showToast('Aucune offre trouvée pour cette recherche', 'info');
+      }
+
+      // Show results with animation
+      Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+    } catch (err: any) {
+      console.error('[Sniper][Search Error]', err);
+      
+      // Gestion des erreurs spécifiques
+      let errorMessage = 'Erreur lors de la recherche';
+      let toastType: 'error' | 'warning' = 'error';
+      
+      if (err instanceof SniperError) {
+        errorMessage = err.message;
+        if (err.type === 'limit_reached') {
+          toastType = 'warning';
+        }
+      } else if (err.response?.data) {
+        const data = err.response.data;
+        if (data.type === 'limit_reached') {
+          errorMessage = data.content || 'Quota de recherche atteint. Passe à un plan supérieur pour continuer.';
+          toastType = 'warning';
+        } else if (data.message) {
+          errorMessage = data.message;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      showToast(errorMessage, toastType);
+      setError(errorMessage);
+      setJobs([]);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      
+      // Show empty state
+      Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
@@ -149,17 +219,30 @@ export default function SniperScreen() {
           }
         ]}>
           {/* ZONE CV */}
-          <TouchableOpacity style={styles.cvArea} onPress={handleUploadCv} activeOpacity={0.7}>
-            <View style={[styles.cvIconHolder, cvFileName && styles.cvIconHolderActive]}>
-              <Ionicons name={cvFileName ? "document-text" : "cloud-upload-outline"} size={22} color={cvFileName ? "#F5D061" : "#A1A1AA"} />
-            </View>
+          <TouchableOpacity 
+            style={[styles.cvArea, isUploadingCv && styles.cvAreaDisabled]} 
+            onPress={handleUploadCv} 
+            activeOpacity={0.7}
+            disabled={isUploadingCv}
+          >
+            {isUploadingCv ? (
+              <ActivityIndicator size="small" color="#F5D061" style={{ marginRight: spacing.md }} />
+            ) : (
+              <View style={[styles.cvIconHolder, cvFileName && styles.cvIconHolderActive]}>
+                <Ionicons name={cvFileName ? "document-text" : "cloud-upload-outline"} size={22} color={cvFileName ? "#F5D061" : "#A1A1AA"} />
+              </View>
+            )}
             <View style={styles.cvInfo}>
               <Text style={styles.cvLabel}>CV utilisé par l'IA</Text>
               <Text style={styles.cvSubLabel}>
-                {cvFileName ? cvFileName : 'Toucher pour importer un CV (.pdf)'}
+                {isUploadingCv 
+                  ? 'Upload en cours...' 
+                  : cvFileName 
+                    ? cvFileName 
+                    : 'Toucher pour importer un CV (.pdf)'}
               </Text>
             </View>
-            {cvFileName && (
+            {cvFileName && !isUploadingCv && (
               <Ionicons name="checkmark-circle" size={20} color="#10B981" />
             )}
           </TouchableOpacity>
@@ -184,12 +267,16 @@ export default function SniperScreen() {
 
           <Animated.View style={{ transform: [{ scale: searchBtnAnim }] }}>
             <TouchableOpacity
-              style={[styles.searchButton, isSearching && styles.searchButtonDisabled]}
+              style={[styles.searchButton, (isSearching || !query.trim()) && styles.searchButtonDisabled]}
               activeOpacity={0.9}
               onPress={handleSearch}
-              disabled={isSearching}
+              disabled={isSearching || !query.trim()}
             >
-              <Ionicons name={isSearching ? "hourglass-outline" : "search"} size={20} color="#1A1A1A" style={{ marginRight: 8 }} />
+              {isSearching ? (
+                <ActivityIndicator size="small" color="#1A1A1A" style={{ marginRight: 8 }} />
+              ) : (
+                <Ionicons name="search" size={20} color="#1A1A1A" style={{ marginRight: 8 }} />
+              )}
               <Text style={styles.searchButtonText}>
                 {isSearching ? 'Analyse des offres en cours…' : 'Lancer le Scan Sniper'}
               </Text>
@@ -198,64 +285,94 @@ export default function SniperScreen() {
         </Animated.View>
 
         {/* RÉSULTATS */}
-        <Animated.View style={[
-          styles.resultsSection,
-          {
-            opacity: resultsAnim,
-            transform: [{ translateY: resultsAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }]
-          }
-        ]}>
-          <View style={styles.resultsHeader}>
-            <Text style={styles.resultsTitle}>Matchs Potentiels</Text>
-            <View style={styles.resultsCountBadge}>
-              <Text style={styles.resultsCountText}>{MOCK_JOBS.length}</Text>
-            </View>
-          </View>
-
-          <View style={styles.resultsList}>
-            {MOCK_JOBS.map((job, index) => (
-              <Animated.View 
-                key={job.id} 
-                style={[
-                  styles.jobCard,
-                  {
-                     // Give them a slight stagger delay relative to the main block
-                     transform: [{ 
-                       translateY: resultsAnim.interpolate({ 
-                         inputRange: [0, 1], 
-                         outputRange: [10 + (index * 5), 0] 
-                       }) 
-                     }]
-                  }
-                ]}
-              >
-                <View style={styles.jobContent}>
-                  <View style={styles.jobMain}>
-                     <Text style={styles.jobTitle}>{job.title}</Text>
-                     <View style={styles.jobCompanyRow}>
-                       <Ionicons name="business-outline" size={14} color="#666666" style={{marginRight: 4}} />
-                       <Text style={styles.jobCompany}>{job.company}</Text>
-                     </View>
-                     <View style={styles.jobLocationRow}>
-                       <Ionicons name="location-outline" size={14} color="#999999" style={{marginRight: 4}} />
-                       <Text style={styles.jobLocation}>{job.location}</Text>
-                     </View>
-                  </View>
-                  <View style={styles.jobRight}>
-                    {/* Premium Match Badge */}
-                    <View style={styles.matchBadge}>
-                      <Ionicons name="flash" size={12} color="#D97706" style={{marginRight: 2}} />
-                      <Text style={styles.matchText}>{job.match}%</Text>
-                    </View>
-                    <View style={styles.sourceTag}>
-                      <Text style={styles.sourceText}>{job.source}</Text>
-                    </View>
-                  </View>
+        {hasSearched && (
+          <Animated.View style={[
+            styles.resultsSection,
+            {
+              opacity: resultsAnim,
+              transform: [{ translateY: resultsAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }]
+            }
+          ]}>
+            <View style={styles.resultsHeader}>
+              <Text style={styles.resultsTitle}>Matchs Potentiels</Text>
+              {jobs.length > 0 && (
+                <View style={styles.resultsCountBadge}>
+                  <Text style={styles.resultsCountText}>{jobs.length}</Text>
                 </View>
-              </Animated.View>
-            ))}
-          </View>
-        </Animated.View>
+              )}
+            </View>
+
+            {error && (
+              <View style={styles.errorCard}>
+                <Ionicons name="alert-circle-outline" size={20} color="#E53935" style={{ marginRight: 8 }} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
+            {jobs.length === 0 && !error && (
+              <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={48} color="#CCCCCC" />
+                <Text style={styles.emptyTitle}>Aucun résultat</Text>
+                <Text style={styles.emptySubtitle}>Essaie avec d'autres mots-clés ou une autre localisation</Text>
+              </View>
+            )}
+
+            {jobs.length > 0 && (
+              <View style={styles.resultsList}>
+                {jobs.map((job, index) => (
+                  <Animated.View 
+                    key={job.id || `job-${index}`} 
+                    style={[
+                      styles.jobCard,
+                      {
+                        transform: [{ 
+                          translateY: resultsAnim.interpolate({ 
+                            inputRange: [0, 1], 
+                            outputRange: [10 + (index * 5), 0] 
+                          }) 
+                        }]
+                      }
+                    ]}
+                  >
+                    <TouchableOpacity 
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (job.url) {
+                          // TODO: Ouvrir le lien dans un navigateur
+                          showToast('Ouverture du lien...', 'info');
+                        }
+                      }}
+                    >
+                      <View style={styles.jobContent}>
+                        <View style={styles.jobMain}>
+                          <Text style={styles.jobTitle}>{job.title}</Text>
+                          <View style={styles.jobCompanyRow}>
+                            <Ionicons name="business-outline" size={14} color="#666666" style={{marginRight: 4}} />
+                            <Text style={styles.jobCompany}>{job.company}</Text>
+                          </View>
+                          <View style={styles.jobLocationRow}>
+                            <Ionicons name="location-outline" size={14} color="#999999" style={{marginRight: 4}} />
+                            <Text style={styles.jobLocation}>{job.location}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.jobRight}>
+                          {/* Premium Match Badge */}
+                          <View style={styles.matchBadge}>
+                            <Ionicons name="flash" size={12} color="#D97706" style={{marginRight: 2}} />
+                            <Text style={styles.matchText}>{Math.round(job.match_score)}%</Text>
+                          </View>
+                          <View style={styles.sourceTag}>
+                            <Text style={styles.sourceText}>{job.source || 'N/A'}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  </Animated.View>
+                ))}
+              </View>
+            )}
+          </Animated.View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -346,6 +463,9 @@ const styles = StyleSheet.create({
     borderColor: '#EAEAE6',
     borderStyle: 'dashed',
     marginBottom: spacing.xl,
+  },
+  cvAreaDisabled: {
+    opacity: 0.6,
   },
   cvIconHolder: {
     width: 40,
@@ -505,5 +625,40 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#999999',
+  },
+  errorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFEBEE',
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+    borderRadius: 16,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#C62828',
+    fontWeight: '600',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxxl,
+    paddingHorizontal: spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#666666',
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#999999',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

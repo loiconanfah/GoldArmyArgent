@@ -4,7 +4,7 @@
  */
 
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import { API_BASE_URL } from '@utils/constants';
+import { API_BASE_URL, API_ENDPOINTS } from '@utils/constants';
 import { getAccessToken, getRefreshToken, setAccessToken, setRefreshToken, clearTokens } from '@utils/storage';
 import type { ApiError, RefreshTokenResponse } from '@types/api.types';
 import { authService } from './authService';
@@ -29,6 +29,15 @@ api.interceptors.request.use(
       const token = await getAccessToken();
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
+      }
+      
+      // Si c'est un FormData, ne pas forcer Content-Type (axios le gère automatiquement)
+      if (config.data instanceof FormData) {
+        // Supprimer Content-Type pour que le navigateur/axios définisse automatiquement
+        // avec le boundary approprié
+        if (config.headers) {
+          delete config.headers['Content-Type'];
+        }
       }
     } catch (error) {
       console.error('[API][Request Interceptor]', error);
