@@ -26,7 +26,7 @@ export default function MentorAuditCvScreen() {
   const [rewriteContent, setRewriteContent] = useState<string | null>(null);
   const { showToast } = useUIStore();
   const [loadingStep, setLoadingStep] = useState(0);
-  const loadingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const LOADING_STEPS = [
     '1/4 – Préparation du CV…',
@@ -160,433 +160,450 @@ export default function MentorAuditCvScreen() {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-      // Parser le JSON du CV réécrit
+      // Parse the rewritten CV JSON
       let cvData: any = {};
       try {
         cvData = JSON.parse(rewriteContent);
       } catch {
-        // Si ce n'est pas du JSON, on utilise le texte brut comme fallback
-        cvData = { profile: rewriteContent, experience: [] };
+        cvData = { summary: rewriteContent };
       }
 
-      // Extraire les données du CV (structure complète)
-      const firstName = (cvData.firstName || cvData.full_name?.split(' ')[0] || parsedAudit?.candidate_name?.split(' ')[0] || 'PRENOM').toUpperCase();
-      const lastName = (cvData.lastName || cvData.full_name?.split(' ').slice(1).join(' ') || parsedAudit?.candidate_name?.split(' ').slice(1).join(' ') || 'NOM').toUpperCase();
-      const title = cvData.title || parsedAudit?.candidate_title || 'Titre professionnel';
-      const location = cvData.location || 'Localisation';
-      const phone = cvData.phone || cvData.contact?.phone || '';
-      const email = cvData.email || cvData.contact?.email || '';
-      const linkedin = cvData.linkedin || '';
-      const github = cvData.github || '';
-      const profile = cvData.profile || cvData.summary || '';
-      const education = Array.isArray(cvData.education) ? cvData.education : [];
-      const skills = Array.isArray(cvData.skills) ? cvData.skills : (typeof cvData.skills === 'object' && cvData.skills !== null ? Object.values(cvData.skills).flat() : []);
-      const experience = Array.isArray(cvData.experiences) ? cvData.experiences : (Array.isArray(cvData.experience) ? cvData.experience : []);
-      const projects = Array.isArray(cvData.projects) ? cvData.projects : [];
-      const languages = Array.isArray(cvData.languages) ? cvData.languages : [];
-      const certifications = Array.isArray(cvData.certifications) ? cvData.certifications : [];
-      const yearsExperience = cvData.yearsExperience || '10+';
-      const rating = parsedAudit?.ats_score ? (parsedAudit.ats_score / 20).toFixed(1) : '4.9';
+      // ── Field extraction with fallbacks ───────────────────────────────
+      const fullName   = cvData.full_name || parsedAudit?.candidate_name || 'Prénom Nom';
+      const nameParts  = fullName.trim().split(' ');
+      const firstName  = nameParts[0] || '';
+      const lastName   = nameParts.slice(1).join(' ') || '';
+      const jobTitle   = cvData.title || parsedAudit?.candidate_title || '';
+      const email      = cvData.email || '';
+      const phone      = cvData.phone || '';
+      const location   = cvData.location || '';
+      const linkedin   = cvData.linkedin || '';
+      const github     = cvData.github || '';
+      const summary    = cvData.summary || '';
+      const atsScore   = parsedAudit?.ats_score ? `${Math.round(parsedAudit.ats_score)}` : null;
+      const origScore  = parsedAudit?.original_ats_score ? `${Math.round(parsedAudit.original_ats_score)}` : null;
 
+      // experiences: [{title, company, location, start_date, end_date, bullets:[]}]
+      const experiences: any[] = Array.isArray(cvData.experiences) ? cvData.experiences : [];
+      // projects: [{name, description, bullets:[]}]
+      const projects: any[] = Array.isArray(cvData.projects) ? cvData.projects : [];
+      // education: [{degree, institution, location, year}]
+      const education: any[] = Array.isArray(cvData.education) ? cvData.education : [];
+      // skills: {Category: [item, ...]} or [item, ...]
+      let skillsHtml = '';
+      if (cvData.skills && typeof cvData.skills === 'object' && !Array.isArray(cvData.skills)) {
+        skillsHtml = Object.entries(cvData.skills as Record<string, string[]>)
+          .filter(([, items]) => Array.isArray(items) && items.length > 0)
+          .map(([cat, items]) => `
+            <div class="skill-cat">${escHtml(cat)}</div>
+            <div class="skill-pills">${(items as string[]).map(s => `<span class="pill">${escHtml(s)}</span>`).join('')}</div>
+          `).join('');
+      } else if (Array.isArray(cvData.skills)) {
+        skillsHtml = `<div class="skill-pills">${(cvData.skills as string[]).map(s => `<span class="pill">${escHtml(s)}</span>`).join('')}</div>`;
+      }
+      const languages: string[]      = Array.isArray(cvData.languages) ? cvData.languages : [];
+      const certifications: string[] = Array.isArray(cvData.certifications) ? cvData.certifications : [];
+
+      // ── Helper ────────────────────────────────────────────────────────
+      function escHtml(s: any): string {
+        return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+      function sectionHeader(label: string) {
+        return `<div class="section-head"><span class="section-line"></span><span class="section-label">${label}</span><span class="section-line"></span></div>`;
+      }
+
+      // ── HTML Template ─────────────────────────────────────────────────
       const html = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8" />
-            <style>
-              * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-              }
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-                background-color: #F0EFEA;
-                padding: 20px;
-                color: #1a1a1a;
-              }
-              .page {
-                max-width: 800px;
-                margin: 0 auto;
-                background: #F0EFEA;
-                padding: 20px;
-              }
-              
-              /* ── HEADER ────────────────────────────────────────── */
-              .header {
-                display: flex;
-                align-items: flex-end;
-                margin-bottom: 24px;
-                gap: 16px;
-              }
-              .photo-area {
-                width: 170px;
-                height: 200px;
-                position: relative;
-                margin-right: 8px;
-                flex-shrink: 0;
-              }
-              .rating-badge {
-                position: absolute;
-                top: 0;
-                right: 0;
-                display: flex;
-                align-items: center;
-                z-index: 10;
-                background-color: #F0EFEA;
-                padding: 2px 4px;
-                border-radius: 4px;
-                font-size: 11px;
-              }
-              .rating-label { color: #555; }
-              .rating-value { font-size: 12px; font-weight: 700; color: #1a1a1a; }
-              .rating-star { font-size: 12px; color: #F5C518; }
-              
-              .photo-decor-container {
-                position: absolute;
-                top: 14px;
-                left: 0;
-                width: 170px;
-                height: 180px;
-                z-index: 1;
-              }
-              .diamond {
-                position: absolute;
-                background-color: #F5C518;
-                transform: rotate(45deg);
-              }
-              .diamond-large {
-                width: 80px;
-                height: 80px;
-                top: 20px;
-                left: 10px;
-                border-radius: 6px;
-              }
-              .diamond-small {
-                width: 44px;
-                height: 44px;
-                top: 0;
-                left: 70px;
-                border-radius: 4px;
-              }
-              .exp-badge {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                background-color: #1a1a1a;
-                width: 60px;
-                height: 60px;
-                border-radius: 4px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                z-index: 5;
-              }
-              .exp-number {
-                color: #fff;
-                font-size: 20px;
-                font-weight: 900;
-                line-height: 22px;
-              }
-              .exp-label {
-                color: #e8e8e8;
-                font-size: 6px;
-                text-align: center;
-                margin-top: 2px;
-                line-height: 8px;
-              }
-              .arrow-circle {
-                position: absolute;
-                bottom: 10px;
-                left: 68px;
-                width: 26px;
-                height: 26px;
-                border-radius: 13px;
-                border: 1.5px solid #1a1a1a;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 5;
-              }
-              .arrow-text { font-size: 12px; color: #1a1a1a; }
-              
-              .photo-circle {
-                position: absolute;
-                right: 0;
-                top: 18px;
-                width: 110px;
-                height: 140px;
-                border-radius: 8px;
-                background-color: #c9bfb5;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 3;
-                overflow: hidden;
-              }
-              .photo-placeholder { font-size: 60px; }
-              
-              /* ── NAME / TITLE ────────────────────────────────── */
-              .name-area {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                justify-content: flex-end;
-                padding-bottom: 4px;
-              }
-              .first-name {
-                font-size: 18px;
-                letter-spacing: 6px;
-                color: #1a1a1a;
-                font-weight: 300;
-                text-transform: uppercase;
-              }
-              .last-name {
-                font-size: 52px;
-                font-weight: 900;
-                color: #1a1a1a;
-                letter-spacing: 10px;
-                line-height: 56px;
-                text-transform: uppercase;
-              }
-              .title-row {
-                display: flex;
-                align-items: center;
-                margin-top: 6px;
-                gap: 6px;
-              }
-              .snowflake-icon {
-                width: 20px;
-                height: 20px;
-                background-color: #1a1a1a;
-                border-radius: 10px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-              }
-              .snowflake-text { color: #fff; font-size: 10px; }
-              .job-title {
-                font-size: 14px;
-                font-style: italic;
-                color: #1a1a1a;
-                letter-spacing: 1px;
-              }
-              .location {
-                font-size: 12px;
-                color: #555;
-                margin-top: 4px;
-                letter-spacing: 0.5px;
-              }
-              
-              /* ── BODY ────────────────────────────────────────── */
-              .body {
-                display: flex;
-                flex-direction: row;
-                gap: 24px;
-              }
-              
-              /* ── SIDEBAR ─────────────────────────────────────── */
-              .sidebar {
-                width: 170px;
-                flex-shrink: 0;
-              }
-              .contact-block {
-                margin-bottom: 12px;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-              }
-              .contact-row {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-              }
-              .contact-icon { font-size: 12px; color: #1a1a1a; }
-              .contact-text { font-size: 11px; color: #555; }
-              
-              .divider {
-                height: 1px;
-                background-color: #e8e8e8;
-                margin: 14px 0;
-              }
-              
-              .section-title {
-                font-size: 13px;
-                font-weight: 800;
-                letter-spacing: 3px;
-                color: #1a1a1a;
-                text-transform: uppercase;
-                margin-bottom: 10px;
-              }
-              
-              .edu-block { margin-bottom: 12px; }
-              .edu-period { font-size: 10px; color: #555; }
-              .edu-degree { font-size: 11px; font-weight: 700; color: #1a1a1a; margin-top: 2px; }
-              .edu-school { font-size: 11px; color: #555; }
-              
-              .skills-cat {
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 1.5px;
-                color: #1a1a1a;
-                margin-bottom: 6px;
-              }
-              .skill-row {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                margin-bottom: 5px;
-              }
-              .bullet {
-                width: 5px;
-                height: 5px;
-                border-radius: 1px;
-                background-color: #1a1a1a;
-                flex-shrink: 0;
-              }
-              .skill-text { font-size: 11px; color: #555; }
-              
-              /* ── MAIN CONTENT ───────────────────────────────── */
-              .main { flex: 1; }
-              .profile-text {
-                font-size: 12px;
-                color: #555;
-                line-height: 18px;
-                margin-bottom: 4px;
-              }
-              
-              .exp-block { margin-bottom: 20px; }
-              .exp-period { font-size: 10px; color: #555; margin-bottom: 2px; }
-              .exp-title {
-                font-size: 12px;
-                font-weight: 800;
-                letter-spacing: 1.5px;
-                color: #1a1a1a;
-                margin-bottom: 6px;
-                text-transform: uppercase;
-              }
-              .exp-desc { font-size: 11px; color: #555; line-height: 17px; margin-bottom: 6px; }
-              .bullet-row {
-                display: flex;
-                align-items: flex-start;
-                gap: 6px;
-                margin-bottom: 4px;
-              }
-              .bullet-text { font-size: 11px; color: #555; flex: 1; line-height: 16px; }
-            </style>
-          </head>
-          <body>
-            <div class="page">
-              <!-- ── HEADER ── -->
-              <div class="header">
-                <!-- Left: photo area -->
-                <div class="photo-area">
-                  <div class="rating-badge">
-                    <span class="rating-label">Rated </span>
-                    <span class="rating-value">${rating}</span>
-                    <span class="rating-star"> ★</span>
-                  </div>
-                  <div class="photo-decor-container">
-                    <div class="diamond diamond-large"></div>
-                    <div class="diamond diamond-small"></div>
-                    <div class="exp-badge">
-                      <div class="exp-number">${yearsExperience}</div>
-                      <div class="exp-label">Years Experience<br/>In this Field.</div>
-                    </div>
-                    <div class="arrow-circle">
-                      <div class="arrow-text">↓</div>
-                    </div>
-                  </div>
-                  <div class="photo-circle">
-                    <div class="photo-placeholder">👤</div>
-                  </div>
-                </div>
-                
-                <!-- Right: name + title -->
-                <div class="name-area">
-                  <div class="first-name">${firstName}</div>
-                  <div class="last-name">${lastName}</div>
-                  <div class="title-row">
-                    <div class="snowflake-icon">
-                      <div class="snowflake-text">✳</div>
-                    </div>
-                    <div class="job-title">${title}</div>
-                  </div>
-                  <div class="location">~ ${location}</div>
-                </div>
-              </div>
-              
-              <!-- ── BODY (sidebar + main) ── -->
-              <div class="body">
-                <div class="sidebar">
-                  <!-- Contact -->
-                  <div class="contact-block">
-                    ${phone ? `<div class="contact-row"><span class="contact-icon">📞</span><span class="contact-text">${phone}</span></div>` : ''}
-                    ${email ? `<div class="contact-row"><span class="contact-icon">✉</span><span class="contact-text">${email}</span></div>` : ''}
-                  </div>
-                  
-                  ${(phone || email) && (education.length > 0 || skills.length > 0) ? '<div class="divider"></div>' : ''}
-                  
-                  <!-- Education -->
-                  ${education.length > 0 ? `
-                    <div class="section-title">EDUCATION</div>
-                    ${education.map((ed: any) => `
-                      <div class="edu-block">
-                        <div class="edu-period">${ed.period || ''}</div>
-                        <div class="edu-degree">${ed.degree || ''}</div>
-                        <div class="edu-school">${ed.school || ''}</div>
-                      </div>
-                    `).join('')}
-                    ${skills.length > 0 ? '<div class="divider"></div>' : ''}
-                  ` : ''}
-                  
-                  <!-- Skills -->
-                  ${skills.length > 0 ? `
-                    <div class="section-title">SKILLS</div>
-                    <div class="skills-cat">PROFESSIONAL</div>
-                    ${skills.map((skill: string) => `
-                      <div class="skill-row">
-                        <div class="bullet"></div>
-                        <div class="skill-text">${skill}</div>
-                      </div>
-                    `).join('')}
-                  ` : ''}
-                </div>
-                
-                <div class="main">
-                  <!-- Profile -->
-                  ${profile ? `
-                    <div class="section-title">PROFILE</div>
-                    <div class="profile-text">${profile}</div>
-                    <div class="divider"></div>
-                  ` : ''}
-                  
-                  <!-- Experience -->
-                  ${experience.length > 0 ? `
-                    <div class="section-title">EXPERIENCE</div>
-                    ${experience.map((exp: any) => `
-                      <div class="exp-block">
-                        <div class="exp-period">${exp.period || ''}</div>
-                        <div class="exp-title">${exp.title || ''}</div>
-                        ${exp.description ? `<div class="exp-desc">${exp.description}</div>` : ''}
-                        ${Array.isArray(exp.bullets) && exp.bullets.length > 0 ? exp.bullets.map((b: string) => `
-                          <div class="bullet-row">
-                            <div class="bullet"></div>
-                            <div class="bullet-text">${b}</div>
-                          </div>
-                        `).join('') : ''}
-                      </div>
-                    `).join('')}
-                  ` : ''}
-                </div>
-              </div>
-            </div>
-          </body>
-        </html>
-      `;
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-      const { uri } = await Print.printToFileAsync({ html });
+    *{margin:0;padding:0;box-sizing:border-box;}
+
+    body{
+      font-family:'Inter',system-ui,sans-serif;
+      background:#F0EFEA;
+      color:#1a1a1a;
+      font-size:11px;
+      line-height:1.5;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+
+    .page{
+      max-width:860px;
+      margin:0 auto;
+      background:#FAFAF8;
+      padding:0;
+      box-shadow:0 8px 40px rgba(0,0,0,0.12);
+    }
+
+    /* ── TOP BANNER ── */
+    .banner{
+      background:#1a1a1a;
+      color:#fff;
+      padding:36px 40px 28px;
+      position:relative;
+      overflow:hidden;
+    }
+    .banner::before{
+      content:'';
+      position:absolute;
+      top:-40px;right:-40px;
+      width:200px;height:200px;
+      background:rgba(255,107,53,0.15);
+      border-radius:50%;
+    }
+    .banner::after{
+      content:'';
+      position:absolute;
+      bottom:-30px;right:80px;
+      width:120px;height:120px;
+      background:rgba(255,107,53,0.08);
+      border-radius:50%;
+    }
+    .banner-inner{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      position:relative;
+      z-index:1;
+    }
+    .name-block{}
+    .first-name{
+      font-size:13px;
+      font-weight:400;
+      letter-spacing:6px;
+      color:rgba(255,255,255,0.65);
+      text-transform:uppercase;
+      margin-bottom:2px;
+    }
+    .last-name{
+      font-size:42px;
+      font-weight:800;
+      letter-spacing:4px;
+      line-height:1;
+      text-transform:uppercase;
+      color:#fff;
+    }
+    .job-title{
+      font-size:13px;
+      font-weight:400;
+      color:rgba(255,255,255,0.75);
+      letter-spacing:2px;
+      margin-top:8px;
+    }
+    .ats-badge{
+      text-align:right;
+    }
+    .ats-label{
+      font-size:9px;
+      letter-spacing:2px;
+      color:rgba(255,255,255,0.5);
+      text-transform:uppercase;
+    }
+    .ats-value{
+      font-size:44px;
+      font-weight:800;
+      color:#FF6B35;
+      line-height:1;
+    }
+    .ats-suffix{
+      font-size:18px;
+      color:rgba(255,107,53,0.7);
+    }
+    .ats-orig{
+      font-size:10px;
+      color:rgba(255,255,255,0.4);
+      margin-top:2px;
+    }
+
+    /* ── CONTACT BAR ── */
+    .contact-bar{
+      background:#FF6B35;
+      padding:10px 40px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:14px;
+      align-items:center;
+    }
+    .contact-item{
+      display:flex;
+      align-items:center;
+      gap:5px;
+      font-size:10px;
+      color:#fff;
+      font-weight:500;
+      letter-spacing:0.3px;
+    }
+    .contact-icon{font-size:11px;}
+
+    /* ── BODY ── */
+    .body-layout{
+      display:flex;
+      gap:0;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar{
+      width:240px;
+      flex-shrink:0;
+      background:#F3EEE6;
+      padding:28px 22px;
+    }
+
+    .section-head{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin:20px 0 10px;
+    }
+    .section-head:first-child{margin-top:0;}
+    .section-line{
+      flex:1;
+      height:1px;
+      background:#ccc;
+    }
+    .section-label{
+      font-size:9px;
+      font-weight:700;
+      letter-spacing:2.5px;
+      text-transform:uppercase;
+      color:#888;
+      white-space:nowrap;
+    }
+
+    /* Education */
+    .edu-block{margin-bottom:12px;}
+    .edu-degree{font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:2px;}
+    .edu-school{font-size:10px;color:#555;}
+    .edu-meta{font-size:10px;color:#888;margin-top:1px;}
+
+    /* Skills */
+    .skill-cat{
+      font-size:9px;
+      font-weight:700;
+      letter-spacing:1.5px;
+      text-transform:uppercase;
+      color:#FF6B35;
+      margin:10px 0 5px;
+    }
+    .skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;}
+    .pill{
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:3px;
+      padding:2px 7px;
+      font-size:10px;
+      color:#333;
+      font-weight:500;
+    }
+
+    /* Languages */
+    .lang-item{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      margin-bottom:5px;
+      font-size:10px;
+      color:#333;
+    }
+    .lang-dot{
+      width:6px;height:6px;
+      border-radius:50%;
+      background:#FF6B35;
+      flex-shrink:0;
+    }
+
+    /* Certs */
+    .cert-item{
+      font-size:10px;
+      color:#444;
+      margin-bottom:5px;
+      padding-left:10px;
+      border-left:2px solid #FF6B35;
+    }
+
+    /* ── MAIN ── */
+    .main{
+      flex:1;
+      padding:28px 32px;
+    }
+
+    /* Summary */
+    .summary-text{
+      font-size:11px;
+      line-height:1.7;
+      color:#444;
+      margin-bottom:4px;
+    }
+
+    /* Experience */
+    .exp-block{margin-bottom:22px;}
+    .exp-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      margin-bottom:2px;
+    }
+    .exp-title{
+      font-size:12px;
+      font-weight:700;
+      color:#1a1a1a;
+      letter-spacing:0.5px;
+    }
+    .exp-dates{
+      font-size:9px;
+      color:#888;
+      font-weight:500;
+      letter-spacing:0.5px;
+      white-space:nowrap;
+      margin-left:8px;
+    }
+    .exp-company{
+      font-size:11px;
+      color:#FF6B35;
+      font-weight:600;
+      margin-bottom:6px;
+    }
+    .exp-loc{color:#888;font-weight:400;}
+    .bullet-row{
+      display:flex;
+      align-items:flex-start;
+      gap:7px;
+      margin-bottom:4px;
+    }
+    .bullet-dot{
+      width:5px;height:5px;
+      border-radius:1px;
+      background:#FF6B35;
+      margin-top:4px;
+      flex-shrink:0;
+    }
+    .bullet-text{font-size:11px;color:#444;flex:1;line-height:1.55;}
+
+    /* Projects */
+    .proj-block{margin-bottom:16px;}
+    .proj-name{font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:3px;}
+    .proj-desc{font-size:11px;color:#555;margin-bottom:5px;line-height:1.55;}
+
+    /* ── PAGE BREAK ── */
+    @media print{
+      .page{box-shadow:none;}
+      body{background:#fff;}
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- BANNER -->
+  <div class="banner">
+    <div class="banner-inner">
+      <div class="name-block">
+        <div class="first-name">${escHtml(firstName)}</div>
+        <div class="last-name">${escHtml(lastName)}</div>
+        ${jobTitle ? `<div class="job-title">— ${escHtml(jobTitle)}</div>` : ''}
+      </div>
+      ${atsScore ? `
+      <div class="ats-badge">
+        <div class="ats-label">Score ATS</div>
+        <div class="ats-value">${escHtml(atsScore)}<span class="ats-suffix">%</span></div>
+        ${origScore ? `<div class="ats-orig">avant : ${escHtml(origScore)}%</div>` : ''}
+      </div>` : ''}
+    </div>
+  </div>
+
+  <!-- CONTACT BAR -->
+  ${(email || phone || location || linkedin || github) ? `
+  <div class="contact-bar">
+    ${email    ? `<div class="contact-item"><span class="contact-icon">✉</span>${escHtml(email)}</div>` : ''}
+    ${phone    ? `<div class="contact-item"><span class="contact-icon">☎</span>${escHtml(phone)}</div>` : ''}
+    ${location ? `<div class="contact-item"><span class="contact-icon">⌖</span>${escHtml(location)}</div>` : ''}
+    ${linkedin ? `<div class="contact-item"><span class="contact-icon">in</span>${escHtml(linkedin)}</div>` : ''}
+    ${github   ? `<div class="contact-item"><span class="contact-icon">⌾</span>${escHtml(github)}</div>` : ''}
+  </div>` : ''}
+
+  <!-- BODY -->
+  <div class="body-layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      ${education.length > 0 ? `
+      ${sectionHeader('Formation')}
+      ${education.map((ed: any) => `
+        <div class="edu-block">
+          <div class="edu-degree">${escHtml(ed.degree || '')}</div>
+          <div class="edu-school">${escHtml(ed.institution || ed.school || '')}</div>
+          <div class="edu-meta">${[ed.location, ed.year].filter(Boolean).map(escHtml).join(' · ')}</div>
+        </div>
+      `).join('')}` : ''}
+
+      ${skillsHtml ? `
+      ${sectionHeader('Compétences')}
+      ${skillsHtml}` : ''}
+
+      ${languages.length > 0 ? `
+      ${sectionHeader('Langues')}
+      ${languages.map((l: string) => `<div class="lang-item"><div class="lang-dot"></div>${escHtml(l)}</div>`).join('')}` : ''}
+
+      ${certifications.length > 0 ? `
+      ${sectionHeader('Certifications')}
+      ${certifications.map((c: string) => `<div class="cert-item">${escHtml(c)}</div>`).join('')}` : ''}
+
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      ${summary ? `
+      ${sectionHeader('Profil')}
+      <p class="summary-text">${escHtml(summary)}</p>` : ''}
+
+      ${experiences.length > 0 ? `
+      ${sectionHeader('Expériences')}
+      ${experiences.map((exp: any) => `
+        <div class="exp-block">
+          <div class="exp-header">
+            <div class="exp-title">${escHtml(exp.title || '')}</div>
+            <div class="exp-dates">${[exp.start_date, exp.end_date].filter(Boolean).map(escHtml).join(' – ')}</div>
+          </div>
+          <div class="exp-company">
+            ${escHtml(exp.company || '')}${exp.location ? ` <span class="exp-loc">· ${escHtml(exp.location)}</span>` : ''}
+          </div>
+          ${Array.isArray(exp.bullets) && exp.bullets.length > 0 ? exp.bullets.map((b: string) => `
+            <div class="bullet-row">
+              <div class="bullet-dot"></div>
+              <div class="bullet-text">${escHtml(b)}</div>
+            </div>`).join('') : ''}
+        </div>
+      `).join('')}` : ''}
+
+      ${projects.length > 0 ? `
+      ${sectionHeader('Projets')}
+      ${projects.map((p: any) => `
+        <div class="proj-block">
+          <div class="proj-name">${escHtml(p.name || '')}</div>
+          ${p.description ? `<div class="proj-desc">${escHtml(p.description)}</div>` : ''}
+          ${Array.isArray(p.bullets) && p.bullets.length > 0 ? p.bullets.map((b: string) => `
+            <div class="bullet-row">
+              <div class="bullet-dot"></div>
+              <div class="bullet-text">${escHtml(b)}</div>
+            </div>`).join('') : ''}
+        </div>
+      `).join('')}` : ''}
+
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
