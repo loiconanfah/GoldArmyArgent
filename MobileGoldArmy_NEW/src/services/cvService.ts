@@ -1,5 +1,7 @@
 import api from './api';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import { Buffer } from 'buffer';
 
 export interface CvUploadResult {
   success: boolean;
@@ -114,4 +116,36 @@ export const cvService = {
     const asset = pickResult.assets[0];
     return await this.uploadCv(asset.uri, asset.name || 'cv.pdf');
   },
+
+  /**
+   * Génère un PDF premium via le backend
+   */
+  async generateCvPdf(cvData: any, themeId: string = 'goldarmy'): Promise<string> {
+    try {
+      const response = await api.post('/api/generate-cv-pdf', {
+        cv_json: cvData,
+        theme_id: themeId,
+        filename: 'CV_GoldArmy_Optimise.pdf'
+      }, {
+        responseType: 'arraybuffer',
+        headers: {
+          'Accept': 'application/pdf'
+        }
+      });
+
+      // Convertir ArrayBuffer en Base64
+      const base64 = Buffer.from(response.data, 'binary').toString('base64');
+      
+      // Sauvegarder dans le cache local
+      const fileUri = FileSystem.cacheDirectory + 'CV_GoldArmy.pdf';
+      await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      return fileUri;
+    } catch (error: any) {
+      console.error('[cvService] Error generating PDF:', error);
+      throw new Error("Erreur lors de la génération du PDF côté serveur.");
+    }
+  }
 };

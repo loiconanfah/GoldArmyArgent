@@ -59,6 +59,9 @@ export default function RootLayout() {
             >
               <Stack.Screen name="index" options={{ gestureEnabled: false }} />
               <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+              <Stack.Screen name="mentor-audit-cv" options={{}} />
+              <Stack.Screen name="mentor-simulator" options={{}} />
+              <Stack.Screen name="opportunity-details" options={{}} />
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
             </Stack>

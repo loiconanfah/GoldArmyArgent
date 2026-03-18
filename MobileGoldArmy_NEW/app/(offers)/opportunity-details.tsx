@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SniperJob } from '../src/types/sniper.types';
-import { spacing } from '../src/theme/spacing';
+import { SniperJob } from '../../src/types/sniper.types';
+import { spacing } from '../../src/theme/spacing';
 
 export default function OpportunityDetailsScreen() {
   const router = useRouter();

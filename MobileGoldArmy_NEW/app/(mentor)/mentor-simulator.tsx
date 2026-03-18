@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing } from '../src/theme/spacing';
+import { spacing } from '../../src/theme/spacing';
 import { useRouter } from 'expo-router';
 
 type CvSource = 'profile' | 'upload';
