@@ -6,6 +6,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, ViewStyle, Animated } from 'react-native';
 import { useTheme } from '@hooks/useTheme';
+import { loaderStyles as styles } from './styles/Loader.styles';
 
 interface LoaderProps {
   size?: number;
@@ -58,12 +59,3 @@ export function Loader({ size = 24, color, style }: LoaderProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  spinner: {
-    borderStyle: 'solid',
-  },
-});

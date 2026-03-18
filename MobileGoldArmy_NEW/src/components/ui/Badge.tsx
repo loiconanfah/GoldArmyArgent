@@ -6,7 +6,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { useTheme } from '@hooks/useTheme';
-import { spacing } from '@theme/spacing';
+import { badgeStyles as styles } from './styles/Badge.styles';
 
 export type BadgeVariant = 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info';
 
@@ -89,17 +89,3 @@ export function Badge({ label, variant = 'primary', style, textStyle }: BadgePro
   );
 }
 
-const styles = StyleSheet.create({
-  badge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-});

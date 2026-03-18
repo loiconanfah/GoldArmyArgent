@@ -10,6 +10,7 @@ import { useTheme } from '@hooks/useTheme';
 import { useHaptics } from '@hooks/useHaptics';
 import { spacing } from '@theme/spacing';
 import { shadows } from '@theme/shadows';
+import { buttonStyles as styles } from './styles/Button.styles';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -192,14 +193,3 @@ export function Button({
   return buttonContent;
 }
 
-const styles = StyleSheet.create({
-  button: {
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  fullWidth: {
-    width: '100%',
-  },
-});

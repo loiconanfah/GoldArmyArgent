@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@hooks/useTheme';
 import { formatInitials } from '@utils/formatters';
+import { avatarStyles as styles } from './styles/Avatar.styles';
 
 interface AvatarProps {
   uri?: string;
@@ -68,17 +69,3 @@ export function Avatar({ uri, firstName, lastName, size = 48, style }: AvatarPro
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  initials: {
-    fontWeight: '700',
-  },
-});

@@ -9,8 +9,7 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@hooks/useTheme';
 import { useUIStore, type ToastType } from '@stores/uiStore';
-import { spacing } from '@theme/spacing';
-import { shadows } from '@theme/shadows';
+import { toastStyles as styles, toastContainerStyles } from './styles/Toast.styles';
 
 interface ToastProps {
   id: string;
@@ -116,36 +115,6 @@ export function Toast({ id, message, type, onDismiss }: ToastProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: spacing.sm,
-  },
-  blur: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    ...shadows.lg,
-  },
-  toast: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderLeftWidth: 4,
-    minHeight: 48,
-  },
-  icon: {
-    marginRight: spacing.md,
-  },
-  message: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  closeButton: {
-    padding: spacing.xs,
-    marginLeft: spacing.sm,
-  },
-});
-
 /**
  * Toast Container
  * Renders all active toasts
@@ -163,13 +132,3 @@ export function ToastContainer() {
     </View>
   );
 }
-
-const toastContainerStyles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 60,
-    left: spacing.lg,
-    right: spacing.lg,
-    zIndex: 9999,
-  },
-});

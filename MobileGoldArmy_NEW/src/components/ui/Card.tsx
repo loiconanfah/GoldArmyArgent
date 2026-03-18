@@ -10,6 +10,7 @@ import { useTheme } from '@hooks/useTheme';
 import { useHaptics } from '@hooks/useHaptics';
 import { spacing } from '@theme/spacing';
 import { shadows } from '@theme/shadows';
+import { cardStyles as styles } from './styles/Card.styles';
 
 interface CardProps {
   children: React.ReactNode;
@@ -85,13 +86,3 @@ export function Card({
   return cardContent;
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  content: {
-    padding: spacing.lg,
-  },
-});
