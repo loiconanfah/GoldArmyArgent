@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,17 +6,46 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+  Clipboard,
+  Alert,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { spacing } from '../../src/theme/spacing';
+import { networkService } from '../../src/services/networkService';
+import { profileService } from '../../src/services/profileService';
+import { 
+  HrProfile, 
+  DecisionMaker, 
+  NetworkContact, 
+  EmailDraft 
+} from '../../src/types/network.types';
 
 type NetworksTab = 'scout' | 'carnet';
 
 export default function ReseauxScreen() {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = React.useState<NetworksTab>('scout');
+  const [activeTab, setActiveTab] = useState<NetworksTab>('scout');
+  const [cvText, setCvText] = useState('');
+
+  useEffect(() => {
+    // Initial load: Profile & Contacts
+    const init = async () => {
+      try {
+        const profile = await profileService.getProfile();
+        if (profile.cv_text) setCvText(profile.cv_text);
+      } catch (err) {
+        console.warn('Erreur chargement profil CV:', err);
+      }
+    };
+    init();
+  }, []);
 
   return (
     <View style={styles.root}>
@@ -31,6 +60,7 @@ export default function ReseauxScreen() {
       >
         {/* HERO */}
         <View style={styles.heroCard}>
+          <LinearGradient colors={['#E5F5FF', '#FFFFFF']} style={StyleSheet.absoluteFill} />
           <View style={styles.heroBadgeRow}>
             <View style={styles.heroDot} />
             <Text style={styles.heroBadgeText}>INTELLIGENCE RÉSEAUX ACTIVE</Text>
@@ -41,7 +71,7 @@ export default function ReseauxScreen() {
           </Text>
           <Text style={styles.heroSubtitle}>
             Utilise l’OSINT pour identifier les décideurs et générer des approches
-            froides percutantes qu’elles ne peuvent pas ignorer.
+            percutantes.
           </Text>
         </View>
 
@@ -55,218 +85,341 @@ export default function ReseauxScreen() {
           />
           <TabPill
             label="Agent Headhunter"
-            icon="person-search-outline" as any
-            active={false}
-            onPress={() => {}}
+            icon="person-search-outline"
+            active={false} // Pas encore implémenté en profondeur
+            onPress={() => Alert.alert("Agent Headhunter", "Le mode Headhunter Pro sera activé dans la prochaine mise à jour.")}
           />
           <TabPill
-            label="Carnet d’adresses"
+            label="Carnet"
             icon="book-outline"
             active={activeTab === 'carnet'}
             onPress={() => setActiveTab('carnet')}
           />
         </View>
 
-        {activeTab === 'scout' ? <ScoutSection /> : <CarnetSection />}
+        {activeTab === 'scout' ? <ScoutSection cvText={cvText} /> : <CarnetSection />}
       </ScrollView>
     </View>
   );
 }
 
-interface TabPillProps {
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap | any;
-  active: boolean;
-  onPress: () => void;
-}
+// --- TAB PILL ---
+const TabPill: React.FC<{ label: string; icon: any; active: boolean; onPress: () => void }> = ({ label, icon, active, onPress }) => (
+  <TouchableOpacity
+    style={[styles.tabPill, active && styles.tabPillActive]}
+    activeOpacity={0.9}
+    onPress={onPress}
+  >
+    <Ionicons name={icon} size={14} color={active ? '#FFFFFF' : '#4A4A46'} />
+    <Text style={[styles.tabPillText, active && styles.tabPillTextActive]}>{label}</Text>
+  </TouchableOpacity>
+);
 
-const TabPill: React.FC<TabPillProps> = ({ label, icon, active, onPress }) => {
-  return (
-    <TouchableOpacity
-      style={[
-        styles.tabPill,
-        active && styles.tabPillActive,
-      ]}
-      activeOpacity={0.9}
-      onPress={onPress}
-    >
-      <Ionicons
-        name={icon as any}
-        size={14}
-        color={active ? '#FFFFFF' : '#4A4A46'}
-      />
-      <Text
-        style={[
-          styles.tabPillText,
-          active && styles.tabPillTextActive,
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-};
+// --- SCOUT SECTION ---
+const ScoutSection: React.FC<{ cvText: string }> = ({ cvText }) => {
+  const [companyName, setCompanyName] = useState('');
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [hrProfiles, setHrProfiles] = useState<HrProfile[]>([]);
+  const [hasEnriched, setHasEnriched] = useState(false);
 
-const ScoutSection: React.FC = () => {
+  // Draft states
+  const [selectedHr, setSelectedHr] = useState<string>('');
+  const [requestType, setRequestType] = useState<'emploi' | 'stage'>('emploi');
+  const [targetDomain, setTargetDomain] = useState('');
+  const [isDrafting, setIsDrafting] = useState(false);
+  const [draftResult, setDraftResult] = useState<EmailDraft | null>(null);
+  const [isDraftModalVisible, setIsDraftModalVisible] = useState(false);
+
+  const handleEnrich = async () => {
+    if (!companyName.trim()) return;
+    setIsEnriching(true);
+    setHasEnriched(false);
+    setHrProfiles([]);
+    try {
+      const data = await networkService.enrichCompany(companyName);
+      setHrProfiles(data);
+      setHasEnriched(true);
+    } catch (err: any) {
+      Alert.alert("Erreur Scout", err.message || "Impossible de trouver des profils.");
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
+  const handleGenerateDraft = async () => {
+    if (!companyName.trim()) {
+       Alert.alert("Info manquante", "Précise d'abord l'entreprise dans la recherche Scout.");
+       return;
+    }
+    setIsDrafting(true);
+    try {
+      const draft = await networkService.generateDraft({
+        company_name: companyName,
+        hr_name: selectedHr,
+        request_type: requestType,
+        target_domain: targetDomain,
+        cv_text: cvText
+      });
+      setDraftResult(draft);
+      setIsDraftModalVisible(true);
+    } catch (err: any) {
+      Alert.alert("Erreur IA", err.message || "La génération a échoué.");
+    } finally {
+      setIsDrafting(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (draftResult) {
+      const fullText = `Objet: ${draftResult.subject}\n\n${draftResult.body}`;
+      Clipboard.setString(fullText);
+      Alert.alert("Copié !", "L'approche a été copiée dans ton presse-papier.");
+    }
+  };
+
   return (
     <View style={styles.section}>
-      {/* Bloc requête principale */}
+      {/* Scout Module */}
       <View style={styles.cardWide}>
         <View style={styles.sectionHeaderRow}>
           <View style={styles.sectionHeaderIcon}>
             <Ionicons name="sparkles-outline" size={18} color="#16A34A" />
           </View>
-          <Text style={styles.sectionHeaderTitle}>
-            Scout OSINT – Trouver les Décideurs RH
-          </Text>
+          <Text style={styles.sectionHeaderTitle}>Scout OSINT – Cibles Stratégiques</Text>
         </View>
-        <View style={styles.mainRow}>
+        <View style={styles.mainSearchRow}>
           <View style={styles.inputMainWrapper}>
             <Ionicons name="business-outline" size={16} color="#9A9A94" />
             <TextInput
               placeholder="Nom de l’entreprise cible..."
-              placeholderTextColor="#9A9A94"
+              placeholderTextColor="#9CA3AF"
               style={styles.inputMain}
+              value={companyName}
+              onChangeText={setCompanyName}
             />
           </View>
-          <TouchableOpacity style={styles.analyserBtn} activeOpacity={0.9}>
-            <Ionicons name="scan-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.analyserText}>Analyser</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Paramètres IA + état résultat */}
-      <View style={styles.twoColumnsRow}>
-        <View style={styles.paramsCard}>
-          <View style={styles.sectionHeaderRow}>
-            <Ionicons name="options-outline" size={16} color="#6366F1" />
-            <Text style={styles.paramsTitle}>Paramètres de l’IA</Text>
-          </View>
-
-          <View style={styles.fieldBlock}>
-            <Text style={styles.fieldLabel}>Type de demande</Text>
-            <View style={styles.segmentRow}>
-              <View style={styles.segmentActive}>
-                <Text style={styles.segmentActiveText}>Emploi</Text>
-              </View>
-              <View style={styles.segment}>
-                <Text style={styles.segmentText}>Stage / Partenariat</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.fieldBlock}>
-            <Text style={styles.fieldLabel}>Statut</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="person-outline" size={16} color="#9A9A94" />
-              <TextInput
-                placeholder="ex: Jean Dupont (RH)"
-                placeholderTextColor="#9A9A94"
-                style={styles.input}
-              />
-            </View>
-          </View>
-
-          <View style={styles.fieldBlock}>
-            <Text style={styles.fieldLabel}>Domaine visé</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="code-slash-outline" size={16} color="#9A9A94" />
-              <TextInput
-                placeholder="ex: Analyste SOC, Dév Frontend..."
-                placeholderTextColor="#9A9A94"
-                style={styles.input}
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.primaryBtn} activeOpacity={0.9}>
-            <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.primaryBtnText}>Générer l’approche</Text>
+          <TouchableOpacity 
+            style={styles.analyserBtn} 
+            activeOpacity={0.8}
+            onPress={handleEnrich}
+            disabled={isEnriching}
+          >
+            {isEnriching ? <ActivityIndicator color="#FFF" size="small" /> : <Ionicons name="scan-outline" size={18} color="#FFFFFF" />}
+            <Text style={styles.analyserText}>{isEnriching ? '...' : 'Analyser'}</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.resultCard}>
-          <View style={styles.resultIconWrapper}>
-            <Ionicons name="mail-outline" size={28} color="#CBD5F5" />
+        {/* Identified Profiles */}
+        {hasEnriched && (
+          <View style={styles.hrScrollArea}>
+            <Text style={styles.hrListTitle}>{hrProfiles.length} DÉCIDEURS IDENTIFIÉS</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hrScrollContent}>
+              {hrProfiles.map((hr, idx) => (
+                <TouchableOpacity 
+                  key={idx} 
+                  style={[styles.hrMiniCard, selectedHr === hr.name && styles.hrMiniCardActive]}
+                  onPress={() => setSelectedHr(hr.name)}
+                >
+                  <View style={styles.hrIconCircle}>
+                    <Ionicons name="person-outline" size={16} color="#111827" />
+                  </View>
+                  <Text style={styles.hrName} numberOfLines={1}>{hr.name}</Text>
+                  {selectedHr === hr.name && <View style={styles.checkDot} />}
+                </TouchableOpacity>
+              ))}
+              {hrProfiles.length === 0 && (
+                <Text style={styles.emptyHr}>Aucun profil identifié pour le moment.</Text>
+              )}
+            </ScrollView>
           </View>
-          <Text style={styles.resultTitle}>En attente de génération</Text>
-          <Text style={styles.resultSubtitle}>
-            Renseigne l’entreprise et lance l’analyse pour générer ton premier message
-            d’approche.
-          </Text>
-        </View>
+        )}
       </View>
+
+      {/* IA Parameters & Generation */}
+      <View style={styles.paramsCard}>
+        <View style={styles.sectionHeaderRow}>
+          <Ionicons name="options-outline" size={16} color="#6366F1" />
+          <Text style={styles.paramsTitle}>Configuration de l’approche</Text>
+        </View>
+
+        <View style={styles.fieldBlock}>
+          <Text style={styles.fieldLabel}>Objectif de la quête</Text>
+          <View style={styles.segmentRow}>
+            <TouchableOpacity 
+              style={requestType === 'emploi' ? styles.segmentActive : styles.segment}
+              onPress={() => setRequestType('emploi')}
+            >
+              <Text style={requestType === 'emploi' ? styles.segmentActiveText : styles.segmentText}>Emploi</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={requestType === 'stage' ? styles.segmentActive : styles.segment}
+              onPress={() => setRequestType('stage')}
+            >
+              <Text style={requestType === 'stage' ? styles.segmentActiveText : styles.segmentText}>Stage / Alternance</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.fieldBlock}>
+          <Text style={styles.fieldLabel}>Domaine visé</Text>
+          <View style={styles.inputRow}>
+            <Ionicons name="code-slash-outline" size={16} color="#9A9A94" />
+            <TextInput
+              placeholder="ex: SOC Analyst, Dev Python..."
+              placeholderTextColor="#9CA3AF"
+              style={styles.input}
+              value={targetDomain}
+              onChangeText={setTargetDomain}
+            />
+          </View>
+        </View>
+
+        <TouchableOpacity 
+          style={styles.primaryBtn} 
+          activeOpacity={0.8}
+          onPress={handleGenerateDraft}
+          disabled={isDrafting}
+        >
+          {isDrafting ? <ActivityIndicator color="#FFF" /> : (
+            <>
+              <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.primaryBtnText}>Générer l’approche personnalisée</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* DRAFT MODAL */}
+      <Modal
+        visible={isDraftModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsDraftModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={[styles.modalContent, { marginTop: 80 }]}>
+             <View style={styles.modalHeader}>
+                <View style={styles.modalBranding}>
+                   <Image source={require('../../assets/logosansfond.png')} style={styles.modalLogo} resizeMode="contain" />
+                   <Text style={styles.modalBrandTxt}>GOLDARMY AI APPROACH</Text>
+                </View>
+                <TouchableOpacity onPress={() => setIsDraftModalVisible(false)} style={styles.closeModalBtn}>
+                   <Ionicons name="close-circle" size={32} color="#1A1A1F" />
+                </TouchableOpacity>
+             </View>
+
+             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.draftScroll}>
+                <View style={styles.subjectBox}>
+                   <Text style={styles.subjectLabel}>OBJET:</Text>
+                   <Text style={styles.subjectText}>{draftResult?.subject}</Text>
+                </View>
+
+                <View style={styles.bodyBox}>
+                   <Text style={styles.bodyText}>{draftResult?.body}</Text>
+                   <Text style={styles.aiTag}>GENÉRÉ PAR GEMINI 2.0 FLASH // GOLDARMY INTELLIGENCE</Text>
+                </View>
+
+                <TouchableOpacity style={styles.copyBtn} onPress={copyToClipboard}>
+                   <LinearGradient colors={['#FF6B35', '#F59E0B']} style={styles.copyBtnGrad}>
+                      <Ionicons name="clipboard-outline" size={20} color="#FFFFFF" />
+                      <Text style={styles.copyBtnTxt}>COPIER LE MESSAGE</Text>
+                   </LinearGradient>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.cancelLink} onPress={() => setIsDraftModalVisible(false)}>
+                   <Text style={styles.cancelLinkText}>RETOUR</Text>
+                </TouchableOpacity>
+             </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
+// --- CARNET SECTION ---
 const CarnetSection: React.FC = () => {
+  const [contacts, setContacts] = useState<NetworkContact[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadContacts = async () => {
+    setIsLoading(true);
+    try {
+      const data = await networkService.getContacts();
+      setContacts(data);
+    } catch (err: any) {
+      Alert.alert("Erreur Carnet", err.message || "Impossible de charger les contacts.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { loadContacts(); }, []);
+
   return (
     <View style={styles.section}>
       <View style={styles.carnetHeaderRow}>
         <View>
           <Text style={styles.carnetTitle}>
-            Mon <Text style={styles.carnetTitleAccent}>Carnet d’adresses</Text>
+            Mon <Text style={styles.carnetTitleAccent}>Carnet</Text>
           </Text>
-          <Text style={styles.carnetSubtitle}>177 entreprises collectées</Text>
+          <Text style={styles.carnetSubtitle}>{contacts.length} entreprises collectées</Text>
         </View>
-        <TouchableOpacity style={styles.actualiserBtn} activeOpacity={0.9}>
-          <Ionicons name="refresh-outline" size={16} color="#111827" />
-          <Text style={styles.actualiserText}>Actualiser</Text>
+        <TouchableOpacity style={styles.actualiserBtn} activeOpacity={0.8} onPress={loadContacts} disabled={isLoading}>
+          {isLoading ? <ActivityIndicator size="small" color="#111827" /> : <Ionicons name="refresh-outline" size={16} color="#111827" />}
+          <Text style={styles.actualiserText}>{isLoading ? '...' : 'Actualiser'}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.carnetGrid}>
-        {['Explorai', 'Mirego', 'LinkedIn Jobs', 'Google Jobs'].map((name, index) => (
-          <View key={name} style={styles.carnetCard}>
+        {contacts.map((contact) => (
+          <View key={contact.id} style={styles.carnetCard}>
             <View style={styles.carnetCardHeader}>
               <View style={styles.carnetIconWrapper}>
                 <Ionicons name="business-outline" size={18} color="#4B5563" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.carnetCompany}>{name}</Text>
-                <Text style={styles.carnetSync}>SYNC: 3/{16 - index}/2026</Text>
+                <Text style={styles.carnetCompany}>{contact.company_name}</Text>
+                <Text style={styles.carnetSync}>Sync: {new Date(contact.last_updated).toLocaleDateString('fr-FR')}</Text>
               </View>
             </View>
+            
             <View style={styles.tagRow}>
-              <View style={[styles.tag, { backgroundColor: '#EEF2FF' }]}>
-                <Text style={[styles.tagText, { color: '#4F46E5' }]}>SNIPER RECHERCHE</Text>
-              </View>
-              <View style={[styles.tag, { backgroundColor: '#FEF3C7' }]}>
-                <Text style={[styles.tagText, { color: '#92400E' }]}>TEL</Text>
+              <View style={styles.tagPill}>
+                <Text style={styles.tagText}>{contact.category.toUpperCase()}</Text>
               </View>
             </View>
-            <View style={styles.inputRow}>
-              <Ionicons name="link-outline" size={14} color="#9A9A94" />
-              <TextInput
-                style={styles.input}
-                placeholder="URL de la fiche entreprise..."
-                placeholderTextColor="#9A9A94"
-              />
+
+            <View style={styles.contactDetailsArea}>
+              {contact.site_url && (
+                <View style={styles.contactRow}>
+                  <Ionicons name="globe-outline" size={14} color="#6366F1" />
+                  <Text style={styles.contactVal} numberOfLines={1}>{contact.site_url}</Text>
+                </View>
+              )}
+              {contact.emails.map((email, i) => (
+                <View key={i} style={styles.contactRow}>
+                  <Ionicons name="mail-outline" size={14} color="#10B981" />
+                  <Text style={styles.contactVal}>{email}</Text>
+                </View>
+              ))}
+              {contact.phone && (
+                <View style={styles.contactRow}>
+                  <Ionicons name="call-outline" size={14} color="#F59E0B" />
+                  <Text style={styles.contactVal}>{contact.phone}</Text>
+                </View>
+              )}
             </View>
-            <View style={styles.inputRow}>
-              <Ionicons name="call-outline" size={14} color="#16A34A" />
-              <TextInput
-                style={styles.input}
-                placeholder="Numéro de téléphone..."
-                placeholderTextColor="#9A9A94"
-              />
-            </View>
-            <View style={styles.inputRow}>
-              <Ionicons name="mail-outline" size={14} color="#4B5563" />
-              <TextInput
-                style={styles.input}
-                placeholder="Email de contact..."
-                placeholderTextColor="#9A9A94"
-              />
-            </View>
-            <TouchableOpacity style={styles.secondaryBtn} activeOpacity={0.9}>
-              <Ionicons name="sparkles-outline" size={16} color="#111827" />
-              <Text style={styles.secondaryBtnText}>Générer l’approche</Text>
-            </TouchableOpacity>
           </View>
         ))}
+
+        {!isLoading && contacts.length === 0 && (
+          <View style={styles.emptyCarnet}>
+            <Ionicons name="book-outline" size={48} color="rgba(0,0,0,0.05)" />
+            <Text style={styles.emptyCarnetText}>Ton carnet est encore vide.</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -275,49 +428,49 @@ const CarnetSection: React.FC = () => {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F3EEE7',
+    backgroundColor: '#F9F8F6',
   },
   scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
   },
   heroCard: {
     borderRadius: 32,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    backgroundColor: '#E5F5FF',
-    marginBottom: spacing.lg,
-    shadowColor: 'rgba(15,23,42,0.12)',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
+    padding: 24,
+    marginBottom: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
     elevation: 4,
   },
   heroBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 8,
   },
   heroDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#22C55E',
     marginRight: 6,
   },
   heroBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
+    fontSize: 10,
+    fontWeight: '800',
     color: '#16A34A',
+    letterSpacing: 1.5,
   },
   heroTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '900',
     color: '#111827',
-    marginBottom: spacing.xs,
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   heroTitleAccent: {
     color: '#22C55E',
@@ -325,334 +478,482 @@ const styles = StyleSheet.create({
   heroSubtitle: {
     fontSize: 13,
     color: '#4B5563',
-    lineHeight: 20,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   tabsRow: {
     flexDirection: 'row',
     backgroundColor: '#111827',
     borderRadius: 20,
-    padding: 4,
-    marginBottom: spacing.lg,
+    padding: 6,
+    marginBottom: 20,
   },
   tabPill: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
-    paddingVertical: 8,
+    borderRadius: 15,
+    paddingVertical: 10,
   },
   tabPillActive: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#374151',
   },
   tabPillText: {
     marginLeft: 6,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#E5E7EB',
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#9CA3AF',
   },
   tabPillTextActive: {
-    color: '#111827',
+    color: '#FFFFFF',
   },
   section: {
-    marginBottom: spacing.xxxl,
+    marginBottom: 40,
   },
   cardWide: {
-    borderRadius: 22,
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    shadowColor: 'rgba(15,23,42,0.06)',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 3,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E0DA',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: 16,
   },
   sectionHeaderIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DCFCE7',
-    marginRight: spacing.sm,
+    marginRight: 12,
   },
   sectionHeaderTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#111827',
   },
-  mainRow: {
+  mainSearchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.sm,
   },
   inputMainWrapper: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 999,
-    paddingHorizontal: spacing.md,
-    height: 48,
+    backgroundColor: '#F5F4F0',
+    borderRadius: 15,
+    paddingHorizontal: 16,
+    height: 52,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E0DA',
   },
   inputMain: {
     flex: 1,
-    marginLeft: spacing.sm,
-    fontSize: 13,
+    marginLeft: 10,
+    fontSize: 14,
     color: '#111827',
+    fontWeight: '600',
   },
   analyserBtn: {
-    marginLeft: spacing.sm,
-    borderRadius: 999,
-    paddingHorizontal: spacing.lg,
-    height: 48,
+    marginLeft: 12,
+    borderRadius: 15,
+    width: 100,
+    height: 52,
     backgroundColor: '#16A34A',
-    flexDirection: 'row',
+    flexDirection: 'col',
     alignItems: 'center',
     justifyContent: 'center',
   },
   analyserText: {
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '700',
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
-  twoColumnsRow: {
-    flexDirection: 'row',
-    marginTop: spacing.lg,
+  hrScrollArea: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F4F0',
+    paddingTop: 16,
   },
-  paramsCard: {
-    flex: 1,
-    borderRadius: 22,
+  hrListTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#9A9A94',
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
+  hrScrollContent: {
+    paddingBottom: 4,
+  },
+  hrMiniCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 12,
+    marginRight: 10,
+    width: 130,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+  },
+  hrMiniCardActive: {
+    borderColor: '#22C55E',
+    backgroundColor: '#F0FDF4',
+  },
+  hrIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
-    padding: spacing.lg,
-    marginRight: spacing.sm,
-    shadowColor: 'rgba(15,23,42,0.06)',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E2E0DA',
   },
-  paramsTitle: {
-    marginLeft: spacing.xs,
-    fontSize: 14,
+  hrName: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#111827',
+    textAlign: 'center',
+  },
+  checkDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22C55E',
+  },
+  emptyHr: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
+  paramsCard: {
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E2E0DA',
+  },
+  paramsTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111827',
+    marginLeft: 10,
   },
   fieldBlock: {
-    marginTop: spacing.md,
+    marginTop: 16,
   },
   fieldLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#9A9A94',
-    marginBottom: spacing.xs,
+    fontWeight: '800',
+    color: '#9CA3AF',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   segmentRow: {
     flexDirection: 'row',
     backgroundColor: '#F5F4F0',
-    borderRadius: 999,
-    padding: 3,
+    borderRadius: 12,
+    padding: 4,
   },
   segment: {
     flex: 1,
-    borderRadius: 999,
+    paddingVertical: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
+    borderRadius: 10,
   },
   segmentActive: {
     flex: 1,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-    shadowColor: 'rgba(15,23,42,0.1)',
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
     elevation: 2,
   },
   segmentText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '700',
   },
   segmentActiveText: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#111827',
-    fontWeight: '700',
+    fontWeight: '900',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F5F4F0',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: spacing.md,
-    height: 44,
+    borderColor: '#E2E0DA',
+    paddingHorizontal: 16,
+    height: 48,
   },
   input: {
     flex: 1,
-    marginLeft: spacing.sm,
+    marginLeft: 10,
     fontSize: 13,
     color: '#111827',
+    fontWeight: '600',
   },
   primaryBtn: {
-    marginTop: spacing.lg,
-    borderRadius: 999,
-    height: 46,
-    backgroundColor: '#4F46E5',
+    marginTop: 24,
+    borderRadius: 15,
+    height: 56,
+    backgroundColor: '#6366F1',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#6366F1',
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 4,
   },
   primaryBtnText: {
-    marginLeft: 6,
+    marginLeft: 10,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '900',
     color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
-  resultCard: {
+  modalOverlay: {
     flex: 1,
-    borderRadius: 22,
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
     backgroundColor: '#FFFFFF',
-    padding: spacing.lg,
-    marginLeft: spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    flex: 1,
+    padding: 24,
   },
-  resultIconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#EEF2FF',
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 20,
   },
-  resultTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#4B5563',
+  modalBranding: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalLogo: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
+  },
+  modalBrandTxt: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#D4AF37',
+    letterSpacing: 2,
+  },
+  closeModalBtn: {
+    padding: 4,
+  },
+  draftScroll: {
+    paddingBottom: 40,
+  },
+  subjectBox: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 15,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  subjectLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#6366F1',
     marginBottom: 4,
-    textAlign: 'center',
   },
-  resultSubtitle: {
-    fontSize: 12,
-    color: '#9CA3AF',
+  subjectText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  bodyBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+  },
+  bodyText: {
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  aiTag: {
+    marginTop: 20,
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#D1D5DB',
     textAlign: 'center',
-    lineHeight: 18,
+    letterSpacing: 1.5,
+  },
+  copyBtn: {
+    borderRadius: 15,
+    overflow: 'hidden',
+  },
+  copyBtnGrad: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  copyBtnTxt: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginLeft: 10,
+    letterSpacing: 1,
+  },
+  cancelLink: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  cancelLinkText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#9CA3AF',
+    textDecorationLine: 'underline',
   },
   carnetHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: 20,
   },
   carnetTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '900',
     color: '#111827',
   },
   carnetTitleAccent: {
     color: '#22C55E',
   },
   carnetSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#9CA3AF',
+    fontWeight: '600',
   },
   actualiserBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 999,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E2E0DA',
   },
   actualiserText: {
     marginLeft: 6,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#111827',
   },
   carnetGrid: {
-    rowGap: spacing.md,
+    rowGap: 16,
   },
   carnetCard: {
-    borderRadius: 22,
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
-    padding: spacing.lg,
-    shadowColor: 'rgba(15,23,42,0.06)',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
     elevation: 3,
-    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: '#E2E0DA',
   },
   carnetCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 12,
   },
   carnetIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: '#F5F4F0',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.sm,
+    marginRight: 12,
   },
   carnetCompany: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#111827',
   },
   carnetSync: {
     fontSize: 11,
     color: '#9CA3AF',
+    fontWeight: '600',
   },
   tagRow: {
     flexDirection: 'row',
-    marginBottom: spacing.sm,
-    columnGap: spacing.xs,
+    marginBottom: 16,
   },
-  tag: {
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
+  tagPill: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
     paddingVertical: 4,
+    borderRadius: 8,
   },
   tagText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '800',
+    color: '#4F46E5',
+    letterSpacing: 1,
   },
-  secondaryBtn: {
-    marginTop: spacing.sm,
-    borderRadius: 999,
-    height: 40,
-    backgroundColor: '#F5F4F0',
+  contactDetailsArea: {
+    borderTopWidth: 1,
+    borderTopColor: '#F5F4F0',
+    paddingTop: 12,
+    gap: 8,
+  },
+  contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  secondaryBtnText: {
-    marginLeft: 6,
+  contactVal: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#111827',
+    color: '#4B5563',
+    marginLeft: 10,
+  },
+  emptyCarnet: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyCarnetText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontWeight: '600',
   },
 });
-
