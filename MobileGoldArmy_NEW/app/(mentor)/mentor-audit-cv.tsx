@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +21,7 @@ import { useUIStore } from '../../src/stores/uiStore';
 import * as Haptics from 'expo-haptics';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { CV_TEMPLATES } from '../../src/utils/cvTemplates';
 
 type CvSource = 'profile' | 'upload';
 
@@ -24,6 +34,7 @@ export default function MentorAuditCvScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [auditSummary, setAuditSummary] = useState<string | null>(null);
   const [rewriteContent, setRewriteContent] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(CV_TEMPLATES[0].id);
   const { showToast } = useUIStore();
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -108,7 +119,7 @@ export default function MentorAuditCvScreen() {
 
   const handleRunAudit = async () => {
     if (!cvText || !cvFileName) {
-      showToast('Sélectionne d’abord un CV à auditer.', 'warning');
+      showToast(`Sélectionne d'abord un CV à auditer.`, 'warning');
       return;
     }
 
@@ -151,476 +162,7 @@ export default function MentorAuditCvScreen() {
     }
   };
 
-  const handleExportPdf = async () => {
-    if (!rewriteContent) {
-      showToast('Aucune version réécrite disponible pour générer le PDF.', 'warning');
-      return;
-    }
-
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-      // Parse the rewritten CV JSON
-      let cvData: any = {};
-      try {
-        cvData = JSON.parse(rewriteContent);
-      } catch {
-        cvData = { summary: rewriteContent };
-      }
-
-      // ── Field extraction with fallbacks ───────────────────────────────
-      const fullName   = cvData.full_name || parsedAudit?.candidate_name || 'Prénom Nom';
-      const nameParts  = fullName.trim().split(' ');
-      const firstName  = nameParts[0] || '';
-      const lastName   = nameParts.slice(1).join(' ') || '';
-      const jobTitle   = cvData.title || parsedAudit?.candidate_title || '';
-      const email      = cvData.email || '';
-      const phone      = cvData.phone || '';
-      const location   = cvData.location || '';
-      const linkedin   = cvData.linkedin || '';
-      const github     = cvData.github || '';
-      const summary    = cvData.summary || '';
-      const atsScore   = parsedAudit?.ats_score ? `${Math.round(parsedAudit.ats_score)}` : null;
-      const origScore  = parsedAudit?.original_ats_score ? `${Math.round(parsedAudit.original_ats_score)}` : null;
-
-      // experiences: [{title, company, location, start_date, end_date, bullets:[]}]
-      const experiences: any[] = Array.isArray(cvData.experiences) ? cvData.experiences : [];
-      // projects: [{name, description, bullets:[]}]
-      const projects: any[] = Array.isArray(cvData.projects) ? cvData.projects : [];
-      // education: [{degree, institution, location, year}]
-      const education: any[] = Array.isArray(cvData.education) ? cvData.education : [];
-      // skills: {Category: [item, ...]} or [item, ...]
-      let skillsHtml = '';
-      if (cvData.skills && typeof cvData.skills === 'object' && !Array.isArray(cvData.skills)) {
-        skillsHtml = Object.entries(cvData.skills as Record<string, string[]>)
-          .filter(([, items]) => Array.isArray(items) && items.length > 0)
-          .map(([cat, items]) => `
-            <div class="skill-cat">${escHtml(cat)}</div>
-            <div class="skill-pills">${(items as string[]).map(s => `<span class="pill">${escHtml(s)}</span>`).join('')}</div>
-          `).join('');
-      } else if (Array.isArray(cvData.skills)) {
-        skillsHtml = `<div class="skill-pills">${(cvData.skills as string[]).map(s => `<span class="pill">${escHtml(s)}</span>`).join('')}</div>`;
-      }
-      const languages: string[]      = Array.isArray(cvData.languages) ? cvData.languages : [];
-      const certifications: string[] = Array.isArray(cvData.certifications) ? cvData.certifications : [];
-
-      // ── Helper ────────────────────────────────────────────────────────
-      function escHtml(s: any): string {
-        return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-      }
-      function sectionHeader(label: string) {
-        return `<div class="section-head"><span class="section-line"></span><span class="section-label">${label}</span><span class="section-line"></span></div>`;
-      }
-
-      // ── HTML Template ─────────────────────────────────────────────────
-      const html = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8"/>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-    *{margin:0;padding:0;box-sizing:border-box;}
-
-    body{
-      font-family:'Inter',system-ui,sans-serif;
-      background:#F0EFEA;
-      color:#1a1a1a;
-      font-size:11px;
-      line-height:1.5;
-      -webkit-print-color-adjust:exact;
-      print-color-adjust:exact;
-    }
-
-    .page{
-      max-width:860px;
-      margin:0 auto;
-      background:#FAFAF8;
-      padding:0;
-      box-shadow:0 8px 40px rgba(0,0,0,0.12);
-    }
-
-    /* ── TOP BANNER ── */
-    .banner{
-      background:#1a1a1a;
-      color:#fff;
-      padding:36px 40px 28px;
-      position:relative;
-      overflow:hidden;
-    }
-    .banner::before{
-      content:'';
-      position:absolute;
-      top:-40px;right:-40px;
-      width:200px;height:200px;
-      background:rgba(255,107,53,0.15);
-      border-radius:50%;
-    }
-    .banner::after{
-      content:'';
-      position:absolute;
-      bottom:-30px;right:80px;
-      width:120px;height:120px;
-      background:rgba(255,107,53,0.08);
-      border-radius:50%;
-    }
-    .banner-inner{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      position:relative;
-      z-index:1;
-    }
-    .name-block{}
-    .first-name{
-      font-size:13px;
-      font-weight:400;
-      letter-spacing:6px;
-      color:rgba(255,255,255,0.65);
-      text-transform:uppercase;
-      margin-bottom:2px;
-    }
-    .last-name{
-      font-size:42px;
-      font-weight:800;
-      letter-spacing:4px;
-      line-height:1;
-      text-transform:uppercase;
-      color:#fff;
-    }
-    .job-title{
-      font-size:13px;
-      font-weight:400;
-      color:rgba(255,255,255,0.75);
-      letter-spacing:2px;
-      margin-top:8px;
-    }
-    .ats-badge{
-      text-align:right;
-    }
-    .ats-label{
-      font-size:9px;
-      letter-spacing:2px;
-      color:rgba(255,255,255,0.5);
-      text-transform:uppercase;
-    }
-    .ats-value{
-      font-size:44px;
-      font-weight:800;
-      color:#FF6B35;
-      line-height:1;
-    }
-    .ats-suffix{
-      font-size:18px;
-      color:rgba(255,107,53,0.7);
-    }
-    .ats-orig{
-      font-size:10px;
-      color:rgba(255,255,255,0.4);
-      margin-top:2px;
-    }
-
-    /* ── CONTACT BAR ── */
-    .contact-bar{
-      background:#FF6B35;
-      padding:10px 40px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:14px;
-      align-items:center;
-    }
-    .contact-item{
-      display:flex;
-      align-items:center;
-      gap:5px;
-      font-size:10px;
-      color:#fff;
-      font-weight:500;
-      letter-spacing:0.3px;
-    }
-    .contact-icon{font-size:11px;}
-
-    /* ── BODY ── */
-    .body-layout{
-      display:flex;
-      gap:0;
-    }
-
-    /* ── SIDEBAR ── */
-    .sidebar{
-      width:240px;
-      flex-shrink:0;
-      background:#F3EEE6;
-      padding:28px 22px;
-    }
-
-    .section-head{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      margin:20px 0 10px;
-    }
-    .section-head:first-child{margin-top:0;}
-    .section-line{
-      flex:1;
-      height:1px;
-      background:#ccc;
-    }
-    .section-label{
-      font-size:9px;
-      font-weight:700;
-      letter-spacing:2.5px;
-      text-transform:uppercase;
-      color:#888;
-      white-space:nowrap;
-    }
-
-    /* Education */
-    .edu-block{margin-bottom:12px;}
-    .edu-degree{font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:2px;}
-    .edu-school{font-size:10px;color:#555;}
-    .edu-meta{font-size:10px;color:#888;margin-top:1px;}
-
-    /* Skills */
-    .skill-cat{
-      font-size:9px;
-      font-weight:700;
-      letter-spacing:1.5px;
-      text-transform:uppercase;
-      color:#FF6B35;
-      margin:10px 0 5px;
-    }
-    .skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;}
-    .pill{
-      background:#fff;
-      border:1px solid #ddd;
-      border-radius:3px;
-      padding:2px 7px;
-      font-size:10px;
-      color:#333;
-      font-weight:500;
-    }
-
-    /* Languages */
-    .lang-item{
-      display:flex;
-      align-items:center;
-      gap:6px;
-      margin-bottom:5px;
-      font-size:10px;
-      color:#333;
-    }
-    .lang-dot{
-      width:6px;height:6px;
-      border-radius:50%;
-      background:#FF6B35;
-      flex-shrink:0;
-    }
-
-    /* Certs */
-    .cert-item{
-      font-size:10px;
-      color:#444;
-      margin-bottom:5px;
-      padding-left:10px;
-      border-left:2px solid #FF6B35;
-    }
-
-    /* ── MAIN ── */
-    .main{
-      flex:1;
-      padding:28px 32px;
-    }
-
-    /* Summary */
-    .summary-text{
-      font-size:11px;
-      line-height:1.7;
-      color:#444;
-      margin-bottom:4px;
-    }
-
-    /* Experience */
-    .exp-block{margin-bottom:22px;}
-    .exp-header{
-      display:flex;
-      justify-content:space-between;
-      align-items:baseline;
-      margin-bottom:2px;
-    }
-    .exp-title{
-      font-size:12px;
-      font-weight:700;
-      color:#1a1a1a;
-      letter-spacing:0.5px;
-    }
-    .exp-dates{
-      font-size:9px;
-      color:#888;
-      font-weight:500;
-      letter-spacing:0.5px;
-      white-space:nowrap;
-      margin-left:8px;
-    }
-    .exp-company{
-      font-size:11px;
-      color:#FF6B35;
-      font-weight:600;
-      margin-bottom:6px;
-    }
-    .exp-loc{color:#888;font-weight:400;}
-    .bullet-row{
-      display:flex;
-      align-items:flex-start;
-      gap:7px;
-      margin-bottom:4px;
-    }
-    .bullet-dot{
-      width:5px;height:5px;
-      border-radius:1px;
-      background:#FF6B35;
-      margin-top:4px;
-      flex-shrink:0;
-    }
-    .bullet-text{font-size:11px;color:#444;flex:1;line-height:1.55;}
-
-    /* Projects */
-    .proj-block{margin-bottom:16px;}
-    .proj-name{font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:3px;}
-    .proj-desc{font-size:11px;color:#555;margin-bottom:5px;line-height:1.55;}
-
-    /* ── PAGE BREAK ── */
-    @media print{
-      .page{box-shadow:none;}
-      body{background:#fff;}
-    }
-  </style>
-</head>
-<body>
-<div class="page">
-
-  <!-- BANNER -->
-  <div class="banner">
-    <div class="banner-inner">
-      <div class="name-block">
-        <div class="first-name">${escHtml(firstName)}</div>
-        <div class="last-name">${escHtml(lastName)}</div>
-        ${jobTitle ? `<div class="job-title">— ${escHtml(jobTitle)}</div>` : ''}
-      </div>
-      ${atsScore ? `
-      <div class="ats-badge">
-        <div class="ats-label">Score ATS</div>
-        <div class="ats-value">${escHtml(atsScore)}<span class="ats-suffix">%</span></div>
-        ${origScore ? `<div class="ats-orig">avant : ${escHtml(origScore)}%</div>` : ''}
-      </div>` : ''}
-    </div>
-  </div>
-
-  <!-- CONTACT BAR -->
-  ${(email || phone || location || linkedin || github) ? `
-  <div class="contact-bar">
-    ${email    ? `<div class="contact-item"><span class="contact-icon">✉</span>${escHtml(email)}</div>` : ''}
-    ${phone    ? `<div class="contact-item"><span class="contact-icon">☎</span>${escHtml(phone)}</div>` : ''}
-    ${location ? `<div class="contact-item"><span class="contact-icon">⌖</span>${escHtml(location)}</div>` : ''}
-    ${linkedin ? `<div class="contact-item"><span class="contact-icon">in</span>${escHtml(linkedin)}</div>` : ''}
-    ${github   ? `<div class="contact-item"><span class="contact-icon">⌾</span>${escHtml(github)}</div>` : ''}
-  </div>` : ''}
-
-  <!-- BODY -->
-  <div class="body-layout">
-
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-
-      ${education.length > 0 ? `
-      ${sectionHeader('Formation')}
-      ${education.map((ed: any) => `
-        <div class="edu-block">
-          <div class="edu-degree">${escHtml(ed.degree || '')}</div>
-          <div class="edu-school">${escHtml(ed.institution || ed.school || '')}</div>
-          <div class="edu-meta">${[ed.location, ed.year].filter(Boolean).map(escHtml).join(' · ')}</div>
-        </div>
-      `).join('')}` : ''}
-
-      ${skillsHtml ? `
-      ${sectionHeader('Compétences')}
-      ${skillsHtml}` : ''}
-
-      ${languages.length > 0 ? `
-      ${sectionHeader('Langues')}
-      ${languages.map((l: string) => `<div class="lang-item"><div class="lang-dot"></div>${escHtml(l)}</div>`).join('')}` : ''}
-
-      ${certifications.length > 0 ? `
-      ${sectionHeader('Certifications')}
-      ${certifications.map((c: string) => `<div class="cert-item">${escHtml(c)}</div>`).join('')}` : ''}
-
-    </div>
-
-    <!-- MAIN -->
-    <div class="main">
-
-      ${summary ? `
-      ${sectionHeader('Profil')}
-      <p class="summary-text">${escHtml(summary)}</p>` : ''}
-
-      ${experiences.length > 0 ? `
-      ${sectionHeader('Expériences')}
-      ${experiences.map((exp: any) => `
-        <div class="exp-block">
-          <div class="exp-header">
-            <div class="exp-title">${escHtml(exp.title || '')}</div>
-            <div class="exp-dates">${[exp.start_date, exp.end_date].filter(Boolean).map(escHtml).join(' – ')}</div>
-          </div>
-          <div class="exp-company">
-            ${escHtml(exp.company || '')}${exp.location ? ` <span class="exp-loc">· ${escHtml(exp.location)}</span>` : ''}
-          </div>
-          ${Array.isArray(exp.bullets) && exp.bullets.length > 0 ? exp.bullets.map((b: string) => `
-            <div class="bullet-row">
-              <div class="bullet-dot"></div>
-              <div class="bullet-text">${escHtml(b)}</div>
-            </div>`).join('') : ''}
-        </div>
-      `).join('')}` : ''}
-
-      ${projects.length > 0 ? `
-      ${sectionHeader('Projets')}
-      ${projects.map((p: any) => `
-        <div class="proj-block">
-          <div class="proj-name">${escHtml(p.name || '')}</div>
-          ${p.description ? `<div class="proj-desc">${escHtml(p.description)}</div>` : ''}
-          ${Array.isArray(p.bullets) && p.bullets.length > 0 ? p.bullets.map((b: string) => `
-            <div class="bullet-row">
-              <div class="bullet-dot"></div>
-              <div class="bullet-text">${escHtml(b)}</div>
-            </div>`).join('') : ''}
-        </div>
-      `).join('')}` : ''}
-
-    </div>
-  </div>
-</div>
-</body>
-</html>`;
-
-      const { uri } = await Print.printToFileAsync({ html, base64: false });
-
-      const canShare = await Sharing.isAvailableAsync();
-      if (canShare) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Partager le CV optimisé',
-        });
-      } else {
-        showToast('Partage de fichier non disponible sur cet appareil.', 'warning');
-      }
-    } catch (error) {
-      console.error('[Mentor][Export PDF]', error);
-      showToast('Erreur lors de la génération du PDF.', 'error');
-    }
-  };
-
-  // Essaie de parser l'audit JSON pour un rendu plus riche
+  // ── parsedAudit must be defined before handleExportPdf so it's available in scope ──
   const parsedAudit = React.useMemo(() => {
     if (!auditSummary) return null;
     try {
@@ -630,6 +172,32 @@ export default function MentorAuditCvScreen() {
       return null;
     }
   }, [auditSummary]);
+
+  const handleExportPdf = async () => {
+    if (!rewriteContent) {
+      showToast('Aucune version réécrite disponible pour générer le PDF.', 'warning');
+      return;
+    }
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      let cvData: any = {};
+      try { cvData = JSON.parse(rewriteContent); } catch { cvData = { summary: rewriteContent }; }
+
+      const template = CV_TEMPLATES.find(t => t.id === selectedTemplateId) ?? CV_TEMPLATES[0];
+      const html = template.build(cvData, parsedAudit);
+
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `CV — ${template.label}` });
+      } else {
+        showToast('Partage non disponible sur cet appareil.', 'warning');
+      }
+    } catch (error) {
+      console.error('[Mentor][Export PDF]', error);
+      showToast('Erreur lors de la génération du PDF.', 'error');
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -688,7 +256,7 @@ export default function MentorAuditCvScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Résumé de l’audit</Text>
+            <Text style={styles.sectionTitle}>Résumé de l'audit</Text>
             {isLoading && !auditSummary ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
                 <ActivityIndicator size="small" color="#1A1A1A" style={{ marginRight: spacing.sm }} />
@@ -715,7 +283,7 @@ export default function MentorAuditCvScreen() {
                     )}
                     {typeof parsedAudit.original_ats_score === 'number' && (
                       <Text style={styles.scoreDelta}>
-                        Avant : {Math.round(parsedAudit.original_ats_score)}% • Après :{' '}
+                        Avant : {Math.round(parsedAudit.original_ats_score)}% • Après:{' '}
                         {typeof parsedAudit.ats_score === 'number'
                           ? `${Math.round(parsedAudit.ats_score)}%`
                           : '--%'}
@@ -836,13 +404,46 @@ export default function MentorAuditCvScreen() {
                     </View>
                   )}
 
-                {/* Bloc export PDF de la version réécrite */}
+                {/* Template picker + export PDF */}
                 {rewriteContent && (
                   <View style={{ marginTop: spacing.lg }}>
                     <Text style={styles.subSectionTitle}>Version réécrite proposée</Text>
                     <Text style={styles.sectionBody}>
-                      Ta version optimisée a été générée. Télécharge le PDF pour obtenir un CV propre et prêt à être envoyé.
+                      Ta version optimisée a été générée. Choisis un design et télécharge le PDF.
                     </Text>
+
+                    {/* ── Template Picker ── */}
+                    <Text style={[styles.subSectionTitle, { marginTop: spacing.md }]}>Design du CV</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
+                      {CV_TEMPLATES.map(tpl => (
+                        <TouchableOpacity
+                          key={tpl.id}
+                          onPress={() => setSelectedTemplateId(tpl.id)}
+                          style={{
+                            marginRight: 10,
+                            borderRadius: 10,
+                            borderWidth: selectedTemplateId === tpl.id ? 2 : 1,
+                            borderColor: selectedTemplateId === tpl.id ? tpl.accentColor : '#E5E7EB',
+                            padding: 12,
+                            minWidth: 120,
+                            backgroundColor: selectedTemplateId === tpl.id ? `${tpl.accentColor}18` : '#FAFAFA',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <View style={{
+                            width: 28, height: 28, borderRadius: 14,
+                            backgroundColor: tpl.accentColor, marginBottom: 6,
+                          }} />
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#1A1A1A', textAlign: 'center' }}>
+                            {tpl.label}
+                          </Text>
+                          <Text style={{ fontSize: 10, color: '#6B7280', textAlign: 'center', marginTop: 2 }}>
+                            {tpl.description}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+
                     <TouchableOpacity
                       style={styles.pdfButton}
                       activeOpacity={0.9}
@@ -862,8 +463,41 @@ export default function MentorAuditCvScreen() {
             ) : rewriteContent ? (
               <View>
                 <Text style={styles.sectionBody}>
-                  Une version optimisée de ton CV est prête. Utilise le bouton ci-dessous pour la télécharger en PDF.
+                  Une version optimisée de ton CV est prête. Choisis un design et télécharge-la en PDF.
                 </Text>
+
+                {/* ── Template Picker ── */}
+                <Text style={[styles.subSectionTitle, { marginTop: spacing.md }]}>Design du CV</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
+                  {CV_TEMPLATES.map(tpl => (
+                    <TouchableOpacity
+                      key={tpl.id}
+                      onPress={() => setSelectedTemplateId(tpl.id)}
+                      style={{
+                        marginRight: 10,
+                        borderRadius: 10,
+                        borderWidth: selectedTemplateId === tpl.id ? 2 : 1,
+                        borderColor: selectedTemplateId === tpl.id ? tpl.accentColor : '#E5E7EB',
+                        padding: 12,
+                        minWidth: 120,
+                        backgroundColor: selectedTemplateId === tpl.id ? `${tpl.accentColor}18` : '#FAFAFA',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <View style={{
+                        width: 28, height: 28, borderRadius: 14,
+                        backgroundColor: tpl.accentColor, marginBottom: 6,
+                      }} />
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#1A1A1A', textAlign: 'center' }}>
+                        {tpl.label}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: '#6B7280', textAlign: 'center', marginTop: 2 }}>
+                        {tpl.description}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
                 <TouchableOpacity
                   style={styles.pdfButton}
                   activeOpacity={0.9}
@@ -926,7 +560,7 @@ export default function MentorAuditCvScreen() {
                 <View style={styles.overlayHeaderText}>
                   <Text style={styles.overlayTitle}>Quel CV utiliser ?</Text>
                   <Text style={styles.overlaySubtitle}>
-                    Choisis le CV à analyser. Tu pourras ensuite lancer l’audit détaillé côté backend.
+                    Choisis le CV à analyser. Tu pourras ensuite lancer l'audit détaillé côté backend.
                   </Text>
                 </View>
               </View>
@@ -976,7 +610,7 @@ export default function MentorAuditCvScreen() {
               <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
             )}
             <Text style={styles.runAuditButtonText}>
-              {isLoading ? 'Analyse en cours…' : 'Lancer l’audit de mon CV'}
+              {isLoading ? 'Analyse en cours…' : `Lancer l'audit de mon CV`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -984,5 +618,3 @@ export default function MentorAuditCvScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-
