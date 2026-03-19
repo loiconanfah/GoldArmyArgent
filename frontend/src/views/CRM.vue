@@ -58,19 +58,17 @@ const isAdaptingCv = ref(false)
 const adaptedData = ref(null)
 const adaptCvFileInput = ref(null)
 const showDownloadCvModal = ref(false)
-const selectedCvTheme = ref('midnight')
+const selectedCvTheme = ref('goldarmy')
 const isDownloadingPdf = ref(false)
 const CV_THEMES = [
-  { id: 'midnight', name: 'Midnight Pro', colors: ['#1e293b', '#38bdf8'] },
-  { id: 'emerald', name: 'Emerald Leader', colors: ['#064e3b', '#10b981'] },
-  { id: 'modern', name: 'Modern Startup', colors: ['#4c1d95', '#8b5cf6'] },
-  { id: 'minimal', name: 'Executive Minimal', colors: ['#ffffff', '#0f172a'] },
-  { id: 'bold', name: 'Creative Bold', colors: ['#000000', '#f43f5e'] },
-  { id: 'banker', name: 'Trustworthy Banker', colors: ['#1e3a8a', '#1e40af'] },
-  { id: 'tech', name: 'Tech Terminal', colors: ['#000000', '#22c55e'] },
-  { id: 'classic', name: 'Classic Academic', colors: ['#ffffff', '#451a03'] },
-  { id: 'vibrant', name: 'Vibrant Energy', colors: ['#991b1b', '#ea580c'] },
-  { id: 'luxury', name: 'Elegant Luxury', colors: ['#000000', '#ca8a04'] }
+  { id: 'goldarmy',    name: 'GoldArmy',    colors: ['#1A1A2E', '#FF6B35'] },
+  { id: 'minimaliste', name: 'Minimaliste', colors: ['#FFFFFF', '#2563EB'] },
+  { id: 'executive',  name: 'Executive',   colors: ['#0D1117', '#6EE7B7'] },
+  { id: 'creatif',    name: 'Créatif',     colors: ['#1A0A2E', '#EC4899'] },
+  { id: 'classique',  name: 'Classique',   colors: ['#FFFFFF', '#1a1a1a'] },
+  { id: 'neon_tech',  name: 'Néon Tech',   colors: ['#0D0D1A', '#00E5FF'] },
+  { id: 'scandinave', name: 'Scandinave',  colors: ['#FAFAF7', '#4A7C59'] },
+  { id: 'timeline',   name: 'Timeline',    colors: ['#2D2D2D', '#E85D4A'] },
 ]
 
 // Summary stats
@@ -296,7 +294,7 @@ const runAdapt = async () => {
       adaptedData.value = json.data
       showAdaptCvModal.value = false
       showDownloadCvModal.value = true
-      selectedCvTheme.value = 'midnight'
+      selectedCvTheme.value = 'goldarmy'
     } else {
       toastState.addToast(json.detail || t('opportunities.adapt_error') || "Erreur lors de l'adaptation.", 'error')
     }
@@ -351,7 +349,7 @@ const downloadAdaptedPdf = async () => {
     const res = await authFetch('/api/generate-cv-pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cv_json: JSON.stringify(cvJson), filename, theme_id: selectedCvTheme.value })
+      body: JSON.stringify({ cv_json: JSON.stringify(cvJson), filename, template_id: selectedCvTheme.value })
     })
     if (!res.ok) {
       const err = await res.json()

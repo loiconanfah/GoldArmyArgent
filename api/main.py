@@ -167,29 +167,22 @@ class CvRewriteRequest(BaseModel):
 @app.post("/api/generate-cv-pdf")
 async def generate_cv_pdf_endpoint(raw_request: Request):
     """
-    Reçoit cv_json + filename + theme_id dans le body JSON.
-    Génère un PDF avec le design du thème choisi (midnight, emerald, modern, etc.).
+    Reçoit cv_json + filename + template_id dans le body JSON.
+    Templates : goldarmy, minimaliste, executive, creatif, classique, neon_tech, scandinave, timeline
     """
     try:
-        from core.cv_ats_generator import generate_ats_cv_pdf
-
+        import logging
         body = await raw_request.json()
         cv_data_input = body.get("cv_json")
         filename = (body.get("filename") or "CV_ATS_Optimise").replace(" ", "_").strip()
-        # Accepter theme_id ou themeId (camelCase) pour compatibilité
-        theme_id = body.get("theme_id") or body.get("themeId")
-        if not isinstance(theme_id, str) or not theme_id.strip():
-            theme_id = "midnight"
-        theme_id = theme_id.strip().lower()
-        valid_themes = {"midnight", "emerald", "modern", "minimal", "bold", "banker", "tech", "classic", "vibrant", "luxury"}
-        if theme_id not in valid_themes:
-            theme_id = "midnight"
+        template_id = (body.get("template_id") or body.get("templateId") or "goldarmy").strip().lower()
 
         if cv_data_input is None:
             raise HTTPException(status_code=400, detail="cv_json manquant")
 
         if isinstance(cv_data_input, str):
             cv_data_input = cv_data_input.strip()
+            # Clean up markdown code blocks if present
             if cv_data_input.startswith("```json"):
                 cv_data_input = cv_data_input[7:].strip()
             if cv_data_input.endswith("```"):
@@ -217,16 +210,34 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
 
         from core.cv_generator import normalize_cv_json
         cv_data = normalize_cv_json(cv_data)
-        import logging
-        logging.info(f"Generating PDF for theme {theme_id} with data keys: {list(cv_data.keys())}")
-        
-        pdf_bytes = generate_ats_cv_pdf(cv_data, theme_id=theme_id)
+
+        from core.cv_html_templates import build_html, TEMPLATES as HTML_TEMPLATES
+        if template_id not in HTML_TEMPLATES:
+            template_id = "goldarmy"
+        logging.info(f"[PDF] Generating '{template_id}' via Playwright")
+        html_content = build_html(template_id, cv_data)
+
+        try:
+            from playwright.async_api import async_playwright
+            async with async_playwright() as pw:
+                browser = await pw.chromium.launch()
+                page = await browser.new_page()
+                await page.set_content(html_content, wait_until="networkidle")
+                pdf_bytes = await page.pdf(
+                    format="A4", print_background=True,
+                    margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
+                )
+                await browser.close()
+        except Exception as pw_err:
+            logging.error(f"Playwright PDF error: {pw_err}")
+            raise HTTPException(status_code=500, detail=f"Erreur Playwright: {pw_err}")
+
         if not filename.endswith(".pdf"):
             filename += ".pdf"
 
         headers = {
             "Content-Disposition": f'attachment; filename="{filename}"',
-            "X-CV-Theme": theme_id,
+            "X-CV-Template": template_id,
             "Cache-Control": "no-store, no-cache, must-revalidate",
         }
         return StreamingResponse(
