@@ -35,11 +35,14 @@ _cors_origins = [
     "http://127.0.0.1:3000",
 ]
 # En prod, ajouter l’origine du front (ex. https://ton-site.com) ou la lire depuis .env
-if os.getenv("CORS_ORIGIN"):
-    _cors_origins.append(os.getenv("CORS_ORIGIN").strip())
+cors_env = os.getenv("CORS_ORIGIN", "")
+if cors_env:
+    _cors_origins.extend([o.strip() for o in cors_env.split(",") if o.strip()])
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
