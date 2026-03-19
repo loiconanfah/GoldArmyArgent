@@ -279,12 +279,23 @@ export default function MentorSimulatorScreen() {
           >
             <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
           </TouchableOpacity>
-          <View style={styles.headerTextBlock}>
+          <View style={[styles.headerTextBlock, { flex: 1 }]}>
             <Text style={styles.headerTitle}>Paramètres de l’entretien</Text>
             <Text style={styles.headerSubtitle}>
               Configure le contexte pour que l&apos;IA simule l&apos;entretien parfaitement.
             </Text>
           </View>
+          <TouchableOpacity
+            style={{
+               flexDirection: 'row', alignItems: 'center', backgroundColor: '#1A1A2E', 
+               paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, 
+               borderWidth: 1, borderColor: '#2D2D44', marginLeft: 12
+            }}
+            onPress={() => router.push('/(tabs)/mentor')}
+          >
+            <Ionicons name="time-outline" size={16} color="#A5B4FC" style={{ marginRight: 6 }} />
+            <Text style={{ color: '#A5B4FC', fontSize: 12, fontWeight: '600' }}>Historique</Text>
+          </TouchableOpacity>
         </View>
 
         {/* HERO / INFO BANDEAU */}

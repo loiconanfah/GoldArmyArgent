@@ -181,7 +181,7 @@ def build_minimaliste(cv_data: dict) -> str:
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Inter',sans-serif;font-size:11px;background:#fff;color:#222;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{max-width:840px;margin:0 auto;padding:48px 52px;}}
+.page{{width:100%;margin:0 auto;padding:48px 52px;}}
 h1{{font-size:32px;font-weight:700;color:#111;letter-spacing:-1px;}} .subtitle{{font-size:13px;color:#2563EB;letter-spacing:2px;text-transform:uppercase;margin-top:4px;}}
 .contact{{font-size:10px;color:#666;margin-top:10px;}} .summary-text{{font-size:11.5px;color:#444;line-height:1.75;}}
 .exp-block,.proj-block{{margin-bottom:14px;}} .exp-top{{display:flex;justify-content:space-between;}} .exp-title{{font-size:12px;font-weight:700;}} .exp-dates{{font-size:9px;color:#2563EB;}}
@@ -225,7 +225,7 @@ def build_executive(cv_data: dict) -> str:
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Inter',sans-serif;font-size:11px;background:#0D1117;color:#E0E0FF;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{display:flex;max-width:900px;margin:0 auto;min-height:100vh;}}
+.page{{display:flex;max-width:900px;margin:0 auto;min-height:100%;}}
 .sidebar{{width:220px;flex-shrink:0;background:#161B22;padding:28px 18px;border-right:1px solid #6EE7B722;}}
 .main{{flex:1;padding:28px 26px;}}
 .sb-name{{font-size:20px;font-weight:800;color:#fff;text-align:center;}} .sb-title{{font-size:10px;color:#6EE7B7;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-top:4px;}}
@@ -371,7 +371,7 @@ def build_neon_tech(cv_data: dict) -> str:
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600;700&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Inter',sans-serif;background:#0D0D1A;color:#E0E0FF;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{max-width:860px;margin:0 auto;display:flex;}}
+.page{{width:100%;margin:0 auto;display:flex;}}
 .sidebar{{width:230px;background:#111128;padding:28px 18px;border-right:1px solid #00E5FF22;flex-shrink:0;}}
 .main{{flex:1;padding:28px 24px;background:#0D0D1A;}}
 .avatar{{width:66px;height:66px;border-radius:50%;border:2px solid #00E5FF;box-shadow:0 0 14px #00E5FF55;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;background:#1A1A35;font-family:'Share Tech Mono',monospace;font-size:20px;color:#00E5FF;}}

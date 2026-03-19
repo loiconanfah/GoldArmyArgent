@@ -635,14 +635,18 @@ onUnmounted(() => {
   <div class="interview-page fixed inset-0 z-[60] bg-surface-950 overflow-y-auto custom-scrollbar flex flex-col">
     <!-- CONFIGURATION WIZARD -->
     <div v-if="!isInterviewStarted" class="p-6 md:p-10 max-w-4xl mx-auto animate-fade-in-up space-y-8 flex flex-col w-full">
-     <div class="flex items-center gap-4 border-b border-surface-800 pb-6 mb-8 mt-6">
-        <button @click="goBackToDashboard" class="p-2 bg-surface-800 hover:bg-surface-700 rounded-full text-slate-400 hover:text-white transition-colors">
+     <div class="flex items-center gap-4 border-b border-surface-800 pb-6 mb-8 mt-6 relative">
+        <button @click="goBackToDashboard" class="p-2 bg-surface-800 hover:bg-surface-700 rounded-full text-slate-400 hover:text-white transition-colors shrink-0">
             <ArrowLeftIcon class="w-5 h-5" />
         </button>
-        <div>
+        <div class="flex-1">
             <h1 class="text-3xl font-display font-bold text-white tracking-tight">Paramètres de l'Entretien</h1>
             <p class="text-slate-400 mt-1">Configurez le contexte pour que l'IA simule l'entretien parfaitement.</p>
         </div>
+        
+        <router-link to="/interview/history" class="px-5 py-2.5 bg-surface-800 hover:bg-surface-700 text-indigo-400 font-bold rounded-xl transition-all flex items-center gap-2 border border-surface-700 hover:border-indigo-500/50 shrink-0">
+            📋 Mon Historique
+        </router-link>
      </div>
 
      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">

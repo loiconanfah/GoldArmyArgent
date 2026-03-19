@@ -71,5 +71,13 @@ export const mentorService = {
       audit: safeAudit,
     };
   },
+
+  /**
+   * GET User interview history 
+   */
+  async getInterviewHistory(limit: number = 50): Promise<any> {
+    const res = await api.get(`/api/interview/history?limit=${limit}`);
+    return res.data;
+  },
 };
 

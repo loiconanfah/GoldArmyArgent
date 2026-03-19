@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { spacing } from '../../src/theme/spacing';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { mentorService } from '../../src/services/mentorService';
 
 interface InterviewItem {
   id: string;
@@ -15,30 +16,14 @@ interface InterviewItem {
   score?: number; // optionnel
 }
 
-const MOCK_INTERVIEWS: InterviewItem[] = [
-  {
-    id: '1',
-    title: 'Entretien Product Designer',
-    company: 'Stripe',
-    date: 'Hier • 15:30',
-    status: 'termine',
-    score: 86,
-  },
-  {
-    id: '2',
-    title: 'Screening UX/UI',
-    company: 'Figma',
-    date: 'Demain • 10:00',
-    status: 'planifie',
-  },
-  {
-    id: '3',
-    title: 'Entretien technique',
-    company: 'Airbnb',
-    date: 'Lundi • 14:00',
-    status: 'planifie',
-  },
-];
+const formatDate = (iso: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+  return d.toLocaleDateString('fr-FR', options) + ' • ' + d.toLocaleTimeString('fr-FR', {
+    hour: '2-digit', minute: '2-digit'
+  });
+};
 
 const MENTOR_TIPS = [
   {
@@ -68,6 +53,9 @@ export default function MentorScreen() {
   const cardsAnim = useRef(new Animated.Value(0)).current;
   const listAnim = useRef(new Animated.Value(0)).current;
 
+  const [sessions, setSessions] = React.useState<InterviewItem[]>([]);
+  const [loadingHistory, setLoadingHistory] = React.useState(true);
+
   React.useEffect(() => {
     Animated.stagger(120, [
       Animated.timing(heroAnim, { toValue: 1, duration: 450, useNativeDriver: true }),
@@ -75,6 +63,36 @@ export default function MentorScreen() {
       Animated.timing(listAnim, { toValue: 1, duration: 450, useNativeDriver: true }),
     ]).start();
   }, [heroAnim, cardsAnim, listAnim]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+      const fetchHistory = async () => {
+        setLoadingHistory(true);
+        try {
+          const res = await mentorService.getInterviewHistory();
+          if (isActive && res.sessions) {
+            const mapped: InterviewItem[] = res.sessions.map((s: any) => ({
+              id: s.session_id || Math.random().toString(),
+              title: s.job_title || 'Entretien IA',
+              company: s.company || 'Général',
+              date: formatDate(s.created_at),
+              status: 'termine', // Real history is always completed (or aborted, but counted as done)
+              score: s.scores?.overall ? Math.round(s.scores.overall * 10) : undefined,
+            }));
+            setSessions(mapped);
+          }
+        } catch (e) {
+          console.error("Failed to fetch mentor history", e);
+        } finally {
+          if (isActive) setLoadingHistory(false);
+        }
+      };
+
+      fetchHistory();
+      return () => { isActive = false; };
+    }, [])
+  );
 
   const handleOpenAuditCv = () => {
     // Page dédiée définie dans app/mentor-audit-cv.tsx
@@ -199,7 +217,7 @@ export default function MentorScreen() {
         >
           <View style={styles.historyHeader}>
             <Text style={styles.historyTitle}>Historique des entretiens</Text>
-            <Text style={styles.historyCount}>{MOCK_INTERVIEWS.length} sessions</Text>
+            <Text style={styles.historyCount}>{sessions.length} sessions</Text>
           </View>
 
           <View style={styles.filterRow}>
@@ -209,7 +227,16 @@ export default function MentorScreen() {
           </View>
 
           <View style={styles.historyList}>
-            {MOCK_INTERVIEWS.map((item) => (
+            {loadingHistory ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Text style={{ color: '#666' }}>Chargement de l'historique...</Text>
+              </View>
+            ) : sessions.length === 0 ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Text style={{ color: '#666' }}>Aucun entretien pour l'instant.</Text>
+              </View>
+            ) : (
+              sessions.map((item) => (
               <View key={item.id} style={styles.historyCard}>
                 <View style={styles.historyLeft}>
                   <View style={styles.historyIcon}>
@@ -245,7 +272,7 @@ export default function MentorScreen() {
                   </View>
                 </View>
               </View>
-            ))}
+            )))}
           </View>
         </Animated.View>
 
