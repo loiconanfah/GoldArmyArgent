@@ -22,8 +22,10 @@ export function extractCvFields(cvData: CvData, parsedAudit: ParsedAudit | null)
   const email     = cvData.email || '';
   const phone     = cvData.phone || '';
   const location  = cvData.location || '';
-  const linkedin  = cvData.linkedin || '';
-  const github    = cvData.github || '';
+  // Check multiple possible field names for LinkedIn
+  const raw = cvData as any;
+  const linkedin  = cvData.linkedin || raw.linkedin_url || raw.linkedinUrl || raw.linkedin_profile || raw.profile_url || '';
+  const github    = cvData.github   || raw.github_url   || raw.githubUrl   || '';
   const summary   = cvData.summary || '';
 
   const experiences   = Array.isArray(cvData.experiences) ? cvData.experiences : [];
