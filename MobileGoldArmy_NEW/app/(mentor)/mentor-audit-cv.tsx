@@ -14,7 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { spacing } from '../../src/theme/spacing';
-import { mentorAuditCvStyles as styles } from './styles/mentor-audit-cv.styles';
+import { mentorAuditCvStyles as styles } from './_styles/mentor-audit-cv.styles';
 import { mentorService } from '../../src/services/mentorService';
 import { cvService, CvUploadError } from '../../src/services/cvService';
 import { useUIStore } from '../../src/stores/uiStore';

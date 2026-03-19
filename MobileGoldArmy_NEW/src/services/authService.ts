@@ -14,7 +14,7 @@ import type {
   ForgotPasswordRequest,
   ResetPasswordRequest,
   User,
-} from '@types/api.types';
+} from '../types/api.types';
 
 // Types de réponse réels du backend FastAPI (/api/auth/*)
 type BackendTokenResponse = {
@@ -160,11 +160,29 @@ class AuthService {
   }
 
   /**
-   * Get current user (optionnel)
-   * Si besoin, on pourra créer un endpoint backend spécifique.
+   * Get current user
+   * Backend: GET /api/auth/me
    */
   async getCurrentUser(): Promise<User> {
-    throw new Error('getCurrentUser non implémenté côté backend');
+    try {
+      const response = await api.get<BackendTokenResponse['user']>('/api/auth/me');
+      const data = response.data;
+      
+      const user: User = {
+        id: data.id,
+        email: data.email,
+        firstName: undefined,
+        lastName: undefined,
+        avatar: undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      
+      return user;
+    } catch (error) {
+      console.error('[AuthService][getCurrentUser]', error);
+      throw error;
+    }
   }
 
   /**

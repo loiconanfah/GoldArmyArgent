@@ -5,28 +5,11 @@ import { spacing } from '../../theme/spacing';
 import { useTheme } from '../../hooks/useTheme';
 
 interface Props {
-  onRefresh: () => void;
+  onRefresh?: () => void;
 }
 
-export const CrmHeader: React.FC<Props> = ({ onRefresh }) => {
+export const CrmHeader: React.FC<Props> = () => {
   const { theme } = useTheme();
-  const rotate = React.useRef(new Animated.Value(0)).current;
-
-  const handlePress = () => {
-    Animated.timing(rotate, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start(() => {
-      rotate.setValue(0);
-    });
-    onRefresh();
-  };
-
-  const spin = rotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
 
   return (
     <View style={styles.container}>
@@ -41,14 +24,8 @@ export const CrmHeader: React.FC<Props> = ({ onRefresh }) => {
           </Text>
           <Text style={styles.titleAccent}>Candidatures</Text>
         </View>
-        <Text style={styles.subtitle}>Swipe une card pour changer son statut.</Text>
+        <Text style={styles.subtitle}>Glisse une carte pour changer son statut.</Text>
       </View>
-      <TouchableOpacity style={styles.refreshButton} activeOpacity={0.9} onPress={handlePress}>
-        <Animated.View style={{ transform: [{ rotate: spin }] }}>
-          <Ionicons name="refresh-outline" size={16} color="#4A4A46" />
-        </Animated.View>
-        <Text style={styles.refreshText}>Actualiser</Text>
-      </TouchableOpacity>
     </View>
   );
 };

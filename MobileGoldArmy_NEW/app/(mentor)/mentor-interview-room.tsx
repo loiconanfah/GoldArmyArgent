@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Platform,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { BlurView } from 'expo-blur';
 
 import { getAccessToken } from '../../src/utils/storage';
 import { API_BASE_URL } from '../../src/utils/constants';
@@ -31,9 +33,21 @@ type WsMessage =
   | { type: 'paywall'; message: string; count: number; limit: number };
 
 const RECRUITERS = {
-  tech: { name: 'Sophie - Tech Lead', role: 'Expertise Technique' },
-  hr: { name: 'Marc - HR Manager', role: 'Culture & Soft Skills' },
-  ceo: { name: 'Alice - CEO', role: 'Vision & Stratégie' },
+  tech: {
+    name: 'Sophie - Tech Lead',
+    role: 'Expertise Technique',
+    photo: require('../../assets/recruiters/sophie.png'),
+  },
+  hr: {
+    name: 'Marc - HR Manager',
+    role: 'Culture & Soft Skills',
+    photo: require('../../assets/recruiters/marc.png'),
+  },
+  ceo: {
+    name: 'Alice - CEO',
+    role: 'Vision & Stratégie',
+    photo: require('../../assets/recruiters/alice.png'),
+  },
 };
 
 export default function MentorInterviewRoom() {
@@ -60,6 +74,13 @@ export default function MentorInterviewRoom() {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const callStartTimeRef = useRef<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const [showCalling, setShowCalling] = useState(true);
+
+  useEffect(() => {
+    // Hide "Calling..." overlay after 2.5 seconds
+    const timer = setTimeout(() => setShowCalling(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!config) {
@@ -398,25 +419,57 @@ export default function MentorInterviewRoom() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      
-      {/* Background Camera View */}
-      {hasPermission?.granted && Platform.OS !== 'web' ? (
-        <CameraView style={styles.camera} facing={facing}>
-          <View style={styles.vignette} />
-        </CameraView>
-      ) : (
-        <View style={[styles.camera, { backgroundColor: '#1A1A2E', justifyContent: 'center', alignItems: 'center' }]}>
-          <Ionicons name="videocam-off-outline" size={48} color="#4B5563" />
-          <Text style={{ color: '#9CA3AF', marginTop: 12 }}>Caméra non disponible</Text>
+
+      {/* ── CALLING OVERLAY ── */}
+      {showCalling && (
+        <View style={styles.callingOverlay}>
+          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.callingContent}>
+            <Image 
+              source={recruiterInfo.photo} 
+              style={styles.callingAvatar} 
+            />
+            <Text style={styles.callingName}>{recruiterInfo.name}</Text>
+            <Text style={styles.callingStatus}>Appel entrant...</Text>
+          </View>
         </View>
       )}
+
+      {/* ── RECRUITER VIDEO BACKGROUND (The HR Caller) ── */}
+      <View style={styles.recruiterMainView}>
+        <Image
+          source={recruiterInfo.photo}
+          style={styles.fullScreenImage}
+          resizeMode="cover"
+        />
+        {/* Adds depth and professional look */}
+        <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={styles.vignette} />
+        
+        {/* Speaking / Thinking Glow on the whole screen */}
+        {isThinking && (
+          <View style={styles.thinkingGlow} />
+        )}
+      </View>
+
+      {/* ── USER CAMERA PIP ── (Small tile for the user) */}
+      <View style={styles.userCameraPIP}>
+        {hasPermission?.granted && Platform.OS !== 'web' ? (
+          <CameraView style={styles.cameraFill} facing={facing} />
+        ) : (
+          <View style={styles.cameraPlaceholder}>
+            <Ionicons name="videocam-off-outline" size={24} color="#4B5563" />
+          </View>
+        )}
+      </View>
 
       {/* Top Header Overlay */}
       <View style={[styles.headerOverlay, { paddingTop: insets.top + 10 }]}>
         <View style={styles.headerTitleContainer}>
-          <View style={styles.recruiterAvatar}>
-            <Ionicons name="person" size={20} color="#E5E7EB" />
-          </View>
+          <Image
+            source={recruiterInfo.photo}
+            style={styles.recruiterAvatarSmall}
+          />
           <View>
             <Text style={styles.recruiterName}>{recruiterInfo.name}</Text>
             <View style={styles.callMeta}>
@@ -587,5 +640,83 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     borderWidth: 2, borderColor: '#EF4444',
     opacity: 0.5
-  }
+  },
+
+  recruiterMainView: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.9,
+  },
+  thinkingGlow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    borderWidth: 4,
+    borderColor: 'rgba(165, 180, 252, 0.3)',
+  },
+  userCameraPIP: {
+    position: 'absolute',
+    top: 100,
+    right: 20,
+    width: 110,
+    height: 160,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#1A1A18',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    zIndex: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  cameraFill: {
+    width: '100%',
+    height: '100%',
+  },
+  cameraPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recruiterAvatarSmall: {
+    width: 36, height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(99, 102, 241, 0.4)',
+  },
+
+  /* ── CALLING OVERLAY ── */
+  callingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  callingContent: {
+    alignItems: 'center',
+    gap: 16,
+  },
+  callingAvatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  callingName: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  callingStatus: {
+    color: '#A5B4FC',
+    fontSize: 16,
+    fontWeight: '500',
+    letterSpacing: 1,
+  },
 });

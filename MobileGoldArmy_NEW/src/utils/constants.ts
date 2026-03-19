@@ -20,6 +20,14 @@ export const API_ENDPOINTS = {
     RESET_PASSWORD: '/auth/reset-password',
     ME: '/auth/me',
   },
+  CRM: {
+    FETCH: '/api/crm',
+    CREATE: '/api/crm',
+    UPDATE: (id: string) => `/api/crm/${id}`,
+    DELETE: (id: string) => `/api/crm/${id}`,
+    LINK: '/api/crm/link',
+    FOLLOWUP: (id: string) => `/api/crm/applications/${id}/followup`,
+  },
 } as const;
 
 // Storage keys

@@ -74,21 +74,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     if (!isInitialized) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
-    const isOnLanding = segments.length === 0 || segments[0] === 'index';
-    const isOnOnboarding = segments[0] === 'onboarding';
+    const isProtectedRoute = 
+      segments[0] === '(tabs)' || 
+      segments[0] === '(mentor)' || 
+      segments[0] === '(offers)';
+    
+    const isPublicRoute = 
+      segments[0] === '(auth)' || 
+      segments[0] === 'onboarding' || 
+      (segments as string[]).length === 0;
 
-    // Allow landing page (index) and onboarding to be accessible - NEVER redirect from these
-    if (isOnLanding || isOnOnboarding) {
-      return; // Stay on landing page or onboarding
-    }
-
-    // Only redirect if we're in a protected route and not authenticated
-    if (!isAuthenticated && inTabsGroup) {
-      router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      router.replace('/(tabs)/home');
+    // Logic: If logged in, don't stay on public/intro pages
+    if (isAuthenticated) {
+      if (!isProtectedRoute) {
+        router.replace('/(tabs)/home');
+      }
+    } 
+    // Logic: If not logged in, don't allow protected regions
+    else {
+      if (isProtectedRoute) {
+        router.replace('/(auth)/login');
+      }
     }
   }, [isAuthenticated, segments, isInitialized, router]);
 

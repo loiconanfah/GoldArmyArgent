@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'r
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SniperJob } from '../../src/types/sniper.types';
-import { opportunityDetailsStyles as styles } from './styles/opportunity-details.styles';
+import { opportunityDetailsStyles as styles } from './_styles/opportunity-details.styles';
 
 export default function OpportunityDetailsScreen() {
   const router = useRouter();

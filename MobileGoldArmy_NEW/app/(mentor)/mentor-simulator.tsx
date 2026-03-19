@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   TextInput,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -17,13 +18,34 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { spacing } from '../../src/theme/spacing';
 import { API_BASE_URL } from '../../src/utils/constants';
 import { getAccessToken } from '../../src/utils/storage';
-import { mentorSimulatorStyles as styles } from './styles/mentor-simulator.styles';
+import { mentorSimulatorStyles as styles } from './_styles/mentor-simulator.styles';
 import { useRouter } from 'expo-router';
 import { useUIStore } from '../../src/stores/uiStore';
 import * as DocumentPicker from 'expo-document-picker';
 import { useInterviewStore } from '../../src/stores/interviewStore';
 
 type CvSource = 'profile' | 'upload';
+
+// Recruiter profiles with high-quality 3D local assets
+const RECRUITER_PROFILES = {
+  tech: {
+    name: 'Sophie - Tech Lead',
+    role: 'Expertise technique',
+    photo: require('../../assets/recruiters/sophie.png'),
+  },
+  hr: {
+    name: 'Marc - HR Manager',
+    role: 'Culture & soft skills',
+    photo: require('../../assets/recruiters/marc.png'),
+  },
+  ceo: {
+    name: 'Alice - CEO',
+    role: 'Vision & stratégie',
+    photo: require('../../assets/recruiters/alice.png'),
+  },
+} as const;
+
+type RecruiterId = keyof typeof RECRUITER_PROFILES;
 
 type WsInterviewRole = 'recruiter' | 'user' | 'system';
 
@@ -418,21 +440,21 @@ export default function MentorSimulatorScreen() {
                     activeOpacity={0.9}
                     onPress={() => setRecruiterId(id)}
                   >
-                    <View style={styles.recruiterAvatar} />
+                    <View style={styles.recruiterAvatarWrap}>
+                      <Image
+                        source={RECRUITER_PROFILES[id].photo}
+                        style={styles.recruiterAvatarImg}
+                      />
+                      {recruiterId === id && (
+                        <View style={styles.recruiterOnlineDot} />
+                      )}
+                    </View>
                     <View style={styles.recruiterText}>
                       <Text style={styles.recruiterName}>
-                        {id === 'tech'
-                          ? 'Sophie - Tech Lead'
-                          : id === 'hr'
-                          ? 'Marc - HR Manager'
-                          : 'Alice - CEO'}
+                        {RECRUITER_PROFILES[id].name}
                       </Text>
                       <Text style={styles.recruiterRole}>
-                        {id === 'tech'
-                          ? 'Expertise technique'
-                          : id === 'hr'
-                          ? 'Culture & soft skills'
-                          : 'Vision & stratégie'}
+                        {RECRUITER_PROFILES[id].role}
                       </Text>
                     </View>
                     {recruiterId === id && (

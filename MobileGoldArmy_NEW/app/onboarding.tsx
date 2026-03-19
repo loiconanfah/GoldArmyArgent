@@ -153,6 +153,21 @@ export default function OnboardingScreen() {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const isScrolling = React.useRef(false);
 
+  React.useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const completed = await SecureStore.getItemAsync('onboarding_completed');
+        if (completed === 'true') {
+          // Si l'onboarding est déjà fini, on sort
+          router.replace('/(auth)/login');
+        }
+      } catch (err) {
+        console.error('[Onboarding] Error checking status:', err);
+      }
+    };
+    checkStatus();
+  }, [router]);
+
   const handleNext = React.useCallback(async () => {
     if (currentIndex < SLIDES.length - 1) {
       const nextIndex = currentIndex + 1;

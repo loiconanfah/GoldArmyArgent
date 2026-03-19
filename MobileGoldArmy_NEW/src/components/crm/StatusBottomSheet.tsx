@@ -17,6 +17,7 @@ interface Props {
   title: string;
   company: string;
   onSelect: (status: StatusKey) => void;
+  onDelete?: () => void;
 }
 
 export const StatusBottomSheet: React.FC<Props> = ({
@@ -26,6 +27,7 @@ export const StatusBottomSheet: React.FC<Props> = ({
   title,
   company,
   onSelect,
+  onDelete,
 }) => {
   const ordered: StatusKey[] = [
     'a_postuler',
@@ -70,6 +72,18 @@ export const StatusBottomSheet: React.FC<Props> = ({
               </Pressable>
             );
           })}
+          
+          {onDelete && (
+            <>
+              <View style={styles.divider} />
+              <Pressable
+                style={[styles.option, styles.deleteOption]}
+                onPress={onDelete}
+              >
+                <Text style={styles.deleteText}>Supprimer cette candidature</Text>
+              </Pressable>
+            </>
+          )}
         </Pressable>
       </Pressable>
     </Modal>
@@ -131,6 +145,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#111827',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: spacing.sm,
+  },
+  deleteOption: {
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+  },
+  deleteText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#EF4444',
   },
 });
 
