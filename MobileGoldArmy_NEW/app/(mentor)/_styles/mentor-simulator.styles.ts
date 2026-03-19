@@ -42,6 +42,22 @@ export const mentorSimulatorStyles = StyleSheet.create({
     fontSize: 13,
     color: '#5A554C',
   },
+  historyLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1A1A2E',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2D2D44',
+    marginLeft: 12,
+  },
+  historyLinkText: {
+    color: '#A5B4FC',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   hero: {
     padding: spacing.lg,
     borderRadius: 24,

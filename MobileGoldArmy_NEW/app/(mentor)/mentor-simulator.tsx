@@ -308,15 +308,11 @@ export default function MentorSimulatorScreen() {
             </Text>
           </View>
           <TouchableOpacity
-            style={{
-               flexDirection: 'row', alignItems: 'center', backgroundColor: '#1A1A2E', 
-               paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, 
-               borderWidth: 1, borderColor: '#2D2D44', marginLeft: 12
-            }}
+            style={styles.historyLinkBtn}
             onPress={() => router.push('/(tabs)/mentor')}
           >
             <Ionicons name="time-outline" size={16} color="#A5B4FC" style={{ marginRight: 6 }} />
-            <Text style={{ color: '#A5B4FC', fontSize: 12, fontWeight: '600' }}>Historique</Text>
+            <Text style={styles.historyLinkText}>Historique</Text>
           </TouchableOpacity>
         </View>
 

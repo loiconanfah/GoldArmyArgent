@@ -1,57 +1,24 @@
-/**
- * Tabs Layout
- * Bottom tab navigation with custom tab bar
- */
-
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { useTheme } from '../../src/hooks/useTheme';
+import { styles } from './styles/layout.styles';
 
 export default function TabsLayout() {
-  const { theme } = useTheme();
-
   return (
     <Tabs
       screenOptions={{
         sceneStyle: { backgroundColor: 'transparent' },
         headerShown: false,
-        tabBarActiveTintColor: '#FF6B35', // GoldArmy Primary
+        tabBarActiveTintColor: '#FF6B35',
         tabBarInactiveTintColor: '#A0A0A0',
         tabBarShowLabel: true,
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
-          marginTop: -4,
-          marginBottom: 4,
-        },
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: Platform.OS === 'ios' ? 24 : 16,
-          left: 20,
-          right: 20,
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
-          borderRadius: 32,
-          borderTopWidth: 0,
-          elevation: 20, // Android shadow
-          shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.15,
-          shadowRadius: 20,
-          height: 64,
-          paddingTop: 12,
-          paddingBottom: 12, // Equal padding so icons center properly in rounded pill
-        },
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarStyle: styles.tabBar,
         tabBarBackground: () => (
           <BlurView
             tint="light"
             intensity={60}
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              borderRadius: 32,
-              overflow: 'hidden',
-            }}
+            style={styles.blurView}
           />
         ),
       }}
@@ -65,11 +32,10 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* Cacher le Dashboard générique car l'Accueil est le nouveau Dashboard */}
       <Tabs.Screen
         name="dashboard"
         options={{
-          href: null, // Cache cet onglet de la barre, mais la route existe toujours
+          href: null,
         }}
       />
       <Tabs.Screen
@@ -108,9 +74,20 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* Cacher les onglets les moins importants de la tab bar principale pour la clarté (5 onglets max) */}
       <Tabs.Screen
         name="entretien"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="analytics"
         options={{
           href: null,
         }}

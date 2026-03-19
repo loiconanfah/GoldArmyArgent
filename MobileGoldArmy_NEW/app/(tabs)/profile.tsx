@@ -1,9 +1,5 @@
-/**
- * Profile Screen
- */
-
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { ScreenWrapper } from '../../src/components/layout/ScreenWrapper';
 import { Header } from '../../src/components/layout/Header';
 import { Card } from '../../src/components/ui/Card';
@@ -13,8 +9,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useAuthStore } from '../../src/stores/authStore';
 import { formatFullName } from '../../src/utils/formatters';
-import { spacing } from '../../src/theme/spacing';
-import { typography } from '../../src/theme';
+import { styles } from './styles/profile.styles';
 
 export default function ProfileScreen() {
   const { theme } = useTheme();
@@ -64,40 +59,3 @@ export default function ProfileScreen() {
     </ScreenWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: spacing.xl,
-    paddingTop: 100,
-    alignItems: 'center',
-  },
-  profileHeader: {
-    alignItems: 'center',
-    marginBottom: spacing['2xl'],
-  },
-  name: {
-    ...typography.h2,
-    marginTop: spacing.lg,
-  },
-  email: {
-    ...typography.body,
-    marginTop: spacing.xs,
-  },
-  card: {
-    width: '100%',
-    marginBottom: spacing.xl,
-  },
-  cardTitle: {
-    ...typography.h3,
-    marginBottom: spacing.sm,
-  },
-  cardText: {
-    ...typography.body,
-  },
-  logoutButton: {
-    marginTop: spacing.xl,
-  },
-});

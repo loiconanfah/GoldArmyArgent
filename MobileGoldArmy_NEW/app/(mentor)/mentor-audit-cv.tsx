@@ -414,30 +414,23 @@ export default function MentorAuditCvScreen() {
 
                     {/* ── Template Picker ── */}
                     <Text style={[styles.subSectionTitle, { marginTop: spacing.md }]}>Design du CV</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templatePickerScroll}>
                       {CV_TEMPLATES.map(tpl => (
                         <TouchableOpacity
                           key={tpl.id}
                           onPress={() => setSelectedTemplateId(tpl.id)}
-                          style={{
-                            marginRight: 10,
-                            borderRadius: 10,
-                            borderWidth: selectedTemplateId === tpl.id ? 2 : 1,
-                            borderColor: selectedTemplateId === tpl.id ? tpl.accentColor : '#E5E7EB',
-                            padding: 12,
-                            minWidth: 120,
-                            backgroundColor: selectedTemplateId === tpl.id ? `${tpl.accentColor}18` : '#FAFAFA',
-                            alignItems: 'center',
-                          }}
+                          style={[
+                            styles.templateCard,
+                            selectedTemplateId === tpl.id 
+                              ? [styles.templateCardActive, { borderColor: tpl.accentColor, backgroundColor: `${tpl.accentColor}18` }]
+                              : styles.templateCardInactive
+                          ]}
                         >
-                          <View style={{
-                            width: 28, height: 28, borderRadius: 14,
-                            backgroundColor: tpl.accentColor, marginBottom: 6,
-                          }} />
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: '#1A1A1A', textAlign: 'center' }}>
+                          <View style={[styles.templateColorIndicator, { backgroundColor: tpl.accentColor }]} />
+                          <Text style={styles.templateLabel}>
                             {tpl.label}
                           </Text>
-                          <Text style={{ fontSize: 10, color: '#6B7280', textAlign: 'center', marginTop: 2 }}>
+                          <Text style={styles.templateDescription}>
                             {tpl.description}
                           </Text>
                         </TouchableOpacity>
@@ -468,30 +461,23 @@ export default function MentorAuditCvScreen() {
 
                 {/* ── Template Picker ── */}
                 <Text style={[styles.subSectionTitle, { marginTop: spacing.md }]}>Design du CV</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templatePickerScroll}>
                   {CV_TEMPLATES.map(tpl => (
                     <TouchableOpacity
                       key={tpl.id}
                       onPress={() => setSelectedTemplateId(tpl.id)}
-                      style={{
-                        marginRight: 10,
-                        borderRadius: 10,
-                        borderWidth: selectedTemplateId === tpl.id ? 2 : 1,
-                        borderColor: selectedTemplateId === tpl.id ? tpl.accentColor : '#E5E7EB',
-                        padding: 12,
-                        minWidth: 120,
-                        backgroundColor: selectedTemplateId === tpl.id ? `${tpl.accentColor}18` : '#FAFAFA',
-                        alignItems: 'center',
-                      }}
+                      style={[
+                        styles.templateCard,
+                        selectedTemplateId === tpl.id 
+                          ? [styles.templateCardActive, { borderColor: tpl.accentColor, backgroundColor: `${tpl.accentColor}18` }]
+                          : styles.templateCardInactive
+                      ]}
                     >
-                      <View style={{
-                        width: 28, height: 28, borderRadius: 14,
-                        backgroundColor: tpl.accentColor, marginBottom: 6,
-                      }} />
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#1A1A1A', textAlign: 'center' }}>
+                      <View style={[styles.templateColorIndicator, { backgroundColor: tpl.accentColor }]} />
+                      <Text style={styles.templateLabel}>
                         {tpl.label}
                       </Text>
-                      <Text style={{ fontSize: 10, color: '#6B7280', textAlign: 'center', marginTop: 2 }}>
+                      <Text style={styles.templateDescription}>
                         {tpl.description}
                       </Text>
                     </TouchableOpacity>

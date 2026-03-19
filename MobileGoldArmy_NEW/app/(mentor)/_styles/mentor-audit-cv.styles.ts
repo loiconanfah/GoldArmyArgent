@@ -401,4 +401,40 @@ export const mentorAuditCvStyles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
+  templatePickerScroll: {
+    marginBottom: spacing.md,
+  },
+  templateCard: {
+    marginRight: 10,
+    borderRadius: 10,
+    padding: 12,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  templateCardActive: {
+    borderWidth: 2,
+  },
+  templateCardInactive: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FAFAFA',
+  },
+  templateColorIndicator: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginBottom: 6,
+  },
+  templateLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    textAlign: 'center',
+  },
+  templateDescription: {
+    fontSize: 10,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 2,
+  },
 });

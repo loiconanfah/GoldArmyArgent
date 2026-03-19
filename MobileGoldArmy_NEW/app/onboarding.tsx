@@ -7,7 +7,6 @@ import * as React from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   Dimensions,
   type NativeScrollEvent,
@@ -24,63 +23,30 @@ import { Slide2Illustration } from '../src/components/onboarding/slides/Slide2Il
 import { Slide3Illustration } from '../src/components/onboarding/slides/Slide3Illustration';
 import { Slide4Illustration } from '../src/components/onboarding/slides/Slide4Illustration';
 import type { SlideData } from '../src/types/onboarding.types';
+import { styles, C } from './styles/onboarding.styles';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Couleurs alignées sur le thème global de l'app (voir src/theme/colors.ts)
-const C = {
-  primary: '#F5D061', // gold / couleur principale du logo
-  primarySoft: '#F8DC8A',
-  primaryPale: '#FFF8DC',
-  primaryDeep: '#E6A32F',
-  accent: '#3B82F6', // bleu secondaire de l'app
-  bg: '#FFFFFF',
-  surface: '#FFFFFF',
-  surfaceAlt: '#F5F5F5',
-  border: '#E0E0E0',
-  text: '#1A1A1A',
-  textMid: '#666666',
-  textMuted: '#999999',
-  white: '#FFFFFF',
-  shadow: 'rgba(0,0,0,0.10)',
-  shadowNeutral: 'rgba(0,0,0,0.07)',
-};
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Helper function to create highlight content
 const createHighlightContent = (type: 'confidence' | 'applications') => {
   if (type === 'confidence') {
     return (
-      <View style={{ alignItems: 'center' }}>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 8 }}>
+      <View style={styles.highlightWrapper}>
+        <Text style={styles.highlightTitle}>
           Confiance : 94%
         </Text>
-        <View
-          style={{
-            width: '100%',
-            height: 8,
-            backgroundColor: C.primaryPale,
-            borderRadius: 4,
-            overflow: 'hidden',
-          }}
-        >
-          <View
-            style={{
-              width: '94%',
-              height: '100%',
-              backgroundColor: C.primary,
-              borderRadius: 4,
-            }}
-          />
+        <View style={styles.progressBarBg}>
+          <View style={styles.progressBarFill} />
         </View>
       </View>
     );
   } else {
     return (
-      <View style={{ alignItems: 'center' }}>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 8 }}>
+      <View style={styles.highlightWrapper}>
+        <Text style={styles.highlightTitle}>
           12 candidatures actives
         </Text>
-        <Text style={{ fontSize: 13, color: C.textMid }}>3 en entretien • 2 offres reçues</Text>
+        <Text style={styles.highlightSubtitle}>3 en entretien • 2 offres reçues</Text>
       </View>
     );
   }
@@ -106,7 +72,7 @@ const SLIDES: SlideData[] = [
       'Simule des entretiens réels avec notre IA. Reçois un feedback instantané sur tes réponses et ta posture.',
     illustration: (
       <Slide2Illustration
-        colors={{ primary: C.primary, primaryPale: C.primaryPale, surface: C.surface }}
+        colors={{ primary: C.primary, primaryPale: C.primaryPale, surface: C.bg }}
       />
     ),
     hasHighlight: true,
@@ -124,7 +90,7 @@ const SLIDES: SlideData[] = [
         colors={{
           primary: C.primary,
           primaryPale: C.primaryPale,
-          surface: C.surface,
+          surface: C.bg,
           text: C.text,
         }}
       />
@@ -141,7 +107,7 @@ const SLIDES: SlideData[] = [
       'Messages de connexion personnalisés, mails de candidature percutants et profil LinkedIn optimisé générés par IA en quelques secondes.',
     illustration: (
       <Slide4Illustration
-        colors={{ primary: C.primary, primaryPale: C.primaryPale, surface: C.surface }}
+        colors={{ primary: C.primary, primaryPale: C.primaryPale, surface: C.bg }}
       />
     ),
   },
@@ -158,7 +124,6 @@ export default function OnboardingScreen() {
       try {
         const completed = await SecureStore.getItemAsync('onboarding_completed');
         if (completed === 'true') {
-          // Si l'onboarding est déjà fini, on sort
           router.replace('/(auth)/login');
         }
       } catch (err) {
@@ -174,16 +139,11 @@ export default function OnboardingScreen() {
       flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
       try {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch (error) {
-        // Silent fail
-      }
+      } catch (error) {}
     } else {
-      // Last slide - complete onboarding
       try {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      } catch (error) {
-        // Silent fail
-      }
+      } catch (error) {}
       await SecureStore.setItemAsync('onboarding_completed', 'true');
       router.replace('/(auth)/login');
     }
@@ -192,9 +152,7 @@ export default function OnboardingScreen() {
   const handleSkip = React.useCallback(async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (error) {
-      // Silent fail
-    }
+    } catch (error) {}
     await SecureStore.setItemAsync('onboarding_completed', 'true');
     router.replace('/(auth)/login');
   }, [router]);
@@ -269,24 +227,9 @@ export default function OnboardingScreen() {
           });
         }}
       />
-      {/* Dots indicator */}
       <View style={styles.dotsContainer}>
         <OnboardingDots total={SLIDES.length} activeIndex={currentIndex} colors={{ primary: C.primary, border: C.border }} />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
-  dotsContainer: {
-    position: 'absolute',
-    bottom: 100,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-});

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Text, ActivityIndicator, RefreshControl, Linking, Alert } from 'react-native';
+import { View, FlatList, TouchableOpacity, Text, ActivityIndicator, RefreshControl, Linking, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -12,10 +12,11 @@ import { CandidatureCard } from '../../src/components/crm/CandidatureCard';
 import { CrmEmptyState } from '../../src/components/crm/CrmEmptyState';
 import { StatusBottomSheet } from '../../src/components/crm/StatusBottomSheet';
 import { AddCandidatureModal } from '../../src/components/crm/AddCandidatureModal';
-import { Candidature, CrmCounts, StatusKey, STATUS_THEME } from '../../src/types/crm.types';
+import { Candidature, CrmCounts, StatusKey } from '../../src/types/crm.types';
 import { crmService } from '../../src/services/crmService';
 import api from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/utils/constants';
+import { styles } from './styles/crm.styles';
 
 export default function CrmScreen() {
   const insets = useSafeAreaInsets();
@@ -69,7 +70,6 @@ export default function CrmScreen() {
   }, [candidatures]);
 
   const filtered = candidatures.filter((c) => c.status === activeStatus);
-
   const pipeline: StatusKey[] = ['a_postuler', 'envoye', 'entretien', 'offre', 'refuse'];
 
   const getPrevStatus = (status: StatusKey): StatusKey | null => {
@@ -87,7 +87,6 @@ export default function CrmScreen() {
   };
 
   const updateStatus = async (id: string, status: StatusKey) => {
-    // Optimistic update
     const oldCards = [...candidatures];
     setCandidatures((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
 
@@ -95,7 +94,6 @@ export default function CrmScreen() {
       await crmService.updateStatus(id, status);
     } catch (err) {
       console.error('[CrmScreen] Failed to persist status update:', err);
-      // Rollback on failure
       setCandidatures(oldCards);
     }
   };
@@ -145,9 +143,8 @@ export default function CrmScreen() {
     notes: string;
   }) => {
     try {
-      const newId = await crmService.createCandidature(data);
+      await crmService.createCandidature(data);
       setAddModalVisible(false);
-      // Reload to ensure we have the full transformed object with proper dates
       await loadCRM();
     } catch (err) {
       console.error('[CrmScreen] Manual Add failed:', err);
@@ -167,22 +164,19 @@ export default function CrmScreen() {
   const handlePressAction = async (item: Candidature) => {
     switch (item.status) {
       case 'a_postuler':
-        // Redirect to Mentor CV Audit
         router.push('/(mentor)/mentor-audit-cv');
         break;
       case 'entretien':
-        // Redirect to Mentor Simulation
         router.push('/(mentor)/mentor-simulator');
         break;
       case 'relance':
-        // AI Follow-up Generation
         setLoading(true);
         try {
           const res = await api.post(API_ENDPOINTS.CRM.FOLLOWUP(item.id));
           if (res.data?.status === 'success' && res.data.email) {
             Alert.alert('E-mail de relance généré', res.data.email, [
               { text: 'OK', style: 'cancel' },
-              { text: 'Copier', onPress: () => { /* Add Clipboard logic if needed */ } }
+              { text: 'Copier', onPress: () => { Clipboard.setString(res.data.email); } }
             ]);
           }
         } catch (err) {
@@ -196,7 +190,6 @@ export default function CrmScreen() {
         handlePressOpen(item);
         break;
       default:
-        // No-op or generic response
         break;
     }
   };
@@ -215,7 +208,6 @@ export default function CrmScreen() {
           onPress: async () => {
             const idToDelete = selected.id;
             setBottomVisible(false);
-            // Optimistic update
             setCandidatures(prev => prev.filter(c => c.id !== idToDelete));
             
             try {
@@ -224,7 +216,6 @@ export default function CrmScreen() {
             } catch (err) {
               console.error('[CrmScreen] Delete failed:', err);
               Alert.alert('Erreur', 'Impossible de supprimer la candidature.');
-              // Reload to fix state
               loadCRM();
             }
           }
@@ -280,7 +271,6 @@ export default function CrmScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
         activeOpacity={0.9}
@@ -309,44 +299,3 @@ export default function CrmScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#F3EEE7',
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing['3xl'],
-    paddingTop: spacing.sm,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 26,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FF6B35',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: 'rgba(255,107,53,0.6)',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 1,
-    shadowRadius: 14,
-    elevation: 4,
-  },
-  fabIcon: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    marginTop: -2,
-  },
-});
-

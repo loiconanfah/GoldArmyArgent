@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Animated, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Animated, ActivityIndicator, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Input } from '../../src/components/ui/Input';
@@ -11,6 +11,7 @@ import { SniperJob } from '../../src/types/sniper.types';
 import { useUIStore } from '../../src/stores/uiStore';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import { styles } from './styles/sniper.styles';
 
 export default function SniperScreen() {
   const insets = useSafeAreaInsets();
@@ -53,34 +54,23 @@ export default function SniperScreen() {
 
   const handleUploadCv = async () => {
     if (isUploadingCv) return;
-
     setIsUploadingCv(true);
     
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      
-      // Sélectionner et uploader le CV
       const result = await cvService.pickAndUploadCv();
-      
-      // Stocker les infos du CV
       setCvFileName(result.filename);
       setCvText(result.text);
-      
       showToast('CV uploadé avec succès !', 'success');
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
       console.error('[Sniper][CV Upload Error]', error);
-      
       if (error instanceof CvUploadError) {
-        if (error.code === 'CANCELLED') {
-          // L'utilisateur a annulé, pas besoin d'afficher d'erreur
-          return;
-        }
+        if (error.code === 'CANCELLED') return;
         showToast(error.message, 'error');
       } else {
         showToast('Erreur lors de l\'upload du CV', 'error');
       }
-      
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsUploadingCv(false);
@@ -99,20 +89,15 @@ export default function SniperScreen() {
     setError(null);
     setHasSearched(true);
     
-    // Press animation
     Animated.sequence([
       Animated.timing(searchBtnAnim, { toValue: 0.95, duration: 100, useNativeDriver: true }),
       Animated.timing(searchBtnAnim, { toValue: 1, duration: 100, useNativeDriver: true })
     ]).start();
 
-    // Hide results
     Animated.timing(resultsAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
 
     try {
-      // Haptic feedback
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      // Appel API avec CV si disponible
       const result = await sniperService.searchJobs({
         query: query.trim(),
         location: location.trim() || 'Montréal',
@@ -121,7 +106,6 @@ export default function SniperScreen() {
         cv_filename: cvFileName || undefined,
       });
 
-      // Success
       setJobs(result.matched_jobs || []);
       
       if (result.matched_jobs && result.matched_jobs.length > 0) {
@@ -131,12 +115,9 @@ export default function SniperScreen() {
         showToast('Aucune offre trouvée pour cette recherche', 'info');
       }
 
-      // Show results with animation
       Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     } catch (err: any) {
       console.error('[Sniper][Search Error]', err);
-      
-      // Gestion des erreurs spécifiques
       let errorMessage = 'Erreur lors de la recherche';
       let toastType: 'error' | 'warning' = 'error';
       
@@ -161,8 +142,6 @@ export default function SniperScreen() {
       setError(errorMessage);
       setJobs([]);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      
-      // Show empty state
       Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     } finally {
       setIsSearching(false);
@@ -179,12 +158,11 @@ export default function SniperScreen() {
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + 100 }, // Clear absolute tab bar
+          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + 100 },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* HERO / INTRO */}
         <Animated.View style={[
           styles.hero,
           {
@@ -212,7 +190,6 @@ export default function SniperScreen() {
           </View>
         </Animated.View>
 
-        {/* FORMULAIRE DE RECHERCHE + CV */}
         <Animated.View style={[
           styles.formCard,
           {
@@ -220,7 +197,6 @@ export default function SniperScreen() {
             transform: [{ translateY: formAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }]
           }
         ]}>
-          {/* ZONE CV */}
           <TouchableOpacity 
             style={[styles.cvArea, isUploadingCv && styles.cvAreaDisabled]} 
             onPress={handleUploadCv} 
@@ -257,7 +233,6 @@ export default function SniperScreen() {
               leftIcon={<Ionicons name="briefcase-outline" size={18} color="#A1A1AA" />}
               placeholder="Ex : Product Designer, Dev Frontend…"
             />
-
             <Input
               label="Localisation"
               value={location}
@@ -286,7 +261,6 @@ export default function SniperScreen() {
           </Animated.View>
         </Animated.View>
 
-        {/* RÉSULTATS */}
         {hasSearched && (
           <Animated.View style={[
             styles.resultsSection,
@@ -303,14 +277,12 @@ export default function SniperScreen() {
                 </View>
               )}
             </View>
-
             {error && (
               <View style={styles.errorCard}>
                 <Ionicons name="alert-circle-outline" size={20} color="#E53935" style={{ marginRight: 8 }} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
-
             {jobs.length === 0 && !error && (
               <View style={styles.emptyState}>
                 <Ionicons name="search-outline" size={48} color="#CCCCCC" />
@@ -318,24 +290,10 @@ export default function SniperScreen() {
                 <Text style={styles.emptySubtitle}>Essaie avec d'autres mots-clés ou une autre localisation</Text>
               </View>
             )}
-
             {jobs.length > 0 && (
               <View style={styles.resultsList}>
                 {jobs.map((job, index) => (
-                  <Animated.View 
-                    key={`${job.id || 'job'}-${index}`} 
-                    style={[
-                      styles.jobCard,
-                      {
-                        transform: [{ 
-                          translateY: resultsAnim.interpolate({ 
-                            inputRange: [0, 1], 
-                            outputRange: [10 + (index * 5), 0] 
-                          }) 
-                        }]
-                      }
-                    ]}
-                  >
+                  <View key={`${job.id || 'job'}-${index}`} style={styles.jobCard}>
                     <TouchableOpacity 
                       activeOpacity={0.7}
                       onPress={() => {
@@ -377,16 +335,12 @@ export default function SniperScreen() {
                             )}
                           </View>
                           {job.description && (
-                            <Text
-                              numberOfLines={2}
-                              style={styles.jobSnippet}
-                            >
+                            <Text numberOfLines={2} style={styles.jobSnippet}>
                               {job.description}
                             </Text>
                           )}
                         </View>
                         <View style={styles.jobRight}>
-                          {/* Premium Match Badge */}
                           <View style={styles.matchBadge}>
                             <Ionicons name="flash" size={12} color="#D97706" style={{marginRight: 2}} />
                             <Text style={styles.matchText}>{Math.round(job.match_score)}%</Text>
@@ -396,7 +350,6 @@ export default function SniperScreen() {
                           </View>
                         </View>
                       </View>
-                      {/* Actions */}
                       <View style={styles.cardActionsRow}>
                         <TouchableOpacity
                           style={styles.applyButton}
@@ -430,7 +383,7 @@ export default function SniperScreen() {
                         )}
                       </View>
                     </TouchableOpacity>
-                  </Animated.View>
+                  </View>
                 ))}
               </View>
             )}
@@ -440,360 +393,3 @@ export default function SniperScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#FAFAF8',
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: spacing.xl,
-    gap: spacing.xl, // Spacious look
-  },
-  hero: {
-    marginBottom: spacing.xs,
-  },
-  heroHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  radarContainer: {
-    position: 'relative',
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  radarRing: {
-    position: 'absolute',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F5D061',
-  },
-  heroIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F5D061',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 2,
-    shadowColor: '#F5D061',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  heroTextContainer: {
-    flex: 1,
-  },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    letterSpacing: -0.5,
-  },
-  heroSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  formCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: spacing.xl,
-    borderWidth: 1,
-    borderColor: '#EAEAE6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.04,
-    shadowRadius: 24,
-    elevation: 4,
-  },
-  cvArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FAFAF8',
-    padding: spacing.md,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#EAEAE6',
-    borderStyle: 'dashed',
-    marginBottom: spacing.xl,
-  },
-  cvAreaDisabled: {
-    opacity: 0.6,
-  },
-  cvIconHolder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cvIconHolderActive: {
-    backgroundColor: '#FFFBEB', // Light gold bg
-  },
-  cvInfo: {
-    flex: 1,
-  },
-  cvLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 2,
-  },
-  cvSubLabel: {
-    fontSize: 12,
-    color: '#999999',
-  },
-  inputsWrapper: {
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
-  },
-  searchButton: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    backgroundColor: '#F5D061',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    shadowColor: '#F5D061',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  searchButtonDisabled: {
-    opacity: 0.7,
-  },
-  searchButtonText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1A1A1A',
-  },
-  resultsSection: {
-    marginTop: spacing.md,
-  },
-  resultsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  resultsTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    marginRight: spacing.sm,
-  },
-  resultsCountBadge: {
-    backgroundColor: '#EAEAE6',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  resultsCountText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#666666',
-  },
-  resultsList: {
-    gap: spacing.md,
-  },
-  jobCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: '#EAEAE6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  jobContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  jobMain: {
-    flex: 1,
-    paddingRight: spacing.md,
-  },
-  jobTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 6,
-    letterSpacing: -0.2,
-  },
-  jobCompanyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  jobCompany: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#444444',
-  },
-  jobLocationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  jobLocation: {
-    fontSize: 13,
-    color: '#777777',
-  },
-  jobSalaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  jobSalary: {
-    fontSize: 13,
-    color: '#15803D',
-    fontWeight: '600',
-  },
-  jobMetaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 6,
-  },
-  jobMetaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#F3F4F6',
-  },
-  jobMetaText: {
-    fontSize: 11,
-    color: '#4B5563',
-    fontWeight: '500',
-  },
-  jobSnippet: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#6B7280',
-    lineHeight: 18,
-  },
-  jobRight: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  matchBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FEF3C7',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  matchText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#D97706',
-  },
-  sourceTag: {
-    backgroundColor: '#F5F5F3',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  sourceText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#999999',
-  },
-  cardActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-  },
-  applyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F97316',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  applyButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-  secondaryButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-  },
-  secondaryButtonText: {
-    fontSize: 12,
-    color: '#4B5563',
-    fontWeight: '500',
-  },
-  errorCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFEBEE',
-    borderWidth: 1,
-    borderColor: '#FFCDD2',
-    borderRadius: 16,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#C62828',
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xxxl,
-    paddingHorizontal: spacing.xl,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#666666',
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#999999',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});
