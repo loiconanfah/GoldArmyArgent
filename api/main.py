@@ -258,6 +258,54 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
         logging.exception("Erreur generation PDF")
         raise HTTPException(status_code=500, detail=f"Erreur génération PDF: {str(e)}")
 
+
+@app.post("/api/generate-cv-pdf-html")
+async def generate_cv_pdf_from_html(raw_request: Request):
+    """
+    Accepts a pre-rendered HTML string from the frontend (built using the JS/TS CV templates)
+    and converts it to a PDF via Playwright. This allows the frontend templates to be the
+    single source of truth for CV design, in sync with the mobile app.
+    Body: { html: string, filename?: string }
+    """
+    import logging
+    try:
+        body = await raw_request.json()
+        html_content = body.get("html", "")
+        filename = (body.get("filename") or "CV_ATS_Optimise").replace(" ", "_").strip()
+        if not html_content:
+            raise HTTPException(status_code=400, detail="html manquant dans la requête")
+
+        def _generate_pdf_sync(html: str) -> bytes:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as pw:
+                browser = pw.chromium.launch()
+                page = browser.new_page()
+                page.set_content(html, wait_until="networkidle")
+                p_bytes = page.pdf(
+                    format="A4", print_background=True,
+                    margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
+                )
+                browser.close()
+                return p_bytes
+
+        pdf_bytes = await asyncio.to_thread(_generate_pdf_sync, html_content)
+
+        if not filename.endswith(".pdf"):
+            filename += ".pdf"
+
+        headers = {
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers=headers
+        )
+    except Exception as e:
+        logging.exception("Erreur generation PDF depuis HTML")
+        raise HTTPException(status_code=500, detail=f"Erreur génération PDF: {str(e)}")
+
 @app.post("/api/network/enrich")
 async def enrich_company(request: CompanyEnrichRequest):
     """Cherche les profils RH LinkedIn pour une entreprise."""

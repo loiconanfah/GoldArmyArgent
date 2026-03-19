@@ -30,6 +30,7 @@ import {
     CloudArrowDownIcon,
     CheckCircleIcon
 } from '@heroicons/vue/24/outline'
+import { CV_TEMPLATES } from '../utils/cvTemplates/index'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -418,16 +419,14 @@ const downloadZip = async () => {
     }
 }
 
-const CV_THEMES = [
-    { id: 'goldarmy',    name: 'GoldArmy',    description: 'Dark / Orange',       colors: ['#1A1A2E', '#FF6B35'] },
-    { id: 'minimaliste', name: 'Minimaliste', description: 'Blanc / Bleu',         colors: ['#FFFFFF', '#2563EB'] },
-    { id: 'executive',  name: 'Executive',   description: 'Sombre / Émeraude',    colors: ['#0D1117', '#6EE7B7'] },
-    { id: 'creatif',    name: 'Créatif',     description: 'Violet / Rose',         colors: ['#1A0A2E', '#EC4899'] },
-    { id: 'classique',  name: 'Classique',   description: 'Noir & Blanc',          colors: ['#FFFFFF', '#1a1a1a'] },
-    { id: 'neon_tech',  name: 'Néon Tech',   description: 'Dark / Cyber',          colors: ['#0D0D1A', '#00E5FF'] },
-    { id: 'scandinave', name: 'Scandinave',  description: 'Épuré / Nordic',        colors: ['#FAFAF7', '#4A7C59'] },
-    { id: 'timeline',   name: 'Timeline',    description: 'Infographique',         colors: ['#2D2D2D', '#E85D4A'] },
-]
+// Build the theme list from the mobile-identical TS templates
+const CV_THEMES = CV_TEMPLATES.map(t => ({
+    id: t.id,
+    name: t.label,
+    description: t.description,
+    colors: [t.accentColor, t.accentColor],
+    build: t.build,
+}))
 const selectedTheme = ref('goldarmy')
 const hoveredTheme = ref(null)
 const isDownloadingDocx = ref(false)
@@ -435,18 +434,27 @@ const isDownloadingDocx = ref(false)
 const downloadCvDocx = async (cvJsonString) => {
     isDownloadingDocx.value = true
     try {
+        let cvData = {}
         let filename = 'CV_ATS_Optimise'
         try {
-            const parsed = JSON.parse(cvJsonString)
-            if (parsed.full_name) filename = `CV_${parsed.full_name.replace(/\s+/g, '_')}_ATS`
+            cvData = typeof cvJsonString === 'string' ? JSON.parse(cvJsonString) : cvJsonString
+            if (cvData.full_name) filename = `CV_${cvData.full_name.replace(/\s+/g, '_')}_ATS`
         } catch {}
+
+        // Find the selected template from the mobile-identical TS modules
         const templateId = typeof selectedTheme.value === 'string' ? selectedTheme.value : 'goldarmy'
-        const res = await authFetch('/api/generate-cv-pdf', {
+        const tpl = CV_THEMES.find(t => t.id === templateId) || CV_THEMES[0]
+
+        // Build the HTML fully client-side (mobile-identical rendering)
+        const html = tpl.build(cvData, null)
+
+        // POST the pre-rendered HTML to the backend which uses Playwright to print to PDF
+        const res = await authFetch('/api/generate-cv-pdf-html', {
             method: 'POST',
-            body: JSON.stringify({ cv_json: cvJsonString, filename, template_id: templateId })
+            body: JSON.stringify({ html, filename })
         })
         if (!res.ok) {
-            const err = await res.json()
+            const err = await res.json().catch(() => ({}))
             toastState.addToast(`Erreur: ${err.detail || 'Impossible de générer le CV'}`, 'error')
             return
         }
@@ -1126,5 +1134,70 @@ const openInWorkspace = (msg) => {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* ── RESPONSIVE MOBILE ──────────────────────────────────────── */
+
+/* On small screens: chat panel takes full width */
+@media (max-width: 768px) {
+  /* The top-level flex container (chat + workspace) */
+  .flex.h-full.overflow-hidden {
+    flex-direction: column;
+  }
+
+  /* The workspace panel slides under the chat panel */
+  .flex-1.h-full.bg-\[#020617\] {
+    height: 55vh !important;
+    flex: none;
+  }
+
+  /* Message input bar: location field goes full-width */
+  .bg-surface-900.border.border-surface-700.p-2.rounded-2xl.shadow-lg {
+    flex-direction: column;
+  }
+  .w-full.sm\\:w-1\/3 {
+    width: 100% !important;
+  }
+
+  /* CV template picker: 2 columns on mobile */
+  .flex-1.grid.grid-cols-2.md\\:grid-cols-4 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* CV template preview thumbnail: smaller */
+  .w-full.sm\\:w-28.h-36 {
+    height: 80px !important;
+    width: 100% !important;
+  }
+
+  /* CV template flex row: stack vertically */
+  .flex.flex-col.sm\\:flex-row.gap-5 {
+    flex-direction: column !important;
+  }
+
+  /* Audit CV transform mapping: stack on mobile */
+  .flex.flex-col.md\\:flex-row.gap-4 {
+    flex-direction: column !important;
+    gap: 12px;
+  }
+}
+
+/* On very small screens */
+@media (max-width: 480px) {
+  /* Textarea input */
+  .h-12.p-2 {
+    height: 40px;
+  }
+
+  /* The audit header score circle */
+  .w-24.h-24, .w-32.h-32 {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  /* Stats row: 1 per row */
+  .grid.grid-cols-2.gap-3 {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 </style>

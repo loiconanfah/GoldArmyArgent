@@ -60,16 +60,14 @@ const adaptCvFileInput = ref(null)
 const showDownloadCvModal = ref(false)
 const selectedCvTheme = ref('goldarmy')
 const isDownloadingPdf = ref(false)
-const CV_THEMES = [
-  { id: 'goldarmy',    name: 'GoldArmy',    colors: ['#1A1A2E', '#FF6B35'] },
-  { id: 'minimaliste', name: 'Minimaliste', colors: ['#FFFFFF', '#2563EB'] },
-  { id: 'executive',  name: 'Executive',   colors: ['#0D1117', '#6EE7B7'] },
-  { id: 'creatif',    name: 'Créatif',     colors: ['#1A0A2E', '#EC4899'] },
-  { id: 'classique',  name: 'Classique',   colors: ['#FFFFFF', '#1a1a1a'] },
-  { id: 'neon_tech',  name: 'Néon Tech',   colors: ['#0D0D1A', '#00E5FF'] },
-  { id: 'scandinave', name: 'Scandinave',  colors: ['#FAFAF7', '#4A7C59'] },
-  { id: 'timeline',   name: 'Timeline',    colors: ['#2D2D2D', '#E85D4A'] },
-]
+import { CV_TEMPLATES } from '../utils/cvTemplates/index'
+
+const CV_THEMES = CV_TEMPLATES.map(t => ({
+  id: t.id,
+  name: t.label,
+  colors: [t.accentColor, t.accentColor],
+  build: t.build,
+}))
 
 // Summary stats
 const totalCards = computed(() => Object.values(crmCards.value).flat().length)
@@ -346,10 +344,15 @@ const downloadAdaptedPdf = async () => {
     }
 
     const filename = `CV_Adapte_${(adaptCvCard.value?.job_title || 'offre').replace(/\s+/g, '_').slice(0, 30)}`
-    const res = await authFetch('/api/generate-cv-pdf', {
+
+    // Use the mobile-identical JS templates for consistent design
+    const tpl = CV_THEMES.find(t => t.id === selectedCvTheme.value) || CV_THEMES[0]
+    const html = tpl.build(cvJson, null)
+
+    const res = await authFetch('/api/generate-cv-pdf-html', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cv_json: JSON.stringify(cvJson), filename, template_id: selectedCvTheme.value })
+      body: JSON.stringify({ html, filename })
     })
     if (!res.ok) {
       const err = await res.json()
@@ -459,8 +462,8 @@ onMounted(() => { fetchCrmData() })
     </div>
 
     <!-- ═══ KANBAN BOARD ═══ -->
-    <div class="flex-1 min-h-0 overflow-x-auto overflow-y-hidden px-6 py-5 custom-scrollbar-h">
-      <div class="flex gap-5 h-full min-w-max">
+    <div class="flex-1 min-h-0 kanban-scroll-wrapper px-6 py-5 custom-scrollbar-h">
+      <div class="kanban-board">
 
         <div 
           v-for="col in columns" 
@@ -739,4 +742,33 @@ onMounted(() => { fetchCrmData() })
   to { transform: scale(1); opacity: 1; }
 }
 .animate-scale-in { animation: scale-in 0.2s ease-out forwards; }
+
+/* ── RESPONSIVE MOBILE ───────────────────────────────── */
+.kanban-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.kanban-board {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+  min-width: max-content;
+}
+
+@media (max-width: 768px) {
+  /* On mobile: make page header more compact */
+  .shrink-0.px-6.pt-8 { padding-top: 16px; padding-bottom: 12px; padding-left: 12px; padding-right: 12px; }
+
+  /* Kanban columns are narrower on mobile so 2+ can peek */
+  .kanban-board > div { width: 260px !important; }
+
+  /* URL add-link form: stack button below on very small screens */
+  .relative.flex.items-center input { padding-right: 16px; }
+  .relative.flex.items-center button.absolute { position: relative; right: auto; top: auto; bottom: auto; width: 100%; border-radius: 10px; margin-top: 8px; padding: 12px 16px; }
+  .relative.flex.items-center { flex-direction: column; align-items: stretch; }
+
+  /* Stats grid: 2×2 */
+  .grid.grid-cols-2.md\:grid-cols-4 { grid-template-columns: 1fr 1fr; }
+}
 </style>

@@ -17,6 +17,7 @@ export function escHtml(s: any): string {
 function langToString(l: any): string {
   if (typeof l === 'string') return l;
   if (typeof l === 'object' && l !== null) {
+    // Support {name, language, langue, lang} + optional {level, niveau}
     const name = l.name || l.language || l.langue || l.lang || '';
     const level = l.level || l.niveau || '';
     if (name && level) return `${name} (${level})`;
@@ -43,6 +44,7 @@ export function extractCvFields(cvData: CvData, parsedAudit: ParsedAudit | null)
   const email     = cvData.email || '';
   const phone     = cvData.phone || '';
   const location  = cvData.location || '';
+  // Check multiple possible field names for LinkedIn
   const raw = cvData as any;
   const linkedin  = cvData.linkedin || raw.linkedin_url || raw.linkedinUrl || raw.linkedin_profile || raw.profile_url || '';
   const github    = cvData.github   || raw.github_url   || raw.githubUrl   || '';
@@ -75,6 +77,7 @@ export function extractCvFields(cvData: CvData, parsedAudit: ParsedAudit | null)
   };
 }
 
+/** Contact bar items, returns HTML <li> elements with icons */
 export function buildContactItems(fields: ReturnType<typeof extractCvFields>, iconStyle = ''): string {
   const { email, phone, location, linkedin, github } = fields;
   const items: string[] = [];
