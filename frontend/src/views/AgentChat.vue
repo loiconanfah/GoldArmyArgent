@@ -430,6 +430,7 @@ const CV_THEMES = [
 ]
 const selectedTheme = ref('goldarmy')
 const hoveredTheme = ref(null)
+const isDownloadingDocx = ref(false)
 
 const downloadCvDocx = async (cvJsonString) => {
     isDownloadingDocx.value = true
@@ -485,8 +486,14 @@ const openInWorkspace = (msg) => {
   <div class="h-screen w-full flex bg-surface-950 overflow-hidden relative">
 
     <!-- LEFT PANEL: CHAT (Flexible width) -->
-    <div v-show="!isWorkspaceFullScreen" :class="['flex flex-col h-full border-r border-surface-800 transition-all duration-300', isWorkspaceOpen ? 'w-full md:w-1/3' : 'w-full']">
-        <div class="h-full flex flex-col p-4 md:p-6 relative">
+    <div
+      v-show="!isWorkspaceFullScreen"
+      :class="[
+        'flex flex-col h-full border-r border-surface-800 transition-all duration-300',
+        isWorkspaceOpen ? 'w-full md:w-1/3' : 'w-full',
+      ]"
+    >
+      <div class="h-full flex flex-col p-4 md:p-6 relative">
 
     <!-- Header Minimal -->
     <div class="flex items-center justify-between mb-8">
@@ -753,15 +760,42 @@ const openInWorkspace = (msg) => {
                    </div>
                 </div>
  
-                <!-- Sélecteur de Thème avec Preview -->
-                <div class="p-4 bg-surface-900/50 border border-surface-700/50 rounded-2xl">
-                  <div class="flex flex-col sm:flex-row gap-4">
-                     <!-- Preview Miniature Dynamic -->
-                     <div class="w-full sm:w-24 h-32 bg-surface-800 rounded-lg border border-surface-700 overflow-hidden shrink-0 shadow-inner relative group">
-                         <div class="absolute inset-0 transition-all duration-300" :style="{ backgroundColor: (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) === '#ffffff' ? '#f8fafc' : (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) }">
-                             <!-- Layout: Sidebar Left -->
-                  </div>
-                </div>
+                 <!-- Sélecteur de Thème avec Preview -->
+                 <div class="p-5 bg-surface-900/60 border border-surface-700 mb-4 rounded-2xl">
+                   <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">{{ t('agent_chat.audit.choose_template') || 'Choisir un Modèle de CV' }}</p>
+                   <div class="flex flex-col sm:flex-row gap-5">
+                      <!-- Preview Miniature Dynamic -->
+                      <div class="w-full sm:w-28 h-36 bg-surface-800 rounded-xl border border-surface-600 overflow-hidden shrink-0 shadow-inner relative group">
+                          <div class="absolute inset-0 transition-all duration-300" :style="{ backgroundColor: (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) === '#ffffff' ? '#f8fafc' : (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) }">
+                              <div class="absolute left-0 top-0 bottom-0 w-1/3 opacity-30" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                              <div class="absolute top-4 left-1/3 right-2 h-2 rounded-full opacity-40" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                              <div class="absolute top-8 left-1/3 right-4 h-1 rounded-full opacity-20" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                          </div>
+                      </div>
+                      <!-- Boutons de Sélection -->
+                      <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                          <button
+                              v-for="theme in CV_THEMES"
+                              :key="theme.id"
+                              @click="selectedTheme = theme.id"
+                              @mouseenter="hoveredTheme = theme.id"
+                              @mouseleave="hoveredTheme = null"
+                              :class="[
+                                  'p-2.5 rounded-xl border text-left flex flex-col transition-all duration-200 cursor-pointer',
+                                  selectedTheme === theme.id
+                                      ? 'bg-gold-500/10 border-gold-500 shadow-md ring-1 ring-gold-500/50'
+                                      : 'bg-surface-800 border-surface-700 hover:border-surface-500 hover:bg-surface-700/80'
+                              ]"
+                          >
+                              <div class="flex items-center gap-2 mb-1.5">
+                                  <div class="w-3 h-3 rounded-full border border-surface-600 shadow-inner block shrink-0" :style="{ background: `linear-gradient(135deg, ${theme.colors[0]} 50%, ${theme.colors[1]} 50%)` }"></div>
+                                  <span :class="selectedTheme === theme.id ? 'text-gold-400 font-bold' : 'text-slate-300 font-semibold'" class="text-[11px] truncate block">{{ theme.name }}</span>
+                              </div>
+                              <span class="text-[9px] text-slate-500 truncate w-full block">{{ theme.description }}</span>
+                          </button>
+                      </div>
+                   </div>
+                 </div>
 
                <!-- Bouton téléchargement -->
                <button
@@ -890,8 +924,8 @@ const openInWorkspace = (msg) => {
            </button>
         </div>
       </div>
-    </div>
-  </div>
+      </div> <!-- /LEFT PANEL inner -->
+    </div> <!-- /LEFT PANEL -->
 
     <!-- RIGHT PANEL: WORKSPACE (IDE Style) -->
     <div v-if="isWorkspaceOpen" class="flex-1 h-full bg-[#020617] flex flex-col shadow-2xl animate-fade-in">

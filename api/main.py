@@ -218,16 +218,22 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
         html_content = build_html(template_id, cv_data)
 
         try:
-            from playwright.async_api import async_playwright
-            async with async_playwright() as pw:
-                browser = await pw.chromium.launch()
-                page = await browser.new_page()
-                await page.set_content(html_content, wait_until="networkidle")
-                pdf_bytes = await page.pdf(
-                    format="A4", print_background=True,
-                    margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
-                )
-                await browser.close()
+            def _generate_pdf_sync(html: str) -> bytes:
+                from playwright.sync_api import sync_playwright
+                with sync_playwright() as pw:
+                    browser = pw.chromium.launch()
+                    page = browser.new_page()
+                    page.set_content(html, wait_until="networkidle")
+                    p_bytes = page.pdf(
+                        format="A4", print_background=True,
+                        margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
+                    )
+                    browser.close()
+                    return p_bytes
+
+            import asyncio
+            # Run playwright isolated in its own synchronous thread avoiding asyncio Windows NotImplementedError
+            pdf_bytes = await asyncio.to_thread(_generate_pdf_sync, html_content)
         except Exception as pw_err:
             logging.error(f"Playwright PDF error: {pw_err}")
             raise HTTPException(status_code=500, detail=f"Erreur Playwright: {pw_err}")
