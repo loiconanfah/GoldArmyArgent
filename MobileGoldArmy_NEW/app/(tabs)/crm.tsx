@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, FlatList, TouchableOpacity, Text, ActivityIndicator, RefreshControl, Linking, Alert } from 'react-native';
+import { View, FlatList, TouchableOpacity, Text, ActivityIndicator, RefreshControl, Linking, Alert, Clipboard } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -16,7 +16,7 @@ import { Candidature, CrmCounts, StatusKey } from '../../src/types/crm.types';
 import { crmService } from '../../src/services/crmService';
 import api from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/utils/constants';
-import { styles } from './styles/crm.styles';
+import { styles } from './_styles/crm.styles';
 
 export default function CrmScreen() {
   const insets = useSafeAreaInsets();
@@ -176,7 +176,7 @@ export default function CrmScreen() {
           if (res.data?.status === 'success' && res.data.email) {
             Alert.alert('E-mail de relance généré', res.data.email, [
               { text: 'OK', style: 'cancel' },
-              { text: 'Copier', onPress: () => { Clipboard.setString(res.data.email); } }
+              { text: 'Copier', onPress: () => { (Clipboard as any).setString(res.data.email); } }
             ]);
           }
         } catch (err) {

@@ -24,7 +24,7 @@ import {
   NetworkContact, 
   EmailDraft 
 } from '../../src/types/network.types';
-import { styles } from './styles/reseaux.styles';
+import { styles } from './_styles/reseaux.styles';
 
 type NetworksTab = 'scout' | 'carnet';
 
@@ -84,7 +84,7 @@ export default function ReseauxScreen() {
           />
           <TabPill
             label="Agent Headhunter"
-            icon="person-search-outline"
+            icon="search-outline"
             active={false}
             onPress={() => Alert.alert("Agent Headhunter", "Le mode Headhunter Pro sera activé dans la prochaine mise à jour.")}
           />
@@ -171,7 +171,7 @@ const ScoutSection: React.FC<{ cvText: string }> = ({ cvText }) => {
   const copyToClipboard = () => {
     if (draftResult) {
       const fullText = `Objet: ${draftResult.subject}\n\n${draftResult.body}`;
-      Clipboard.setString(fullText);
+      (Clipboard as any).setString(fullText);
       Alert.alert("Copié !", "L'approche a été copiée dans ton presse-papier.");
     }
   };

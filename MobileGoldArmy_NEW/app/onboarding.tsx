@@ -23,7 +23,7 @@ import { Slide2Illustration } from '../src/components/onboarding/slides/Slide2Il
 import { Slide3Illustration } from '../src/components/onboarding/slides/Slide3Illustration';
 import { Slide4Illustration } from '../src/components/onboarding/slides/Slide4Illustration';
 import type { SlideData } from '../src/types/onboarding.types';
-import { styles, C } from './styles/onboarding.styles';
+import { styles, C } from './_styles/onboarding.styles';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

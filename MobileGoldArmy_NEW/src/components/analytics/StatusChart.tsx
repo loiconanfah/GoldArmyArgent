@@ -37,9 +37,12 @@ export function StatusChart({ data }: StatusChartProps) {
       }
     ]}>
       <View style={styles.header}>
+        <View style={styles.headerIcon}>
+          <Ionicons name="pie-chart-outline" size={20} color="#F5D061" />
+        </View>
         <View>
-          <Text style={styles.title}>Répartition par statut</Text>
-          <Text style={styles.subtitle}>{totalCount} candidatures au total</Text>
+          <Text style={styles.title}>Répartition Réelle</Text>
+          <Text style={styles.subtitle}>{totalCount} candidatures suivies</Text>
         </View>
       </View>
 
@@ -141,21 +144,34 @@ const styles = StyleSheet.create({
     borderColor: '#EAEAE6',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     marginBottom: spacing.xl,
   },
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFF7ED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FFEDD5',
+  },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#1A1A1A',
-    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    color: '#666666',
+    color: '#64748B',
   },
   statsList: {
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
   statusItem: {
     gap: spacing.sm,
@@ -194,8 +210,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   statusPercentage: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   barContainer: {
     marginTop: spacing.xs,

@@ -9,7 +9,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useAuthStore } from '../../src/stores/authStore';
 import { formatFullName } from '../../src/utils/formatters';
-import { styles } from './styles/profile.styles';
+import { styles } from './_styles/profile.styles';
 
 export default function ProfileScreen() {
   const { theme } = useTheme();

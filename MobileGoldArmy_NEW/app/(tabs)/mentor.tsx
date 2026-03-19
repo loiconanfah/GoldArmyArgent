@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { spacing } from '../../src/theme/spacing';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { mentorService } from '../../src/services/mentorService';
-import { styles } from './styles/mentor.styles';
+import { styles } from './_styles/mentor.styles';
 
 interface InterviewItem {
   id: string;

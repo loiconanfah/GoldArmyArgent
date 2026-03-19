@@ -9,7 +9,7 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { spacing } from '../../src/theme/spacing';
 import { TOOLS, toolTheme } from '../../src/data/tools';
 import type { ToolData } from '../../src/types/tool.types';
-import { styles } from './styles/home.styles';
+import { styles } from './_styles/home.styles';
 
 const TIPS = [
   { id: 1, title: 'Optimisation CV', desc: 'Analysez votre CV en 30s. Utilisez l\'IA pour intégrer les mots-clés parfaits.', icon: 'document-text', color: '#60A5FA' },
@@ -206,8 +206,8 @@ export default function HomeScreen() {
                 <View style={[styles.tipIconBox, { backgroundColor: `rgba(${hexToRgb(tip.color)}, 0.1)` }]}>
                   <Ionicons name={tip.icon as any} size={20} color={tip.color} />
                 </View>
-                <Text style={tip.title}>{tip.title}</Text>
-                <Text style={tip.desc} numberOfLines={3}>{tip.desc}</Text>
+                <Text style={styles.tipTitle}>{tip.title}</Text>
+                <Text style={styles.tipDesc} numberOfLines={3}>{tip.desc}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>

@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { styles } from './styles/layout.styles';
+import { styles } from './_styles/layout.styles';
 
 export default function TabsLayout() {
   return (
@@ -10,14 +10,15 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: 'transparent' },
         headerShown: false,
         tabBarActiveTintColor: '#FF6B35',
-        tabBarInactiveTintColor: '#A0A0A0',
+        tabBarInactiveTintColor: '#94A3B8',
         tabBarShowLabel: true,
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarStyle: styles.tabBar,
+        tabBarHideOnKeyboard: true,
         tabBarBackground: () => (
           <BlurView
             tint="light"
-            intensity={60}
+            intensity={80}
             style={styles.blurView}
           />
         ),
@@ -30,12 +31,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused, size }) => (
             <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          href: null,
         }}
       />
       <Tabs.Screen
@@ -75,21 +70,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="entretien"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
         name="analytics"
         options={{
-          href: null,
+          title: 'Analyse',
+          tabBarIcon: ({ color, focused, size }) => (
+            <Ionicons name={focused ? 'stats-chart' : 'stats-chart-outline'} size={size} color={color} />
+          ),
         }}
       />
     </Tabs>

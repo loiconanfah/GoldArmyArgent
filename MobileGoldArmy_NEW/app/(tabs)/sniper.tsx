@@ -11,7 +11,7 @@ import { SniperJob } from '../../src/types/sniper.types';
 import { useUIStore } from '../../src/stores/uiStore';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { styles } from './styles/sniper.styles';
+import { styles } from './_styles/sniper.styles';
 
 export default function SniperScreen() {
   const insets = useSafeAreaInsets();
