@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from pydantic import BaseModel
 import google.generativeai as genai
 from core.database import get_db
 from config.settings import settings
@@ -30,6 +31,52 @@ llm_client = UnifiedLLMClient()
 FREE_TIER_INTERVIEW_LIMIT = 2
 
 router = APIRouter(prefix="/api/interview", tags=["Interview Simulator"])
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Transcription (STT) via Whisper
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TranscribeRequest(BaseModel):
+    audio_base64: str
+    # Optional BCP-47 language code (ex: "fr", "en")
+    language: str | None = None
+
+
+@router.post("/transcribe")
+async def transcribe_audio(req: TranscribeRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Receives an audio base64 (from mobile) and returns transcribed text.
+    Expected input: audio_base64 (webm/m4a/...) from expo-av recording.
+    """
+    if not req.audio_base64:
+        return {"status": "error", "message": "audio_base64 manquant"}
+
+    try:
+        audio_bytes = base64.b64decode(req.audio_base64)
+    except Exception:
+        return {"status": "error", "message": "audio_base64 invalide (base64)"}
+
+    try:
+        # Utilize Gemini natively for incredibly fast cloud-based Audio Transcription
+        # Bypasses local 'openai-whisper' RAM crashes and ffmpeg C-dependency failures on Windows.
+        model = genai.GenerativeModel(INTERVIEW_LLM_MODEL)
+        
+        audio_part = {
+            "mime_type": "audio/mp4", # expo-av mostly writes m4a/mp4 containers natively
+            "data": audio_bytes
+        }
+        
+        prompt = "Transcris très précisément l'audio francophone (ou anglophone le cas échéant) suivant. Ne génère que le texte dicté mot pour mot, sans ajouter de guillemets, de commentaires ni de markdown. Si l'audio est silencieux, réponds uniquement '.'."
+        
+        response = await model.generate_content_async([prompt, audio_part])
+        text = response.text.strip()
+        
+        if text == ".":
+            text = ""
+            
+        return {"status": "success", "text": text}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -11,7 +11,7 @@ export const mentorSimulatorStyles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing['3xl'],
   },
   headerRow: {
     flexDirection: 'row',
@@ -277,5 +277,149 @@ export const mentorSimulatorStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+
+  conversationArea: {
+    marginTop: spacing.xl,
+    padding: spacing.lg,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAEAE6',
+    shadowColor: 'rgba(0,0,0,0.04)',
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 3,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1A1A18',
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  thinkingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  thinkingText: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+
+  messagesList: {
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  messageRow: {
+    flexDirection: 'row',
+  },
+  messageRowUser: {
+    justifyContent: 'flex-end',
+  },
+  messageRowRecruiter: {
+    justifyContent: 'flex-start',
+  },
+  messageBubble: {
+    maxWidth: '86%',
+    borderRadius: 18,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+  },
+  messageBubbleUser: {
+    backgroundColor: '#FFF0EB',
+    borderColor: '#FF8C5A',
+  },
+  messageBubbleRecruiter: {
+    backgroundColor: '#F5F4F0',
+    borderColor: '#EAEAE6',
+  },
+  messageBubbleSystem: {
+    backgroundColor: '#F9E4C4',
+    borderColor: '#F0C98C',
+  },
+  messageText: {
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  messageTextUser: {
+    color: '#1A1A18',
+  },
+  messageTextRecruiter: {
+    color: '#151515',
+  },
+  messageTextSystem: {
+    color: '#5C3600',
+  },
+
+  replyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.md,
+  },
+  replyInputWrapper: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  replyTextInput: {
+    flex: 1,
+    marginLeft: spacing.sm,
+    fontSize: 14,
+    color: '#151515',
+    paddingVertical: 6,
+    minHeight: 44,
+    maxHeight: 120,
+    textAlignVertical: 'top',
+  },
+  sendButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF6B35',
+    borderWidth: 1,
+    borderColor: '#FF6B35',
+    elevation: 2,
+  },
+  micButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1F2937',
+    borderWidth: 1,
+    borderColor: '#111827',
+    elevation: 2,
+  },
+  micButtonActive: {
+    backgroundColor: '#DC2626',
+    borderColor: '#B91C1C',
+  },
+  stopInterviewButton: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    backgroundColor: '#1A1A18',
+    borderWidth: 1,
+    borderColor: '#151515',
+  },
+  stopInterviewText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
