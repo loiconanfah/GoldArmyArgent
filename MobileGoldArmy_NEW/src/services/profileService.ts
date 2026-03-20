@@ -23,5 +23,18 @@ export const profileService = {
       console.error('[ProfileService][getProfile]', error);
       throw error;
     }
+  },
+
+  async updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
+    try {
+      const response = await api.put('/api/profile', data);
+      if (response.data.status === 'success') {
+        return response.data.data;
+      }
+      throw new Error(response.data.detail || 'Erreur lors de la mise à jour du profil');
+    } catch (error: any) {
+      console.error('[ProfileService][updateProfile]', error);
+      throw error;
+    }
   }
 };

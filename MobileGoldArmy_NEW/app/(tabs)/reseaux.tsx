@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
   Modal,
   Clipboard,
-  Alert,
   Image,
+  Linking,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,8 +33,12 @@ export default function ReseauxScreen() {
   const [activeTab, setActiveTab] = useState<NetworksTab>('scout');
   const [cvText, setCvText] = useState('');
 
+  // Shared AI Draft states
+  const [isDrafting, setIsDrafting] = useState(false);
+  const [draftResult, setDraftResult] = useState<EmailDraft | null>(null);
+  const [isDraftModalVisible, setIsDraftModalVisible] = useState(false);
+
   useEffect(() => {
-    // Initial load: Profile & Contacts
     const init = async () => {
       try {
         const profile = await profileService.getProfile();
@@ -46,6 +50,33 @@ export default function ReseauxScreen() {
     init();
   }, []);
 
+  const handleGenerateDraft = async (params: { company_name: string, hr_name: string, request_type?: 'emploi' | 'stage', target_domain?: string }) => {
+    setIsDrafting(true);
+    try {
+      const draft = await networkService.generateDraft({
+        company_name: params.company_name,
+        hr_name: params.hr_name,
+        request_type: params.request_type || 'emploi',
+        target_domain: params.target_domain || '',
+        cv_text: cvText
+      });
+      setDraftResult(draft);
+      setIsDraftModalVisible(true);
+    } catch (err: any) {
+      Alert.alert("Erreur IA", err.message || "La génération a échoué.");
+    } finally {
+      setIsDrafting(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (draftResult) {
+      const fullText = `Objet: ${draftResult.subject}\n\n${draftResult.body}`;
+      (Clipboard as any).setString(fullText);
+      Alert.alert("Copié !", "L'approche a été copiée dans ton presse-papier.");
+    }
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
@@ -53,7 +84,7 @@ export default function ReseauxScreen() {
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + spacing.lg, paddingBottom: spacing['3xl'] },
+          { paddingTop: insets.top + spacing.lg, paddingBottom: 160 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -96,8 +127,65 @@ export default function ReseauxScreen() {
           />
         </View>
 
-        {activeTab === 'scout' ? <ScoutSection cvText={cvText} /> : <CarnetSection />}
+        {activeTab === 'scout' ? (
+          <ScoutSection 
+            cvText={cvText} 
+            onGenerateDraft={handleGenerateDraft}
+            isDrafting={isDrafting}
+          />
+        ) : (
+          <CarnetSection 
+            onGenerateDraft={handleGenerateDraft}
+            isDrafting={isDrafting}
+          />
+        )}
       </ScrollView>
+
+      {/* Shared Modal */}
+      <Modal
+        visible={isDraftModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsDraftModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={80} tint="dark" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
+          <View style={[styles.modalContent, { marginTop: 80 }]}>
+             <View style={styles.modalHeader}>
+                <View style={styles.modalBranding}>
+                   <Image source={require('../../assets/logosansfond.png')} style={styles.modalLogo} resizeMode="contain" />
+                   <Text style={styles.modalBrandTxt}>GOLDARMY AI APPROACH</Text>
+                </View>
+                <TouchableOpacity onPress={() => setIsDraftModalVisible(false)} style={styles.closeModalBtn}>
+                   <Ionicons name="close-circle" size={32} color="#1A1A1F" />
+                </TouchableOpacity>
+             </View>
+
+             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.draftScroll}>
+                <View style={styles.subjectBox}>
+                   <Text style={styles.subjectLabel}>OBJET:</Text>
+                   <Text style={styles.subjectText}>{draftResult?.subject}</Text>
+                </View>
+
+                <View style={styles.bodyBox}>
+                   <Text style={styles.bodyText}>{draftResult?.body}</Text>
+                   <Text style={styles.aiTag}>GENÉRÉ PAR GEMINI 2.0 FLASH // GOLDARMY INTELLIGENCE</Text>
+                </View>
+
+                <TouchableOpacity style={styles.copyBtn} onPress={copyToClipboard}>
+                   <LinearGradient colors={['#FF6B35', '#F59E0B']} style={styles.copyBtnGrad}>
+                      <Ionicons name="clipboard-outline" size={20} color="#FFFFFF" />
+                      <Text style={styles.copyBtnTxt}>COPIER LE MESSAGE</Text>
+                   </LinearGradient>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.cancelLink} onPress={() => setIsDraftModalVisible(false)}>
+                   <Text style={styles.cancelLinkText}>RETOUR</Text>
+                </TouchableOpacity>
+             </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -115,19 +203,22 @@ const TabPill: React.FC<{ label: string; icon: any; active: boolean; onPress: ()
 );
 
 // --- SCOUT SECTION ---
-const ScoutSection: React.FC<{ cvText: string }> = ({ cvText }) => {
+interface ScoutProps {
+  cvText: string;
+  onGenerateDraft: (params: any) => Promise<void>;
+  isDrafting: boolean;
+}
+
+const ScoutSection: React.FC<ScoutProps> = ({ cvText, onGenerateDraft, isDrafting }) => {
   const [companyName, setCompanyName] = useState('');
   const [isEnriching, setIsEnriching] = useState(false);
   const [hrProfiles, setHrProfiles] = useState<HrProfile[]>([]);
   const [hasEnriched, setHasEnriched] = useState(false);
 
-  // Draft states
+  // Params for draft
   const [selectedHr, setSelectedHr] = useState<string>('');
   const [requestType, setRequestType] = useState<'emploi' | 'stage'>('emploi');
   const [targetDomain, setTargetDomain] = useState('');
-  const [isDrafting, setIsDrafting] = useState(false);
-  const [draftResult, setDraftResult] = useState<EmailDraft | null>(null);
-  const [isDraftModalVisible, setIsDraftModalVisible] = useState(false);
 
   const handleEnrich = async () => {
     if (!companyName.trim()) return;
@@ -135,46 +226,36 @@ const ScoutSection: React.FC<{ cvText: string }> = ({ cvText }) => {
     setHasEnriched(false);
     setHrProfiles([]);
     try {
+      // Redirect to LinkedIn Search
+      const encodedName = encodeURIComponent(companyName);
+      const linkedInUrl = `https://www.linkedin.com/search/results/all/?keywords=${encodedName}`;
+      Linking.openURL(linkedInUrl).catch(() => {
+        Alert.alert("Erreur", "Impossible d'ouvrir LinkedIn.");
+      });
+
       const data = await networkService.enrichCompany(companyName);
       setHrProfiles(data);
       setHasEnriched(true);
     } catch (err: any) {
-      Alert.alert("Erreur Scout", err.message || "Impossible de trouver des profils.");
+      console.warn("Erreur enrichissement (non bloquante):", err);
     } finally {
       setIsEnriching(false);
     }
   };
 
-  const handleGenerateDraft = async () => {
+  const handleLocalGenerateDraft = () => {
     if (!companyName.trim()) {
-       Alert.alert("Info manquante", "Précise d'abord l'entreprise dans la recherche Scout.");
-       return;
+      Alert.alert("Info manquante", "Précise d'abord l'entreprise dans la recherche Scout.");
+      return;
     }
-    setIsDrafting(true);
-    try {
-      const draft = await networkService.generateDraft({
-        company_name: companyName,
-        hr_name: selectedHr,
-        request_type: requestType,
-        target_domain: targetDomain,
-        cv_text: cvText
-      });
-      setDraftResult(draft);
-      setIsDraftModalVisible(true);
-    } catch (err: any) {
-      Alert.alert("Erreur IA", err.message || "La génération a échoué.");
-    } finally {
-      setIsDrafting(false);
-    }
+    onGenerateDraft({
+      company_name: companyName,
+      hr_name: selectedHr,
+      request_type: requestType,
+      target_domain: targetDomain
+    });
   };
 
-  const copyToClipboard = () => {
-    if (draftResult) {
-      const fullText = `Objet: ${draftResult.subject}\n\n${draftResult.body}`;
-      (Clipboard as any).setString(fullText);
-      Alert.alert("Copié !", "L'approche a été copiée dans ton presse-papier.");
-    }
-  };
 
   return (
     <View style={styles.section}>
@@ -215,7 +296,13 @@ const ScoutSection: React.FC<{ cvText: string }> = ({ cvText }) => {
                 <TouchableOpacity 
                   key={idx} 
                   style={[styles.hrMiniCard, selectedHr === hr.name && styles.hrMiniCardActive]}
-                  onPress={() => setSelectedHr(hr.name)}
+                  onPress={() => {
+                    setSelectedHr(hr.name);
+                    // Redirect to LinkedIn individual search
+                    const encodedName = encodeURIComponent(hr.name + " " + companyName);
+                    const lnUrl = `https://www.linkedin.com/search/results/all/?keywords=${encodedName}`;
+                    Linking.openURL(lnUrl).catch(() => console.warn("LinkedIn fail"));
+                  }}
                 >
                   <View style={styles.hrIconCircle}>
                     <Ionicons name="person-outline" size={16} color="#111827" />
@@ -273,7 +360,7 @@ const ScoutSection: React.FC<{ cvText: string }> = ({ cvText }) => {
         <TouchableOpacity 
           style={styles.primaryBtn} 
           activeOpacity={0.8}
-          onPress={handleGenerateDraft}
+          onPress={handleLocalGenerateDraft}
           disabled={isDrafting}
         >
           {isDrafting ? <ActivityIndicator color="#FFF" /> : (
@@ -285,58 +372,20 @@ const ScoutSection: React.FC<{ cvText: string }> = ({ cvText }) => {
         </TouchableOpacity>
       </View>
 
-      <Modal
-        visible={isDraftModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsDraftModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <BlurView intensity={80} tint="dark" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }} />
-          <View style={[styles.modalContent, { marginTop: 80 }]}>
-             <View style={styles.modalHeader}>
-                <View style={styles.modalBranding}>
-                   <Image source={require('../../assets/logosansfond.png')} style={styles.modalLogo} resizeMode="contain" />
-                   <Text style={styles.modalBrandTxt}>GOLDARMY AI APPROACH</Text>
-                </View>
-                <TouchableOpacity onPress={() => setIsDraftModalVisible(false)} style={styles.closeModalBtn}>
-                   <Ionicons name="close-circle" size={32} color="#1A1A1F" />
-                </TouchableOpacity>
-             </View>
-
-             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.draftScroll}>
-                <View style={styles.subjectBox}>
-                   <Text style={styles.subjectLabel}>OBJET:</Text>
-                   <Text style={styles.subjectText}>{draftResult?.subject}</Text>
-                </View>
-
-                <View style={styles.bodyBox}>
-                   <Text style={styles.bodyText}>{draftResult?.body}</Text>
-                   <Text style={styles.aiTag}>GENÉRÉ PAR GEMINI 2.0 FLASH // GOLDARMY INTELLIGENCE</Text>
-                </View>
-
-                <TouchableOpacity style={styles.copyBtn} onPress={copyToClipboard}>
-                   <LinearGradient colors={['#FF6B35', '#F59E0B']} style={styles.copyBtnGrad}>
-                      <Ionicons name="clipboard-outline" size={20} color="#FFFFFF" />
-                      <Text style={styles.copyBtnTxt}>COPIER LE MESSAGE</Text>
-                   </LinearGradient>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.cancelLink} onPress={() => setIsDraftModalVisible(false)}>
-                   <Text style={styles.cancelLinkText}>RETOUR</Text>
-                </TouchableOpacity>
-             </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
 
 // --- CARNET SECTION ---
-const CarnetSection: React.FC = () => {
+interface CarnetProps {
+  onGenerateDraft: (params: any) => Promise<void>;
+  isDrafting: boolean;
+}
+
+const CarnetSection: React.FC<CarnetProps> = ({ onGenerateDraft, isDrafting }) => {
   const [contacts, setContacts] = useState<NetworkContact[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [localDraftingId, setLocalDraftingId] = useState<string | null>(null);
 
   const loadContacts = async () => {
     setIsLoading(true);
@@ -348,6 +397,12 @@ const CarnetSection: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCarnetGenerate = async (contact: NetworkContact) => {
+    setLocalDraftingId(contact.id);
+    await onGenerateDraft({ company_name: contact.company_name, hr_name: '' });
+    setLocalDraftingId(null);
   };
 
   useEffect(() => { loadContacts(); }, []);
@@ -388,24 +443,51 @@ const CarnetSection: React.FC = () => {
 
             <View style={styles.contactDetailsArea}>
               {contact.site_url && (
-                <View style={styles.contactRow}>
+                <TouchableOpacity 
+                  style={styles.contactRow}
+                  onPress={() => Linking.openURL(contact.site_url).catch(() => Alert.alert("Erreur", "Lien invalide."))}
+                >
                   <Ionicons name="globe-outline" size={14} color="#6366F1" />
-                  <Text style={styles.contactVal} numberOfLines={1}>{contact.site_url}</Text>
-                </View>
+                  <Text style={[styles.contactVal, styles.linkText]} numberOfLines={1}>{contact.site_url}</Text>
+                </TouchableOpacity>
               )}
               {contact.emails.map((email, i) => (
-                <View key={i} style={styles.contactRow}>
+                <TouchableOpacity 
+                  key={i} 
+                  style={styles.contactRow}
+                  onPress={() => Linking.openURL(`mailto:${email}`).catch(() => Alert.alert("Erreur", "Client mail non configuré."))}
+                >
                   <Ionicons name="mail-outline" size={14} color="#10B981" />
-                  <Text style={styles.contactVal}>{email}</Text>
-                </View>
+                  <Text style={[styles.contactVal, styles.linkText]}>{email}</Text>
+                </TouchableOpacity>
               ))}
               {contact.phone && (
-                <View style={styles.contactRow}>
+                <TouchableOpacity 
+                  style={styles.contactRow}
+                  onPress={() => Linking.openURL(`tel:${contact.phone}`).catch(() => Alert.alert("Erreur", "Impossible d'appeler."))}
+                >
                   <Ionicons name="call-outline" size={14} color="#F59E0B" />
-                  <Text style={styles.contactVal}>{contact.phone}</Text>
-                </View>
+                  <Text style={[styles.contactVal, styles.linkText]}>{contact.phone}</Text>
+                </TouchableOpacity>
               )}
             </View>
+
+            <TouchableOpacity 
+              style={styles.carnetActionBtn}
+              onPress={() => handleCarnetGenerate(contact)}
+              disabled={isDrafting}
+            >
+              <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.carnetActionBtnGrad}>
+                {isDrafting && localDraftingId === contact.id ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="sparkles-outline" size={14} color="#FFFFFF" />
+                    <Text style={styles.carnetActionBtnTxt}>Générer l'approche</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         ))}
 

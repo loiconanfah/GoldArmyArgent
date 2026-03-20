@@ -520,6 +520,32 @@ export const styles = StyleSheet.create({
     color: '#4B5563',
     marginLeft: 10,
   },
+  linkText: {
+    color: '#6366F1',
+    textDecorationLine: 'underline',
+  },
+  carnetActionBtn: {
+    marginTop: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#6366F1',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  carnetActionBtnGrad: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  carnetActionBtnTxt: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
   emptyCarnet: {
     alignItems: 'center',
     justifyContent: 'center',
