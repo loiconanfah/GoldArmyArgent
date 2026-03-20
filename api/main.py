@@ -71,6 +71,39 @@ async def startup_event():
         logger.info("🤖 Étape 2: Initialisation de l'orchestrateur d'agents...")
         await orchestrator.initialize()
         
+        # --- Auto-Check Playwright ---
+        logger.info("🌐 Étape 3: Vérification des navigateurs Playwright...")
+        try:
+            import subprocess
+            # Render path normally: /opt/render/.cache/ms-playwright/
+            # We try to launch a browser in a separate thread to check if it exists
+            def _check_pw():
+                from playwright.sync_api import sync_playwright
+                try:
+                    with sync_playwright() as pw:
+                        # Just test if chromium is launchable
+                        browser = pw.chromium.launch(args=["--no-sandbox"])
+                        browser.close()
+                    return True
+                except Exception as pw_err:
+                    logger.warning(f"Playwright browser missing/error: {pw_err}")
+                    return False
+            
+            pw_ok = await asyncio.to_thread(_check_pw)
+            if not pw_ok:
+                logger.info("Installing Playwright Chromium automatically...")
+                # Try install
+                result = subprocess.run(
+                    [sys.executable, "-m", "playwright", "install", "chromium", "--with-deps"],
+                    capture_output=True, text=True
+                )
+                if result.returncode == 0:
+                    logger.success("Playwright Chromium installed successfully!")
+                else:
+                    logger.error(f"Playwright installation failed: {result.stderr}")
+        except Exception as e:
+            logger.warning(f"Non-critical Playwright check error: {e}")
+
         logger.success("✨ Initialisation du backend terminée avec succès!")
     except Exception as e:
         logger.error(f"💥 Erreur critique lors de l'initialisation: {e}")

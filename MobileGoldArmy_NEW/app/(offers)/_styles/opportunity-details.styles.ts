@@ -160,3 +160,8 @@ export const opportunityDetailsStyles = StyleSheet.create({
     color: '#4B5563',
   },
 });
+
+// Expo Router route placeholder to silence route warning for style-only files.
+const _RoutePlaceholder = () => null;
+export default _RoutePlaceholder;
+

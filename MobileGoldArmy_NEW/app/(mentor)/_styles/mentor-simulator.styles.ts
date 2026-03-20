@@ -458,3 +458,8 @@ export const mentorSimulatorStyles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+// Expo Router route placeholder to silence route warning for style-only files.
+const _RoutePlaceholder = () => null;
+export default _RoutePlaceholder;
+

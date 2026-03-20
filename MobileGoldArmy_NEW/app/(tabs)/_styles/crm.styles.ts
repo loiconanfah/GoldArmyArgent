@@ -40,3 +40,8 @@ export const styles = StyleSheet.create({
     marginTop: -2,
   },
 });
+
+// Expo Router route placeholder to silence route warning for style-only files.
+const _RoutePlaceholder = () => null;
+export default _RoutePlaceholder;
+
