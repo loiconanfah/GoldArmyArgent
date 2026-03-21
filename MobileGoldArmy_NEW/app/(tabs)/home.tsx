@@ -9,7 +9,44 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { spacing } from '../../src/theme/spacing';
 import { TOOLS, toolTheme } from '../../src/data/tools';
 import type { ToolData } from '../../src/types/tool.types';
+import { Image } from 'expo-image';
+import LottieView from 'lottie-react-native';
 import { styles } from './_styles/home.styles';
+
+const CAROUSEL_DATA = [
+  {
+    id: 1,
+    title: '5 Outils IA',
+    desc: 'L\'arsenal complet',
+    color: '#F5D061',
+    bgColor: 'rgba(245, 208, 97, 0.15)',
+    icon: 'rocket',
+  },
+  {
+    id: 2,
+    title: '50+ Sources',
+    desc: 'Scan en temps réel',
+    color: '#60A5FA',
+    bgColor: 'rgba(96, 165, 250, 0.15)',
+    icon: 'scan',
+  },
+  {
+    id: 3,
+    title: 'Audit CV',
+    desc: 'En 30 secondes',
+    color: '#10B981',
+    bgColor: 'rgba(16, 185, 129, 0.15)',
+    icon: 'flash',
+  },
+  {
+    id: 4,
+    title: 'Candidatures',
+    desc: 'Sans limite',
+    color: '#BB86FC',
+    bgColor: 'rgba(187, 134, 252, 0.15)',
+    icon: 'infinite',
+  }
+];
 
 const TIPS = [
   { id: 1, title: 'Optimisation CV', desc: 'Analysez votre CV en 30s. Utilisez l\'IA pour intégrer les mots-clés parfaits.', icon: 'document-text', color: '#60A5FA' },
@@ -123,37 +160,7 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <View style={styles.statBox}>
-            <View style={[styles.statIconBox, { backgroundColor: 'rgba(245, 208, 97, 0.15)' }]}>
-              <Ionicons name="rocket" size={18} color="#F5D061" />
-            </View>
-            <Text style={styles.statValue}>5</Text>
-            <Text style={styles.statLabel}>Outils IA</Text>
-          </View>
-          
-          <View style={styles.statBox}>
-            <View style={[styles.statIconBox, { backgroundColor: 'rgba(96, 165, 250, 0.15)' }]}>
-              <Ionicons name="scan" size={18} color="#60A5FA" />
-            </View>
-            <Text style={styles.statValue}>50+</Text>
-            <Text style={styles.statLabel}>Sources</Text>
-          </View>
-          
-          <View style={styles.statBox}>
-            <View style={[styles.statIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-              <Ionicons name="flash" size={18} color="#10B981" />
-            </View>
-            <Text style={styles.statValue}>30s</Text>
-            <Text style={styles.statLabel}>Audit CV</Text>
-          </View>
-          
-          <View style={styles.statBox}>
-            <View style={[styles.statIconBox, { backgroundColor: 'rgba(187, 134, 252, 0.15)' }]}>
-              <Ionicons name="infinite" size={18} color="#BB86FC" />
-            </View>
-            <Text style={styles.statValue}>∞</Text>
-            <Text style={styles.statLabel}>Candidatures</Text>
-          </View>
+          <StatsCarousel />
         </Animated.View>
 
         <Animated.View
@@ -315,6 +322,144 @@ function ToolCard({ tool, onPress }: { tool: ToolData; onPress: () => void }) {
         </View>
       </TouchableOpacity>
     </Animated.View>
+  );
+}
+
+function StatsCarousel() {
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const iconScaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Breathing animation for the icon to simulate Lottie motion
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(iconScaleAnim, { toValue: 1.15, duration: 1500, useNativeDriver: true }),
+        Animated.timing(iconScaleAnim, { toValue: 1, duration: 1500, useNativeDriver: true })
+      ])
+    ).start();
+
+    const interval = setInterval(() => {
+      // Fade out and slide up slightly
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: -15, duration: 300, useNativeDriver: true })
+      ]).start(() => {
+        // Change index instantly
+        setCurrentIndex(prev => (prev + 1) % CAROUSEL_DATA.length);
+        
+        // Reset position to bottom
+        slideAnim.setValue(15);
+        
+        // Fade in and slide up to center
+        Animated.parallel([
+          Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.spring(slideAnim, { toValue: 0, friction: 8, useNativeDriver: true })
+        ]).start();
+      });
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [fadeAnim, slideAnim]);
+
+  const currentItem = CAROUSEL_DATA[currentIndex];
+
+  return (
+    <View style={{
+      width: '100%',
+      backgroundColor: '#1E293B',
+      borderRadius: 24,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: '#334155',
+      shadowColor: currentItem.color,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.15,
+      shadowRadius: 20,
+      elevation: 8,
+      height: 160, // Fixed height for smooth transitions
+    }}>
+      <LinearGradient
+        colors={[currentItem.bgColor, 'transparent']}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      
+      <Animated.View style={{
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 20,
+        opacity: fadeAnim,
+        transform: [{ translateY: slideAnim }]
+      }}>
+        {/* Left Side: Icon Breathing Animation */}
+        <View style={{
+          width: 90,
+          height: 90,
+          borderRadius: 24,
+          backgroundColor: '#0F172A',
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: currentItem.color,
+          marginRight: 20,
+          overflow: 'hidden'
+        }}>
+          <Animated.View style={{ transform: [{ scale: iconScaleAnim }] }}>
+            <Ionicons name={currentItem.icon as any} size={42} color={currentItem.color} />
+          </Animated.View>
+        </View>
+
+        {/* Right Side: Text */}
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <Text style={{
+            fontSize: 26,
+            fontWeight: '900',
+            color: '#FFFFFF',
+            marginBottom: 4,
+            letterSpacing: -0.5,
+          }}>
+            {currentItem.title}
+          </Text>
+          <Text style={{
+            fontSize: 14,
+            fontWeight: '600',
+            color: currentItem.color,
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+          }}>
+            {currentItem.desc}
+          </Text>
+        </View>
+      </Animated.View>
+
+      {/* Progress Dots */}
+      <View style={{
+        position: 'absolute',
+        bottom: 12,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 6,
+      }}>
+        {CAROUSEL_DATA.map((_, idx) => (
+          <View
+             key={idx}
+             style={{
+               height: 4,
+               width: idx === currentIndex ? 16 : 8,
+               borderRadius: 2,
+               backgroundColor: idx === currentIndex ? currentItem.color : '#475569',
+             }}
+          />
+        ))}
+      </View>
+    </View>
   );
 }
 

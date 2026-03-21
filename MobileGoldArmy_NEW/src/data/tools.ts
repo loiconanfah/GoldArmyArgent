@@ -102,7 +102,7 @@ export const TOOLS: ToolData[] = [
     ],
     tip: 'Fais au moins 3 simulations avant un vrai entretien.',
     cta: 'Accéder à Entretien Vocal',
-    route: '/(tabs)/vocal',
+    route: '/(mentor)/mentor-simulator',
   },
   {
     id: 'crm',
@@ -152,7 +152,7 @@ export const TOOLS: ToolData[] = [
     ],
     tip: 'Personnalise chaque message, l’IA s’adapte à ton interlocuteur.',
     cta: 'Accéder à Réseau IA',
-    route: '/(tabs)/reseau',
+    route: '/(tabs)/reseaux',
   },
 ];
 

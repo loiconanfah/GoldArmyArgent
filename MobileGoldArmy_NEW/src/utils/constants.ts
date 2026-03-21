@@ -34,10 +34,10 @@ function inferDevApiBaseUrl(): string {
 }
 
 // Priority:
-// 1) explicit env override
-// 2) reliable cloud backend (prevents mobile timeouts when local backend is unreachable)
-// 3) local inference fallback
-export const API_BASE_URL = envApiUrl || CLOUD_API_BASE_URL || inferDevApiBaseUrl();
+// 1) Explicit env override (EXPO_PUBLIC_API_URL in .env)
+// 2) If in development (__DEV__), try to infer local machine IP
+// 3) If in production (build), use the Render Cloud Backend as default
+export const API_BASE_URL = envApiUrl || (__DEV__ ? inferDevApiBaseUrl() : CLOUD_API_BASE_URL);
 
 export const IS_DEV = APP_ENV === 'development';
 export const IS_PROD = APP_ENV === 'production';
