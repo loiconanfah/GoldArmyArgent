@@ -20,9 +20,12 @@ import { spacing } from '../../src/theme/spacing';
 import { profileService, UserProfile } from '../../src/services/profileService';
 import { useAuth } from '../../src/hooks/useAuth';
 import { styles } from './_styles/profile.styles';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { logout } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +64,34 @@ export default function ProfileScreen() {
     setTempName(profile?.full_name || '');
     setTempCv(profile?.cv_text || '');
     setIsEditModalVisible(true);
+  };
+
+  const pickImage = async () => {
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        const selectedUri = result.assets[0].uri;
+        setIsSaving(true);
+        try {
+          // Use proper fastAPI file upload instead of sending JSON with local URI
+          const res = await profileService.uploadAvatar(selectedUri);
+          setProfile(prev => prev ? { ...prev, avatar_url: res.avatar_url } : null);
+        } catch (err: any) {
+          // Fallback to local state if backend doesn't support it yet
+          setProfile(prev => prev ? { ...prev, avatar_url: selectedUri } : null);
+        } finally {
+          setIsSaving(false);
+        }
+      }
+    } catch (error) {
+       Alert.alert("Erreur", "Impossible d'ouvrir la galerie.");
+    }
   };
 
   const handleSave = async () => {
@@ -105,11 +136,25 @@ export default function ProfileScreen() {
       >
         {/* HERO SECTION */}
         <View style={styles.heroSection}>
+          <View style={{ width: '100%', alignItems: 'flex-end', paddingRight: 10, zIndex: 999 }}>
+            <TouchableOpacity 
+              style={{ padding: 10 }}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+              onPress={() => router.push('/settings' as any)}
+            >
+              <Ionicons name="settings-outline" size={32} color="#1A1A1A" />
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-               <Ionicons name="person" size={60} color="#666" style={{ marginTop: 20, alignSelf: 'center' }} />
+               {profile?.avatar_url ? (
+                 <Image source={{ uri: profile.avatar_url }} style={{ width: '100%', height: '100%', borderRadius: 50, resizeMode: 'cover' }} />
+               ) : (
+                 <Ionicons name="person" size={60} color="#666" style={{ marginTop: 20, alignSelf: 'center' }} />
+               )}
             </View>
-            <TouchableOpacity style={styles.editAvatarBtn} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.editAvatarBtn} activeOpacity={0.8} onPress={pickImage}>
               <Ionicons name="camera" size={16} color="#FFF" />
             </TouchableOpacity>
           </View>

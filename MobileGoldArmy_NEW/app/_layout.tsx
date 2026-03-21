@@ -63,6 +63,7 @@ export default function RootLayout() {
               <Stack.Screen name="(mentor)/mentor-simulator" options={{}} />
               <Stack.Screen name="(mentor)/mentor-interview-room" options={{}} />
               <Stack.Screen name="(offers)/opportunity-details" options={{}} />
+              <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
             </Stack>

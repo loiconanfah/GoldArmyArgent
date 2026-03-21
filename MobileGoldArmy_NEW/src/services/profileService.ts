@@ -6,6 +6,7 @@ export interface UserProfile {
   cv_text?: string;
   full_name?: string;
   subscription_tier?: string;
+  avatar_url?: string;
 }
 
 export const profileService = {
@@ -27,13 +28,40 @@ export const profileService = {
 
   async updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
     try {
-      const response = await api.put('/api/profile', data);
+      // Backend expects POST for profile updates, not PUT
+      const response = await api.post('/api/profile', data);
       if (response.data.status === 'success') {
         return response.data.data;
       }
       throw new Error(response.data.detail || 'Erreur lors de la mise à jour du profil');
     } catch (error: any) {
       console.error('[ProfileService][updateProfile]', error);
+      throw error;
+    }
+  },
+
+  async uploadAvatar(fileUri: string): Promise<{ status: string, avatar_url: string }> {
+    try {
+      const formData = new FormData();
+      const filename = fileUri.split('/').pop() || 'avatar.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+
+      // @ts-ignore
+      formData.append('file', {
+        uri: fileUri,
+        name: filename,
+        type: type
+      });
+
+      const response = await api.post('/api/profile/upload-avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('[ProfileService][uploadAvatar]', error);
       throw error;
     }
   }

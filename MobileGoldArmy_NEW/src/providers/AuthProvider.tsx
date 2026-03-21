@@ -77,7 +77,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const isProtectedRoute = 
       segments[0] === '(tabs)' || 
       segments[0] === '(mentor)' || 
-      segments[0] === '(offers)';
+      segments[0] === '(offers)' ||
+      segments[0] === 'settings';
     
     const isPublicRoute = 
       segments[0] === '(auth)' || 
