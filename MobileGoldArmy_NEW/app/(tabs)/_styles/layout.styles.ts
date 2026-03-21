@@ -3,32 +3,52 @@ import { StyleSheet, Platform } from 'react-native';
 export const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 24 : 16,
-    left: 12,
-    right: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.88)',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    elevation: 8,
+    bottom: Platform.OS === 'ios' ? 22 : 14,
+    left: 14,
+    right: 14,
+    backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(17, 24, 39, 0.92)', // slate-900
+    borderRadius: 22,
+    borderWidth: Platform.OS === 'ios' ? 1 : 0,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    elevation: Platform.OS === 'ios' ? 0 : 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    height: 64,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 18,
+    height: 70,
     paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 0 : 8,
+    paddingBottom: Platform.OS === 'ios' ? 2 : 10,
   },
   tabBarLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    marginTop: -2,
-    marginBottom: 4,
+    marginTop: 0,
+    marginBottom: 0,
   },
   blurView: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 24,
+    borderRadius: 22,
     overflow: 'hidden',
+  },
+  iconWrap: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 14,
+    gap: 4,
+  },
+  iconWrapActive: {
+    backgroundColor: '#F59E0B', // amber-500
+  },
+  iconLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94A3B8', // slate-400
+  },
+  iconLabelActive: {
+    color: '#111827', // slate-900
   },
 });
 

@@ -45,3 +45,6 @@ storage/chroma_db/
 # OS
 .DS_Store
 Thumbs.db
+
+# Playwright local browsers
+pw-browsers/

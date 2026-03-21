@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
-const CLOUD_API_BASE_URL = 'https://goldarmy.onrender.com';
+const CLOUD_API_BASE_URL = 'https://goldarmy-backend.onrender.com';
 export const APP_ENV = process.env.EXPO_PUBLIC_APP_ENV || 'development';
 
 function inferDevApiBaseUrl(): string {

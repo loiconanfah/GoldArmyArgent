@@ -7,7 +7,7 @@ echo.
 
 :: Ouvrir le Backend (FastAPI) dans une nouvelle fenêtre
 echo [1/2] Démarrage du Backend (FastAPI) sur le port 8000...
-start "GoldArmy Backend" /min cmd /c "python -m uvicorn api.main:app --reload --port 8000"
+start "GoldArmy Backend" /min cmd /c "python -m uvicorn api.main:app --reload --host 0.0.0.0 --port 8000"
 
 :: Attendre un peu que le backend initialise
 timeout /t 2 /nobreak > nul

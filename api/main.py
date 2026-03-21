@@ -1,3 +1,7 @@
+import os
+# Fix for Render Playwright: Force browser installation in the persistent project directory
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(os.getcwd(), "pw-browsers")
+
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger
@@ -74,7 +78,11 @@ async def startup_event():
         # --- Auto-Check Playwright ---
         logger.info("🌐 Étape 3: Vérification des navigateurs Playwright...")
         try:
+            import os
             import subprocess
+            # Force local install (to prevent Render from discarding cache between build and run)
+            # The path is now set at the top of the file
+
             # Render path normally: /opt/render/.cache/ms-playwright/
             # We try to launch a browser in a separate thread to check if it exists
             def _check_pw():
@@ -94,8 +102,8 @@ async def startup_event():
                 logger.info("Installing Playwright Chromium automatically...")
                 # Try install
                 result = subprocess.run(
-                    [sys.executable, "-m", "playwright", "install", "chromium", "--with-deps"],
-                    capture_output=True, text=True
+                    [sys.executable, "-m", "playwright", "install", "chromium"],
+                    capture_output=True, text=True, env=os.environ
                 )
                 if result.returncode == 0:
                     logger.success("Playwright Chromium installed successfully!")
