@@ -10,6 +10,7 @@ import {
   Clipboard,
   Image,
   Linking,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

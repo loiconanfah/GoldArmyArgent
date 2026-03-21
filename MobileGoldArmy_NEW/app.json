@@ -5,17 +5,30 @@
     "owner": "nanfahwa",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/logosansfond.png",
     "userInterfaceStyle": "automatic",
     "splash": {
+      "image": "./assets/logosansfond.png",
       "resizeMode": "contain",
       "backgroundColor": "#0A0A0F"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.goldarmy.mobile"
+      "bundleIdentifier": "com.goldarmy.mobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "GoldArmy a besoin d'accéder à votre galerie pour vous permettre de changer votre photo de profil.",
+        "NSCameraUsageDescription": "GoldArmy a besoin d'accéder à votre appareil photo pour vous permettre de prendre une photo de profil."
+      }
     },
     "android": {
-      "package": "com.goldarmy.mobile"
+      "package": "com.goldarmy.mobile",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
     },
@@ -33,6 +46,13 @@
         "expo-local-authentication",
         {
           "faceIDPermission": "Allow $(PRODUCT_NAME) to use Face ID."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GoldArmy a besoin d'accéder à votre galerie pour vous permettre de changer votre photo de profil.",
+          "cameraPermission": "GoldArmy a besoin d'accéder à votre appareil photo pour vous permettre de prendre une photo de profil."
         }
       ]
     ],
