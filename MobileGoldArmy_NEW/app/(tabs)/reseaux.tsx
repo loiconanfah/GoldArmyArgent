@@ -11,6 +11,8 @@ import {
   Image,
   Linking,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -79,7 +81,10 @@ export default function ReseauxScreen() {
   };
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView 
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <StatusBar style="dark" />
       <ScrollView
         style={styles.scroll}
@@ -113,12 +118,6 @@ export default function ReseauxScreen() {
             icon="sparkles-outline"
             active={activeTab === 'scout'}
             onPress={() => setActiveTab('scout')}
-          />
-          <TabPill
-            label="Agent Headhunter"
-            icon="search-outline"
-            active={false}
-            onPress={() => Alert.alert("Agent Headhunter", "Le mode Headhunter Pro sera activé dans la prochaine mise à jour.")}
           />
           <TabPill
             label="Carnet"
@@ -187,7 +186,7 @@ export default function ReseauxScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -446,7 +445,7 @@ const CarnetSection: React.FC<CarnetProps> = ({ onGenerateDraft, isDrafting }) =
               {contact.site_url && (
                 <TouchableOpacity 
                   style={styles.contactRow}
-                  onPress={() => Linking.openURL(contact.site_url).catch(() => Alert.alert("Erreur", "Lien invalide."))}
+                  onPress={() => Linking.openURL(contact.site_url as string).catch(() => Alert.alert("Erreur", "Lien invalide."))}
                 >
                   <Ionicons name="globe-outline" size={14} color="#6366F1" />
                   <Text style={[styles.contactVal, styles.linkText]} numberOfLines={1}>{contact.site_url}</Text>

@@ -24,12 +24,14 @@ app = FastAPI(title="GoldArmy Agent V2 API", version="2.0.0")
 
 from api.auth import get_current_user, router as auth_router
 from api.interview import router as interview_router
+from api.notifications import router as notifications_router
 from api.subscription import check_subscription_limit, log_usage
 from api.stripe_service import create_checkout_session, handle_webhook_payload
 from core.database import get_db
 
 app.include_router(auth_router)
 app.include_router(interview_router)
+app.include_router(notifications_router)
 
 # Enable CORS (allow_credentials=True exige des origines explicites, pas "*")
 _cors_origins = [

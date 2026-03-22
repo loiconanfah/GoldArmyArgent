@@ -37,6 +37,7 @@ export default function MentorAuditCvScreen() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(CV_TEMPLATES[0].id);
   const { showToast } = useUIStore();
   const [loadingStep, setLoadingStep] = useState(0);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const LOADING_STEPS = [
@@ -55,6 +56,18 @@ export default function MentorAuditCvScreen() {
       useNativeDriver: true,
     }).start();
   }, [overlayAnim]);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (isLoading && loadingStep === 3) {
+      interval = setInterval(() => {
+        setLoadingProgress((prev) => (prev < 99 ? prev + 1 : prev));
+      }, 200);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isLoading, loadingStep]);
 
   const closeOverlay = () => {
     Animated.timing(overlayAnim, {
@@ -129,6 +142,7 @@ export default function MentorAuditCvScreen() {
       setRewriteContent(null);
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setLoadingStep(0);
+      setLoadingProgress(0);
       if (loadingIntervalRef.current) {
         clearInterval(loadingIntervalRef.current);
       }
@@ -258,9 +272,22 @@ export default function MentorAuditCvScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Résumé de l'audit</Text>
             {isLoading && !auditSummary ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
-                <ActivityIndicator size="small" color="#1A1A1A" style={{ marginRight: spacing.sm }} />
-                <Text style={styles.sectionBody}>{LOADING_STEPS[loadingStep]}</Text>
+              <View style={{ marginTop: spacing.sm }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color="#1A1A1A" style={{ marginRight: spacing.sm }} />
+                  <Text style={styles.sectionBody}>{LOADING_STEPS[loadingStep]}</Text>
+                </View>
+                {loadingStep === 3 && (
+                  <View style={{ marginTop: spacing.md }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={{ fontSize: 13, color: '#666666' }}>Génération par IA...</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#4F46E5' }}>{loadingProgress}%</Text>
+                    </View>
+                    <View style={{ height: 6, backgroundColor: '#EAEAE6', borderRadius: 3, overflow: 'hidden' }}>
+                      <View style={{ height: '100%', width: `${loadingProgress}%`, backgroundColor: '#4F46E5', borderRadius: 3 }} />
+                    </View>
+                  </View>
+                )}
               </View>
             ) : parsedAudit ? (
               <>

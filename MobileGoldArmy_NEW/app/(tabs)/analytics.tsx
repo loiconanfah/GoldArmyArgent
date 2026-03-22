@@ -179,12 +179,10 @@ export default function AnalyticsScreen() {
               </TouchableOpacity>
             ))}
           </View>
-          <TouchableOpacity style={styles.notificationBtn}>
-            <Ionicons name="notifications-outline" size={22} color="#1A1A1A" />
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>3</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="flash" size={20} color="#F5D061" style={{ marginRight: 4 }} />
+            <Text style={{ fontFamily: 'Inter-Black', fontSize: 16, color: '#1A1A1A' }}>GoldArmy</Text>
+          </View>
         </View>
 
         {stats && (

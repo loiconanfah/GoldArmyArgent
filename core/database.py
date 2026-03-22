@@ -57,6 +57,10 @@ async def init_db():
         await db.interview_sessions.create_index("user_id")
         await db.interview_sessions.create_index([("user_id", 1), ("created_at", -1)])
         
+        # Index Collections Notifications
+        await db.notifications.create_index("user_id")
+        await db.notifications.create_index([("user_id", 1), ("created_at", -1)])
+        
         logger.info("✅ Index MongoDB vérifiés et créés avec succès.")
     except Exception as e:
         logger.error(f"❌ Erreur lors de la création des index MongoDB: {e}")

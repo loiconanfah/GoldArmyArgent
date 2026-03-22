@@ -21,6 +21,7 @@ import { getAccessToken } from '../../src/utils/storage';
 import { API_BASE_URL } from '../../src/utils/constants';
 import { useUIStore } from '../../src/stores/uiStore';
 import { useInterviewStore } from '../../src/stores/interviewStore';
+import { notificationService } from '../../src/services/notificationService';
 import { styles } from './_styles/mentor-interview-room.styles';
 
 type WsInterviewRole = 'recruiter' | 'user' | 'system';
@@ -398,6 +399,11 @@ export default function MentorInterviewRoom() {
       
       const data = await resp.json();
       if (resp.ok && data.status === 'success' && data.session_id) {
+        notificationService.createNotification({
+          title: 'Bilan de l\'entretien prêt',
+          message: `L\'IA a généré votre analyse pour l\'entretien ${config?.jobTitle}.`,
+          type: 'info'
+        }).catch((e: any) => console.error('[Notification]', e));
         router.replace(`/(mentor)/mentor-simulator-result?sessionId=${data.session_id}`);
       } else {
         showToast("Erreur lors de l'analyse.", 'error');

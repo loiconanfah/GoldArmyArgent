@@ -1,4 +1,5 @@
 import api from './api';
+import { notificationService } from './notificationService';
 
 type MentorAuditResponse = {
   type?: string;
@@ -46,6 +47,13 @@ export const mentorService = {
     });
     const data = res.data;
     const responseData = data.data || data;
+
+    // Fire audit completion notification
+    notificationService.createNotification({
+      title: 'Audit CV Terminé',
+      message: 'Votre CV a été analysé avec succès par notre IA. Consultez vos scores et recommandations.',
+      type: 'success'
+    }).catch((e) => console.error('[Notification] Failed to create audit notif', e));
 
     // Sécuriser les champs pour qu'ils soient toujours des chaînes affichables dans des <Text>
     const rawContent = responseData.content;

@@ -11,6 +11,7 @@ import { TOOLS, toolTheme } from '../../src/data/tools';
 import type { ToolData } from '../../src/types/tool.types';
 import { Image } from 'expo-image';
 import LottieView from 'lottie-react-native';
+import { notificationService, Notification } from '../../src/services/notificationService';
 import { styles } from './_styles/home.styles';
 
 const CAROUSEL_DATA = [
@@ -58,6 +59,7 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [unreadCount, setUnreadCount] = React.useState(0);
 
   const heroAnim = useRef(new Animated.Value(0)).current;
   const statsAnim = useRef(new Animated.Value(0)).current;
@@ -84,6 +86,14 @@ export default function HomeScreen() {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Fetch notifications
+    const fetchNotifs = async () => {
+      const notifs = await notificationService.getNotifications();
+      const unread = notifs.filter(n => !n.is_read).length;
+      setUnreadCount(unread);
+    };
+    fetchNotifs();
   }, [heroAnim, statsAnim, toolsAnim]);
 
   const firstName = useMemo(() => {
@@ -93,6 +103,11 @@ export default function HomeScreen() {
     const clean = beforeAt.split(/[.\s_-]/)[0];
     return clean.charAt(0).toUpperCase() + clean.slice(1);
   }, [user?.firstName, user?.email]);
+
+  const photoUrl = useMemo(() => {
+    const rawUrl = (user as any)?.photo_url || (user as any)?.user_metadata?.photo_url || (user as any)?.user_metadata?.avatar_url || (user as any)?.avatar_url;
+    return typeof rawUrl === 'string' && rawUrl.startsWith('http') ? rawUrl : null;
+  }, [user]);
 
   const handleOpenTool = (tool: ToolData) => {
     router.push(tool.route as any);
@@ -135,8 +150,25 @@ export default function HomeScreen() {
                 Bonjour, <Text style={styles.heroName}>{firstName}</Text>
               </Text>
             </View>
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={20} color="#FFFFFF" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <TouchableOpacity
+                onPress={() => router.push('/notifications' as any)}
+                style={{ position: 'relative', width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }}
+              >
+                <Ionicons name="notifications-outline" size={22} color="#1A1A1A" />
+                {unreadCount > 0 && (
+                  <View style={{ position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444' }} />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/profile' as any)}>
+                {photoUrl ? (
+                  <Image source={{ uri: photoUrl }} style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: '#fff' }} contentFit="cover" />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>{firstName.charAt(0)}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
           </View>
           <Text style={styles.heroSubtitle}>

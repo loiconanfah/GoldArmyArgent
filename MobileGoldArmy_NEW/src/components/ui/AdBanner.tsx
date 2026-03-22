@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { spacing } from '../../theme/spacing';
@@ -30,6 +30,7 @@ const ADS: AdItem[] = [
     icon: 'wallet',
     color: '#F5D061',
     gradient: ['#F5D061', '#E6A32F'],
+    url: 'https://splitspay.org',
   },
   {
     id: 'babagame',
@@ -38,6 +39,7 @@ const ADS: AdItem[] = [
     icon: 'game-controller',
     color: '#60A5FA',
     gradient: ['#60A5FA', '#3B82F6'],
+    url: 'https://babagame.onrender.com',
   },
   {
     id: 'premium',
@@ -63,8 +65,9 @@ export function AdBanner() {
   }, []);
 
   const handleAdPress = (ad: AdItem) => {
-    // TODO: Handle navigation or external link
-    console.log('Ad pressed:', ad.id);
+    if (ad.url) {
+      Linking.openURL(ad.url).catch(err => console.error("URL non valide", err));
+    }
   };
 
   return (
@@ -91,7 +94,7 @@ export function AdBanner() {
             style={styles.adCard}
           >
             <LinearGradient
-              colors={ad.gradient}
+              colors={ad.gradient as any}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.gradient}

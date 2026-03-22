@@ -1,6 +1,7 @@
 import api from './api';
 import { API_ENDPOINTS } from '../utils/constants';
 import { Candidature, StatusKey } from '../types/crm.types';
+import { notificationService } from './notificationService';
 
 /**
  * Mapping between Backend statuses and Mobile status keys
@@ -64,7 +65,13 @@ export const crmService = {
     try {
       const response = await api.post(API_ENDPOINTS.CRM.LINK, { url });
       if (response.data.status === 'success') {
-        return transformApplication(response.data.data);
+        const app = transformApplication(response.data.data);
+        notificationService.createNotification({
+          title: 'Offre importée',
+          message: `L'offre chez ${app.company} a bien été ajoutée à ton CRM.`,
+          type: 'success'
+        });
+        return app;
       }
       throw new Error('Erreur lors de l’analyse du lien');
     } catch (error) {
@@ -92,6 +99,11 @@ export const crmService = {
         notes: data.notes,
       });
       if (response.data.status === 'success') {
+        notificationService.createNotification({
+          title: 'Nouvelle candidature',
+          message: `${data.title} chez ${data.company} est enregistré.`,
+          type: 'success'
+        });
         return response.data.data.id;
       }
       throw new Error('Erreur lors de la création');
