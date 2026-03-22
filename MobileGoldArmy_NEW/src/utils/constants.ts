@@ -33,14 +33,16 @@ function inferDevApiBaseUrl(): string {
   return 'http://127.0.0.1:8000';
 }
 
-// Priority:
-// 1) Explicit env override (EXPO_PUBLIC_API_URL in .env)
-// 2) If in development (__DEV__), try to infer local machine IP
-// 3) If in production (build), use the Render Cloud Backend as default
-export const API_BASE_URL = envApiUrl || (__DEV__ ? inferDevApiBaseUrl() : CLOUD_API_BASE_URL);
+export const IS_DEV = APP_ENV === 'development' || __DEV__;
+export const IS_PROD = !IS_DEV;
 
-export const IS_DEV = APP_ENV === 'development';
-export const IS_PROD = APP_ENV === 'production';
+// Priority:
+// 1) If in production (!IS_DEV), ALWAYS use the Render Cloud Backend.
+// 2) If in development, use Explicit env override (EXPO_PUBLIC_API_URL in .env) first.
+// 3) If no env override in dev, try to infer local machine IP.
+export const API_BASE_URL = IS_PROD 
+  ? CLOUD_API_BASE_URL 
+  : (envApiUrl || inferDevApiBaseUrl());
 
 // API endpoints
 export const API_ENDPOINTS = {
