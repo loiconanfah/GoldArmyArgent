@@ -72,6 +72,7 @@ export default function MentorInterviewRoom() {
   const audioSoundRef = useRef<Audio.Sound | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const manualCloseRef = useRef(false);
+  const shouldEndCallRef = useRef(false);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const callStartTimeRef = useRef<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -131,7 +132,7 @@ export default function MentorInterviewRoom() {
     try {
       if (Platform.OS !== 'web') {
         await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
+          allowsRecordingIOS: false,
           playsInSilentModeIOS: true,
           staysActiveInBackground: false,
           playThroughEarpieceAndroid: false,
@@ -169,6 +170,9 @@ export default function MentorInterviewRoom() {
         if (!status.isLoaded) return;
         if (status.didJustFinish) {
           void sound.unloadAsync().catch(() => undefined);
+          if (shouldEndCallRef.current) {
+            endCall();
+          }
         }
       });
     } catch (err) {
@@ -229,7 +233,14 @@ export default function MentorInterviewRoom() {
 
       if (msg.type === 'recruiter_response') {
         setIsThinking(false);
-        setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'recruiter', text: msg.text }]);
+        let responseText = msg.text;
+        
+        if (responseText.includes('[END_INTERVIEW]')) {
+          shouldEndCallRef.current = true;
+          responseText = responseText.replace('[END_INTERVIEW]', '').trim();
+        }
+        
+        setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'recruiter', text: responseText }]);
         setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
         return;
       }

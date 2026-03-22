@@ -418,6 +418,7 @@ CONSIGNES COMMUNES (RH et Technique):
 5. Pas de Markdown, pas de listes. Uniquement du texte brut, naturel à l'oral.
 
 ENTRETIEN COMPLET : Mène l'entretien de bout en bout. Après avoir couvert les thèmes essentiels (présentation, motivation, expérience/compétences, situation), conclus clairement : remercie le candidat, fais un très bref résumé si pertinent, indique les prochaines étapes (ex. "Nous vous recontacterons sous peu.") puis salue. Ainsi l'entretien est complet et le candidat sait qu'il est terminé.
+CRITIQUE: Si l'entretien s'achève (ex: le candidat te remercie et dit au revoir), tu DOIS OBLIGATOIREMENT terminer ta dernière réponse vocale en ajoutant exactement le texte suivant (avec les crochets) à la fin de ta réponse: [END_INTERVIEW]
 """
 
     # 5. Starting greeting

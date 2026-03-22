@@ -38,6 +38,7 @@ export default function MentorScreen() {
   const heroAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
   const listAnim = useRef(new Animated.Value(0)).current;
+  const arrowAnim = useRef(new Animated.Value(0)).current;
 
   const [sessions, setSessions] = React.useState<InterviewItem[]>([]);
   const [loadingHistory, setLoadingHistory] = React.useState(true);
@@ -48,7 +49,14 @@ export default function MentorScreen() {
       Animated.timing(cardsAnim, { toValue: 1, duration: 450, useNativeDriver: true }),
       Animated.timing(listAnim, { toValue: 1, duration: 450, useNativeDriver: true }),
     ]).start();
-  }, [heroAnim, cardsAnim, listAnim]);
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(arrowAnim, { toValue: 4, duration: 800, useNativeDriver: true }),
+        Animated.timing(arrowAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [heroAnim, cardsAnim, listAnim, arrowAnim]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -137,7 +145,9 @@ export default function MentorScreen() {
             </Text>
             <View style={styles.actionFooter}>
               <Text style={styles.actionCta}>Lancer un audit complet</Text>
-              <Ionicons name="arrow-forward" size={16} color="#1A1A1A" />
+              <Animated.View style={{ transform: [{ translateX: arrowAnim }] }}>
+                <Ionicons name="arrow-forward" size={16} color="#1A1A1A" />
+              </Animated.View>
             </View>
           </TouchableOpacity>
 
@@ -152,7 +162,9 @@ export default function MentorScreen() {
             </Text>
             <View style={styles.actionFooter}>
               <Text style={styles.actionCta}>Démarrer une simulation</Text>
-              <Ionicons name="arrow-forward" size={16} color="#1A1A1A" />
+              <Animated.View style={{ transform: [{ translateX: arrowAnim }] }}>
+                <Ionicons name="arrow-forward" size={16} color="#1A1A1A" />
+              </Animated.View>
             </View>
           </TouchableOpacity>
         </Animated.View>

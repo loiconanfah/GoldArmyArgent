@@ -11,6 +11,8 @@ import { SniperJob } from '../../src/types/sniper.types';
 import { useUIStore } from '../../src/stores/uiStore';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import { crmService } from '../../src/services/crmService';
+import { PaywallModal } from '../../src/components/ui/PaywallModal';
 import { styles } from './_styles/sniper.styles';
 
 export default function SniperScreen() {
@@ -27,6 +29,7 @@ export default function SniperScreen() {
   const [jobs, setJobs] = useState<SniperJob[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Animations
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -138,8 +141,14 @@ export default function SniperScreen() {
         errorMessage = err.message;
       }
 
-      showToast(errorMessage, toastType);
-      setError(errorMessage);
+      if (toastType === 'warning') {
+        setShowPaywall(true);
+        setError(null);
+      } else {
+        showToast(errorMessage, toastType);
+        setError(errorMessage);
+      }
+      
       setJobs([]);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
@@ -354,11 +363,23 @@ export default function SniperScreen() {
                         <TouchableOpacity
                           style={styles.applyButton}
                           activeOpacity={0.85}
-                          onPress={() => {
+                          onPress={async () => {
                             if (job.url) {
                               Linking.openURL(job.url).catch(() => {
                                 showToast("Impossible d'ouvrir le lien de l'offre.", 'error');
                               });
+                              try {
+                                await crmService.createCandidature({
+                                  url: job.url,
+                                  title: job.title,
+                                  company: job.company,
+                                  status: 'a_postuler',
+                                  notes: job.source ? `Sniper AI - Source: ${job.source}` : 'Sniper AI',
+                                });
+                                showToast("Candidature ajoutée automatiquement au CRM !", 'success');
+                              } catch(e) {
+                                console.error("[Sniper] Error auto-saving to CRM", e);
+                              }
                             } else {
                               showToast("Lien de l'offre indisponible.", 'warning');
                             }
@@ -390,6 +411,10 @@ export default function SniperScreen() {
           </Animated.View>
         )}
       </ScrollView>
+      <PaywallModal 
+        visible={showPaywall} 
+        onClose={() => setShowPaywall(false)} 
+      />
     </KeyboardAvoidingView>
   );
 }
