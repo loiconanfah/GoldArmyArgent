@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useAuthStore } from '../stores/authStore';
 import { getAccessToken, getRefreshToken, setAccessToken, setRefreshToken, clearTokens } from '../utils/storage';
 import { authService } from '../services/authService';
@@ -17,6 +17,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const segments = useSegments();
+  const rootNavigationState = useRootNavigationState();
   const [isInitialized, setIsInitialized] = useState(false);
   
   const { 
@@ -72,7 +73,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * IMPORTANT: Don't block rendering of index/onboarding routes
    */
   useEffect(() => {
-    if (!isInitialized) return;
+    if (!isInitialized || !rootNavigationState?.key) return;
 
     const isProtectedRoute = 
       segments[0] === '(tabs)' || 
@@ -98,7 +99,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         router.replace('/(auth)/login');
       }
     }
-  }, [isAuthenticated, segments, isInitialized, router]);
+  }, [isAuthenticated, segments, isInitialized, router, rootNavigationState?.key]);
 
   // Always render children - don't block index/onboarding routes
   return <>{children}</>;

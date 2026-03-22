@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useRootNavigationState } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 
 export default function Index() {
   const router = useRouter();
+  const rootNavigationState = useRootNavigationState();
 
   useEffect(() => {
+    // Wait for the navigation container to be fully initialized before routing
+    if (!rootNavigationState?.key) return;
+
     const checkOnboarding = async () => {
       try {
         const completed = await SecureStore.getItemAsync('onboarding_completed');
@@ -24,7 +28,7 @@ export default function Index() {
     };
 
     checkOnboarding();
-  }, [router]);
+  }, [router, rootNavigationState?.key]);
 
   // Affiche un loader pendant la redirection initiale
   return (

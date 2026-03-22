@@ -18,20 +18,29 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "GoldArmy a besoin d'accéder à votre galerie pour vous permettre de changer votre photo de profil.",
-        "NSCameraUsageDescription": "GoldArmy a besoin d'accéder à votre appareil photo pour vous permettre de prendre une photo de profil."
+        "NSCameraUsageDescription": "GoldArmy a besoin d'accéder à votre appareil photo pour vous permettre de prendre une photo de profil.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.goldarmy.mobile",
       "versionCode": 1,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECORD_AUDIO"
       ]
     },
-    "web": {
-    },
+    "web": {},
     "scheme": "goldarmy",
     "plugins": [
       [
@@ -58,6 +67,20 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://goldarmy.app"
+      },
+      "eas": {
+        "projectId": "ec27a466-2f85-45ad-920b-185e6dabe0d9"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ec27a466-2f85-45ad-920b-185e6dabe0d9"
     }
   }
 }
