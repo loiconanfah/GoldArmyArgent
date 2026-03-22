@@ -69,7 +69,7 @@ class AuthService {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
       const form = new URLSearchParams();
-      form.append('username', credentials.email);
+      form.append('username', credentials.email.trim());
       form.append('password', credentials.password);
 
       const response = await axios.post<BackendTokenResponse>(
