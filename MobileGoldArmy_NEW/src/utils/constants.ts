@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 const envApiUrl = process.env.EXPO_PUBLIC_API_URL;
-const CLOUD_API_BASE_URL = 'https://goldarmy-backend.onrender.com';
+const CLOUD_API_BASE_URL = 'https://goldarmy.onrender.com';
 export const APP_ENV = process.env.EXPO_PUBLIC_APP_ENV || 'development';
 
 function inferDevApiBaseUrl(): string {
@@ -37,12 +37,10 @@ export const IS_DEV = __DEV__;
 export const IS_PROD = !__DEV__;
 
 // Priority:
-// 1) If in production (!IS_DEV), ALWAYS use the Render Cloud Backend.
-// 2) If in development, use Explicit env override (EXPO_PUBLIC_API_URL in .env) first.
-// 3) If no env override in dev, try to infer local machine IP.
-export const API_BASE_URL = IS_PROD 
-  ? CLOUD_API_BASE_URL 
-  : (envApiUrl || inferDevApiBaseUrl());
+// 1) Explicit env override (EXPO_PUBLIC_API_URL in .env) - THIS IS THE MASTER.
+// 2) If in production and no env provided, use the Render Cloud Backend placeholder.
+// 3) If in development and no env provided, try to infer local machine IP.
+export const API_BASE_URL = envApiUrl || (IS_PROD ? CLOUD_API_BASE_URL : inferDevApiBaseUrl());
 
 // API endpoints
 export const API_ENDPOINTS = {
