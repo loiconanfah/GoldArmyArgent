@@ -23,8 +23,7 @@ else:
     print("WARNING: GEMINI_API_KEY is not set in environment!")
 
 from llm.unified_client import UnifiedLLMClient
-
-INTERVIEW_LLM_MODEL = "gemini-3.1-pro-preview"
+INTERVIEW_LLM_MODEL = "gemini-2.0-flash"
 llm_client = UnifiedLLMClient()
 
 # Free tier: max complete interviews before paywall
@@ -413,7 +412,7 @@ CV candidat (extrait): {cv_content[:1000]}
 
 CONSIGNES COMMUNES (RH et Technique):
 1. Pose UNE SEULE question à la fois.
-2. Réponses COURTES (1 à 2 phrases max). Synthèse vocale — rythme naturel, pas de longs paragraphes.
+2. Réponses CONCISES (2 à 3 phrases maximum) pour garder le rythme de l'oral, mais suffisamment riches pour évaluer le candidat et maintenir le réalisme de l'entretien.
 3. Rebondis sur ce que dit le candidat. Personnalise en fonction du CV et des réponses.
 4. Détecte l'ironie et le second degré : si le candidat est clairement ironique ou sarcastique, relève-le avec légèreté (ex. "Je sens une pointe d'ironie — c'est noté !") et enchaîne sans moraliser.
 5. Pas de Markdown, pas de listes. Uniquement du texte brut, naturel à l'oral.
@@ -463,10 +462,9 @@ ENTRETIEN COMPLET : Mène l'entretien de bout en bout. Après avoir couvert les 
             await websocket.send_json({"type": "thinking"})
             conversation_history.append({"role": "user", "content": user_msg})
             
-            full_prompt = "\n".join([f"{m['role']}: {m['content']}" for m in conversation_history])
             
             try:
-                response_text = await llm_client.generate(full_prompt, model=INTERVIEW_LLM_MODEL)
+                response_text = await llm_client.chat(conversation_history, model=INTERVIEW_LLM_MODEL)
                 if not response_text:
                     response_text = "Je vous prie de m'excuser, pouvez-vous reformuler ?"
             except Exception as llm_err:

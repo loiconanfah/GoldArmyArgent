@@ -188,7 +188,12 @@ export default function MentorScreen() {
               </View>
             ) : (
               sessions.map((item) => (
-                <View key={item.id} style={styles.historyCard}>
+                <TouchableOpacity 
+                  key={item.id} 
+                  style={styles.historyCard}
+                  activeOpacity={0.8}
+                  onPress={() => router.push(`/(mentor)/mentor-simulator-result?sessionId=${item.id}`)}
+                >
                   <View style={styles.historyLeft}>
                     <View style={styles.historyIcon}>
                       <Ionicons name="person-circle-outline" size={22} color="#1A1A1A" />
@@ -209,7 +214,7 @@ export default function MentorScreen() {
                       <Text style={styles.statusText}>Terminé</Text>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))
             )}
           </View>

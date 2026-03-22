@@ -63,6 +63,7 @@ export default function MentorInterviewRoom() {
   const [isInterviewRunning, setIsInterviewRunning] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   const [callElapsed, setCallElapsed] = useState('00:00');
   const [messages, setMessages] = useState<Array<{ id: string; role: WsInterviewRole; text: string }>>([]);
@@ -353,9 +354,50 @@ export default function MentorInterviewRoom() {
     }
   };
 
-  const endCall = () => {
+  const endCall = async () => {
     closeWs();
-    router.back();
+    
+    // S'il y a trop peu de messages, on quitte sans analyser
+    if (messages.length <= 2) {
+      router.back();
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const token = await getAccessToken();
+      const payload = {
+        history: messages.map(m => ({ role: m.role, content: m.text })),
+        jobTitle: config?.jobTitle || '',
+        company: config?.company || '',
+        interviewType: config?.interviewType || 'general',
+        recruiterId: config?.recruiterId || 'tech',
+        startedAt: new Date(callStartTimeRef.current || Date.now()).toISOString(),
+        endedAt: new Date().toISOString()
+      };
+
+      const resp = await fetch(`${API_BASE_URL}/api/interview/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await resp.json();
+      if (resp.ok && data.status === 'success' && data.session_id) {
+        router.replace(`/(mentor)/mentor-simulator-result?sessionId=${data.session_id}`);
+      } else {
+        showToast("Erreur lors de l'analyse.", 'error');
+        router.back();
+      }
+    } catch (err) {
+      showToast("Impossible d'analyser l'entretien.", 'error');
+      router.back();
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   if (!config) return null;
@@ -373,6 +415,17 @@ export default function MentorInterviewRoom() {
             <Image source={recruiterInfo.photo} style={styles.callingAvatar} />
             <Text style={styles.callingName}>{recruiterInfo.name}</Text>
             <Text style={styles.callingStatus}>Appel entrant...</Text>
+          </View>
+        </View>
+      )}
+
+      {isAnalyzing && (
+        <View style={[styles.callingOverlay, { zIndex: 999 }]}>
+          <BlurView intensity={90} tint="dark" style={styles.camera} />
+          <View style={styles.callingContent}>
+            <ActivityIndicator size="large" color="#4F46E5" />
+            <Text style={[styles.callingName, { marginTop: 16 }]}>Génération du Bilan...</Text>
+            <Text style={styles.callingStatus}>Analyse des compétences en cours</Text>
           </View>
         </View>
       )}
