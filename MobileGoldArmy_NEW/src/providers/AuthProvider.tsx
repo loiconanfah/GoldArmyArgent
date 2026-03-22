@@ -8,7 +8,9 @@ import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useAuthStore } from '../stores/authStore';
 import { getAccessToken, getRefreshToken, setAccessToken, setRefreshToken, clearTokens } from '../utils/storage';
 import { authService } from '../services/authService';
+import { notificationService } from '../services/notificationService';
 import { useUIStore } from '../stores/uiStore';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -19,6 +21,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const segments = useSegments();
   const rootNavigationState = useRootNavigationState();
   const [isInitialized, setIsInitialized] = useState(false);
+  const { expoPushToken } = usePushNotifications();
   
   const { 
     user, 
@@ -66,6 +69,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     initializeAuth();
   }, []);
+
+  /**
+   * Sync push token when authenticated
+   */
+  useEffect(() => {
+    if (isAuthenticated && expoPushToken) {
+      notificationService.registerPushToken(expoPushToken)
+        .catch(err => console.error('Failed to sync push token:', err));
+    }
+  }, [isAuthenticated, expoPushToken]);
 
   /**
    * Handle navigation based on auth state

@@ -7,6 +7,32 @@ from bson import ObjectId
 
 from core.database import get_db
 from api.auth import get_current_user
+import httpx
+import asyncio
+
+async def send_expo_push_notification(token: str, title: str, body: str, data: dict = None):
+    message = {
+        "to": token,
+        "sound": "default",
+        "title": title,
+        "body": body,
+        "badge": 1,
+        "data": data or {},
+    }
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                "https://exp.host/--/api/v2/push/send",
+                json=message,
+                headers={
+                    "Accept": "application/json",
+                    "Accept-encoding": "gzip, deflate",
+                    "Content-Type": "application/json",
+                },
+                timeout=5.0
+            )
+    except Exception as e:
+        print(f"Erreur d'envoi Push Expo: {e}")
 
 router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 
@@ -73,6 +99,22 @@ async def create_notification(
         }
         
         result = await db.notifications.insert_one(new_notif)
+        
+        # Envoi asynchrone de la Push Notification
+        try:
+            user = await db.users.find_one({"id": user_id})
+            if user and "push_tokens" in user:
+                for token in user["push_tokens"]:
+                    asyncio.create_task(
+                        send_expo_push_notification(
+                            token=token,
+                            title=data.title,
+                            body=data.message,
+                            data={"url": data.action_url}
+                        )
+                    )
+        except Exception as e:
+            print(f"Erreur lors du déclenchement Push: {e}")
         
         return {
             "id": str(result.inserted_id),

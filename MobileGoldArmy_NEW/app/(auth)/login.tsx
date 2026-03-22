@@ -62,13 +62,15 @@ export default function LoginScreen() {
 
   useEffect(() => {
     const handleGoogleResponse = async () => {
-      if (response?.type === 'success' && response.authentication?.idToken) {
-        const idToken = response.authentication.idToken;
-        await loginWithGoogle(idToken);
+      if (response?.type === 'success') {
+        const idToken = response.authentication?.idToken;
+        if (idToken && !isLoading) {
+          await loginWithGoogle(idToken);
+        }
       }
     };
     void handleGoogleResponse();
-  }, [response, loginWithGoogle]);
+  }, [response]);
 
   return (
     <ScreenWrapper>

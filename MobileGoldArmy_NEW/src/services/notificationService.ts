@@ -51,5 +51,15 @@ export const notificationService = {
       console.error('[NotificationService] Error marking all as read', error);
       return false;
     }
+  },
+
+  registerPushToken: async (token: string): Promise<boolean> => {
+    try {
+      await api.post('/api/users/push-token', { token });
+      return true;
+    } catch (error) {
+      console.error('[NotificationService] Error registering push token', error);
+      return false;
+    }
   }
 };

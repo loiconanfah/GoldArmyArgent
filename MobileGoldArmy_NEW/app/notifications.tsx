@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { notificationService, Notification } from '../src/services/notificationService';
 import { spacing } from '../src/theme/spacing';
+import * as Notifications from 'expo-notifications';
 
 export default function NotificationsScreen() {
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function NotificationsScreen() {
     try {
       const data = await notificationService.getNotifications();
       setNotifications(data);
+      const unread = data.filter(n => !n.is_read).length;
+      Notifications.setBadgeCountAsync(unread).catch(console.error);
     } catch(e) {
       console.error(e);
     } finally {
@@ -38,12 +41,18 @@ export default function NotificationsScreen() {
   const handleMarkAllRead = async () => {
     await notificationService.markAllAsRead();
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    Notifications.setBadgeCountAsync(0).catch(console.error);
   };
 
   const handlePressNotif = async (notif: Notification) => {
     if (!notif.is_read) {
       await notificationService.markAsRead(notif.id);
-      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+      
+      const newNotifs = notifications.map(n => n.id === notif.id ? { ...n, is_read: true } : n);
+      setNotifications(newNotifs);
+      
+      const unread = newNotifs.filter(n => !n.is_read).length;
+      Notifications.setBadgeCountAsync(unread).catch(console.error);
     }
     // Si besoin d'action_url (ex: /analytics)
   };

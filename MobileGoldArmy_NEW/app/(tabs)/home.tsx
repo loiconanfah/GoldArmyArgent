@@ -13,6 +13,7 @@ import { Image } from 'expo-image';
 import LottieView from 'lottie-react-native';
 import { notificationService, Notification } from '../../src/services/notificationService';
 import { styles } from './_styles/home.styles';
+import * as Notifications from 'expo-notifications';
 
 const CAROUSEL_DATA = [
   {
@@ -92,6 +93,7 @@ export default function HomeScreen() {
       const notifs = await notificationService.getNotifications();
       const unread = notifs.filter(n => !n.is_read).length;
       setUnreadCount(unread);
+      Notifications.setBadgeCountAsync(unread).catch(console.error);
     };
     fetchNotifs();
   }, [heroAnim, statsAnim, toolsAnim]);

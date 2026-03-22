@@ -28,6 +28,7 @@ from api.notifications import router as notifications_router
 from api.subscription import check_subscription_limit, log_usage
 from api.stripe_service import create_checkout_session, handle_webhook_payload
 from core.database import get_db
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 app.include_router(auth_router)
 app.include_router(interview_router)
@@ -173,6 +174,25 @@ class ProfileUpdateRequest(BaseModel):
 class PromoteUserRequest(BaseModel):
     email: str
     tier: str = "PRO"
+
+class PushTokenRequest(BaseModel):
+    token: str
+
+@app.post("/api/users/push-token")
+async def register_push_token(
+    request: PushTokenRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
+        await db.users.update_one(
+            {"id": user_id},
+            {"$addToSet": {"push_tokens": request.token}}
+        )
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 def read_root():
