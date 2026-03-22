@@ -30,7 +30,9 @@ class Settings(BaseSettings):
     stripe_webhook_secret: Optional[str] = Field(default=None, description="Secret Webhook Stripe")
 
     # Google OAuth Configuration
-    google_client_id: Optional[str] = Field(default=None, description="Client ID Google OAuth")
+    google_client_id: Optional[str] = Field(default=None, description="Client ID Google OAuth (Web)")
+    google_ios_client_id: Optional[str] = Field(default=None, description="Client ID Google OAuth (iOS)")
+    google_android_client_id: Optional[str] = Field(default=None, description="Client ID Google OAuth (Android)")
     google_client_secret: Optional[str] = Field(default=None, description="Client Secret Google OAuth")
 
     # JWT (auth)

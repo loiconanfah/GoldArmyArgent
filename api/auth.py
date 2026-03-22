@@ -179,12 +179,24 @@ async def google_login(payload: GoogleTokenRequest):
         raise HTTPException(status_code=500, detail="GOOGLE_CLIENT_ID not set in environment variables.")
     
     try:
+        # Check signature without strict audience (we verify audience manually below)
         idinfo = id_token.verify_oauth2_token(
             payload.credential,
             g_requests.Request(),
-            settings.google_client_id,
+            audience=None,
             clock_skew_in_seconds=10
         )
+        
+        valid_audiences = [
+            settings.google_client_id,
+            getattr(settings, "google_ios_client_id", None),
+            getattr(settings, "google_android_client_id", None)
+        ]
+        
+        aud = idinfo.get("aud")
+        if not aud or aud not in [a for a in valid_audiences if a]:
+            raise ValueError(f"Unrecognized audience: {aud}")
+            
     except ValueError as e:
         raise HTTPException(status_code=401, detail=f"Invalid Google token: {e}")
 
