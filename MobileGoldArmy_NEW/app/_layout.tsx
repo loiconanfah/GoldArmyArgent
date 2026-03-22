@@ -16,6 +16,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
+export { ErrorBoundary } from 'expo-router';
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     // Add custom fonts here if needed
