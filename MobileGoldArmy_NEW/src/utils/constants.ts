@@ -33,8 +33,8 @@ function inferDevApiBaseUrl(): string {
   return 'http://127.0.0.1:8000';
 }
 
-export const IS_DEV = APP_ENV === 'development' || __DEV__;
-export const IS_PROD = !IS_DEV;
+export const IS_DEV = __DEV__;
+export const IS_PROD = !__DEV__;
 
 // Priority:
 // 1) If in production (!IS_DEV), ALWAYS use the Render Cloud Backend.
