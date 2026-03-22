@@ -42,9 +42,8 @@ export default function RootLayout() {
     prepare();
   }, [fontsLoaded, fontError]);
 
-  if (!isReady) {
-    return null;
-  }
+  // We rely on the Splash Screen to cover the interface while loading.
+  // Returning null from Root Layout causes fatal crashes in Production with Expo Router.
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
