@@ -13,7 +13,11 @@
     },
     "production": {
       "channel": "production",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "858832305716-gu9ujnr16um5qisbgqhpv4g7pv78qbht.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "858832305716-ve62480frssml6ka6vd9rau4u9bpt4s4.apps.googleusercontent.com"
+      }
     }
   },
   "submit": {
