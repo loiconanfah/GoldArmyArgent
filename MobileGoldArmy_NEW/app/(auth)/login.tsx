@@ -49,13 +49,15 @@ WebBrowser.maybeCompleteAuthSession();
 export default function LoginScreen() {
   const { loginWithGoogle, isLoading } = useAuth();
 
-  // Utiliser le même client ID que ton backend (settings.google_client_id)
-  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+  // Load platform-specific client IDs if they exist in .env
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: googleClientId,
-    iosClientId: googleClientId,
-    androidClientId: googleClientId,
+    webClientId: webClientId,
+    iosClientId: iosClientId || webClientId,
+    androidClientId: androidClientId || webClientId,
   });
 
   useEffect(() => {
@@ -136,8 +138,8 @@ export default function LoginScreen() {
               activeOpacity={0.8}
               disabled={!request || isLoading}
               onPress={() => {
-                if (!googleClientId) {
-                  console.warn('EXPO_PUBLIC_GOOGLE_CLIENT_ID manquant dans le .env');
+                if (!webClientId && !iosClientId) {
+                  console.warn('Google Client IDs manquants dans le .env');
                   return;
                 }
                 promptAsync();
