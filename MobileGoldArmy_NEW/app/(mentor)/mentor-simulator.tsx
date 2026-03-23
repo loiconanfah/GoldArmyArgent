@@ -31,17 +31,17 @@ const RECRUITER_PROFILES = {
   tech: {
     name: 'Sophie - Tech Lead',
     role: 'Expertise technique',
-    photo: require('../../assets/recruiters/sophie.png'),
+    photo: require('../../assets/recruiters/sophie.jpg'),
   },
   hr: {
     name: 'Marc - HR Manager',
     role: 'Culture & soft skills',
-    photo: require('../../assets/recruiters/marc.png'),
+    photo: require('../../assets/recruiters/marc.jpg'),
   },
   ceo: {
     name: 'Alice - CEO',
     role: 'Vision & stratégie',
-    photo: require('../../assets/recruiters/alice.png'),
+    photo: require('../../assets/recruiters/alice.jpg'),
   },
 } as const;
 

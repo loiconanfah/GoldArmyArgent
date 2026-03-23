@@ -37,17 +37,17 @@ const RECRUITERS = {
   tech: {
     name: 'Sophie - Tech Lead',
     role: 'Expertise Technique',
-    photo: require('../../assets/recruiters/sophie.png'),
+    photo: require('../../assets/recruiters/sophie.jpg'),
   },
   hr: {
     name: 'Marc - HR Manager',
     role: 'Culture & Soft Skills',
-    photo: require('../../assets/recruiters/marc.png'),
+    photo: require('../../assets/recruiters/marc.jpg'),
   },
   ceo: {
     name: 'Alice - CEO',
     role: 'Vision & Stratégie',
-    photo: require('../../assets/recruiters/alice.png'),
+    photo: require('../../assets/recruiters/alice.jpg'),
   },
 };
 
