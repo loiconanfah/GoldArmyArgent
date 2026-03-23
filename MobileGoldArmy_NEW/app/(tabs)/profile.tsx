@@ -21,6 +21,7 @@ import { profileService, UserProfile } from '../../src/services/profileService';
 import { useAuth } from '../../src/hooks/useAuth';
 import { styles } from './_styles/profile.styles';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
@@ -91,6 +92,32 @@ export default function ProfileScreen() {
       }
     } catch (error) {
        Alert.alert("Erreur", "Impossible d'ouvrir la galerie.");
+    }
+  };
+
+  const pickAndUploadCV = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setIsSaving(true);
+        const fileUri = result.assets[0].uri;
+        try {
+          const res = await profileService.uploadCv(fileUri);
+          setProfile(prev => prev ? { ...prev, cv_text: res.text } : null);
+          Alert.alert("Succès", "Ton CV a été mis à jour et analysé par l'IA.");
+        } catch (err: any) {
+          Alert.alert("Erreur", "Impossible d'uploader le CV.");
+        } finally {
+          setIsSaving(false);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Erreur", "Oups, une erreur est survenue.");
     }
   };
 
@@ -213,8 +240,8 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Cœur de Profil (CV Alpha)</Text>
-            <TouchableOpacity onPress={() => openEdit('cv')}>
-              <Text style={styles.editLink}>Mettre à jour</Text>
+            <TouchableOpacity onPress={pickAndUploadCV}>
+              <Text style={styles.editLink}>Uploader un PDF</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.cvCard}>
@@ -251,7 +278,7 @@ export default function ProfileScreen() {
                {editType === 'info' ? "Modifier l'identité" : "Mise à jour CV"}
             </Text>
             
-            {editType === 'info' ? (
+            {editType === 'info' && (
               <>
                 <Text style={styles.inputLabel}>Nom complet</Text>
                 <TextInput
@@ -259,17 +286,6 @@ export default function ProfileScreen() {
                   value={tempName}
                   onChangeText={setTempName}
                   placeholder="Jean Dupont"
-                />
-              </>
-            ) : (
-              <>
-                <Text style={styles.inputLabel}>Texte brut du CV</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={tempCv}
-                  onChangeText={setTempCv}
-                  placeholder="Colle ton CV ici..."
-                  multiline
                 />
               </>
             )}

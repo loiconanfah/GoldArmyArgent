@@ -64,5 +64,29 @@ export const profileService = {
       console.error('[ProfileService][uploadAvatar]', error);
       throw error;
     }
+  },
+
+  async uploadCv(fileUri: string): Promise<{ status: string, text: string }> {
+    try {
+      const formData = new FormData();
+      const filename = fileUri.split('/').pop() || 'cv.pdf';
+
+      // @ts-ignore
+      formData.append('file', {
+        uri: fileUri,
+        name: filename,
+        type: 'application/pdf'
+      });
+
+      const response = await api.post('/api/profile/upload-cv', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('[ProfileService][uploadCv]', error);
+      throw error;
+    }
   }
 };
