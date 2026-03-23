@@ -7,6 +7,7 @@ interface SniperSearchPayload {
   limit: number;
   cv_text?: string;
   cv_filename?: string;
+  background?: boolean;
 }
 
 export class SniperError extends Error {
@@ -21,7 +22,7 @@ export class SniperError extends Error {
 }
 
 export const sniperService = {
-  async searchJobs({ query, location, limit, cv_text, cv_filename }: SniperSearchPayload): Promise<SniperSearchResult> {
+  async searchJobs({ query, location, limit, cv_text, cv_filename, background }: SniperSearchPayload): Promise<SniperSearchResult | { status: 'pending', task_id: string }> {
     const payload: any = {
       // Aligner strictement avec le frontend web (Opportunities.vue)
       // pour que l'orchestrateur détecte correctement "job_search"
@@ -29,6 +30,7 @@ export const sniperService = {
       nb_results: limit,
       location,
       session_id: 'sniper-mobile',
+      background: background || false
     };
 
     // Ajouter le CV si fourni
@@ -39,8 +41,13 @@ export const sniperService = {
 
     try {
       const response = await api.post('/api/chat', payload);
-      const outer = response.data as { status: string; data?: any; type?: string; content?: string };
+      const outer = response.data as { status: string; data?: any; type?: string; content?: string, task_id?: string };
       
+      // Background task starting
+      if (outer.status === 'pending' && outer.task_id) {
+        return { status: 'pending', task_id: outer.task_id };
+      }
+
       // Cas d'erreur directe (ex: quota atteint)
       if (outer.status === 'error') {
         if (outer.type === 'limit_reached') {

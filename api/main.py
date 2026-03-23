@@ -1,8 +1,8 @@
 import os
 # Fix for Render Playwright: Force browser installation in the persistent project directory
 os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(os.getcwd(), "pw-browsers")
-
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request
+ 
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +29,7 @@ from api.subscription import check_subscription_limit, log_usage
 from api.stripe_service import create_checkout_session, handle_webhook_payload
 from core.database import get_db
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from api.tasks import create_task, run_background_task, get_task, get_recent_tasks
 
 app.include_router(auth_router)
 app.include_router(interview_router)
@@ -131,6 +132,7 @@ class ChatRequest(BaseModel):
     location: Optional[str] = None
     session_id: Optional[str] = "default"
     image_data: Optional[str] = None # Base64 image for vision tasks
+    background: Optional[bool] = False
 
 class CVAdaptRequest(BaseModel):
     job_title: str
@@ -489,15 +491,57 @@ async def update_profile(request: ProfileUpdateRequest, current_user: dict = Dep
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+async def _analyze_cv_background(user_id: str, content: bytes):
+    """Extraction de texte en tâche de fond avec notification."""
+    import fitz
+    try:
+        pdf_document = fitz.open(stream=content, filetype="pdf")
+        text = ""
+        for page_num in range(len(pdf_document)):
+            page = pdf_document.load_page(page_num)
+            text += page.get_text()
+        
+        extracted_text = text.strip()
+        from core.database import get_db
+        db = get_db()
+        await db.users.update_one(
+            {"id": user_id}, 
+            {"$set": {"cv_text": extracted_text}}
+        )
+        return {"text": extracted_text}
+    except Exception as e:
+        from loguru import logger
+        logger.error(f"Background CV analysis error: {e}")
+        raise e
+
 @app.post("/api/profile/upload-cv")
-async def upload_cv_endpoint(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+async def upload_cv_endpoint(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...), 
+    background: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
     """Upload un CV PDF, extrait le texte et le sauvegarde dans le profil."""
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Seuls les PDF sont acceptés")
     
     try:
-        import fitz
         content = await file.read()
+        
+        if background:
+            task_id = await create_task(current_user["id"], "cv_analysis")
+            background_tasks.add_task(
+                run_background_task,
+                task_id,
+                current_user["id"],
+                _analyze_cv_background,
+                current_user["id"],
+                content
+            )
+            return {"status": "pending", "task_id": task_id, "message": "Analyse du CV lancée en arrière-plan."}
+
+        # Direct extraction
+        import fitz
         pdf_document = fitz.open(stream=content, filetype="pdf")
         text = ""
         for page_num in range(len(pdf_document)):
@@ -516,6 +560,20 @@ async def upload_cv_endpoint(file: UploadFile = File(...), current_user: dict = 
         return {"status": "success", "text": extracted_text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/tasks")
+async def list_tasks(current_user: dict = Depends(get_current_user)):
+    """Liste les tâches récentes de l'utilisateur."""
+    tasks = await get_recent_tasks(current_user["id"])
+    return {"status": "success", "data": tasks}
+
+@app.get("/api/tasks/{task_id}")
+async def fetch_task(task_id: str, current_user: dict = Depends(get_current_user)):
+    """Récupère l'état et le résultat d'une tâche spécifique."""
+    task = await get_task(task_id, current_user["id"])
+    if not task:
+        raise HTTPException(status_code=404, detail="Tâche introuvable")
+    return {"status": "success", "data": task}
 
 @app.post("/api/profile/upload-avatar")
 async def upload_avatar_endpoint(request: Request, file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
@@ -833,7 +891,7 @@ async def _enrich_contacts_from_jobs(content: Any, user_id: str) -> None:
 
 
 @app.post("/api/chat")
-async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_current_user)):
+async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
     """
     Main endpoint for interacting with the Orchestrator.
     Handles general chat, search requests, and CV context.
@@ -873,6 +931,18 @@ async def chat_endpoint(request: ChatRequest, current_user: dict = Depends(get_c
             "image_data": request.image_data
         }
         
+        # Background mode handling
+        if request.background:
+            task_id = await create_task(current_user["id"], "sniper")
+            background_tasks.add_task(
+                run_background_task,
+                task_id,
+                current_user["id"],
+                orchestrator.think,
+                task
+            )
+            return {"status": "pending", "task_id": task_id, "message": "Recherche lancée en arrière-plan. Vous recevrez une notification une fois terminée."}
+
         response = await orchestrator.think(task)
 
         # Log usage si recherche d'emploi

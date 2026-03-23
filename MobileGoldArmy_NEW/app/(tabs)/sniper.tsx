@@ -7,6 +7,7 @@ import { spacing } from '../../src/theme/spacing';
 import { StatusBar } from 'expo-status-bar';
 import { sniperService, SniperError } from '../../src/services/sniperService';
 import { cvService, CvUploadError } from '../../src/services/cvService';
+import { taskService } from '../../src/services/taskService';
 import { SniperJob } from '../../src/types/sniper.types';
 import { useUIStore } from '../../src/stores/uiStore';
 import * as Haptics from 'expo-haptics';
@@ -30,6 +31,8 @@ export default function SniperScreen() {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const pollingInterval = useRef<any>(null);
 
   // Animations
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -53,6 +56,22 @@ export default function SniperScreen() {
         Animated.timing(radarAnim, { toValue: 0, duration: 2000, useNativeDriver: true })
       ])
     ).start();
+
+    // Check for existing pending tasks on mount
+    const checkActiveTasks = async () => {
+      const recent = await taskService.getRecentTasks();
+      const pending = recent.find(t => t.type === 'sniper' && t.status === 'pending');
+      if (pending) {
+        setActiveTaskId(pending.id);
+        setIsSearching(true);
+        startPolling(pending.id);
+      }
+    };
+    checkActiveTasks();
+
+    return () => {
+      if (pollingInterval.current) clearInterval(pollingInterval.current);
+    };
   }, []);
 
   const handleUploadCv = async () => {
@@ -107,17 +126,24 @@ export default function SniperScreen() {
         limit,
         cv_text: cvText || undefined,
         cv_filename: cvFileName || undefined,
+        background: true // Force background mode for persistence
       });
-
-      setJobs(result.matched_jobs || []);
-      
-      if (result.matched_jobs && result.matched_jobs.length > 0) {
-        showToast(`${result.total_jobs_found} offres trouvées !`, 'success');
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } else {
-        showToast('Aucune offre trouvée pour cette recherche', 'info');
+ 
+      if ('status' in result && result.status === 'pending') {
+        setActiveTaskId(result.task_id);
+        startPolling(result.task_id);
+        showToast('Scan lancé en arrière-plan', 'info');
+      } else if ('matched_jobs' in result) {
+        setJobs(result.matched_jobs || []);
+        if (result.matched_jobs && result.matched_jobs.length > 0) {
+          showToast(`${result.total_jobs_found} offres trouvées !`, 'success');
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          showToast('Aucune offre trouvée pour cette recherche', 'info');
+        }
+        setIsSearching(false);
       }
-
+ 
       Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     } catch (err: any) {
       console.error('[Sniper][Search Error]', err);
@@ -155,6 +181,33 @@ export default function SniperScreen() {
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const startPolling = (taskId: string) => {
+    if (pollingInterval.current) clearInterval(pollingInterval.current);
+    
+    pollingInterval.current = setInterval(async () => {
+      const task = await taskService.getTask(taskId);
+      if (!task) return;
+
+      if (task.status === 'completed') {
+        if (pollingInterval.current) clearInterval(pollingInterval.current);
+        const searchResult = task.result;
+        setJobs(searchResult?.matched_jobs || []);
+        setIsSearching(false);
+        setActiveTaskId(null);
+        showToast('Scan terminé !', 'success');
+        Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else if (task.status === 'failed') {
+        if (pollingInterval.current) clearInterval(pollingInterval.current);
+        setIsSearching(false);
+        setActiveTaskId(null);
+        setError("Le scan a échoué.");
+        showToast('Le scan a échoué', 'error');
+        Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+      }
+    }, 3000); // Poll every 3 seconds
   };
 
   return (

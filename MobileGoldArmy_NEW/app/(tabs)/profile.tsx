@@ -18,10 +18,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { spacing } from '../../src/theme/spacing';
 import { profileService, UserProfile } from '../../src/services/profileService';
+import { taskService } from '../../src/services/taskService';
 import { useAuth } from '../../src/hooks/useAuth';
 import { styles } from './_styles/profile.styles';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
@@ -53,6 +55,17 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     fetchProfile();
+    
+    // Check for pending CV analysis on mount
+    const checkActiveTasks = async () => {
+      const recent = await taskService.getRecentTasks();
+      const pending = recent.find(t => t.type === 'cv_analysis' && t.status === 'pending');
+      if (pending) {
+        setIsSaving(true);
+        startCvPolling(pending.id);
+      }
+    };
+    checkActiveTasks();
   }, []);
 
   const onRefresh = () => {
@@ -106,19 +119,49 @@ export default function ProfileScreen() {
         setIsSaving(true);
         const fileUri = result.assets[0].uri;
         try {
-          const res = await profileService.uploadCv(fileUri);
-          setProfile(prev => prev ? { ...prev, cv_text: res.text } : null);
-          Alert.alert("Succès", "Ton CV a été mis à jour et analysé par l'IA.");
+          const res = await profileService.uploadCv(fileUri, true); // Use background mode
+          if (res.status === 'pending' && res.task_id) {
+            startCvPolling(res.task_id);
+            showToast('Analyse lancée en arrière-plan', 'info');
+          } else if (res.text) {
+            setProfile(prev => prev ? { ...prev, cv_text: res.text } : null);
+            Alert.alert("Succès", "Ton CV a été mis à jour.");
+            setIsSaving(false);
+          }
         } catch (err: any) {
           Alert.alert("Erreur", "Impossible d'uploader le CV.");
-        } finally {
           setIsSaving(false);
         }
       }
     } catch (err) {
       console.error(err);
       Alert.alert("Erreur", "Oups, une erreur est survenue.");
+      setIsSaving(false);
     }
+  };
+
+  const startCvPolling = (taskId: string) => {
+    const interval = setInterval(async () => {
+      const task = await taskService.getTask(taskId);
+      if (!task) return;
+
+      if (task.status === 'completed') {
+        clearInterval(interval);
+        setProfile(prev => prev ? { ...prev, cv_text: task.result?.text } : null);
+        setIsSaving(false);
+        showToast('Analyse CV terminée !', 'success');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else if (task.status === 'failed') {
+        clearInterval(interval);
+        setIsSaving(false);
+        showToast('L\'analyse du CV a échoué', 'error');
+      }
+    }, 3000);
+  };
+
+  const showToast = (msg: string, type: 'success' | 'error' | 'info') => {
+    // Basic toast mock if no global toast, though UIStore usually handles it
+    Alert.alert(type.toUpperCase(), msg);
   };
 
   const handleSave = async () => {

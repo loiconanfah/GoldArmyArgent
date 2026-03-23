@@ -66,7 +66,7 @@ export const profileService = {
     }
   },
 
-  async uploadCv(fileUri: string): Promise<{ status: string, text: string }> {
+  async uploadCv(fileUri: string, background: boolean = false): Promise<{ status: string, text?: string, task_id?: string }> {
     try {
       const formData = new FormData();
       const filename = fileUri.split('/').pop() || 'cv.pdf';
@@ -78,7 +78,7 @@ export const profileService = {
         type: 'application/pdf'
       });
 
-      const response = await api.post('/api/profile/upload-cv', formData, {
+      const response = await api.post(`/api/profile/upload-cv?background=${background}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

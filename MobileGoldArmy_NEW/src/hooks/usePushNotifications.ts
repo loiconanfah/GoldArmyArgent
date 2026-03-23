@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 
 // Handle incoming notifications when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -16,6 +17,7 @@ Notifications.setNotificationHandler({
 });
 
 export function usePushNotifications() {
+  const router = useRouter();
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
   const [notification, setNotification] = useState<Notifications.Notification | undefined>();
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
@@ -32,6 +34,15 @@ export function usePushNotifications() {
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
       console.log('Notification response received:', response);
+      const data = response.notification.request.content.data;
+      
+      if (data && data.task_id) {
+        if (data.type === 'sniper') {
+          router.push('/(tabs)/sniper');
+        } else if (data.type === 'cv_analysis') {
+          router.push('/(tabs)/profile');
+        }
+      }
     });
 
     return () => {
