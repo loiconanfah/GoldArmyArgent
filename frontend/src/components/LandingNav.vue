@@ -53,6 +53,7 @@ function goToSection(hash) {
           <router-link to="/free-cv-roast" class="nav-modern__link" @click="closeNav">{{ t('landing.nav.cv_audit') }}</router-link>
           <router-link to="/free-interview" class="nav-modern__link" @click="closeNav">{{ t('landing.nav.simulation') }}</router-link>
           <router-link to="/blog" class="nav-modern__link" @click="closeNav">{{ t('landing.nav.blog') }}</router-link>
+          <router-link to="/support" class="nav-modern__link" @click="closeNav">{{ t('landing.nav.support') }}</router-link>
         </nav>
 
         <div class="nav-modern__actions">
@@ -90,6 +91,7 @@ function goToSection(hash) {
           <router-link to="/free-cv-roast" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.cv_audit') }}</router-link>
           <router-link to="/free-interview" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.simulation') }}</router-link>
           <router-link to="/blog" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.blog') }}</router-link>
+          <router-link to="/support" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.support') }}</router-link>
           <div class="nav-modern__drawer-actions">
             <div class="nav-modern__lang nav-modern__lang--drawer" role="group" aria-label="Changer la langue">
               <button type="button" :class="['nav-modern__lang-btn', { 'nav-modern__lang-btn--active': locale === 'fr' }]" @click="setLocale('fr')">FR</button>

@@ -133,6 +133,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = "default"
     image_data: Optional[str] = None # Base64 image for vision tasks
     background: Optional[bool] = False
+    task_type: Optional[str] = "sniper" # 'sniper', 'mentor', 'cv_analysis'
 
 class CVAdaptRequest(BaseModel):
     job_title: str
@@ -180,6 +181,12 @@ class PromoteUserRequest(BaseModel):
 class PushTokenRequest(BaseModel):
     token: str
 
+class SupportMessageRequest(BaseModel):
+    name: str
+    email: str
+    subject: str
+    message: str
+
 @app.post("/api/users/push-token")
 async def register_push_token(
     request: PushTokenRequest,
@@ -199,6 +206,26 @@ async def register_push_token(
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "GoldArmy Agent V2 API is running"}
+
+@app.post("/api/support/message")
+async def send_support_message(
+    request: SupportMessageRequest,
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Enregistre un message de support dans la base de données."""
+    try:
+        from datetime import datetime
+        message_data = request.dict()
+        message_data["created_at"] = datetime.utcnow()
+        
+        await db.support_messages.insert_one(message_data)
+        
+        logger.info(f"📩 Nouveau message de support de {request.email}: {request.subject}")
+        
+        return {"status": "success", "message": "Message envoyé avec succès"}
+    except Exception as e:
+        logger.error(f"Erreur lors de l'envoi du message de support: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/parse-pdf")
 async def parse_pdf(file: UploadFile = File(...)):
@@ -933,7 +960,8 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks,
         
         # Background mode handling
         if request.background:
-            task_id = await create_task(current_user["id"], "sniper")
+            t_type = request.task_type or "sniper"
+            task_id = await create_task(current_user["id"], t_type)
             background_tasks.add_task(
                 run_background_task,
                 task_id,

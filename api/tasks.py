@@ -69,7 +69,14 @@ async def run_background_task(task_id: str, user_id: str, func: Callable, *args,
         user = await db.users.find_one({"id": user_id})
         if user and user.get("push_tokens"):
             task = await db.tasks.find_one({"id": task_id})
-            title = "Scan Sniper Terminé" if task["type"] == "sniper" else "Analyse CV Terminée"
+            # Notification Title mapping
+            titles = {
+                "sniper": "Scan Sniper Terminé",
+                "cv_analysis": "Analyse CV Terminée",
+                "mentor": "Audit CV Terminé ✅",
+                "default": "Tâche terminée"
+            }
+            title = titles.get(task["type"], titles["default"])
             body = "Tes résultats sont prêts ! Clique pour les voir."
             
             for token in user["push_tokens"]:

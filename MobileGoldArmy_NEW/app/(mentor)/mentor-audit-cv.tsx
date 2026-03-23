@@ -157,7 +157,16 @@ export default function MentorAuditCvScreen() {
         message,
         cv_text: cvText,
         cv_filename: cvFileName,
+        background: true
       });
+
+      if ((response as any).status === 'pending') {
+        showToast("Audit lancé en arrière-plan 🚀. Tu recevras une notification dès qu'il sera prêt !", "success", 5000);
+        // On peut soit rester sur la page, soit quitter. L'utilisateur voulait que ça continue.
+        // On laisse isLoading à false pour que l'utilisateur puisse continuer à naviguer.
+        setIsLoading(false);
+        return;
+      }
 
       setAuditSummary(response.audit || response.content || null);
       if (response.type === 'cv_audit_rewrite' || response.type === 'cv_rewrite') {

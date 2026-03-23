@@ -24,6 +24,7 @@
             "simulation": "Simulation",
             "blog": "Blog",
             "login": "Sign In",
+            "support": "Support",
             "get_started": "Start Free Trial"
         },
         "hero": {
@@ -636,6 +637,7 @@
         "blog_link": "Blog",
         "create_account": "Create an account",
         "privacy": "Privacy Policy",
+        "support": "Support",
         "terms": "Terms of Service",
         "rights": "© {year} GoldArmy. All rights reserved."
     },
@@ -1122,5 +1124,46 @@
             "interview_title": "Interview Simulator",
             "interview_desc": "The AI plays the role of your target CTO and runs you through an ultra-realistic oral interview to test your answers under pressure."
         }
+    },
+    "support_page": {
+        "title": "Support & Help Center",
+        "subtitle": "Need help with GoldArmy? Our team is here to support you at support@goldarmyai.com or via the form below.",
+        "email_title": "Email",
+        "email_desc": "Contact us directly via email for any technical or business-related questions.",
+        "faq_title": "FAQ",
+        "faq_desc": "Check out our answers to the most common questions about how the AI Sniper works.",
+        "faq_cta": "View FAQ",
+        "status_title": "Status",
+        "status_desc": "Check the real-time status of our AI services and servers.",
+        "status_ok": "Operational"
+    },
+    "privacy_page": {
+        "title": "Privacy Policy",
+        "intro_title": "1. Introduction",
+        "intro_text": "GoldArmy is committed to protecting our users' privacy. This policy explains how we handle your personal data within our AI career services.",
+        "data_title": "2. Data Collection",
+        "data_text": "We collect the necessary data for our services to function:",
+        "data_item1": "Account information (email, name).",
+        "data_item2": "Professional documents (CV, cover letters) that you upload.",
+        "data_item3": "Career preferences and job search history.",
+        "ai_title": "3. AI Usage",
+        "ai_text": "Your documents (CVs) are analyzed by Artificial Intelligence models to extract skills and recommend opportunities. This data is used exclusively for your benefit and is never sold to third parties.",
+        "security_title": "4. Security",
+        "security_text": "All data is encrypted in transit via SSL/TLS and stored on secure servers. We use industry-standard security measures to protect your information from unauthorized access.",
+        "rights_title": "5. Your Rights",
+        "rights_text": "In accordance with GDPR and applicable laws, you have the right to access, rectify, and delete your data. You can exercise these rights through the app settings or by contacting us.",
+        "last_update": "Last updated: March 23, 2024",
+        "contact_info": "Contact: privacy@goldarmyai.com"
+    },
+    "support_form": {
+        "title": "Send us a message",
+        "name_label": "Full Name",
+        "email_label": "Your email",
+        "subject_label": "Subject",
+        "message_label": "Message",
+        "submit_btn": "Send Message",
+        "sending": "Sending...",
+        "success_msg": "Message sent successfully! Our team will get back to you soon.",
+        "error_msg": "An error occurred while sending the message."
     }
 }

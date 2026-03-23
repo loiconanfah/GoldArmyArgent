@@ -54,6 +54,7 @@ function goToSection(hash) {
           <ul class="footer-tech__list">
             <li><router-link to="/login" class="footer-tech__link">{{ t('landing.nav.login') }}</router-link></li>
             <li><router-link to="/register" class="footer-tech__link">{{ t('footer_global.create_account') }}</router-link></li>
+            <li><router-link to="/support" class="footer-tech__link">{{ t('footer_global.support') }}</router-link></li>
           </ul>
         </div>
       </div>
@@ -61,9 +62,9 @@ function goToSection(hash) {
       <div class="footer-tech__bottom">
         <p class="footer-tech__copy">{{ t('footer_global.rights', { year: currentYear }) }}</p>
         <div class="footer-tech__legal">
-          <a href="#" class="footer-tech__legal-link">{{ t('footer_global.privacy') }}</a>
+          <router-link to="/privacy" class="footer-tech__legal-link">{{ t('footer_global.privacy') }}</router-link>
           <span class="footer-tech__dot" aria-hidden="true"></span>
-          <a href="#" class="footer-tech__legal-link">{{ t('footer_global.terms') }}</a>
+          <router-link to="/privacy" class="footer-tech__legal-link">{{ t('footer_global.terms') }}</router-link>
         </div>
       </div>
     </div>

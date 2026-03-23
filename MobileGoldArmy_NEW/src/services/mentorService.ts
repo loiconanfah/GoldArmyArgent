@@ -28,7 +28,7 @@ export const mentorService = {
   /**
    * Lance un audit de CV via l'orchestrateur (/api/chat)
    */
-  async auditCv(payload: AuditCvPayload): Promise<MentorAuditResponse> {
+  async auditCv(payload: AuditCvPayload & { background?: boolean }): Promise<MentorAuditResponse & { task_id?: string }> {
     const body = {
       message: payload.message,
       cv_text: payload.cv_text,
@@ -39,6 +39,8 @@ export const mentorService = {
       location: '',
       session_id: 'mentor-audit',
       image_data: null,
+      background: !!payload.background,
+      task_type: 'mentor'
     };
 
     const res = await api.post('/api/chat', body, {
