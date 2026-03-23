@@ -1,4 +1,4 @@
-﻿/**
+/**
  * useGoogleAuth — composable for Google Identity Services OAuth
  *
  * The Google SDK is loaded DYNAMICALLY with error handling.
@@ -75,7 +75,7 @@ export function useGoogleAuth() {
 
         if (!loaded || !window.google) {
             googleAvailable.value = false
-            googleError.value = 'Connexion Google non disponible depuis votre region.'
+            googleError.value = 'La connexion Google est bloquée (bloqueur de pubs ?). Désactivez-le pour vous connecter.'
             return
         }
 

@@ -1089,7 +1089,7 @@
     },
     "support_page": {
         "title": "Support & Assistance",
-        "subtitle": "Besoin d'aide avec GoldArmy ? Notre équipe est là pour vous accompagner sur support@goldarmyai.com ou via le formulaire ci-dessous.",
+        "subtitle": "Besoin d'aide avec GoldArmy ? Notre équipe est là pour vous accompagner sur support{'@'}goldarmyai.com ou via le formulaire ci-dessous.",
         "email_title": "Email",
         "email_desc": "Contactez-nous directement par email pour toute question technique ou commerciale.",
         "faq_title": "FAQ",
@@ -1115,7 +1115,7 @@
         "rights_title": "5. Vos droits",
         "rights_text": "Conformément au RGPD et aux lois en vigueur, vous disposez d'un droit d'accès, de rectification et de suppression de vos données. Vous pouvez exercer ces droits depuis les paramètres de l'application ou en nous contactant.",
         "last_update": "Dernière mise à jour : 23 Mars 2024",
-        "contact_info": "Contact : privacy@goldarmyai.com"
+        "contact_info": "Contact : privacy{'@'}goldarmyai.com"
     },
     "support_form": {
         "title": "Envoyez-nous un message",

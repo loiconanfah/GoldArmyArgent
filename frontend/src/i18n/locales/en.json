@@ -1127,7 +1127,7 @@
     },
     "support_page": {
         "title": "Support & Help Center",
-        "subtitle": "Need help with GoldArmy? Our team is here to support you at support@goldarmyai.com or via the form below.",
+        "subtitle": "Need help with GoldArmy? Our team is here to support you at support{'@'}goldarmyai.com or via the form below.",
         "email_title": "Email",
         "email_desc": "Contact us directly via email for any technical or business-related questions.",
         "faq_title": "FAQ",
@@ -1153,7 +1153,7 @@
         "rights_title": "5. Your Rights",
         "rights_text": "In accordance with GDPR and applicable laws, you have the right to access, rectify, and delete your data. You can exercise these rights through the app settings or by contacting us.",
         "last_update": "Last updated: March 23, 2024",
-        "contact_info": "Contact: privacy@goldarmyai.com"
+        "contact_info": "Contact: privacy{'@'}goldarmyai.com"
     },
     "support_form": {
         "title": "Send us a message",
