@@ -7,6 +7,9 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Footer from '../components/Footer.vue'
 import LandingNav from '../components/LandingNav.vue'
+import CookieBanner from '../components/popups/CookieBanner.vue'
+import PromoPopup from '../components/popups/PromoPopup.vue'
+import AuthCTAModal from '../components/popups/AuthCTAModal.vue'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -871,7 +874,7 @@ function closeNav() {
                     <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694176ce78bb904b99d64825_Custom.svg" loading="lazy" alt="" />
                     <div class="infos-sub-text">{{ t('landing.pricing.plan4_info_1') }} <br />{{ t('landing.pricing.plan4_info_2') }}</div>
                   </div>
-                  <router-link to="/register" class="pricing-button accent1 w-inline-block">
+                  <router-link to="/support" class="pricing-button accent1 w-inline-block">
                     <div class="price-btn-cta">{{ t('landing.pricing.plan4_cta') }}</div>
                   </router-link>
                   <div class="infos-2-wrapper">
@@ -929,6 +932,11 @@ function closeNav() {
     </main>
 
     <Footer />
+    
+    <!-- Interactive Popups -->
+    <CookieBanner />
+    <PromoPopup />
+    <AuthCTAModal />
   </div>
 </template>
 

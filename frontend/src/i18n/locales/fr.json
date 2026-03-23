@@ -1127,5 +1127,23 @@
         "sending": "Envoi en cours...",
         "success_msg": "Message envoyé avec succès ! Notre équipe vous répondra bientôt.",
         "error_msg": "Une erreur est survenue lors de l'envoi du message."
+    },
+    "landing_popups": {
+        "cookies": {
+            "text": "Ce site utilise des cookies pour améliorer votre expérience et analyser notre trafic.",
+            "accept": "Accepter tout",
+            "decline": "Plus d'infos"
+        },
+        "promo": {
+            "title": "Offre Spéciale Sniper",
+            "text": "Décrochez votre prochain job avec l'IA. Créez un compte aujourd'hui et obtenez 5 crédits de recherche offerts !",
+            "cta": "En profiter"
+        },
+        "auth_cta": {
+            "title": "Prêt à propulser votre carrière ?",
+            "subtitle": "Rejoignez l'armée du succès avec GoldArmy. L'IA qui travaille pour vous 24h/24.",
+            "btn": "Créer mon compte gratuitement",
+            "close": "Plus tard"
+        }
     }
 }

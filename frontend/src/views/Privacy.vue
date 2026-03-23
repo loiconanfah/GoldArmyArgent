@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import LandingNav from '../components/LandingNav.vue'
 import Footer from '../components/Footer.vue'
+import CookieBanner from '../components/popups/CookieBanner.vue'
 
 const { t } = useI18n()
 </script>
@@ -56,6 +57,7 @@ const { t } = useI18n()
       </section>
     </main>
     <Footer />
+    <CookieBanner />
   </div>
 </template>
 

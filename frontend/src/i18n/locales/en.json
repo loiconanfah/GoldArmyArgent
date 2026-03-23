@@ -1165,5 +1165,23 @@
         "sending": "Sending...",
         "success_msg": "Message sent successfully! Our team will get back to you soon.",
         "error_msg": "An error occurred while sending the message."
+    },
+    "landing_popups": {
+        "cookies": {
+            "text": "This site uses cookies to improve your experience and analyze our traffic.",
+            "accept": "Accept all",
+            "decline": "More info"
+        },
+        "promo": {
+            "title": "Special Sniper Offer",
+            "text": "Land your next job with AI. Create an account today and get 5 free search credits!",
+            "cta": "Get Started"
+        },
+        "auth_cta": {
+            "title": "Ready to propel your career?",
+            "subtitle": "Join the army of success with GoldArmy. The AI that works for you 24/7.",
+            "btn": "Create my free account",
+            "close": "Maybe later"
+        }
     }
 }
