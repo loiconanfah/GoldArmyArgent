@@ -14,6 +14,8 @@ import LottieView from 'lottie-react-native';
 import { notificationService, Notification } from '../../src/services/notificationService';
 import { styles } from './_styles/home.styles';
 import * as Notifications from 'expo-notifications';
+import { useUIStore } from '../../src/stores/uiStore';
+import { TutorialOverlay } from '../../src/components/ui/TutorialOverlay';
 
 const CAROUSEL_DATA = [
   {
@@ -61,6 +63,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const { hasSeenTutorial, initializeTutorialState } = useUIStore();
 
   const heroAnim = useRef(new Animated.Value(0)).current;
   const statsAnim = useRef(new Animated.Value(0)).current;
@@ -96,6 +99,7 @@ export default function HomeScreen() {
       Notifications.setBadgeCountAsync(unread).catch(console.error);
     };
     fetchNotifs();
+    initializeTutorialState();
   }, [heroAnim, statsAnim, toolsAnim]);
 
   const firstName = useMemo(() => {
@@ -280,6 +284,8 @@ export default function HomeScreen() {
           </LinearGradient>
         </View>
       </ScrollView>
+      
+      {!hasSeenTutorial && <TutorialOverlay />}
     </View>
   );
 }

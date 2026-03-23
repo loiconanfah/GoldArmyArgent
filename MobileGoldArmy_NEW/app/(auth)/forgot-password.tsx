@@ -12,6 +12,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { styles } from './_styles/forgot-password.styles';
 
 export default function ForgotPasswordScreen() {
   const { theme } = useTheme();
@@ -63,32 +64,3 @@ export default function ForgotPasswordScreen() {
     </ScreenWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  content: {
-    width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
-  },
-  title: {
-    ...typography.h1,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...typography.body,
-    marginBottom: spacing['3xl'],
-    textAlign: 'center',
-  },
-  input: {
-    marginBottom: spacing.lg,
-  },
-  button: {
-    marginTop: spacing.lg,
-  },
-});

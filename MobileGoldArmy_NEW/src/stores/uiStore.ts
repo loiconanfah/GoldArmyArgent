@@ -4,6 +4,7 @@
  */
 
 import { create } from 'zustand';
+import * as storage from '../utils/storage';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -18,6 +19,7 @@ interface UIState {
   toasts: Toast[];
   isLoading: boolean;
   loadingMessage?: string;
+  hasSeenTutorial: boolean;
 }
 
 interface UIActions {
@@ -25,6 +27,9 @@ interface UIActions {
   hideToast: (id: string) => void;
   clearToasts: () => void;
   setLoading: (loading: boolean, message?: string) => void;
+  setHasSeenTutorial: (seen: boolean) => void;
+  completeTutorial: () => Promise<void>;
+  initializeTutorialState: () => Promise<void>;
 }
 
 type UIStore = UIState & UIActions;
@@ -33,6 +38,7 @@ export const useUIStore = create<UIStore>()((set) => ({
   toasts: [],
   isLoading: false,
   loadingMessage: undefined,
+  hasSeenTutorial: true, // Default to true until initialized
 
   showToast: (message, type = 'info', duration = 3000) =>
     set((state) => {
@@ -70,4 +76,24 @@ export const useUIStore = create<UIStore>()((set) => ({
       isLoading: loading,
       loadingMessage: message,
     })),
+
+  setHasSeenTutorial: (seen) => set({ hasSeenTutorial: seen }),
+
+  completeTutorial: async () => {
+    try {
+      await storage.setSecureItem('has_seen_tutorial', 'true');
+      set({ hasSeenTutorial: true });
+    } catch (e) {
+      console.error('[UIStore] Error completing tutorial', e);
+    }
+  },
+
+  initializeTutorialState: async () => {
+    try {
+      const val = await storage.getSecureItem('has_seen_tutorial');
+      set({ hasSeenTutorial: val === 'true' });
+    } catch (e) {
+      console.error('[UIStore] Error initializing tutorial state', e);
+    }
+  },
 }));
