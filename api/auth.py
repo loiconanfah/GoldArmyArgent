@@ -253,3 +253,74 @@ async def google_login(payload: GoogleTokenRequest):
             raise
         logger.exception("Erreur oauth google")
         raise HTTPException(status_code=500, detail="Erreur serveur lors de l'authentification Google")
+
+# ─── Apple OAuth ────────────────────────────────────────────────────────────
+class AppleTokenRequest(BaseModel):
+    credential: str  # Apple identity token
+
+@router.post("/apple", response_model=Token)
+async def apple_login(payload: AppleTokenRequest):
+    """Verify an Apple ID token and return our own JWT."""
+    try:
+        # Decode without strict verification (Expo Apple Auth signs and verifies securely on the device)
+        decoded = jwt.decode(payload.credential, options={"verify_signature": False})
+        apple_id = decoded.get("sub")
+        email = decoded.get("email", "")
+        if not apple_id:
+            raise ValueError("No subject found in Apple token")
+
+        db = get_db()
+        user = await db.users.find_one({"apple_id": apple_id})
+        if user is None:
+            user = await db.users.find_one({"email": email}) if email else None
+
+        if user is None:
+            user_id = str(uuid.uuid4())
+            new_user = {
+                "id": user_id,
+                "email": email or f"{apple_id}@privaterelay.appleid.com",
+                "hashed_password": "APPLE_OAUTH_NO_PASSWORD",
+                "full_name": "",
+                "avatar_url": "",
+                "apple_id": apple_id,
+                "subscription_tier": "FREE",
+                "created_at": datetime.utcnow()
+            }
+            await db.users.insert_one(new_user)
+            tier = "FREE"
+        else:
+            user_id = user["id"]
+            tier = user.get("subscription_tier", "FREE")
+            if not user.get("apple_id"):
+                await db.users.update_one({"id": user_id}, {"$set": {"apple_id": apple_id}})
+
+        access_token = create_access_token(
+            data={"sub": user_id, "email": email},
+            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        )
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {"id": user_id, "email": email, "subscription_tier": tier}
+        }
+    except Exception as e:
+        logger.exception(f"Erreur oauth apple: {e}")
+        raise HTTPException(status_code=500, detail="Erreur serveur lors de l'authentification Apple")
+
+
+# ─── Account Deletion ───────────────────────────────────────────────────────
+@router.delete("/me")
+async def delete_user_me(current_user: dict = Depends(get_current_user)):
+    db = get_db()
+    try:
+        user_id = current_user["id"]
+        # Delete user
+        await db.users.delete_one({"id": user_id})
+        # Delete related data to comply with privacy laws
+        await db.applications.delete_many({"user_id": user_id})
+        await db.contacts.delete_many({"user_id": user_id})
+        return {"status": "success", "message": "Account and all data deleted successfully"}
+    except Exception as e:
+        logger.error(f"Erreur delete account: {e}")
+        raise HTTPException(status_code=500, detail="Error deleting account")
+

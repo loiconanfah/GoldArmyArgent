@@ -79,7 +79,7 @@ const tiers = [
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const [isSubscribing, setIsSubscribing] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -137,7 +137,17 @@ export default function SettingsScreen() {
       "Attention, cette action est irréversible. Toutes vos données seront effacées.", 
       [
         { text: "Annuler", style: "cancel" },
-        { text: "Confirmer la suppression", style: "destructive", onPress: () => Alert.alert("Succès", "Demande de suppression envoyée au support.") }
+        { 
+          text: "Confirmer la suppression", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await deleteAccount();
+            } catch (err) {
+              Alert.alert("Erreur", "La suppression a échoué. Veuillez réessayer.");
+            }
+          } 
+        }
       ]
     );
   };
@@ -183,7 +193,8 @@ export default function SettingsScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         
         {/* Pricing Grid */}
-        <View style={styles.pricingGrid}>
+        {Platform.OS !== 'ios' && (
+          <View style={styles.pricingGrid}>
           {getTiers().map(tier => (
             <View 
               key={tier.id} 
@@ -272,34 +283,37 @@ export default function SettingsScreen() {
             </View>
           ))}
         </View>
+        )}
 
         {/* Extra Settings Section */}
         <View style={styles.extraSettings}>
-          {/* AI Settings */}
-          <View style={styles.settingSection}>
-            <View style={styles.settingSectionHeader}>
-              <View style={[styles.sectionIconBg, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
-                <Ionicons name="sparkles" size={20} color="#6366F1" />
+          {/* AI Settings - Hidden on iOS for review if not implemented */}
+          {Platform.OS !== 'ios' && (
+            <View style={styles.settingSection}>
+              <View style={styles.settingSectionHeader}>
+                <View style={[styles.sectionIconBg, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
+                  <Ionicons name="sparkles" size={20} color="#6366F1" />
+                </View>
+                <Text style={styles.settingSectionTitle}>Préférences IA</Text>
               </View>
-              <Text style={styles.settingSectionTitle}>Préférences IA</Text>
+              
+              <TouchableOpacity style={styles.settingItem} onPress={() => handleAlertChange("Précision Sniper")}>
+                <View>
+                  <Text style={styles.settingLabel}>Précision de filtrage Sniper</Text>
+                  <Text style={styles.settingSubLabel}>Définit le niveau de sévérité de Gemini 3.1</Text>
+                </View>
+                <Text style={styles.settingValueText}>Standard (Auto)</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.settingItem} onPress={() => handleAlertChange("Voix de l'entretien")}>
+                <View>
+                  <Text style={styles.settingLabel}>Voix de l'entretien</Text>
+                  <Text style={styles.settingSubLabel}>Sélectionnez le profil vocal du recruteur IA</Text>
+                </View>
+                <Text style={styles.settingValueText}>Recruteur Standard</Text>
+              </TouchableOpacity>
             </View>
-            
-            <TouchableOpacity style={styles.settingItem} onPress={() => handleAlertChange("Précision Sniper")}>
-              <View>
-                <Text style={styles.settingLabel}>Précision de filtrage Sniper</Text>
-                <Text style={styles.settingSubLabel}>Définit le niveau de sévérité de Gemini 3.1</Text>
-              </View>
-              <Text style={styles.settingValueText}>Standard (Auto)</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.settingItem} onPress={() => handleAlertChange("Voix de l'entretien")}>
-              <View>
-                <Text style={styles.settingLabel}>Voix de l'entretien</Text>
-                <Text style={styles.settingSubLabel}>Sélectionnez le profil vocal du recruteur IA</Text>
-              </View>
-              <Text style={styles.settingValueText}>Recruteur Standard</Text>
-            </TouchableOpacity>
-          </View>
+          )}
 
           {/* Profile & Privacy */}
           <View style={styles.settingSection}>

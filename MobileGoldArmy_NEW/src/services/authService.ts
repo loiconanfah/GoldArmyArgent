@@ -63,6 +63,40 @@ class AuthService {
   }
 
   /**
+   * Login with Apple ID token
+   * Backend: POST /api/auth/apple { credential }
+   */
+  async loginWithApple(credential: string): Promise<LoginResponse> {
+    try {
+      const response = await axios.post<BackendTokenResponse>(
+        `${API_BASE_URL}/api/auth/apple`,
+        { credential }
+      );
+
+      const data = response.data;
+
+      const user: User = {
+        id: data.user.id,
+        email: data.user.email,
+        firstName: undefined,
+        lastName: undefined,
+        avatar: undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      return {
+        user,
+        accessToken: data.access_token,
+        refreshToken: data.access_token,
+      };
+    } catch (error) {
+      console.error('[AuthService][loginWithApple]', error);
+      throw error;
+    }
+  }
+
+  /**
    * Login user (email + mot de passe)
    * Backend: POST /api/auth/login (OAuth2PasswordRequestForm)
    */
@@ -160,6 +194,19 @@ class AuthService {
   }
 
   /**
+   * Nettoyage du compte et des données (Suppression)
+   * Backend: DELETE /api/auth/me
+   */
+  async deleteAccount(): Promise<void> {
+    try {
+      await api.delete('/api/auth/me');
+    } catch (error) {
+      console.error('[AuthService][deleteAccount]', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get current user
    * Backend: GET /api/auth/me
    */
@@ -197,6 +244,14 @@ class AuthService {
    */
   async resetPassword(_data: ResetPasswordRequest): Promise<void> {
     throw new Error('resetPassword non implémenté côté backend');
+  }
+
+  /**
+   * Refresh token
+   */
+  async refreshToken(_data: { refreshToken: string }): Promise<any> {
+    // A implémenter si le backend supporte le refresh token
+    return { access_token: '', refresh_token: '' };
   }
 }
 

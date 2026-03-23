@@ -83,6 +83,35 @@ export function useAuth() {
   };
 
   /**
+   * Login via Apple OAuth (ID token)
+   */
+  const loginWithApple = async (credential: string) => {
+    try {
+      setLoading(true);
+
+      const response = await authService.loginWithApple(credential);
+
+      await setAccessToken(response.accessToken);
+      await setRefreshToken(response.refreshToken);
+
+      setUser(response.user);
+      setTokens(response.accessToken, response.refreshToken);
+
+      showToast('Connecté avec Apple', 'success');
+      router.replace('/(tabs)/home');
+    } catch (error: any) {
+      const message =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        'Connexion Apple impossible. Réessaie.';
+      showToast(message, 'error');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
    * Register user
    */
   const register = async (email: string, password: string, firstName?: string, lastName?: string) => {
@@ -125,6 +154,25 @@ export function useAuth() {
   };
 
   /**
+   * Delete user account
+   */
+  const deleteAccount = async () => {
+    try {
+      setLoading(true);
+      await authService.deleteAccount();
+      await logout();
+      showToast('Compte supprimé avec succès', 'success');
+    } catch (error: any) {
+      console.error('[useAuth][deleteAccount]', error);
+      const message = error.response?.data?.detail || 'Erreur lors de la suppression du compte';
+      showToast(message, 'error');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
    * Refresh tokens
    */
   const refreshToken = async () => {
@@ -145,8 +193,10 @@ export function useAuth() {
     isLoading,
     login,
     loginWithGoogle,
+    loginWithApple,
     register,
     logout,
+    deleteAccount,
     refreshToken,
   };
 }

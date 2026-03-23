@@ -16,6 +16,7 @@ import {
 import { Link } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenWrapper } from '../../src/components/layout/ScreenWrapper';
 import { LoginForm } from '../../src/components/features/auth/LoginForm';
@@ -47,7 +48,7 @@ const R = { sm: 8, md: 14, lg: 20, xl: 28, full: 999 };
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-  const { loginWithGoogle, isLoading } = useAuth();
+  const { loginWithGoogle, loginWithApple, isLoading } = useAuth();
 
   // Load platform-specific client IDs if they exist in .env
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
@@ -155,6 +156,32 @@ export default function LoginScreen() {
               </View>
               <Text style={styles.googleText}>Continuer avec Google</Text>
             </TouchableOpacity>
+
+            {Platform.OS === 'ios' && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={R.full}
+                style={{ width: '100%', height: 54, marginTop: SP.md }}
+                onPress={async () => {
+                  try {
+                    const credential = await AppleAuthentication.signInAsync({
+                      requestedScopes: [
+                        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                      ],
+                    });
+                    if (credential.identityToken && !isLoading) {
+                      await loginWithApple(credential.identityToken);
+                    }
+                  } catch (e: any) {
+                    if (e.code !== 'ERR_REQUEST_CANCELED') {
+                      console.error(e);
+                    }
+                  }
+                }}
+              />
+            )}
 
             {/* Lien register */}
             <View style={styles.footer}>

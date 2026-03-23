@@ -18,6 +18,8 @@ import { ScreenWrapper } from '../../src/components/layout/ScreenWrapper';
 import { RegisterForm } from '../../src/components/features/auth/RegisterForm';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { useAuth } from '../../src/hooks/useAuth';
 
 const C = {
   primary: '#FF6B35',
@@ -42,6 +44,7 @@ const R = { sm: 8, md: 14, lg: 20, xl: 28, full: 999 };
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { loginWithApple, isLoading } = useAuth();
 
   return (
     <ScreenWrapper>
@@ -110,6 +113,32 @@ export default function RegisterScreen() {
               </View>
               <Text style={styles.googleText}>Créer un compte avec Google</Text>
             </TouchableOpacity>
+
+            {Platform.OS === 'ios' && (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={R.full}
+                style={{ width: '100%', height: 54, marginTop: SP.md }}
+                onPress={async () => {
+                  try {
+                    const credential = await AppleAuthentication.signInAsync({
+                      requestedScopes: [
+                        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                      ],
+                    });
+                    if (credential.identityToken && !isLoading) {
+                      await loginWithApple(credential.identityToken);
+                    }
+                  } catch (e: any) {
+                    if (e.code !== 'ERR_REQUEST_CANCELED') {
+                      console.error(e);
+                    }
+                  }
+                }}
+              />
+            )}
 
             {/* Lien login */}
             <View style={styles.footer}>
