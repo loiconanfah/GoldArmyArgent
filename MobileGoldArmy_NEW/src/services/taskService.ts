@@ -3,7 +3,7 @@ import api from './api';
 export interface TaskResult {
   id: string;
   user_id: string;
-  type: 'sniper' | 'cv_analysis';
+  type: 'sniper' | 'cv_analysis' | 'mentor';
   status: 'pending' | 'completed' | 'failed';
   result?: any;
   error?: string;

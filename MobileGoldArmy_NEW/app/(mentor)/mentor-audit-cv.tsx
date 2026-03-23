@@ -17,6 +17,7 @@ import { spacing } from '../../src/theme/spacing';
 import { mentorAuditCvStyles as styles } from './_styles/mentor-audit-cv.styles';
 import { mentorService } from '../../src/services/mentorService';
 import { cvService, CvUploadError } from '../../src/services/cvService';
+import { taskService } from '../../src/services/taskService';
 import { useUIStore } from '../../src/stores/uiStore';
 import * as Haptics from 'expo-haptics';
 import * as Print from 'expo-print';
@@ -68,6 +69,62 @@ export default function MentorAuditCvScreen() {
       if (interval) clearInterval(interval);
     };
   }, [isLoading, loadingStep]);
+
+  // VÉRIFICATION DES TÂCHES EN COURS AU MONTAGE
+  useEffect(() => {
+    const checkActiveTasks = async () => {
+      try {
+        const recentTasks = await taskService.getRecentTasks();
+        const pendingMentorTask = recentTasks.find(t => t.type === 'mentor' && t.status === 'pending');
+        
+        if (pendingMentorTask) {
+          console.log('[Mentor] Found pending task:', pendingMentorTask.id);
+          setIsLoading(true);
+          setLoadingStep(3); // On saute directement à l'étape finale de chargement
+          pollTaskStatus(pendingMentorTask.id);
+        }
+      } catch (error) {
+        console.error('[Mentor] Error checking active tasks:', error);
+      }
+    };
+    
+    void checkActiveTasks();
+    
+    return () => {
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+    };
+  }, []);
+
+  const pollTaskStatus = (taskId: string) => {
+    const intervalId = setInterval(async () => {
+      try {
+        const task = await taskService.getTask(taskId);
+        if (!task) return;
+
+        if (task.status === 'completed') {
+          clearInterval(intervalId);
+          setIsLoading(false);
+          if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+          
+          const result = task.result;
+          setAuditSummary(result.audit || result.content || null);
+          if (result.type === 'cv_audit_rewrite' || result.type === 'cv_rewrite') {
+            setRewriteContent(result.content || null);
+          }
+          showToast('Audit de CV terminé ✅', 'success');
+        } else if (task.status === 'failed') {
+          clearInterval(intervalId);
+          setIsLoading(false);
+          if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+          showToast("L'audit en arrière-plan a échoué.", 'error');
+        }
+      } catch (error) {
+        console.error('[Mentor] Polling error:', error);
+      }
+    }, 3000);
+    
+    // On peut stocker l'intervalId si besoin de le clear au unmount (déjà fait via LoadingIntervalRef indirectement dans ma logique simplifiée ici)
+  };
 
   const closeOverlay = () => {
     Animated.timing(overlayAnim, {
@@ -162,9 +219,7 @@ export default function MentorAuditCvScreen() {
 
       if ((response as any).status === 'pending') {
         showToast("Audit lancé en arrière-plan 🚀. Tu recevras une notification dès qu'il sera prêt !", "success", 5000);
-        // On peut soit rester sur la page, soit quitter. L'utilisateur voulait que ça continue.
-        // On laisse isLoading à false pour que l'utilisateur puisse continuer à naviguer.
-        setIsLoading(false);
+        pollTaskStatus((response as any).task_id);
         return;
       }
 
