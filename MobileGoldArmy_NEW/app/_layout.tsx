@@ -19,36 +19,30 @@ SplashScreen.preventAutoHideAsync();
 export { ErrorBoundary } from 'expo-router';
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    // Add custom fonts here if needed
-    // 'Inter-Regular': require('../assets/fonts/Inter-Regular.ttf'),
-  });
+  const [fontsLoaded, fontError] = useFonts({});
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const prepare = async () => {
-      try {
-        // Wait for fonts to load
-        if (fontsLoaded || fontError) {
-          // Hide splash screen immediately after fonts are ready
-          await SplashScreen.hideAsync();
-          setIsReady(true);
-        }
-      } catch (error) {
-        console.error('[RootLayout] Error preparing app:', error);
-        await SplashScreen.hideAsync();
-        setIsReady(true);
-      }
-    };
-
-    prepare();
+    if (fontsLoaded || fontError) {
+      setIsReady(true);
+    }
   }, [fontsLoaded, fontError]);
+
+  const onLayoutRootView = async () => {
+    if (isReady) {
+      await SplashScreen.hideAsync();
+    }
+  };
+
+  if (!isReady) {
+    return null;
+  }
 
   // We rely on the Splash Screen to cover the interface while loading.
   // Returning null from Root Layout causes fatal crashes in Production with Expo Router.
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <QueryProvider>
         <ThemeProvider>
           <AuthProvider>

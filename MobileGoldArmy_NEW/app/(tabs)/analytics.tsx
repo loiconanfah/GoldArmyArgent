@@ -181,7 +181,7 @@ export default function AnalyticsScreen() {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="flash" size={20} color="#F5D061" style={{ marginRight: 4 }} />
-            <Text style={{ fontFamily: 'Inter-Black', fontSize: 16, color: '#1A1A1A' }}>GoldArmy</Text>
+            <Text style={{ fontWeight: '900', fontSize: 16, color: '#1A1A1A' }}>GoldArmy</Text>
           </View>
         </View>
 

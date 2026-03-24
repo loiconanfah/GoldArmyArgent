@@ -31,7 +31,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontFamily: 'Inter-Bold',
+    fontWeight: '700',
     fontSize: 20,
     color: '#FFF',
     marginLeft: spacing.md,
@@ -46,7 +46,7 @@ export const styles = StyleSheet.create({
   },
   loaderText: {
     marginTop: spacing.md,
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     fontSize: 16,
     color: '#94A3B8',
   },
@@ -68,7 +68,7 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   decisionText: {
-    fontFamily: 'Inter-Bold',
+    fontWeight: '700',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -77,18 +77,17 @@ export const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   overallScore: {
-    fontFamily: 'Inter-Black',
+    fontWeight: '900',
     fontSize: 56,
     color: '#FFF',
   },
   scoreMax: {
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     fontSize: 24,
     color: '#64748B',
     marginLeft: 4,
   },
   rolesText: {
-    fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: '#94A3B8',
     marginTop: spacing.sm,
@@ -112,13 +111,13 @@ export const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
   },
   miniScoreVal: {
-    fontFamily: 'Inter-Bold',
+    fontWeight: '700',
     fontSize: 24,
     color: '#FFF',
     marginBottom: 4,
   },
   miniScoreLabel: {
-    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
     fontSize: 10,
     color: '#94A3B8',
     textAlign: 'center',
@@ -140,7 +139,7 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   sectionTitle: {
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '600',
     fontSize: 18,
     color: '#FFF',
     marginLeft: 8,
@@ -158,13 +157,11 @@ export const styles = StyleSheet.create({
   },
   pointText: {
     flex: 1,
-    fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: '#CBD5E1',
     lineHeight: 22,
   },
   adviceText: {
-    fontFamily: 'Inter-Regular',
     fontSize: 15,
     color: '#E2E8F0',
     lineHeight: 24,
@@ -186,7 +183,7 @@ export const styles = StyleSheet.create({
     elevation: 4,
   },
   bottomBtnText: {
-    fontFamily: 'Inter-Bold',
+    fontWeight: '700',
     fontSize: 16,
     color: '#FFF',
   },

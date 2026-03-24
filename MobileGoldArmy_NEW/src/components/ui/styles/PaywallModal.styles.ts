@@ -34,14 +34,13 @@ export const styles = StyleSheet.create({
   },
   title: { 
     fontSize: 22, 
-    fontFamily: 'Inter-Black', 
+    fontWeight: '900',
     color: '#FFF', 
     textAlign: 'center', 
     marginBottom: spacing.sm 
   },
   description: { 
     fontSize: 14, 
-    fontFamily: 'Inter-Regular', 
     color: '#94A3B8', 
     textAlign: 'center', 
     lineHeight: 22, 
@@ -58,7 +57,7 @@ export const styles = StyleSheet.create({
   },
   premiumButtonText: { 
     color: '#1A1A1A', 
-    fontFamily: 'Inter-Bold', 
+    fontWeight: '700',
     fontSize: 16 
   },
 });
