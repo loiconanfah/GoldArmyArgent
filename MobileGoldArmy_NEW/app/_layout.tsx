@@ -23,20 +23,26 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    console.log('[RootLayout] fontsLoaded:', fontsLoaded, 'fontError:', fontError);
     if (fontsLoaded || fontError) {
       setIsReady(true);
     }
   }, [fontsLoaded, fontError]);
 
   const onLayoutRootView = async () => {
+    console.log('[RootLayout] onLayoutRootView, isReady:', isReady);
     if (isReady) {
-      await SplashScreen.hideAsync();
+      try {
+        await SplashScreen.hideAsync();
+        console.log('[RootLayout] SplashScreen hidden');
+      } catch (e) {
+        console.error('[RootLayout] Error hiding splash screen:', e);
+      }
     }
   };
 
-  if (!isReady) {
-    return null;
-  }
+  // Don't return null, it can cause crashes on Android with Expo Router.
+  // The splash screen is still visible anyway due to preventAutoHideAsync.
 
   // We rely on the Splash Screen to cover the interface while loading.
   // Returning null from Root Layout causes fatal crashes in Production with Expo Router.
@@ -46,21 +52,15 @@ export default function RootLayout() {
       <QueryProvider>
         <ThemeProvider>
           <AuthProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: 'transparent' },
-              }}
-            >
-              <Stack.Screen name="index" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="(mentor)/mentor-audit-cv" options={{}} />
-              <Stack.Screen name="(mentor)/mentor-simulator" options={{}} />
-              <Stack.Screen name="(mentor)/mentor-interview-room" options={{}} />
-              <Stack.Screen name="(offers)/opportunity-details" options={{}} />
-              <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="onboarding" />
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(mentor)" />
+              <Stack.Screen name="(offers)" />
+              <Stack.Screen name="settings" />
+              <Stack.Screen name="notifications" />
             </Stack>
             <ToastContainer />
           </AuthProvider>

@@ -39,31 +39,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('[AuthProvider] Initializing auth...');
       try {
         setLoading(true);
         
         const accessToken = await getAccessToken();
         const refreshToken = await getRefreshToken();
+        console.log('[AuthProvider] Tokens from storage:', !!accessToken, !!refreshToken);
 
         if (accessToken && refreshToken) {
-          // Try to get current user
           try {
+            console.log('[AuthProvider] Fetching current user...');
             const currentUser = await authService.getCurrentUser();
+            console.log('[AuthProvider] User fetched:', !!currentUser);
             setUser(currentUser);
             setTokens(accessToken, refreshToken);
           } catch (error) {
-            // Token invalid, clear storage
+            console.warn('[AuthProvider] Failed to fetch current user, clearing tokens');
             await clearTokens();
             logoutStore();
           }
         }
       } catch (error) {
-        console.error('[AuthProvider][initializeAuth]', error);
+        console.error('[AuthProvider] Global initialization error:', error);
         await clearTokens();
         logoutStore();
       } finally {
         setLoading(false);
         setIsInitialized(true);
+        console.log('[AuthProvider] Initialized.');
       }
     };
 
@@ -75,8 +79,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   useEffect(() => {
     if (isAuthenticated && expoPushToken) {
-      notificationService.registerPushToken(expoPushToken)
-        .catch(err => console.error('Failed to sync push token:', err));
+      console.log('[AuthProvider] Registering push token:', expoPushToken);
+      // notificationService.registerPushToken(expoPushToken)
+      //   .catch(err => console.error('Failed to sync push token:', err));
     }
   }, [isAuthenticated, expoPushToken]);
 
