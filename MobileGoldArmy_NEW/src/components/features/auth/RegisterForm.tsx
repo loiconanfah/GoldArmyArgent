@@ -14,7 +14,10 @@ import { registerSchema, type RegisterFormData } from '@utils/validators';
 import { spacing } from '@theme/spacing';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useRouter } from 'expo-router';
+
 export function RegisterForm() {
+  const router = useRouter();
   const { theme } = useTheme();
   const { register, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -38,8 +41,11 @@ export function RegisterForm() {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       await register(data.email, data.password, data.firstName, data.lastName);
+      router.push({
+        pathname: '/(auth)/verify-otp' as any,
+        params: { email: data.email }
+      });
     } catch (error) {
-      // Error handled by useAuth hook
     }
   };
 

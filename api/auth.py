@@ -10,6 +10,8 @@ import os
 from core.database import get_db
 from config.settings import settings
 import uuid
+import random
+from core.email_service import email_service
 
 try:
     from google.oauth2 import id_token
@@ -37,6 +39,7 @@ class UserResponse(BaseModel):
     id: str
     email: str
     subscription_tier: str
+    is_verified: bool = False
     
 class Token(BaseModel):
     access_token: str
@@ -107,9 +110,20 @@ async def register(user_data: UserCreate):
             "email": user_data.email,
             "hashed_password": hashed_password,
             "subscription_tier": "FREE",
+            "is_verified": False,
             "created_at": datetime.utcnow()
         }
         await db.users.insert_one(new_user)
+        try:
+            otp_code = str(random.randint(100000, 999999))
+            expires_at = datetime.utcnow() + timedelta(minutes=10)
+            await db.otp_codes.update_one(
+                {"email": user_data.email},
+                {"$set": {"code": otp_code, "expires_at": expires_at}},
+                upsert=True
+            )
+            await email_service.send_otp(user_data.email, otp_code)
+        except: pass
         
         # Create token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -120,7 +134,7 @@ async def register(user_data: UserCreate):
         return {
             "access_token": access_token, 
             "token_type": "bearer",
-            "user": {"id": user_id, "email": user_data.email, "subscription_tier": "FREE"}
+            "user": {"id": user_id, "email": user_data.email, "subscription_tier": "FREE", "is_verified": False}
         }
     except Exception as e:
         if isinstance(e, HTTPException):
@@ -152,7 +166,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             "user": {
                 "id": user["id"], 
                 "email": user["email"],
-                "subscription_tier": user.get("subscription_tier", "FREE")
+                "subscription_tier": user.get("subscription_tier", "FREE"),
+                "is_verified": user.get("is_verified", False)
             }
         }
     except Exception as e:
@@ -225,6 +240,7 @@ async def google_login(payload: GoogleTokenRequest):
                 "avatar_url": avatar_url,
                 "google_id": google_id,
                 "subscription_tier": "FREE",
+                "is_verified": True,
                 "created_at": datetime.utcnow()
             }
             await db.users.insert_one(new_user)
@@ -284,6 +300,7 @@ async def apple_login(payload: AppleTokenRequest):
                 "avatar_url": "",
                 "apple_id": apple_id,
                 "subscription_tier": "FREE",
+                "is_verified": True,
                 "created_at": datetime.utcnow()
             }
             await db.users.insert_one(new_user)
@@ -323,4 +340,24 @@ async def delete_user_me(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Erreur delete account: {e}")
         raise HTTPException(status_code=500, detail="Error deleting account")
+
+@router.post("/send-otp")
+async def send_otp(email_data: dict):
+    email = email_data.get("email")
+    db = get_db()
+    otp_code = str(random.randint(100000, 999999))
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    await db.otp_codes.update_one({"email": email}, {"$set": {"code": otp_code, "expires_at": expires_at}}, upsert=True)
+    await email_service.send_otp(email, otp_code)
+    return {"status": "success"}
+
+@router.post("/verify-otp")
+async def verify_otp(request: dict):
+    db, email, code = get_db(), request.get("email"), request.get("code")
+    otp_record = await db.otp_codes.find_one({"email": email, "code": code})
+    if not otp_record or otp_record["expires_at"] < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Code invalide/expiré")
+    await db.users.update_one({"email": email}, {"$set": {"is_verified": True}})
+    await db.otp_codes.delete_one({"email": email})
+    return {"status": "success"}
 

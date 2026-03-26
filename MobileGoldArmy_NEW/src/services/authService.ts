@@ -253,6 +253,14 @@ class AuthService {
     // A implémenter si le backend supporte le refresh token
     return { access_token: '', refresh_token: '' };
   }
+
+  async sendOtp(email: string): Promise<void> {
+    await axios.post(`${API_BASE_URL}/api/auth/send-otp`, { email });
+  }
+
+  async verifyOtp(email: string, code: string): Promise<void> {
+    await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, { email, code });
+  }
 }
 
 export const authService = new AuthService();
