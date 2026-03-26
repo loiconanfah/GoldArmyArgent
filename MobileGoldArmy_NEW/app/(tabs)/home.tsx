@@ -258,30 +258,8 @@ export default function HomeScreen() {
           </ScrollView>
         </Animated.View>
 
-        <View style={styles.ctaWrapper}>
-          <LinearGradient
-            colors={['rgba(245, 208, 97, 0.9)', 'rgba(230, 163, 47, 1)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.ctaGradient}
-          >
-            <View style={styles.ctaContent}>
-              <View style={styles.ctaIconRing}>
-                <Ionicons name="search" size={28} color="#1A1A1A" />
-              </View>
-              <View style={styles.ctaTexts}>
-                <Text style={styles.ctaTitle}>Lancer Sniper Search</Text>
-                <Text style={styles.ctaSubtitle}>Trouvez votre futur employeur dès aujourd'hui.</Text>
-              </View>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={styles.ctaAction}
-                onPress={() => router.push('/(tabs)/sniper' as any)}
-              >
-                <Ionicons name="arrow-forward" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
+        <View style={styles.sniperCardWrapper}>
+          <SniperSearchCard onPress={() => router.push('/(tabs)/sniper' as any)} />
         </View>
       </ScrollView>
       
@@ -509,3 +487,299 @@ function hexToRgb(hex: string) {
     `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` 
     : '255, 255, 255';
 }
+
+function SniperSearchCard({ onPress }: { onPress: () => void }) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.4, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 0, duration: 1800, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  const borderGlow = glowAnim.interpolate({ inputRange: [0, 1], outputRange: ['rgba(245,208,97,0.25)', 'rgba(245,208,97,0.7)'] });
+  
+  return (
+    <TouchableOpacity
+      activeOpacity={0.92}
+      onPress={onPress}
+      onPressIn={() => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 30 }).start()}
+      onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30 }).start()}
+    >
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <View style={sniperStyles.card}>
+          {/* Dark gradient background */}
+          <LinearGradient
+            colors={['#0D1117', '#1A1F2E', '#0F172A']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+
+          {/* Scope ring overlay — subtle background texture */}
+          <View style={sniperStyles.scopeOverlay}>
+            <View style={sniperStyles.scopeRingOuter}>
+              <View style={sniperStyles.scopeRingInner}>
+                <View style={sniperStyles.scopeCrosshairH} />
+                <View style={sniperStyles.scopeCrosshairV} />
+              </View>
+            </View>
+          </View>
+
+          {/* Left content column */}
+          <View style={sniperStyles.leftCol}>
+            {/* Elite badge */}
+            <View style={sniperStyles.badge}>
+              <Animated.View style={[sniperStyles.pulseDot, { transform: [{ scale: pulseAnim }] }]} />
+              <Text style={sniperStyles.badgeText}>MODE ÉLITE</Text>
+            </View>
+
+            <Text style={sniperStyles.title}>Sniper{'\n'}Search</Text>
+            <Text style={sniperStyles.subtitle}>
+              Ciblage IA ultra-précis{'\n'}sur 50+ sources
+            </Text>
+
+            {/* Stats row */}
+            <View style={sniperStyles.statsRow}>
+              <View style={sniperStyles.stat}>
+                <Text style={sniperStyles.statValue}>50+</Text>
+                <Text style={sniperStyles.statLabel}>Sources</Text>
+              </View>
+              <View style={sniperStyles.statDivider} />
+              <View style={sniperStyles.stat}>
+                <Text style={sniperStyles.statValue}>IA</Text>
+                <Text style={sniperStyles.statLabel}>Ciblage</Text>
+              </View>
+            </View>
+
+            {/* CTA button */}
+            <TouchableOpacity style={sniperStyles.cta} onPress={onPress} activeOpacity={0.85}>
+              <LinearGradient
+                colors={['#F5D061', '#E6A32F']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={sniperStyles.ctaGrad}
+              >
+                <Text style={sniperStyles.ctaText}>Lancer</Text>
+                <Ionicons name="arrow-forward" size={14} color="#0D1117" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {/* 3D Bullet overflowing right side */}
+          <View style={sniperStyles.bulletWrapper}>
+            <Image
+              source={require('../../assets/sniper_bullet.png')}
+              style={sniperStyles.bulletImage}
+              contentFit="contain"
+            />
+            {/* Gold glow under bullet */}
+            <View style={sniperStyles.bulletGlow} />
+          </View>
+
+          {/* Corner accent */}
+          <View style={sniperStyles.cornerAccent} />
+        </View>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+import { StyleSheet } from 'react-native';
+
+const sniperStyles = StyleSheet.create({
+  card: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    minHeight: 200,
+    borderWidth: 1,
+    borderColor: 'rgba(245,208,97,0.25)',
+    shadowColor: '#F5D061',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.3,
+    shadowRadius: 32,
+    elevation: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 24,
+    paddingVertical: 24,
+    position: 'relative',
+    marginBottom: 4,
+  },
+  scopeOverlay: {
+    position: 'absolute',
+    right: 30,
+    top: -30,
+    width: 220,
+    height: 220,
+    opacity: 0.06,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scopeRingOuter: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    borderWidth: 2,
+    borderColor: '#F5D061',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scopeRingInner: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 1,
+    borderColor: '#F5D061',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  scopeCrosshairH: {
+    position: 'absolute',
+    width: 140,
+    height: 1,
+    backgroundColor: '#F5D061',
+  },
+  scopeCrosshairV: {
+    position: 'absolute',
+    width: 1,
+    height: 140,
+    backgroundColor: '#F5D061',
+  },
+  leftCol: {
+    flex: 1,
+    zIndex: 2,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(245,208,97,0.12)',
+    borderRadius: 100,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(245,208,97,0.3)',
+    marginBottom: 12,
+  },
+  pulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F5D061',
+  },
+  badgeText: {
+    color: '#F5D061',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    lineHeight: 38,
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.45)',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 12,
+  },
+  stat: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#F5D061',
+  },
+  statLabel: {
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.4)',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  cta: {
+    alignSelf: 'flex-start',
+    borderRadius: 100,
+    overflow: 'hidden',
+  },
+  ctaGrad: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  ctaText: {
+    color: '#0D1117',
+    fontWeight: '800',
+    fontSize: 13,
+    letterSpacing: 0.3,
+  },
+  bulletWrapper: {
+    width: 140,
+    height: 220,
+    position: 'absolute',
+    right: -20,
+    bottom: -20,
+    zIndex: 3,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  bulletImage: {
+    width: 130,
+    height: 210,
+  },
+  bulletGlow: {
+    position: 'absolute',
+    bottom: 10,
+    width: 80,
+    height: 30,
+    backgroundColor: '#F5D061',
+    borderRadius: 40,
+    opacity: 0.15,
+    shadowColor: '#F5D061',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 20,
+  },
+  cornerAccent: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 8,
+    height: 8,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: 'rgba(245,208,97,0.5)',
+  },
+});

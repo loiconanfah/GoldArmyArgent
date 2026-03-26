@@ -33,6 +33,10 @@ export default function SniperScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const pollingInterval = useRef<any>(null);
+  const isBackgroundMode = useRef(false);
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState('Lancement du scan...');
 
   // Animations
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -130,9 +134,12 @@ export default function SniperScreen() {
       });
  
       if ('status' in result && result.status === 'pending') {
+        isBackgroundMode.current = true;
         setActiveTaskId(result.task_id);
         startPolling(result.task_id);
         showToast('Scan lancé en arrière-plan', 'info');
+        // DON'T call setIsSearching(false) - polling will do it
+        return;
       } else if ('matched_jobs' in result) {
         setJobs(result.matched_jobs || []);
         if (result.matched_jobs && result.matched_jobs.length > 0) {
@@ -179,35 +186,75 @@ export default function SniperScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     } finally {
-      setIsSearching(false);
+      // Only set isSearching false if NOT in background polling mode
+      if (!isBackgroundMode.current) {
+        setIsSearching(false);
+      }
     }
   };
 
+  const LOADING_MESSAGES = [
+    'Scan des offres en cours...',
+    'Analyse de votre profil...',
+    'Filtrage par pertinence...',
+    'Application des critères IA...',
+    'Presque terminé...',
+  ];
+
   const startPolling = (taskId: string) => {
     if (pollingInterval.current) clearInterval(pollingInterval.current);
-    
+    let tick = 0;
+    const maxTicks = 40; // ~2min max
+
+    // Animate progress bar
+    const animateProgress = (target: number) => {
+      Animated.timing(progressAnim, {
+        toValue: target,
+        duration: 2800,
+        useNativeDriver: false,
+      }).start();
+    };
+    animateProgress(0.15);
+    setLoadingProgress(15);
+    setLoadingMessage(LOADING_MESSAGES[0]);
+
     pollingInterval.current = setInterval(async () => {
+      tick++;
+      // Update progress and message
+      const progress = Math.min(0.9, 0.15 + (tick / maxTicks) * 0.75);
+      const msgIndex = Math.min(Math.floor(tick / 8), LOADING_MESSAGES.length - 1);
+      setLoadingProgress(Math.round(progress * 100));
+      setLoadingMessage(LOADING_MESSAGES[msgIndex]);
+      animateProgress(progress);
+
       const task = await taskService.getTask(taskId);
       if (!task) return;
 
       if (task.status === 'completed') {
         if (pollingInterval.current) clearInterval(pollingInterval.current);
-        const searchResult = task.result;
-        setJobs(searchResult?.matched_jobs || []);
+        isBackgroundMode.current = false;
+        // Animate to 100%
+        Animated.timing(progressAnim, { toValue: 1, duration: 400, useNativeDriver: false }).start();
+        setLoadingProgress(100);
+        // task.result = { type: "job_search_results", content: { matched_jobs: [...] } }
+        const content = task.result?.content || task.result || {};
+        const foundJobs = content.matched_jobs || [];
+        setJobs(foundJobs);
         setIsSearching(false);
         setActiveTaskId(null);
-        showToast('Scan terminé !', 'success');
+        showToast(`Scan terminé — ${foundJobs.length} offres trouvées !`, 'success');
         Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else if (task.status === 'failed') {
         if (pollingInterval.current) clearInterval(pollingInterval.current);
+        isBackgroundMode.current = false;
         setIsSearching(false);
         setActiveTaskId(null);
-        setError("Le scan a échoué.");
+        setError("Le scan a échoué. Réessayez.");
         showToast('Le scan a échoué', 'error');
         Animated.timing(resultsAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
       }
-    }, 3000); // Poll every 3 seconds
+    }, 3000);
   };
 
   return (
@@ -339,13 +386,43 @@ export default function SniperScreen() {
                 </View>
               )}
             </View>
-            {error && (
+            {isSearching && (
+              <View style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: 20,
+                padding: 20,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: '#F0F0EA',
+                shadowColor: '#F5D061',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 4,
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <ActivityIndicator size="small" color="#F5D061" style={{ marginRight: 10 }} />
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#1A1A1A', flex: 1 }}>{loadingMessage}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#F5D061' }}>{loadingProgress}%</Text>
+                </View>
+                <View style={{ height: 6, backgroundColor: '#F0F0EA', borderRadius: 3, overflow: 'hidden' }}>
+                  <Animated.View style={{
+                    height: '100%',
+                    borderRadius: 3,
+                    backgroundColor: '#F5D061',
+                    width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                  }} />
+                </View>
+                <Text style={{ fontSize: 11, color: '#A0A0A0', marginTop: 8 }}>Les résultats s'afficheront automatiquement ici</Text>
+              </View>
+            )}
+            {!isSearching && error && (
               <View style={styles.errorCard}>
                 <Ionicons name="alert-circle-outline" size={20} color="#E53935" style={{ marginRight: 8 }} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
-            {jobs.length === 0 && !error && (
+            {!isSearching && jobs.length === 0 && !error && (
               <View style={styles.emptyState}>
                 <Ionicons name="search-outline" size={48} color="#CCCCCC" />
                 <Text style={styles.emptyTitle}>Aucun résultat</Text>

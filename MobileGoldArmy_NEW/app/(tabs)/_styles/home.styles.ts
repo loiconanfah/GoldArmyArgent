@@ -287,56 +287,10 @@ export const styles = StyleSheet.create({
     color: '#6A6A64',
     lineHeight: 20,
   },
-  // CTA
-  ctaWrapper: {
+  // Sniper Search Card Wrapper
+  sniperCardWrapper: {
     marginBottom: spacing['3xl'],
     marginTop: spacing.md,
-    borderRadius: 24,
-    shadowColor: '#F5D061',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  ctaGradient: {
-    borderRadius: 24,
-    padding: spacing.xl,
-  },
-  ctaContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ctaIconRing: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  ctaTexts: {
-    flex: 1,
-  },
-  ctaTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    marginBottom: 4,
-  },
-  ctaSubtitle: {
-    fontSize: 13,
-    color: 'rgba(0,0,0,0.6)',
-    lineHeight: 18,
-  },
-  ctaAction: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#1A1A1A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: spacing.md,
   },
 });
 
