@@ -224,13 +224,20 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {TOOLS.map((tool) => (
-            <ToolCard
-              key={tool.id}
-              tool={tool}
-              onPress={() => handleOpenTool(tool)}
-            />
-          ))}
+          {TOOLS.map((tool) =>
+            tool.id === 'sniper' ? (
+              <SniperSearchCard
+                key={tool.id}
+                onPress={() => handleOpenTool(tool)}
+              />
+            ) : (
+              <ToolCard
+                key={tool.id}
+                tool={tool}
+                onPress={() => handleOpenTool(tool)}
+              />
+            )
+          )}
         </Animated.View>
 
         <Animated.View style={[styles.tipsSection, { opacity: toolsAnim }]}>
@@ -258,9 +265,6 @@ export default function HomeScreen() {
           </ScrollView>
         </Animated.View>
 
-        <View style={styles.sniperCardWrapper}>
-          <SniperSearchCard onPress={() => router.push('/(tabs)/sniper' as any)} />
-        </View>
       </ScrollView>
       
       {!hasSeenTutorial && <TutorialOverlay />}
@@ -578,14 +582,32 @@ function SniperSearchCard({ onPress }: { onPress: () => void }) {
             </TouchableOpacity>
           </View>
 
-          {/* 3D Bullet overflowing right side */}
+          {/* Animated Icon — right side */}
           <View style={sniperStyles.bulletWrapper}>
-            <Image
-              source={require('../../assets/sniper_bullet.png')}
-              style={sniperStyles.bulletImage}
-              contentFit="contain"
-            />
-            {/* Gold glow under bullet */}
+            {/* Outer rotating ring */}
+            <Animated.View style={[sniperStyles.rotatingRing, {
+              transform: [{
+                rotate: glowAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
+              }]
+            }]} />
+            {/* Middle pulsing ring */}
+            <Animated.View style={[sniperStyles.middleRing, {
+              transform: [{ scale: pulseAnim.interpolate({ inputRange: [1, 1.4], outputRange: [1, 1.1] }) }],
+              opacity: pulseAnim.interpolate({ inputRange: [1, 1.4], outputRange: [0.6, 1] })
+            }]} />
+            {/* Center icon */}
+            <View style={sniperStyles.centerIcon}>
+              <Ionicons name="scan" size={36} color="#F5D061" />
+            </View>
+            {/* Floating dot top-right */}
+            <Animated.View style={[sniperStyles.floatDot, sniperStyles.floatDot1, {
+              transform: [{ translateY: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) }]
+            }]} />
+            {/* Floating dot bottom-left */}
+            <Animated.View style={[sniperStyles.floatDot, sniperStyles.floatDot2, {
+              transform: [{ translateY: glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 6] }) }]
+            }]} />
+            {/* Gold glow */}
             <View style={sniperStyles.bulletGlow} />
           </View>
 
@@ -746,18 +768,59 @@ const sniperStyles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   bulletWrapper: {
-    width: 140,
-    height: 220,
+    width: 120,
+    height: 120,
     position: 'absolute',
-    right: -20,
-    bottom: -20,
+    right: 16,
+    top: '50%',
+    marginTop: -60,
     zIndex: 3,
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
-  bulletImage: {
-    width: 130,
-    height: 210,
+  rotatingRing: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 1.5,
+    borderColor: 'rgba(245,208,97,0.4)',
+    borderStyle: 'dashed',
+  },
+  middleRing: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: 'rgba(245,208,97,0.6)',
+  },
+  centerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(245,208,97,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,208,97,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  floatDot: {
+    position: 'absolute',
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#F5D061',
+  },
+  floatDot1: {
+    top: 8,
+    right: 8,
+    opacity: 0.8,
+  },
+  floatDot2: {
+    bottom: 8,
+    left: 8,
+    opacity: 0.5,
   },
   bulletGlow: {
     position: 'absolute',
