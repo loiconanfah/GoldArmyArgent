@@ -275,77 +275,240 @@ export default function HomeScreen() {
 function ToolCard({ tool, onPress }: { tool: ToolData; onPress: () => void }) {
   const { color } = toolTheme(tool.id);
   const scale = useRef(new Animated.Value(1)).current;
-  const arrowAnim = useRef(new Animated.Value(0)).current;
-  const flashAnim = useRef(new Animated.Value(0.3)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(flashAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(flashAnim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.35, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
       ])
     ).start();
-  }, [flashAnim]);
+    Animated.loop(
+      Animated.timing(rotateAnim, { toValue: 1, duration: 8000, useNativeDriver: true })
+    ).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
 
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 20, bounciness: 6 }),
-      Animated.spring(arrowAnim, { toValue: 6, useNativeDriver: true, speed: 20 })
-    ]).start();
-  };
+  const spin = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const rgb = hexToRgb(color);
 
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }),
-      Animated.spring(arrowAnim, { toValue: 0, useNativeDriver: true, speed: 20 })
-    ]).start();
+  // Icon per tool
+  const TOOL_ICONS: Record<string, { main: string; label: string }> = {
+    mentor: { main: 'sparkles', label: 'AUDIT' },
+    vocal: { main: 'mic', label: 'VOCAL' },
+    crm: { main: 'briefcase', label: 'KANBAN' },
+    reseau: { main: 'people', label: 'RÉSEAU' },
   };
+  const iconInfo = TOOL_ICONS[tool.id] || { main: 'flash', label: 'IA' };
 
   return (
-    <Animated.View style={[styles.toolCard, { transform: [{ scale }] }]}>
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-      >
-        <View style={styles.toolHeroContent}>
-          <View style={styles.toolHeroLeft}>
-            <View style={[styles.toolHeroIconBubble, { backgroundColor: `rgba(${hexToRgb(color)}, 0.12)` }]}>
-              <Ionicons name={tool.icon as any} size={20} color={color} />
-            </View>
-            <View style={styles.toolTitleWrapper}>
-              <Text style={styles.toolHeroTitle}>{(tool as any).shortLabel ?? tool.title}</Text>
-              <Text style={styles.toolHeroSubtitle} numberOfLines={1}>{tool.description}</Text>
-            </View>
+    <TouchableOpacity
+      activeOpacity={0.92}
+      onPress={onPress}
+      onPressIn={() => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 30 }).start()}
+      onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30 }).start()}
+    >
+      <Animated.View style={[tcStyles.card, {
+        borderColor: `rgba(${rgb}, 0.3)`,
+        shadowColor: color,
+        transform: [{ scale }],
+      }]}>
+        {/* Subtle color accent corner */}
+        <LinearGradient
+          colors={[`rgba(${rgb}, 0.08)`, 'transparent']}
+          start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }}
+          style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
+        />
+
+        {/* Left: text content */}
+        <View style={tcStyles.left}>
+          {/* Badge */}
+          <View style={[tcStyles.badge, { borderColor: `rgba(${rgb}, 0.35)`, backgroundColor: `rgba(${rgb}, 0.1)` }]}>
+            <Animated.View style={[tcStyles.badgeDot, { backgroundColor: color, transform: [{ scale: pulseAnim }] }]} />
+            <Text style={[tcStyles.badgeText, { color }]}>{tool.badge}</Text>
           </View>
-          <View style={[styles.toolHeroChip, { backgroundColor: `rgba(${hexToRgb(color)}, 0.08)` }]}>
-            <Animated.View style={{ opacity: flashAnim }}>
-              <Ionicons name="flash" size={10} color={color} />
-            </Animated.View>
-            <Text style={[styles.toolHeroChipText, { color }]}>{tool.badge}</Text>
+
+          {/* Title */}
+          <Text style={tcStyles.title}>{tool.title}</Text>
+          <Text style={tcStyles.subtitle} numberOfLines={2}>{tool.description.slice(0, 60)}…</Text>
+
+          {/* Stats */}
+          <View style={tcStyles.statsRow}>
+            {tool.stats.slice(0, 2).map((s, i) => (
+              <React.Fragment key={s.label}>
+                {i > 0 && <View style={tcStyles.statDivider} />}
+                <View style={tcStyles.stat}>
+                  <Text style={[tcStyles.statValue, { color }]}>{s.value}</Text>
+                  <Text style={tcStyles.statLabel}>{s.label}</Text>
+                </View>
+              </React.Fragment>
+            ))}
           </View>
+
+          {/* CTA */}
+          <TouchableOpacity style={[tcStyles.cta, { backgroundColor: `rgba(${rgb}, 0.15)`, borderColor: `rgba(${rgb}, 0.4)` }]} onPress={onPress} activeOpacity={0.8}>
+            <Text style={[tcStyles.ctaText, { color }]}>Ouvrir</Text>
+            <Ionicons name="arrow-forward" size={13} color={color} />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.toolActionArea}>
-          <Text style={styles.toolActionText}>Ouvrir l'outil</Text>
-          <Animated.View style={{ transform: [{ translateX: arrowAnim }] }}>
-            <Ionicons name="arrow-forward" size={16} color="#A0A0A0" />
-          </Animated.View>
+        {/* Right: animated icon stack */}
+        <View style={tcStyles.iconWrapper}>
+          {/* Rotating outer dashed ring */}
+          <Animated.View style={[tcStyles.outerRing, {
+            borderColor: `rgba(${rgb}, 0.35)`,
+            transform: [{ rotate: spin }],
+          }]} />
+          {/* Pulsing solid inner ring */}
+          <Animated.View style={[tcStyles.innerRing, {
+            borderColor: `rgba(${rgb}, 0.6)`,
+            transform: [{ scale: pulseAnim.interpolate({ inputRange: [1, 1.35], outputRange: [1, 1.08] }) }],
+            opacity: pulseAnim.interpolate({ inputRange: [1, 1.35], outputRange: [0.5, 1] }),
+          }]} />
+          {/* Center icon */}
+          <View style={[tcStyles.centerIconBox, { backgroundColor: `rgba(${rgb}, 0.15)`, borderColor: `rgba(${rgb}, 0.35)` }]}>
+            <Ionicons name={iconInfo.main as any} size={26} color={color} />
+          </View>
+          {/* Float dots */}
+          <Animated.View style={[tcStyles.dot, tcStyles.dotTop, {
+            backgroundColor: color,
+            transform: [{ translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }],
+          }]} />
+          <Animated.View style={[tcStyles.dot, tcStyles.dotBot, {
+            backgroundColor: color, opacity: 0.5,
+            transform: [{ translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 5] }) }],
+          }]} />
         </View>
 
-        <View style={styles.toolMetrics}>
-          {tool.stats.slice(0, 2).map((s) => (
-            <View key={s.label} style={styles.toolMetricItem}>
-              <Text style={styles.toolMetricValue}>{s.value}</Text>
-              <Text style={styles.toolMetricLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
+        {/* Corner bracket accent */}
+        <View style={[tcStyles.cornerAccent, { borderColor: `rgba(${rgb}, 0.5)` }]} />
+      </Animated.View>
+    </TouchableOpacity>
   );
 }
+
+const tcStyles = StyleSheet.create({
+  card: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#F0F0EA',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 20,
+    paddingVertical: 22,
+    minHeight: 180,
+    position: 'relative',
+  },
+  left: { flex: 1, zIndex: 2 },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 100,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  badgeDot: { width: 5, height: 5, borderRadius: 2.5 },
+  badgeText: { fontSize: 8, fontWeight: '800', letterSpacing: 1.5 },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    lineHeight: 26,
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 11,
+    color: '#9A9A94',
+    lineHeight: 16,
+    marginBottom: 14,
+    maxWidth: '85%',
+  },
+  statsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  stat: { alignItems: 'center' },
+  statValue: { fontSize: 16, fontWeight: '800' },
+  statLabel: { fontSize: 8, color: '#A0A0A0', letterSpacing: 0.5, textTransform: 'uppercase' },
+  statDivider: { width: 1, height: 24, backgroundColor: '#F0F0EA' },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    borderRadius: 100,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderWidth: 1,
+  },
+  ctaText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
+  iconWrapper: {
+    width: 110,
+    height: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  outerRing: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+  },
+  innerRing: {
+    position: 'absolute',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2,
+  },
+  centerIconBox: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dot: {
+    position: 'absolute',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dotTop: { top: 6, right: 14 },
+  dotBot: { bottom: 6, left: 14 },
+  cornerAccent: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 8,
+    height: 8,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+  },
+});
+
 
 function StatsCarousel() {
   const [currentIndex, setCurrentIndex] = React.useState(0);

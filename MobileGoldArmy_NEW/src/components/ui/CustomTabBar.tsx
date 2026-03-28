@@ -9,14 +9,13 @@ const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
   home: 'home',
   sniper: 'search',
   mentor: 'sparkles',
-  reseaux: 'share-social',
   crm: 'briefcase',
   analytics: 'stats-chart',
   profile: 'person',
 };
 
 // We only want to render tabs that match our explicit mapping.
-const ORDERED_TABS = ['home', 'sniper', 'mentor', 'reseaux', 'crm', 'analytics', 'profile'];
+const ORDERED_TABS = ['home', 'sniper', 'mentor', 'crm', 'analytics', 'profile'];
 
 function TabIcon({ routeName, isFocused }: { routeName: string; isFocused: boolean }) {
   const scale = useRef(new Animated.Value(isFocused ? 1.2 : 1)).current;
