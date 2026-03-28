@@ -3,19 +3,21 @@ import { View, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-na
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { styles } from './styles/CustomTabBar.styles';
 
 const ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
   home: 'home',
   sniper: 'search',
   mentor: 'sparkles',
+  reseaux: 'people',
   crm: 'briefcase',
   analytics: 'stats-chart',
   profile: 'person',
 };
 
 // We only want to render tabs that match our explicit mapping.
-const ORDERED_TABS = ['home', 'sniper', 'mentor', 'crm', 'analytics', 'profile'];
+const ORDERED_TABS = ['home', 'sniper', 'mentor', 'reseaux', 'crm', 'analytics', 'profile'];
 
 function TabIcon({ routeName, isFocused }: { routeName: string; isFocused: boolean }) {
   const scale = useRef(new Animated.Value(isFocused ? 1.2 : 1)).current;
@@ -56,11 +58,16 @@ function TabIcon({ routeName, isFocused }: { routeName: string; isFocused: boole
 }
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  
+  // Dynamically calculate bottom padding accounting for the Android physical/software navigation bar
+  const bottomPadding = Platform.OS === 'ios' ? Math.max(insets.bottom, 24) : Math.max(insets.bottom + 16, 16);
+
   // Filter and sort routes according to ORDERED_TABS to strictly prevent _styles or other routes from rendering
   const validRoutes = ORDERED_TABS.map(name => state.routes.find(r => r.name === name)).filter(Boolean) as typeof state.routes;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { bottom: bottomPadding }]}>
       {Platform.OS === 'ios' ? (
         <BlurView tint="light" intensity={80} style={StyleSheet.absoluteFill} />
       ) : (
