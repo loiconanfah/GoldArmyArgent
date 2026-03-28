@@ -9,7 +9,11 @@ import {
   Modal,
   TextInput,
   Alert,
-  Image
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -190,6 +194,9 @@ export default function ProfileScreen() {
     );
   }
 
+  const defaultName = profile?.email ? profile.email.split('@')[0] : "Agent Inconnu";
+  const displayName = profile?.full_name || defaultName;
+
   return (
     <View style={styles.root}>
       <StatusBar style="dark" />
@@ -228,7 +235,7 @@ export default function ProfileScreen() {
               <Ionicons name="camera" size={16} color="#FFF" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.userName}>{profile?.full_name || "Agent GoldArmy"}</Text>
+          <Text style={styles.userName}>{displayName}</Text>
           <Text style={styles.userEmail}>{profile?.email}</Text>
           
           <View style={styles.tierBadge}>
@@ -264,7 +271,7 @@ export default function ProfileScreen() {
               </View>
               <View>
                 <Text style={styles.infoLabel}>Nom complet</Text>
-                <Text style={styles.infoValue}>{profile?.full_name || 'Non renseigné'}</Text>
+                <Text style={styles.infoValue}>{displayName}</Text>
               </View>
             </View>
             <View style={styles.infoItem}>
@@ -310,12 +317,13 @@ export default function ProfileScreen() {
         animationType="slide"
         onRequestClose={() => setIsEditModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity 
-             style={{ flex: 1 }} 
-             activeOpacity={1} 
-             onPress={() => setIsEditModalVisible(false)} 
-          />
+        <KeyboardAvoidingView 
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <TouchableWithoutFeedback onPress={() => { Keyboard.dismiss(); setIsEditModalVisible(false); }}>
+            <View style={{ flex: 1, width: '100%' }} />
+          </TouchableWithoutFeedback>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
                {editType === 'info' ? "Modifier l'identité" : "Mise à jour CV"}
@@ -328,7 +336,7 @@ export default function ProfileScreen() {
                   style={styles.input}
                   value={tempName}
                   onChangeText={setTempName}
-                  placeholder="Jean Dupont"
+                  placeholder="Votre nom"
                 />
               </>
             )}
@@ -352,7 +360,7 @@ export default function ProfileScreen() {
               <Text style={styles.cancelBtnText}>Annuler</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
