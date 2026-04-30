@@ -1,0 +1,80 @@
+# GoldArmy AI
+
+## What is GoldArmy AI
+
+GoldArmy AI is a French-language AI-powered career platform that accelerates job search through a suite of autonomous agents. It targets French-speaking job seekers who want to move faster, apply smarter, and prepare better for interviews.
+
+The platform is available as a web application (Vue.js SPA) and a mobile application (React Native / Expo).
+
+## Core Features
+
+**Sniper Search**
+AI agent that scans 50+ job sources simultaneously. Filters and ranks results by relevance to the user's CV and target profile. Delivers only high-signal job leads, not raw listings.
+
+**Mentor IA / CV Audit**
+Uploads a PDF CV, extracts text via PyMuPDF, and runs an AI audit against a specific job description. Returns an ATS score, keyword gaps, and a rewrite proposal. Generates a reformatted PDF from 8 visual templates (GoldArmy, Minimaliste, Executive, Creatif, Classique, Neon Tech, Scandinave, Timeline).
+
+**Interview Simulation**
+Simulates a real job interview using the Gemini LLM. Speaks back audio responses. Scores answers on clarity, relevance, and confidence. Stores session history for review.
+
+**CRM Kanban**
+Tracks job applications through a drag-and-drop pipeline: To Apply, Sent, Interview, Follow-up, Offer, Rejected. Auto-generates follow-up emails via AI. Imports job listings directly from a URL.
+
+**Network / Reseaux**
+Contact address book for networking. Finds HR decision-makers and recruiters at target companies via LinkedIn scraping. Drafts outreach emails via Gemini.
+
+**Analytics Dashboard**
+Real-time KPIs pulled from live user data: applications sent, CV audits, interviews obtained, network contacts. Growth chart, status distribution, and global job-search score.
+
+**Free Tools (no login required)**
+- Free CV Roast: paste CV text, get immediate AI feedback
+- Free Interview: one-shot interview simulation without account
+
+## Pricing
+
+Freemium model. Free tier includes limited usage per tool category. Pro tier removes caps and unlocks all features.
+
+## Technology
+
+- Backend: Python, FastAPI, MongoDB Atlas, Playwright (PDF rendering), Gemini / OpenRouter LLMs
+- Web frontend: Vue 3 SPA
+- Mobile: React Native, Expo 54, Zustand, Axios
+- Auth: JWT (access token 7 days, refresh token 30 days), Google OAuth, Apple OAuth
+
+## Target Audience
+
+French-speaking job seekers, students, career changers, and professionals in France, Canada (Quebec), Belgium, and francophone Africa.
+
+## Key URLs
+
+- Homepage: https://www.goldarmyai.com/
+- Free CV Roast: https://www.goldarmyai.com/free-cv-roast
+- Free Interview: https://www.goldarmyai.com/free-interview
+- Blog: https://www.goldarmyai.com/blog
+- Login: https://www.goldarmyai.com/login
+- Register: https://www.goldarmyai.com/register
+- Support: https://www.goldarmyai.com/support
+- Privacy: https://www.goldarmyai.com/privacy
+
+## Authenticated Pages
+
+- /home — Post-login dashboard hub
+- /chat — AI agent chat interface (Sniper search)
+- /opportunities — Filtered job listing results
+- /mentor — CV audit and rewrite workspace
+- /interview — Live interview simulation
+- /interview/history — Past sessions
+- /crm — Application tracking Kanban
+- /network — Contact book and HR finder
+- /dashboard — Analytics and KPIs
+- /profile — User profile and CV upload
+- /settings — Account and preferences
+
+## Language
+
+French (fr_FR). All UI, AI outputs, and content are in French.
+
+## Contact
+
+Support page: https://www.goldarmyai.com/support
+Twitter / X: @GoldArmyAI
