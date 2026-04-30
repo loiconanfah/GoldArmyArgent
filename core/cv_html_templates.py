@@ -116,11 +116,13 @@ def build_goldarmy(cv_data: dict) -> str:
     certs = "".join(f'<div class="cert-item">{esc(c)}</div>' for c in f["certifications"])
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
+@page{size: A4; margin: 0;}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:'Inter',sans-serif;font-size:11px;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{display:flex;max-width:900px;margin:0 auto;}}
-.sidebar{{width:220px;background:#1A1A2E;padding:28px 18px;flex-shrink:0;}}
+body{{font-family:'Inter',sans-serif;font-size:11px;line-height:1.5;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+body::before{{content:'';position:fixed;top:0;left:0;bottom:0;width:220px;background:#1A1A2E;z-index:-1;}}
+.page{{display:flex;width:100%;min-height:100%;}}
+.sidebar{{width:220px;padding:28px 18px;flex-shrink:0;}}
 .main{{flex:1;padding:28px 26px;}}
 .initials{{width:66px;height:66px;border-radius:50%;background:#FF6B35;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;margin:0 auto 12px;}}
 .name-first{{font-size:11px;color:#FF6B35;letter-spacing:3px;text-transform:uppercase;text-align:center;}}
@@ -180,8 +182,9 @@ def build_minimaliste(cv_data: dict) -> str:
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Inter',sans-serif;font-size:11px;background:#fff;color:#222;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{width:100%;margin:0 auto;padding:48px 52px;}}
+@page{size: A4; margin: 0;}
+*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Inter',sans-serif;font-size:11px;background:#fff;color:#222;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+.page{{width:100%;min-height:100%;padding:48px 52px;}}
 h1{{font-size:32px;font-weight:700;color:#111;letter-spacing:-1px;}} .subtitle{{font-size:13px;color:#2563EB;letter-spacing:2px;text-transform:uppercase;margin-top:4px;}}
 .contact{{font-size:10px;color:#666;margin-top:10px;}} .summary-text{{font-size:11.5px;color:#444;line-height:1.75;}}
 .exp-block,.proj-block{{margin-bottom:14px;}} .exp-top{{display:flex;justify-content:space-between;}} .exp-title{{font-size:12px;font-weight:700;}} .exp-dates{{font-size:9px;color:#2563EB;}}
@@ -223,10 +226,12 @@ def build_executive(cv_data: dict) -> str:
     sec = lambda t: f'<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#6EE7B7;margin:16px 0 8px;border-bottom:1px solid #6EE7B733;padding-bottom:4px;">{t}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
+@page{size: A4; margin: 0;}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
-*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Inter',sans-serif;font-size:11px;background:#0D1117;color:#E0E0FF;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{display:flex;max-width:900px;margin:0 auto;min-height:100%;}}
-.sidebar{{width:220px;flex-shrink:0;background:#161B22;padding:28px 18px;border-right:1px solid #6EE7B722;}}
+*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Inter',sans-serif;font-size:11px;background:#0D1117;color:#E0E0FF;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+body::before{{content:'';position:fixed;top:0;left:0;bottom:0;width:220px;background:#161B22;border-right:1px solid #6EE7B722;z-index:-1;}}
+.page{{display:flex;width:100%;min-height:100%;}}
+.sidebar{{width:220px;flex-shrink:0;padding:28px 18px;}}
 .main{{flex:1;padding:28px 26px;}}
 .sb-name{{font-size:20px;font-weight:800;color:#fff;text-align:center;}} .sb-title{{font-size:10px;color:#6EE7B7;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-top:4px;}}
 .ci{{display:flex;align-items:flex-start;gap:6px;font-size:9.5px;color:#9090BB;margin-bottom:5px;word-break:break-all;}} .ci-ic{{color:#6EE7B7;font-weight:700;flex-shrink:0;}}
@@ -273,10 +278,12 @@ def build_creatif(cv_data: dict) -> str:
     sec = lambda t: f'<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#EC4899;margin:16px 0 8px;border-bottom:1px solid #EC489933;padding-bottom:3px;">{t}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
+@page{size: A4; margin: 0;}
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap');
-*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Nunito',sans-serif;font-size:11px;background:#1A0A2E;color:#E0D0FF;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{display:flex;max-width:900px;margin:0 auto;}}
-.sidebar{{width:220px;background:#0F0718;padding:28px 18px;flex-shrink:0;}}
+*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Nunito',sans-serif;font-size:11px;background:#1A0A2E;color:#E0D0FF;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+body::before{{content:'';position:fixed;top:0;left:0;bottom:0;width:220px;background:#0F0718;z-index:-1;}}
+.page{{display:flex;width:100%;min-height:100%;}}
+.sidebar{{width:220px;padding:28px 18px;flex-shrink:0;}}
 .main{{flex:1;padding:28px 24px;}}
 .hdr-name{{font-size:22px;font-weight:800;color:#fff;text-align:center;}} .hdr-title{{font-size:10px;color:#EC4899;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-top:4px;}}
 .ci{{display:flex;align-items:flex-start;gap:6px;font-size:9.5px;color:#9070AA;margin-bottom:5px;word-break:break-all;}} .ci-ic{{color:#EC4899;font-weight:700;flex-shrink:0;}}
@@ -322,9 +329,10 @@ def build_classique(cv_data: dict) -> str:
     sec = lambda t: f'<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#1a1a1a;font-weight:700;margin:18px 0 6px;border-bottom:2px solid #1a1a1a;padding-bottom:3px;">{t}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
+@page{size: A4; margin: 0;}
 @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;600&display=swap');
-*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'EB Garamond',serif;font-size:12px;background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{max-width:820px;margin:0 auto;padding:50px 60px;}}
+*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'EB Garamond',serif;font-size:12px;background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+.page{{width:100%;padding:50px 60px;}}
 .hdr{{text-align:center;margin-bottom:20px;border-bottom:2px solid #1a1a1a;padding-bottom:16px;}}
 h1{{font-size:34px;font-weight:600;letter-spacing:3px;text-transform:uppercase;}}
 .hdr-title{{font-size:13px;font-style:italic;color:#666;margin-top:4px;}}
@@ -369,10 +377,12 @@ def build_neon_tech(cv_data: dict) -> str:
     fn_parts = f["full_name"].split(); fn = fn_parts[0]; ln = " ".join(fn_parts[1:])
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
+@page{size: A4; margin: 0;}
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600;700&display=swap');
-*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Inter',sans-serif;background:#0D0D1A;color:#E0E0FF;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{width:100%;margin:0 auto;display:flex;}}
-.sidebar{{width:230px;background:#111128;padding:28px 18px;border-right:1px solid #00E5FF22;flex-shrink:0;}}
+*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Inter',sans-serif;background:#0D0D1A;color:#E0E0FF;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+body::before{{content:'';position:fixed;top:0;left:0;bottom:0;width:230px;background:#111128;border-right:1px solid #00E5FF22;z-index:-1;}}
+.page{{display:flex;width:100%;min-height:100%;}}
+.sidebar{{width:230px;padding:28px 18px;flex-shrink:0;}}
 .main{{flex:1;padding:28px 24px;background:#0D0D1A;}}
 .avatar{{width:66px;height:66px;border-radius:50%;border:2px solid #00E5FF;box-shadow:0 0 14px #00E5FF55;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;background:#1A1A35;font-family:'Share Tech Mono',monospace;font-size:20px;color:#00E5FF;}}
 .nm-first{{font-size:10px;color:#00E5FF;letter-spacing:3px;text-transform:uppercase;text-align:center;}} .nm-last{{font-size:18px;font-weight:700;color:#fff;text-align:center;}} .nm-title{{font-size:9px;color:#FF00A0;letter-spacing:2px;text-transform:uppercase;text-align:center;margin-top:3px;}}
@@ -420,9 +430,10 @@ def build_scandinave(cv_data: dict) -> str:
     certs = "".join(f'<div style="font-size:10px;color:#555;border-left:2px solid #4A7C59;padding-left:6px;margin-bottom:4px;">{esc(c)}</div>' for c in f["certifications"])
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
+@page{size: A4; margin: 0;}
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
-*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'DM Sans',sans-serif;background:#FAFAF7;color:#2B2B2B;font-size:11px;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
-.page{{max-width:820px;margin:0 auto;padding:52px 60px;}}
+*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'DM Sans',sans-serif;background:#FAFAF7;color:#2B2B2B;font-size:11px;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+.page{{width:100%;padding:52px 60px;}}
 h1{{font-family:'Lora',serif;font-size:36px;font-weight:600;letter-spacing:2px;color:#1A1A1A;}}
 .hdr-title{{font-size:13px;font-weight:300;color:#4A7C59;letter-spacing:4px;text-transform:uppercase;margin-top:4px;}}
 .contact{{font-size:10px;color:#888;margin-top:10px;}}
@@ -487,11 +498,12 @@ def build_timeline(cv_data: dict) -> str:
     langs = "".join(f'<div style="font-size:10px;color:#666;margin-bottom:3px;">— {esc(l)}</div>' for l in f["languages"])
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
+@page{size: A4; margin: 0;}
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Playfair+Display:wght@700&display=swap');
-*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Nunito',sans-serif;background:#F9F5F0;color:#2D2D2D;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+*{{margin:0;padding:0;box-sizing:border-box;}} body{{font-family:'Nunito',sans-serif;background:#F9F5F0;color:#2D2D2D;font-size:11px;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
 .skill-cat{{font-size:9px;text-transform:uppercase;color:#E85D4A;margin:6px 0 3px;}} .skill-pills{{display:flex;flex-wrap:wrap;gap:3px;}} .pill{{background:#fff;border:1px solid #ddd;border-radius:10px;padding:2px 7px;font-size:9px;color:#555;}}
 </style></head><body>
-<div style="max-width:900px;margin:0 auto;">
+<div style="width:100%;">
   <div style="background:#2D2D2D;padding:28px 40px;display:flex;justify-content:space-between;align-items:center;">
     <div>
       <div style="font-family:'Playfair Display',serif;font-size:32px;color:#fff;">{esc(f["full_name"])}</div>

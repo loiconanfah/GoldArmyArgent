@@ -12,6 +12,12 @@ export function KpiCard({ data, delay = 0 }: { data: KpiData; delay?: number }) 
   const [currentValue, setCurrentValue] = useState(0);
 
   useEffect(() => {
+    // Reset animations to 0 before each run to avoid jumping on refresh
+    countAnim.setValue(0);
+    progressAnim.setValue(0);
+    scaleAnim.setValue(0.95);
+    opacityAnim.setValue(0);
+
     const listener = countAnim.addListener(({ value }) => {
       setCurrentValue(Math.floor(value));
     });
@@ -44,7 +50,7 @@ export function KpiCard({ data, delay = 0 }: { data: KpiData; delay?: number }) 
     ]).start();
 
     return () => countAnim.removeListener(listener);
-  }, [data.value, delay]);
+  }, [data.value, data.progress, delay]);
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 100],

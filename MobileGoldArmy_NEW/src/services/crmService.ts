@@ -73,7 +73,7 @@ export const crmService = {
         });
         return app;
       }
-      throw new Error('Erreur lors de l’analyse du lien');
+      throw new Error("Erreur lors de l'analyse du lien");
     } catch (error) {
       console.error('[crmService] addFromLink failed:', error);
       throw error;

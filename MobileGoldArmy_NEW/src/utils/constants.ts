@@ -45,13 +45,13 @@ export const API_BASE_URL = envApiUrl || (IS_PROD ? CLOUD_API_BASE_URL : inferDe
 // API endpoints
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    REFRESH: '/auth/refresh',
-    LOGOUT: '/auth/logout',
-    FORGOT_PASSWORD: '/auth/forgot-password',
-    RESET_PASSWORD: '/auth/reset-password',
-    ME: '/auth/me',
+    LOGIN: '/api/auth/login',
+    REGISTER: '/api/auth/register',
+    REFRESH: '/api/auth/refresh',
+    LOGOUT: '/api/auth/logout',
+    FORGOT_PASSWORD: '/api/auth/forgot-password',
+    RESET_PASSWORD: '/api/auth/reset-password',
+    ME: '/api/auth/me',
   },
   CRM: {
     FETCH: '/api/crm',

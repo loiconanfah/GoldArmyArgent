@@ -50,7 +50,8 @@ if cors_env:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_origin_regex=r"https?://.*",
+    # allow_origin_regex supprimé — il annulait la protection des origines explicites.
+    # Si un nouveau domaine doit être autorisé, l'ajouter dans CORS_ORIGIN (env var).
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -228,7 +229,10 @@ async def send_support_message(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/parse-pdf")
-async def parse_pdf(file: UploadFile = File(...)):
+async def parse_pdf(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
     """
     Receives a PDF CV from the frontend, extracts text using PyMuPDF (fitz), 
     and returns the raw text. Wait for PyMuPDF to be installed.

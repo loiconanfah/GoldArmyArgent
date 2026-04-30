@@ -782,8 +782,6 @@ function SniperSearchCard({ onPress }: { onPress: () => void }) {
   );
 }
 
-import { StyleSheet } from 'react-native';
-
 const sniperStyles = StyleSheet.create({
   card: {
     borderRadius: 24,

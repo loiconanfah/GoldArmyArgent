@@ -6,7 +6,7 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '@utils/constants';
 import { getAccessToken, getRefreshToken, setAccessToken, setRefreshToken, clearTokens } from '@utils/storage';
-import type { ApiError, RefreshTokenResponse } from '@types/api.types';
+import type { ApiError, ApiResponse, RefreshTokenResponse } from '@types/api.types';
 import { authService } from './authService';
 
 /**

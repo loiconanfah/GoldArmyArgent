@@ -19,6 +19,7 @@ import type {
 // Types de réponse réels du backend FastAPI (/api/auth/*)
 type BackendTokenResponse = {
   access_token: string;
+  refresh_token: string; // Vrai refresh token (30 jours) depuis la v2 du backend
   token_type: string;
   user: {
     id: string;
@@ -54,7 +55,8 @@ class AuthService {
       return {
         user,
         accessToken: data.access_token,
-        refreshToken: data.access_token,
+        // Le backend retourne maintenant un vrai refresh_token (30 jours)
+        refreshToken: data.refresh_token || data.access_token,
       };
     } catch (error) {
       console.error('[AuthService][loginWithGoogle]', error);
@@ -88,7 +90,7 @@ class AuthService {
       return {
         user,
         accessToken: data.access_token,
-        refreshToken: data.access_token,
+        refreshToken: data.refresh_token || data.access_token,
       };
     } catch (error) {
       console.error('[AuthService][loginWithApple]', error);
@@ -131,9 +133,8 @@ class AuthService {
       const loginResponse: LoginResponse = {
         user,
         accessToken: data.access_token,
-        // Le backend ne renvoie pas de refresh_token pour l'instant,
-        // on réutilise access_token pour rester compatible avec le reste de l'app.
-        refreshToken: data.access_token,
+        // Le backend retourne maintenant un vrai refresh_token distinct (30 jours)
+        refreshToken: data.refresh_token || data.access_token,
       };
 
       return loginResponse;
@@ -174,7 +175,7 @@ class AuthService {
       const registerResponse: RegisterResponse = {
         user,
         accessToken: backend.access_token,
-        refreshToken: backend.access_token,
+        refreshToken: backend.refresh_token || backend.access_token,
       };
 
       return registerResponse;
@@ -247,11 +248,19 @@ class AuthService {
   }
 
   /**
-   * Refresh token
+   * Refresh token — appelle le vrai endpoint backend /api/auth/refresh
    */
   async refreshToken(_data: { refreshToken: string }): Promise<any> {
-    // A implémenter si le backend supporte le refresh token
-    return { access_token: '', refresh_token: '' };
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/auth/refresh`,
+        { refreshToken: _data.refreshToken }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('[AuthService][refreshToken]', error);
+      throw error;
+    }
   }
 
   async sendOtp(email: string): Promise<void> {

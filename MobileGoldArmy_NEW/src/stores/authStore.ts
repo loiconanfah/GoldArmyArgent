@@ -56,6 +56,7 @@ export const useAuthStore = create<AuthStore>()((set) => ({
     set((state) => ({
       ...state,
       accessToken: token,
+      isAuthenticated: true,
     })),
 
   setRefreshToken: (token) =>

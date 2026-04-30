@@ -26,6 +26,7 @@ except ImportError:
 SECRET_KEY = settings.jwt_secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+REFRESH_TOKEN_EXPIRE_DAYS = 30  # 30 days
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -43,6 +44,7 @@ class UserResponse(BaseModel):
     
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
     user: UserResponse
 
@@ -68,7 +70,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "access"})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def create_refresh_token(data: dict) -> str:
+    """Creates a long-lived refresh token (30 days)."""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -125,14 +135,16 @@ async def register(user_data: UserCreate):
             await email_service.send_otp(user_data.email, otp_code)
         except: pass
         
-        # Create token
+        # Create access + refresh tokens
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": user_id, "email": user_data.email}, expires_delta=access_token_expires
         )
+        refresh_token = create_refresh_token(data={"sub": user_id, "email": user_data.email})
         
         return {
-            "access_token": access_token, 
+            "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
             "user": {"id": user_id, "email": user_data.email, "subscription_tier": "FREE", "is_verified": False}
         }
@@ -159,9 +171,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         access_token = create_access_token(
             data={"sub": user["id"], "email": user["email"]}, expires_delta=access_token_expires
         )
+        refresh_token = create_refresh_token(data={"sub": user["id"], "email": user["email"]})
         
         return {
-            "access_token": access_token, 
+            "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
             "user": {
                 "id": user["id"], 
@@ -175,6 +189,43 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             raise
         logger.exception("Erreur login")
         raise HTTPException(status_code=500, detail="Erreur serveur lors de la connexion")
+
+
+class RefreshRequest(BaseModel):
+    refreshToken: str
+
+@router.post("/refresh")
+async def refresh_access_token(body: RefreshRequest):
+    """Exchange a valid refresh token for a new access + refresh token pair."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Refresh token invalide ou expiré",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(body.refreshToken, SECRET_KEY, algorithms=[ALGORITHM])
+        # Ensure it's a refresh token, not an access token reused as refresh
+        if payload.get("type") != "refresh":
+            raise credentials_exception
+        user_id: str = payload.get("sub")
+        email: str = payload.get("email", "")
+        if user_id is None:
+            raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception
+
+    new_access_token = create_access_token(
+        data={"sub": user_id, "email": email},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    new_refresh_token = create_refresh_token(data={"sub": user_id, "email": email})
+
+    return {
+        "data": {
+            "accessToken": new_access_token,
+            "refreshToken": new_refresh_token,
+        }
+    }
 
 @router.get("/me")
 async def read_users_me(current_user: dict = Depends(get_current_user)):
