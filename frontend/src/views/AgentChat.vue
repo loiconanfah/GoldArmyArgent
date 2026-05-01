@@ -501,7 +501,7 @@ const openInWorkspace = (msg) => {
         isWorkspaceOpen ? 'w-full md:w-1/3' : 'w-full',
       ]"
     >
-      <div class="h-full flex flex-col p-4 md:p-6 relative">
+      <div class="h-full flex flex-col p-4 md:p-6 min-h-0 gap-0">
 
     <!-- Header Minimal -->
     <div class="flex items-center justify-between mb-8">
@@ -561,7 +561,7 @@ const openInWorkspace = (msg) => {
     </transition>
 
     <!-- Chat History Area -->
-    <div ref="chatContainer" class="flex-1 overflow-y-auto space-y-8 pr-2 pb-32 scroll-smooth">
+    <div ref="chatContainer" class="flex-1 min-h-0 overflow-y-auto space-y-8 pr-2 pb-4 scroll-smooth">
       <div 
         v-for="msg in messages" 
         :key="msg.id"
@@ -900,7 +900,8 @@ const openInWorkspace = (msg) => {
       </div>
     </div>
 
-      <div class="absolute bottom-4 left-4 right-4 bg-surface-950/90 pt-4 backdrop-blur-md">
+      <!-- Input Bar (in-flow, not absolute) -->
+      <div class="shrink-0 pt-3 bg-surface-950/90 backdrop-blur-md">
         <div class="bg-surface-900 border border-surface-700 p-2 rounded-2xl shadow-lg flex flex-col sm:flex-row items-end sm:items-center gap-2">
            <!-- Location Field -->
            <div class="w-full sm:w-1/3 flex items-center gap-2 px-3 py-2 bg-surface-800 rounded-xl border border-surface-700">
