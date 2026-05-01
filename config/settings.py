@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     redis_port: int = Field(default=6379, description="Redis port")
     redis_db: int = Field(default=0, description="Redis database")
     redis_enabled: bool = Field(default=False, description="Activer Redis")
+    redis_url: Optional[str] = Field(default=None, description="Redis URL complète (redis://host:port/db) — précédence sur host/port")
+    
+    # Monitoring
+    sentry_dsn: Optional[str] = Field(default=None, description="Sentry DSN pour monitoring production")
     
     # SMTP Configuration (Email)
     smtp_host: str = Field(default="smtp.gmail.com", description="SMTP host")

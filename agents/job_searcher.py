@@ -6,6 +6,7 @@ import asyncio
 from loguru import logger
 
 from core.agent_base import BaseAgent
+from core.cache import cache
 from config.settings import settings
 
 
@@ -152,8 +153,22 @@ class JobSearchAgent(BaseAgent):
     async def act(self, action_plan: Dict[str, Any]) -> Dict[str, Any]:
         """
         Phase d'action : Coordonne les agents Hunter et Judge par vagues optimisées.
+        Cache Redis : si la même recherche (keywords + location) a été faite dans les 3h,
+        on retourne le résultat mis en cache sans rappeler les APIs.
         """
-        logger.info("🎬 Orchestrateur: Phase d'exécution du Swarm (Waves Strategy)...")
+        logger.info("Orchestrateur: Phase d'execution du Swarm (Waves Strategy)...")
+
+        # --- CACHE CHECK ---
+        criteria = action_plan.get("criteria", {})
+        cache_key = cache.make_key(
+            "|".join(sorted(criteria.get("keywords_list", []))),
+            criteria.get("location", ""),
+            criteria.get("job_type", "emploi")
+        )
+        cached = await cache.get(cache_key)
+        if cached:
+            logger.info(f"Cache HIT — retour instantane de {len(cached.get('matched_jobs', []))} offres")
+            return cached
         
         all_apis = action_plan.get("criteria", {}).get("apis", [])
         # Vague 1 : APIs Ultra-Rapides (Jooble, JSearch, Findwork, Emploi.cm, etc.)
@@ -240,12 +255,20 @@ class JobSearchAgent(BaseAgent):
         logger.success(f"💎 Sniper Swarm terminé : {len(top_jobs)} offres pertinentes sur {len(unique_final)} trouvées.")
 
         
-        return {
+        result = {
             "success": True,
             "total_jobs_found": len(top_jobs),
             "matched_jobs": top_jobs,
             "cv_profile": cv_profile,
             "search_criteria": action_plan.get("criteria")
         }
+
+        # --- CACHE SET (TTL 3h) ---
+        if top_jobs:
+            await cache.set(cache_key, result, ttl=10800)
+            logger.info(f"Resultats en cache (3h) — {len(top_jobs)} offres")
+
+        return result
+
 
 

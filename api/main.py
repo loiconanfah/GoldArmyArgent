@@ -22,6 +22,26 @@ from agents.orchestrator import OrchestratorAgent
 
 app = FastAPI(title="GoldArmy Agent V2 API", version="2.0.0")
 
+# --- SENTRY MONITORING ---
+try:
+    from config.settings import settings as _s
+    if _s.sentry_dsn:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+        sentry_sdk.init(
+            dsn=_s.sentry_dsn,
+            integrations=[FastApiIntegration(), StarletteIntegration()],
+            traces_sample_rate=0.1,       # 10% des transactions tracées
+            environment="production",
+            send_default_pii=False,       # RGPD : pas de données personnelles
+        )
+        logger.info("Sentry monitoring actif")
+    else:
+        logger.info("Sentry désactivé (SENTRY_DSN absent)")
+except Exception as _sentry_err:
+    logger.warning(f"Sentry init failed (non-bloquant): {_sentry_err}")
+
 from api.auth import get_current_user, router as auth_router
 from api.interview import router as interview_router
 from api.notifications import router as notifications_router
