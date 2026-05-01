@@ -22,25 +22,9 @@ from agents.orchestrator import OrchestratorAgent
 
 app = FastAPI(title="GoldArmy Agent V2 API", version="2.0.0")
 
-# --- SENTRY MONITORING ---
-try:
-    from config.settings import settings as _s
-    if _s.sentry_dsn:
-        import sentry_sdk
-        from sentry_sdk.integrations.fastapi import FastApiIntegration
-        from sentry_sdk.integrations.starlette import StarletteIntegration
-        sentry_sdk.init(
-            dsn=_s.sentry_dsn,
-            integrations=[FastApiIntegration(), StarletteIntegration()],
-            traces_sample_rate=0.1,       # 10% des transactions tracées
-            environment="production",
-            send_default_pii=False,       # RGPD : pas de données personnelles
-        )
-        logger.info("Sentry monitoring actif")
-    else:
-        logger.info("Sentry désactivé (SENTRY_DSN absent)")
-except Exception as _sentry_err:
-    logger.warning(f"Sentry init failed (non-bloquant): {_sentry_err}")
+# --- MONITORING (MongoDB natif, 100% gratuit) ---
+from core.error_monitor import monitor
+logger.info("Monitoring actif: MongoDB error_logs collection")
 
 from api.auth import get_current_user, router as auth_router
 from api.interview import router as interview_router
@@ -85,7 +69,37 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
     return response
 
-# Global orchestrator instance
+# --- GLOBAL EXCEPTION HANDLER (capture auto toutes les 500) ---
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Capture toutes les exceptions non gérées et les stocke dans MongoDB."""
+    user_id = None
+    try:
+        # Tente d'extraire l'utilisateur du token si présent
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            import jwt as pyjwt
+            from config.settings import settings as _cfg
+            token = auth_header[7:]
+            payload = pyjwt.decode(token, _cfg.jwt_secret_key, algorithms=["HS256"])
+            user_id = payload.get("user_id") or payload.get("sub")
+    except Exception:
+        pass
+
+    await monitor.capture(exc, context={
+        "route": str(request.url.path),
+        "method": request.method,
+        "user_id": user_id,
+    })
+    logger.error(f"Erreur non geree [{request.method} {request.url.path}]: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"status": "error", "detail": "Une erreur interne est survenue. L'équipe a été notifiée."}
+    )
+
 orchestrator = OrchestratorAgent()
 
 @app.on_event("startup")
@@ -1599,6 +1613,38 @@ Ne sois pas poli, sois un coach stricte. Cette réponse sera lue par synthèse v
     except Exception as e:
         logger.error(f"[Public API] Erreur Interview: {e}")
         raise HTTPException(status_code=500, detail="Erreur génération.")
+
+
+# ==========================================
+# Admin — Error Monitoring Dashboard
+# ==========================================
+
+@app.get("/api/admin/errors")
+async def admin_get_errors(
+    limit: int = 50,
+    level: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Liste les erreurs capturées (admin only).
+    Requiert que l'utilisateur soit admin (tier=ADMIN).
+    """
+    if current_user.get("tier") not in ["ADMIN", "admin"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs.")
+    errors = await monitor.get_recent(limit=limit, level=level)
+    return {"status": "success", "count": len(errors), "data": errors}
+
+@app.patch("/api/admin/errors/{error_id}/resolve")
+async def admin_resolve_error(
+    error_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Marque une erreur comme résolue."""
+    if current_user.get("tier") not in ["ADMIN", "admin"]:
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs.")
+    ok = await monitor.resolve(error_id)
+    return {"status": "success" if ok else "error"}
+
 
 if __name__ == "__main__":
     import uvicorn
