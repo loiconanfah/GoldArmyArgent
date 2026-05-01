@@ -310,8 +310,10 @@ async def google_login(payload: GoogleTokenRequest):
             data={"sub": user_id, "email": email},
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
+        refresh_token = create_refresh_token(data={"sub": user_id, "email": email})
         return {
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
             "user": {"id": user_id, "email": email, "subscription_tier": tier}
         }
@@ -366,8 +368,10 @@ async def apple_login(payload: AppleTokenRequest):
             data={"sub": user_id, "email": email},
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
+        refresh_token = create_refresh_token(data={"sub": user_id, "email": email})
         return {
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
             "user": {"id": user_id, "email": email, "subscription_tier": tier}
         }
