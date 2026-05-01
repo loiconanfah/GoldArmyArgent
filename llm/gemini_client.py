@@ -75,8 +75,9 @@ class GeminiClient:
                         text = await response.text()
                         
                         if response.status == 429:
-                            logger.warning(f"⚠️ Gemini Rate Limit (429). Tentative {attempt+1}/{max_retries}...")
-                            await asyncio.sleep(backoff * (2 ** attempt))
+                            wait_time = backoff * (2 ** attempt)
+                            logger.warning(f"⚠️ Gemini Rate Limit (429). Tentative {attempt+1}/{max_retries}. Attente {wait_time:.1f}s...")
+                            await asyncio.sleep(wait_time)
                             continue
                             
                         if response.status in [500, 502, 503, 504]:
@@ -117,7 +118,8 @@ class GeminiClient:
                 logger.debug(f"Gemini retryable error (attempt {attempt+1}): {e}")
                 await asyncio.sleep(backoff * (attempt + 1))
 
-
+        # Toutes les tentatives ont échoué (ex: 429 persistant)
+        raise Exception(f"Gemini generate() a échoué après {max_retries} tentatives (Rate Limit ou erreur serveur persistante).")
 
     async def generate_with_sources(self, prompt: str, system: str = None, **kwargs) -> tuple:
         """Génère une réponse et retourne les sources de grounding (Gemini 2.0)."""

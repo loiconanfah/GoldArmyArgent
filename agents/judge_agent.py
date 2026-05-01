@@ -113,6 +113,11 @@ Exactement un objet par offre. Pas d'oubli."""
         try:
             resp = await self.generate_response(prompt, json_mode=True, model=model)
 
+            # Guard : si Gemini retourne None ou vide (rate limit épuisé, safety filter...)
+            if not resp:
+                logger.warning(f"⚠️ Judge: Réponse Gemini vide (None ou ''), lot ignoré. Retour fail-safe.")
+                return jobs
+
             # Nettoyage JSON
             match = re.search(r'\[.*\]', resp.replace('\n', ''), re.S)
 
