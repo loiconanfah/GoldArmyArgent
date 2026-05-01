@@ -69,16 +69,32 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
     return response
 
-# --- GLOBAL EXCEPTION HANDLER (capture auto toutes les 500) ---
+# --- GLOBAL EXCEPTION HANDLER (capture auto les vraies erreurs 500) ---
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi import HTTPException as FastAPIHTTPException
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Gestion normale des HTTPException (4xx/5xx) — PAS de capture dans MongoDB."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Capture toutes les exceptions non gérées et les stocke dans MongoDB."""
+    """Capture les VRAIES exceptions non gérées (RuntimeError, AttributeError, etc.) dans MongoDB."""
+    # CRITIQUE : ne jamais intercepter les HTTPException — elles sont intentionnelles (auth, 404, etc.)
+    if isinstance(exc, (FastAPIHTTPException, StarletteHTTPException)):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
+
     user_id = None
     try:
-        # Tente d'extraire l'utilisateur du token si présent
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             import jwt as pyjwt
@@ -94,10 +110,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         "method": request.method,
         "user_id": user_id,
     })
-    logger.error(f"Erreur non geree [{request.method} {request.url.path}]: {exc}")
+    logger.error(f"Erreur non geree [{request.method} {request.url.path}]: {type(exc).__name__}: {exc}")
     return JSONResponse(
         status_code=500,
-        content={"status": "error", "detail": "Une erreur interne est survenue. L'équipe a été notifiée."}
+        content={"status": "error", "detail": "Une erreur interne est survenue. L'equipe a ete notifiee."}
     )
 
 orchestrator = OrchestratorAgent()
