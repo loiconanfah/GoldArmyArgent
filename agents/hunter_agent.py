@@ -22,21 +22,27 @@ class HunterAgent(BaseAgent):
         loc_lower = location.lower()
         loc_lower = loc_lower.replace("califormie", "california").replace("californie", "california")
         
-        # Sources de base (disponibles partout)
-        apis_to_use = ["jooble", "jsearch", "google_jobs", "findwork", "theirstack"]
+        # Sources de base mondiales (disponibles partout, gratuites)
+        apis_to_use = ["jooble", "jsearch", "google_jobs", "findwork", "theirstack", "remoteok"]
         
         # Sources spécifiques France / Europe
         if any(w in loc_lower for w in ["france", "paris", "lyon", "marseille", "bordeaux", "nantes", "lille", "europe", "suisse", "belgique", "uk", "london", "allemagne", "berlin", "espagne", "madrid", "italie", "rome"]):
-            apis_to_use += ["linkedin", "indeed_fr", "glassdoor", "gov"]
-        # Sources spécifiques Amériques
-        elif any(w in loc_lower for w in ["usa", "united states", "california", "new york", "texas", "canada", "montreal", "toronto", "vancouver", "chicago", "seattle", "boston", "silicon valley", "florida"]):
-            apis_to_use += ["linkedin", "indeed"]
+            apis_to_use += ["linkedin", "indeed_fr", "glassdoor", "gov", "adzuna"]
+        # Sources spécifiques Québec (priorité locale)
+        elif any(w in loc_lower for w in ["québec", "quebec", "montreal", "laval", "longueuil", "qc"]):
+            apis_to_use += ["linkedin", "indeed", "workopolis", "emplois_qc", "adzuna"]
+        # Sources spécifiques Canada (hors Québec)
+        elif any(w in loc_lower for w in ["canada", "toronto", "vancouver", "ottawa", "calgary"]):
+            apis_to_use += ["linkedin", "indeed", "workopolis", "adzuna"]
+        # Sources spécifiques USA
+        elif any(w in loc_lower for w in ["usa", "united states", "california", "new york", "texas", "chicago", "seattle", "boston", "silicon valley", "florida"]):
+            apis_to_use += ["linkedin", "indeed", "adzuna"]
         # Cameroun : scraper Emploi.cm
         elif any(w in loc_lower for w in ["cameroun", "cameroon", "yaoundé", "yaounde", "douala", "garoua", "bafoussam"]):
             apis_to_use += ["emploi_cm", "linkedin", "indeed_fr"]
         # Reste du monde
         else:
-            apis_to_use += ["linkedin", "indeed_fr"]
+            apis_to_use += ["linkedin", "indeed_fr", "adzuna"]
             
         return {
             "keywords": keywords_list,
@@ -99,6 +105,14 @@ class HunterAgent(BaseAgent):
                         tasks.append(self._search_emploi_cm(kw, location, api_limit))
                     elif api == "theirstack" and settings.theirstack_api_key:
                         tasks.append(self._search_theirstack(kw, location, api_limit))
+                    elif api == "remoteok":
+                        tasks.append(self._search_remoteok(kw, location, api_limit))
+                    elif api == "adzuna" and settings.adzuna_app_id and settings.adzuna_api_key:
+                        tasks.append(self._search_adzuna(kw, location, api_limit))
+                    elif api == "workopolis":
+                        tasks.append(self._search_workopolis(kw, location, api_limit))
+                    elif api == "emplois_qc":
+                        tasks.append(self._search_emplois_qc(kw, location, api_limit))
                 
                 if not tasks:
                     return []
@@ -348,6 +362,50 @@ class HunterAgent(BaseAgent):
             return results
         except Exception as e:
             logger.error(f"Emploi.cm Error: {e}")
+            return []
+
+    async def _search_remoteok(self, kw, loc, limit):
+        """Recherche RemoteOK (API publique gratuite, offres remote tech)."""
+        try:
+            from tools.remoteok_searcher import RemoteOKSearcher
+            searcher = RemoteOKSearcher()
+            results = await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+            return results
+        except Exception as e:
+            logger.error(f"RemoteOK Error: {e}")
+            return []
+
+    async def _search_adzuna(self, kw, loc, limit):
+        """Recherche Adzuna (API gratuite, 1000 req/jour, Canada/France/UK/USA)."""
+        try:
+            from tools.adzuna_searcher import AdzunaSearcher
+            searcher = AdzunaSearcher(app_id=settings.adzuna_app_id, api_key=settings.adzuna_api_key)
+            results = await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+            return results
+        except Exception as e:
+            logger.error(f"Adzuna Error: {e}")
+            return []
+
+    async def _search_workopolis(self, kw, loc, limit):
+        """Recherche Workopolis (portail emploi canadien, scraping léger)."""
+        try:
+            from tools.workopolis_searcher import WorkopolisSearcher
+            searcher = WorkopolisSearcher()
+            results = await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+            return results
+        except Exception as e:
+            logger.error(f"Workopolis Error: {e}")
+            return []
+
+    async def _search_emplois_qc(self, kw, loc, limit):
+        """Recherche Emplois Québec (flux RSS officiel du gouvernement du Québec)."""
+        try:
+            from tools.emplois_qc_searcher import EmploisQcSearcher
+            searcher = EmploisQcSearcher()
+            results = await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+            return results
+        except Exception as e:
+            logger.error(f"EmploisQc Error: {e}")
             return []
 
     async def _search_theirstack(self, kw, loc, limit):

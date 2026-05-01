@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     rapidapi_key_3: Optional[str] = Field(default=None, description="Clé RapidAPI Tertiaire (JSearch)")
     findwork_api_key: Optional[str] = Field(default=None, description="Clé API FindWork")
     theirstack_api_key: Optional[str] = Field(default=None, description="Clé API TheirStack (Greenhouse/Lever/Ashby)")
+    adzuna_app_id: Optional[str] = Field(default=None, description="App ID Adzuna (inscription gratuite developer.adzuna.com)")
+    adzuna_api_key: Optional[str] = Field(default=None, description="Clé API Adzuna (1000 req/jour gratuit)")
     rapidapi_host: str = Field(default="jsearch.p.rapidapi.com", description="RapidAPI Host JSearch")
     glassdoor_api_host: str = Field(default="glassdoor-real-time.p.rapidapi.com", description="RapidAPI Host Glassdoor")
     
