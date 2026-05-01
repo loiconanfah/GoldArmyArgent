@@ -491,7 +491,7 @@ const openInWorkspace = (msg) => {
 </script>
 
 <template>
-  <div class="h-screen w-full flex bg-surface-950 overflow-hidden relative">
+  <div class="h-full w-full flex bg-surface-950 overflow-hidden">
 
     <!-- LEFT PANEL: CHAT (Flexible width) -->
     <div

@@ -273,11 +273,11 @@ const navigation = computed(() => [
       </header>
 
       <!-- Main Content Routing Area -->
-      <main class="flex-1 overflow-y-auto w-full relative outline-none bg-surface-950" tabindex="0">
+      <main class="flex-1 overflow-hidden w-full relative outline-none bg-surface-950 min-h-0" tabindex="0">
         <!-- Optional: Background ambient glow for the whole app -->
         <div class="absolute top-0 right-0 w-[800px] h-[600px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none mix-blend-screen"></div>
         
-        <div class="w-full min-h-full">
+        <div class="w-full h-full relative">
             <router-view />
         </div>
       </main>

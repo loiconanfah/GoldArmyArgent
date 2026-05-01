@@ -206,7 +206,7 @@ function scrollTarget() {
 </script>
 
 <template>
-  <div class="relative min-h-full bg-surface-950 overflow-x-hidden">
+  <div class="relative h-full overflow-y-auto bg-surface-950 overflow-x-hidden">
 
     <!-- Tutorial overlay -->
     <Transition name="fade">
