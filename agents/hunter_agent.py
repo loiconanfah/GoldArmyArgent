@@ -23,7 +23,7 @@ class HunterAgent(BaseAgent):
         loc_lower = loc_lower.replace("califormie", "california").replace("californie", "california")
         
         # Sources de base (disponibles partout)
-        apis_to_use = ["jooble", "jsearch", "google_jobs", "findwork"]
+        apis_to_use = ["jooble", "jsearch", "google_jobs", "findwork", "theirstack"]
         
         # Sources spécifiques France / Europe
         if any(w in loc_lower for w in ["france", "paris", "lyon", "marseille", "bordeaux", "nantes", "lille", "europe", "suisse", "belgique", "uk", "london", "allemagne", "berlin", "espagne", "madrid", "italie", "rome"]):
@@ -97,6 +97,8 @@ class HunterAgent(BaseAgent):
                         tasks.append(self._search_google_jobs(kw, location, api_limit))
                     elif api == "emploi_cm":
                         tasks.append(self._search_emploi_cm(kw, location, api_limit))
+                    elif api == "theirstack" and settings.theirstack_api_key:
+                        tasks.append(self._search_theirstack(kw, location, api_limit))
                 
                 if not tasks:
                     return []
@@ -346,6 +348,18 @@ class HunterAgent(BaseAgent):
             return results
         except Exception as e:
             logger.error(f"Emploi.cm Error: {e}")
+            return []
+
+    async def _search_theirstack(self, kw, loc, limit):
+        """Recherche TheirStack (Greenhouse, Lever, Ashby, Workday, SmartRecruiters, etc.)."""
+        try:
+            from tools.theirstack_searcher import TheirStackSearcher
+            searcher = TheirStackSearcher(api_key=settings.theirstack_api_key)
+            results = await searcher.search_jobs(keywords=kw, location=loc, limit=limit)
+            logger.info(f"🏗️ TheirStack: {len(results)} offres pour '{kw}'")
+            return results
+        except Exception as e:
+            logger.error(f"TheirStack Error: {e}")
             return []
 
     async def enrich_jobs(self, jobs: List[Dict[str, Any]], limit: int = 25) -> List[Dict[str, Any]]:

@@ -38,8 +38,8 @@ class JudgeAgent(BaseAgent):
         
         chunks = [jobs[i:i + chunk_size] for i in range(0, len(jobs), chunk_size)]
         
-        # Traitement simultané : jusqu'à 30 appels Gemini en parallèle pour la vitesse
-        semaphore = asyncio.Semaphore(30)
+        # Semaphore réduit à 3 pour respecter le quota Gemini Flash (évite les 429)
+        semaphore = asyncio.Semaphore(3)
 
 
         async def _evaluate_with_semaphore(chunk, profile):
