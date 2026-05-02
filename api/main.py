@@ -39,14 +39,21 @@ app.include_router(auth_router)
 app.include_router(interview_router)
 app.include_router(notifications_router)
 
-# Enable CORS (allow_credentials=True exige des origines explicites, pas "*")
+# Enable CORS
 _cors_origins = [
+    # Dev local
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    # Production GoldArmy
+    "https://goldarmyai.com",
+    "https://www.goldarmyai.com",
+    "https://app.goldarmyai.com",
+    "https://goldarmyai.onrender.com",
+    "https://goldarmy.onrender.com",
 ]
-# En prod, ajouter l’origine du front (ex. https://ton-site.com) ou la lire depuis .env
+# Origines supplementaires via CORS_ORIGIN env var (virgule-separees)
 cors_env = os.getenv("CORS_ORIGIN", "")
 if cors_env:
     _cors_origins.extend([o.strip() for o in cors_env.split(",") if o.strip()])
@@ -54,11 +61,10 @@ if cors_env:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    # allow_origin_regex supprimé — il annulait la protection des origines explicites.
-    # Si un nouveau domaine doit être autorisé, l'ajouter dans CORS_ORIGIN (env var).
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 @app.middleware("http")
@@ -69,19 +75,15 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
     return response
 
-# --- GLOBAL EXCEPTION HANDLER (capture auto les vraies erreurs 500) ---
+# --- GLOBAL EXCEPTION HANDLER (capture les vraies erreurs 500 uniquement) ---
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException as FastAPIHTTPException
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-@app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """Gestion normale des HTTPException (4xx/5xx) — PAS de capture dans MongoDB."""
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
-    )
+# NOTE: On ne surcharge PAS StarletteHTTPException pour ne pas interférer
+# avec la gestion CORS du middleware (les OPTIONS 400 seraient cassés).
+# On laisse FastAPI gérer les HTTPException normalement.
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
