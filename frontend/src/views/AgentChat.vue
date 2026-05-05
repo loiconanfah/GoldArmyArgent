@@ -873,9 +873,11 @@ const restoreCvFromHistory = (entry) => {
                                <div class="absolute top-8 left-1/3 right-8 h-1.5 rounded-full opacity-20" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
                                <div class="absolute top-12 left-1/3 right-4 h-1 rounded-full opacity-10" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
                            </div>
-                           <div @click="openPreview(msg.content)" class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/10 backdrop-blur-[2px] cursor-pointer">
-                               <EyeIcon class="w-8 h-8 text-white" />
+                           <div @click="openPreview(msg.content)" class="absolute inset-0 flex items-center justify-center bg-slate-900/5 backdrop-blur-[1px] cursor-pointer hover:bg-slate-900/10 transition-all group/eye">
+                           <div class="w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center border border-slate-200 group-hover/eye:scale-110 transition-transform">
+                               <EyeIcon class="w-5 h-5 text-[#E85D3E]" />
                            </div>
+                      </div>
                       </div>
 
                       <!-- GRID -->
@@ -908,7 +910,7 @@ const restoreCvFromHistory = (entry) => {
                   <button
                     @click="downloadCvDocx(msg.content)"
                     :disabled="isDownloadingDocx"
-                    class="w-full group flex items-center justify-center gap-3 px-8 py-5 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-[#E85D3E] hover:to-gold-600 text-white rounded-[2rem] font-black transition-all duration-500 shadow-2xl shadow-slate-900/20 active:scale-[0.98] disabled:opacity-50"
+                    class="w-full group flex items-center justify-center gap-3 px-8 py-5 bg-gradient-to-r from-[#E85D3E] to-[#C44A2D] hover:from-[#C44A2D] hover:to-[#E85D3E] text-white rounded-[2rem] font-black transition-all duration-500 shadow-2xl shadow-[#E85D3E]/30 active:scale-[0.98] disabled:opacity-50"
                   >
                     <ArrowDownTrayIcon v-if="!isDownloadingDocx" class="w-6 h-6 transform group-hover:translate-y-1 transition-transform" />
                     <ArrowPathIcon v-else class="w-6 h-6 animate-spin" />
