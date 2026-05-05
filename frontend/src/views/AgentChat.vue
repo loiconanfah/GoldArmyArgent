@@ -491,13 +491,13 @@ const openInWorkspace = (msg) => {
 </script>
 
 <template>
-  <div class="h-full w-full flex bg-surface-950 overflow-hidden">
+  <div class="h-full w-full flex bg-[#F9FAFB] overflow-hidden">
 
     <!-- LEFT PANEL: CHAT (Flexible width) -->
     <div
       v-show="!isWorkspaceFullScreen"
       :class="[
-        'flex flex-col h-full border-r border-surface-800 transition-all duration-300',
+        'flex flex-col h-full border-r border-slate-200 transition-all duration-300',
         isWorkspaceOpen ? 'w-full md:w-1/3' : 'w-full',
       ]"
     >
@@ -506,14 +506,14 @@ const openInWorkspace = (msg) => {
     <!-- Header Minimal -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h2 class="text-2xl font-display font-black text-white tracking-tight">{{ t('agent_chat.title') }}</h2>
+        <h2 class="text-2xl font-display font-black text-slate-900 tracking-tight flex items-center gap-3"><div class="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center overflow-hidden shrink-0"><img src="/logo.png" class="w-6 h-6 object-contain" /></div> {{ t('agent_chat.title') }}</h2>
         <p class="text-slate-400 mt-1 text-sm font-medium">{{ t('agent_chat.tagline') }}</p>
       </div>
       
       <!-- Context Toggle Button -->
       <button 
         @click="openAuditFlow" 
-        :class="cvFilename ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-surface-800 text-slate-300 hover:text-white border-surface-700 hover:border-surface-600'" 
+        :class="cvFilename ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-white text-slate-300 hover:text-slate-900 border-slate-100 hover:border-slate-200'" 
         class="px-4 py-2 rounded-xl border flex items-center gap-2 transition-all shadow-sm text-sm font-bold"
       >
           <DocumentTextIcon class="w-4 h-4" />
@@ -531,12 +531,12 @@ const openInWorkspace = (msg) => {
         leave-from-class="transform scale-y-100 opacity-100"
         leave-to-class="transform scale-y-95 opacity-0"
     >
-        <div v-if="isUploading" class="mb-6 bg-surface-900 border border-surface-800 p-4 rounded-2xl shadow-sm relative z-10">
+        <div v-if="isUploading" class="mb-6 bg-white border border-slate-200 p-4 rounded-2xl shadow-sm relative z-10">
             <div class="flex justify-between items-center mb-3">
-                <h3 class="text-white font-bold text-sm tracking-wide flex items-center gap-2">
+                <h3 class="text-slate-900 font-bold text-sm tracking-wide flex items-center gap-2">
                     {{ t('agent_chat.cv_context') }}
                 </h3>
-                <button @click="isUploading = false" class="text-slate-500 hover:text-white text-xs font-bold uppercase tracking-wider">{{ t('common.close') || 'Fermer' }}</button>
+                <button @click="isUploading = false" class="text-slate-500 hover:text-slate-900 text-xs font-bold uppercase tracking-wider">{{ t('common.close') || 'Fermer' }}</button>
             </div>
 
             <!-- Uploaded state -->
@@ -549,7 +549,7 @@ const openInWorkspace = (msg) => {
             </div>
 
             <!-- Upload drop zone -->
-            <label v-else class="flex flex-col items-center justify-center gap-3 h-28 border-2 border-dashed border-surface-600 hover:border-emerald-500/60 rounded-xl cursor-pointer transition-all bg-surface-950/50 hover:bg-emerald-500/5 group">
+            <label v-else class="flex flex-col items-center justify-center gap-3 h-28 border-2 border-dashed border-slate-200 hover:border-emerald-500/60 rounded-xl cursor-pointer transition-all bg-[#F9FAFB]/50 hover:bg-emerald-500/5 group">
                 <input type="file" accept=".pdf" class="hidden" @change="uploadCvPdf" />
                 <ArrowUpTrayIcon v-if="!isUploadingCv" class="w-7 h-7 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                 <ArrowPathIcon v-else class="w-7 h-7 text-emerald-400 animate-spin" />
@@ -568,7 +568,7 @@ const openInWorkspace = (msg) => {
         :class="['flex w-full', msg.role === 'user' ? 'justify-end' : 'justify-start']"
       >
         <!-- User Bubble -->
-        <div v-if="msg.role === 'user'" class="max-w-[85%] md:max-w-[70%] bg-surface-800 text-white rounded-2xl p-5 shadow-sm border border-surface-700 font-medium">
+        <div v-if="msg.role === 'user'" class="max-w-[85%] md:max-w-[70%] bg-white text-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 font-medium">
              <div class="whitespace-pre-wrap leading-relaxed">{{ msg.content }}</div>
              <span class="block text-[10px] mt-2 opacity-40 text-right font-bold">{{ msg.timestamp }}</span>
         </div>
@@ -576,11 +576,11 @@ const openInWorkspace = (msg) => {
         <!-- Assistant Output Rendering -->
         <div v-if="msg.role === 'assistant'" class="flex gap-4 max-w-[95%] md:max-w-[85%]">
           <!-- Avatar -->
-          <div class="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-amber-600 flex items-center justify-center shadow-lg shadow-gold-500/20 text-sm mt-1">
+          <div class="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-[#E85D3E] to-[#C44A2D] flex items-center justify-center shadow-lg shadow-[#E85D3E]/20 text-sm mt-1">
              🪖
           </div>
           
-          <div class="flex-1 min-w-0 prose prose-invert prose-p:leading-relaxed prose-a:text-gold-400 hover:prose-a:text-gold-300 prose-strong:text-white prose-headings:text-white prose-pre:bg-surface-900 prose-pre:border prose-pre:border-surface-700 prose-pre:shadow-inner w-full">
+          <div class="flex-1 min-w-0 prose prose-slate prose-p:leading-relaxed prose-a:text-[#E85D3E] hover:prose-a:text-gold-300 prose-strong:text-slate-900 prose-headings:text-slate-900 prose-pre:bg-white prose-pre:border prose-pre:border-slate-100 prose-pre:shadow-inner w-full">
             
             <div v-if="msg.error" class="bg-rose-500/10 border border-rose-500/30 text-rose-200 p-4 rounded-2xl w-full">
                 {{ msg.content }}
@@ -590,10 +590,10 @@ const openInWorkspace = (msg) => {
             <div v-else-if="msg.is_audit_rewrite && msg.audit && typeof msg.audit === 'object'" class="w-full space-y-4">
 
               <!-- Header candidat -->
-              <div class="flex items-center gap-3 p-4 bg-surface-800/60 border border-surface-700 rounded-2xl">
+              <div class="flex items-center gap-3 p-4 bg-white/60 border border-slate-100 rounded-2xl">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg">🎯</div>
                 <div>
-                  <p class="font-bold text-white text-sm m-0">{{ msg.audit.candidate_name || t('agent_chat.audit.candidate') }}</p>
+                  <p class="font-bold text-slate-900 text-sm m-0">{{ msg.audit.candidate_name || t('agent_chat.audit.candidate') }}</p>
                   <p class="text-slate-400 text-xs m-0">{{ msg.audit.candidate_title || t('agent_chat.audit.title') }}</p>
                 </div>
                 <div class="ml-auto text-right">
@@ -605,7 +605,7 @@ const openInWorkspace = (msg) => {
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                 <!-- Score circulaire -->
-                <div class="p-5 bg-surface-800/60 border border-surface-700 rounded-2xl flex flex-col items-center justify-center gap-3">
+                <div class="p-5 bg-white/60 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-3">
                   <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ t('agent_chat.audit.global_score') }}</p>
                   <div class="relative w-32 h-32">
                     <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
@@ -646,7 +646,7 @@ const openInWorkspace = (msg) => {
                 </div>
 
                 <!-- Barres de scores par catégorie -->
-                <div class="p-5 bg-surface-800/60 border border-surface-700 rounded-2xl space-y-3">
+                <div class="p-5 bg-white/60 border border-slate-100 rounded-2xl space-y-3">
                   <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">{{ t('common.detail_by_category') || 'Détail par catégorie' }}</p>
                   <template v-if="msg.audit.scores">
                     <div v-for="(val, key) in {
@@ -730,8 +730,8 @@ const openInWorkspace = (msg) => {
                 <div v-if="msg.audit.correction_mapping && Object.keys(msg.audit.correction_mapping).length" class="space-y-3">
                    <div class="flex items-center justify-between mb-2">
                        <div class="flex items-center gap-2">
-                           <span class="p-1 bg-gold-500/20 rounded text-gold-400"><SparklesIcon class="w-4 h-4" /></span>
-                           <h4 class="text-sm font-black text-white uppercase tracking-wider m-0">{{ t('agent_chat.audit.transformations_impact') || 'Impact des Transformations' }}</h4>
+                           <span class="p-1 bg-[#E85D3E]/20 rounded text-[#E85D3E]"><SparklesIcon class="w-4 h-4" /></span>
+                           <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider m-0">{{ t('agent_chat.audit.transformations_impact') || 'Impact des Transformations' }}</h4>
                        </div>
                        <div v-if="msg.audit.original_failles" class="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-full">
                            God Mode Active
@@ -740,7 +740,7 @@ const openInWorkspace = (msg) => {
                    
                    <div class="grid grid-cols-1 gap-3">
                        <div v-for="(solution, flaw) in msg.audit.correction_mapping" :key="flaw" 
-                            class="group relative overflow-hidden bg-surface-900/40 border border-surface-800 rounded-2xl p-4 hover:border-gold-500/30 transition-all duration-300">
+                            class="group relative overflow-hidden bg-white/40 border border-slate-200 rounded-2xl p-4 hover:border-[#E85D3E]/30 transition-all duration-300">
                             
                             <!-- Progress line -->
                             <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-red-500 via-gold-500 to-emerald-500 opacity-20 group-hover:opacity-100 transition-opacity"></div>
@@ -761,7 +761,7 @@ const openInWorkspace = (msg) => {
                                     <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
                                         <CheckCircleIcon class="w-3 h-3" /> {{ t('agent_chat.audit.impact') || 'Impact' }}
                                     </div>
-                                    <p class="text-xs text-white font-bold leading-relaxed m-0">{{ solution }}</p>
+                                    <p class="text-xs text-slate-900 font-bold leading-relaxed m-0">{{ solution }}</p>
                                 </div>
                             </div>
                        </div>
@@ -769,11 +769,11 @@ const openInWorkspace = (msg) => {
                 </div>
  
                  <!-- Sélecteur de Thème avec Preview -->
-                 <div class="p-5 bg-surface-900/60 border border-surface-700 mb-4 rounded-2xl">
+                 <div class="p-5 bg-white/60 border border-slate-100 mb-4 rounded-2xl">
                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">{{ t('agent_chat.audit.choose_template') || 'Choisir un Modèle de CV' }}</p>
                    <div class="flex flex-col sm:flex-row gap-5">
                       <!-- Preview Miniature Dynamic -->
-                      <div class="w-full sm:w-28 h-36 bg-surface-800 rounded-xl border border-surface-600 overflow-hidden shrink-0 shadow-inner relative group">
+                      <div class="w-full sm:w-28 h-36 bg-white rounded-xl border border-slate-200 overflow-hidden shrink-0 shadow-inner relative group">
                           <div class="absolute inset-0 transition-all duration-300" :style="{ backgroundColor: (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) === '#ffffff' ? '#f8fafc' : (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) }">
                               <div class="absolute left-0 top-0 bottom-0 w-1/3 opacity-30" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
                               <div class="absolute top-4 left-1/3 right-2 h-2 rounded-full opacity-40" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
@@ -791,13 +791,13 @@ const openInWorkspace = (msg) => {
                               :class="[
                                   'p-2.5 rounded-xl border text-left flex flex-col transition-all duration-200 cursor-pointer',
                                   selectedTheme === theme.id
-                                      ? 'bg-gold-500/10 border-gold-500 shadow-md ring-1 ring-gold-500/50'
-                                      : 'bg-surface-800 border-surface-700 hover:border-surface-500 hover:bg-surface-700/80'
+                                      ? 'bg-[#E85D3E]/10 border-[#E85D3E] shadow-md ring-1 ring-gold-500/50'
+                                      : 'bg-white border-slate-100 hover:border-surface-500 hover:bg-surface-700/80'
                               ]"
                           >
                               <div class="flex items-center gap-2 mb-1.5">
-                                  <div class="w-3 h-3 rounded-full border border-surface-600 shadow-inner block shrink-0" :style="{ background: `linear-gradient(135deg, ${theme.colors[0]} 50%, ${theme.colors[1]} 50%)` }"></div>
-                                  <span :class="selectedTheme === theme.id ? 'text-gold-400 font-bold' : 'text-slate-300 font-semibold'" class="text-[11px] truncate block">{{ theme.name }}</span>
+                                  <div class="w-3 h-3 rounded-full border border-slate-200 shadow-inner block shrink-0" :style="{ background: `linear-gradient(135deg, ${theme.colors[0]} 50%, ${theme.colors[1]} 50%)` }"></div>
+                                  <span :class="selectedTheme === theme.id ? 'text-[#E85D3E] font-bold' : 'text-slate-300 font-semibold'" class="text-[11px] truncate block">{{ theme.name }}</span>
                               </div>
                               <span class="text-[9px] text-slate-500 truncate w-full block">{{ theme.description }}</span>
                           </button>
@@ -809,7 +809,7 @@ const openInWorkspace = (msg) => {
                <button
                  @click="downloadCvDocx(msg.content)"
                  :disabled="isDownloadingDocx"
-                 class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
+                 class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
                >
                  <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
                  <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
@@ -820,9 +820,9 @@ const openInWorkspace = (msg) => {
  
              <!-- Fallback audit si format non-structuré (chaîne texte) -->
              <div v-else-if="msg.is_audit_rewrite && msg.audit && typeof msg.audit === 'string'" class="space-y-4 w-full">
-               <div class="whitespace-pre-wrap text-slate-300 pb-4 border-b border-surface-700" v-html="msg.audit.replace(/\n/g, '<br/>')"></div>
+               <div class="whitespace-pre-wrap text-slate-300 pb-4 border-b border-slate-100" v-html="msg.audit.replace(/\n/g, '<br/>')"></div>
                <button @click="downloadCvDocx(msg.content)" :disabled="isDownloadingDocx"
-                 class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl font-bold transition-all">
+                 class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-indigo-500 hover:bg-indigo-400 text-slate-900 rounded-xl font-bold transition-all">
                  <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
                  <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
                  {{ isDownloadingDocx ? (t('common.generating') || 'Génération...') : t('agent_chat.audit.download_cv') }}
@@ -834,14 +834,14 @@ const openInWorkspace = (msg) => {
                <div class="flex items-center gap-3 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl">
                  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg">✍️</div>
                  <div>
-                   <p class="font-bold text-white text-sm m-0">{{ t('agent_chat.audit.rewrite_title') }}</p>
+                   <p class="font-bold text-slate-900 text-sm m-0">{{ t('agent_chat.audit.rewrite_title') }}</p>
                    <p class="text-slate-400 text-xs m-0">{{ t('agent_chat.audit.rewrite_desc') }}</p>
                  </div>
                </div>
                <button
                  @click="downloadCvDocx(msg.content)"
                  :disabled="isDownloadingDocx"
-                 class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
+                 class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
                >
                  <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
                  <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
@@ -864,15 +864,15 @@ const openInWorkspace = (msg) => {
       
       <!-- Typing Indicator & Analysis Steps -->
       <div v-if="isLoading" class="flex w-full justify-start gap-4 transition-all duration-500">
-         <div class="shrink-0 w-8 h-8 rounded-lg bg-surface-800 flex items-center justify-center border border-surface-700 text-sm mt-1 animate-pulse shadow-glow shadow-gold-500/10">
+         <div class="shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-slate-100 text-sm mt-1 animate-pulse shadow-glow shadow-gold-500/10">
              🤖
          </div>
          
          <!-- Loading CV Analysis Steps -->
-         <div v-if="cvText" class="w-full max-w-sm bg-surface-800/50 border border-surface-700/50 rounded-2xl p-4 shadow-sm backdrop-blur-sm">
+         <div v-if="cvText" class="w-full max-w-sm bg-white/50 border border-slate-100/50 rounded-2xl p-4 shadow-sm backdrop-blur-sm">
              <div class="flex items-center gap-2 mb-3">
-                 <SparklesIcon class="w-4 h-4 text-gold-400 animate-pulse" />
-                 <span class="text-xs font-bold text-gold-400 uppercase tracking-widest">{{ t('common.processing') || 'Traitement en cours' }}</span>
+                 <SparklesIcon class="w-4 h-4 text-[#E85D3E] animate-pulse" />
+                 <span class="text-xs font-bold text-[#E85D3E] uppercase tracking-widest">{{ t('common.processing') || 'Traitement en cours' }}</span>
              </div>
              <div class="space-y-3">
                  <div v-for="(stepText, index) in loadingStepsTexts" :key="index" 
@@ -882,7 +882,7 @@ const openInWorkspace = (msg) => {
                      <div v-if="loadingStep > index" class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
                          <CheckCircleIcon class="w-3.5 h-3.5 text-emerald-400" />
                      </div>
-                     <div v-else-if="loadingStep === index" class="w-5 h-5 rounded-full border-2 border-gold-500 border-t-transparent animate-spin shrink-0"></div>
+                     <div v-else-if="loadingStep === index" class="w-5 h-5 rounded-full border-2 border-[#E85D3E] border-t-transparent animate-spin shrink-0"></div>
                      
                      <span class="text-xs font-medium" :class="loadingStep > index ? 'text-slate-400 line-through' : 'text-slate-200'">
                          {{ stepText }}
@@ -893,24 +893,24 @@ const openInWorkspace = (msg) => {
          
          <!-- Standard Typing dots (if not CV) -->
          <div v-else class="py-2.5 flex items-center gap-1.5 opacity-50">
-            <div class="w-2 h-2 rounded-full bg-gold-500/50 animate-bounce" style="animation-delay: 0ms"></div>
-            <div class="w-2 h-2 rounded-full bg-gold-500/50 animate-bounce" style="animation-delay: 150ms"></div>
-            <div class="w-2 h-2 rounded-full bg-gold-500/50 animate-bounce" style="animation-delay: 300ms"></div>
+            <div class="w-2 h-2 rounded-full bg-[#E85D3E]/50 animate-bounce" style="animation-delay: 0ms"></div>
+            <div class="w-2 h-2 rounded-full bg-[#E85D3E]/50 animate-bounce" style="animation-delay: 150ms"></div>
+            <div class="w-2 h-2 rounded-full bg-[#E85D3E]/50 animate-bounce" style="animation-delay: 300ms"></div>
          </div>
       </div>
     </div>
 
       <!-- Input Bar (in-flow, not absolute) -->
-      <div class="shrink-0 pt-3 bg-surface-950/90 backdrop-blur-md">
-        <div class="bg-surface-900 border border-surface-700 p-2 rounded-2xl shadow-lg flex flex-col sm:flex-row items-end sm:items-center gap-2">
+      <div class="shrink-0 pt-3 bg-[#F9FAFB]/90 backdrop-blur-md">
+        <div class="bg-white border border-slate-100 p-2 rounded-2xl shadow-lg flex flex-col sm:flex-row items-end sm:items-center gap-2">
            <!-- Location Field -->
-           <div class="w-full sm:w-1/3 flex items-center gap-2 px-3 py-2 bg-surface-800 rounded-xl border border-surface-700">
+           <div class="w-full sm:w-1/3 flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-100">
                <span class="text-slate-400">📍</span>
-               <input v-model="inputLocation" type="text" :placeholder="t('agent_chat.placeholders.location')" class="w-full bg-transparent border-none focus:ring-0 text-white text-xs"/>
+               <input v-model="inputLocation" type="text" :placeholder="t('agent_chat.placeholders.location')" class="w-full bg-transparent border-none focus:ring-0 text-slate-900 text-xs"/>
            </div>
             <!-- Image Upload -->
             <div class="flex items-center px-2">
-                <label class="cursor-pointer p-2 hover:bg-surface-800 rounded-xl transition-colors text-slate-400 hover:text-gold-400 relative">
+                <label class="cursor-pointer p-2 hover:bg-white rounded-xl transition-colors text-slate-400 hover:text-[#E85D3E] relative">
                     <PhotoIcon class="w-5 h-5" />
                     <input type="file" accept="image/*" class="hidden" @change="e => {
                         const file = e.target.files[0];
@@ -925,9 +925,9 @@ const openInWorkspace = (msg) => {
                 </label>
             </div>
             <!-- Main Message -->
-            <textarea v-model="inputQuery" @keydown.enter.exact.prevent="sendMessage" class="w-full bg-transparent border-none focus:ring-0 text-white resize-none h-12 p-2 text-sm" :placeholder="t('agent_chat.placeholders.message')"></textarea>
+            <textarea v-model="inputQuery" @keydown.enter.exact.prevent="sendMessage" class="w-full bg-transparent border-none focus:ring-0 text-slate-900 resize-none h-12 p-2 text-sm" :placeholder="t('agent_chat.placeholders.message')"></textarea>
            <!-- Send Button -->
-           <button @click="sendMessage" :disabled="isLoading" class="p-3 bg-gold-500 hover:bg-gold-400 text-surface-950 rounded-xl font-bold shrink-0">
+           <button @click="sendMessage" :disabled="isLoading" class="p-3 bg-[#E85D3E] hover:bg-gold-400 text-surface-950 rounded-xl font-bold shrink-0">
               <PaperAirplaneIcon v-if="!isLoading" class="w-5 h-5" />
               <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
            </button>
@@ -939,16 +939,16 @@ const openInWorkspace = (msg) => {
     <!-- RIGHT PANEL: WORKSPACE (IDE Style) -->
     <div v-if="isWorkspaceOpen" class="flex-1 h-full bg-[#020617] flex flex-col shadow-2xl animate-fade-in">
         <!-- Explorer / Workspace Header (IDE Style) -->
-        <div class="flex items-center justify-between px-4 py-2 border-b border-surface-800 bg-surface-950">
+        <div class="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-[#F9FAFB]">
             <div class="flex items-center gap-4">
-                <div class="flex items-center gap-1.5 p-1 bg-surface-900 rounded-lg border border-surface-800">
-                    <button @click="activeWorkspaceTab = 'app'" :class="activeWorkspaceTab === 'app' ? 'bg-surface-700 text-white' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
+                <div class="flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200">
+                    <button @click="activeWorkspaceTab = 'app'" :class="activeWorkspaceTab === 'app' ? 'bg-surface-700 text-slate-900' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
                         <GlobeAltIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.app') }}
                     </button>
-                    <button @click="activeWorkspaceTab = 'code'" :class="activeWorkspaceTab === 'code' ? 'bg-surface-700 text-white' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
+                    <button @click="activeWorkspaceTab = 'code'" :class="activeWorkspaceTab === 'code' ? 'bg-surface-700 text-slate-900' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
                         <CodeBracketIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.code') }}
                     </button>
-                    <button @click="activeWorkspaceTab = 'terminal'" :class="activeWorkspaceTab === 'terminal' ? 'bg-surface-700 text-white' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
+                    <button @click="activeWorkspaceTab = 'terminal'" :class="activeWorkspaceTab === 'terminal' ? 'bg-surface-700 text-slate-900' : 'text-slate-500'" class="px-3 py-1 text-xs font-bold rounded flex items-center gap-1.5 transition-all">
                         <CommandLineIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.terminal') }}
                     </button>
                 </div>
@@ -959,20 +959,20 @@ const openInWorkspace = (msg) => {
             </div>
 
             <div class="flex items-center gap-2">
-                <button @click="saveWorkspaceProject" :disabled="isSaving" class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50">
+                <button @click="saveWorkspaceProject" :disabled="isSaving" class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-slate-900 text-xs font-bold rounded-lg transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50">
                     <CloudArrowDownIcon class="w-3.5 h-3.5" /> {{ isSaving ? t('agent_chat.workspace.saving') : t('agent_chat.workspace.save') }}
                 </button>
-                <div class="h-4 w-[1px] bg-surface-800 mx-1"></div>
-                <button @click="isWorkspaceFullScreen = !isWorkspaceFullScreen" class="p-2 text-slate-400 hover:text-white transition-colors">
+                <div class="h-4 w-[1px] bg-white mx-1"></div>
+                <button @click="isWorkspaceFullScreen = !isWorkspaceFullScreen" class="p-2 text-slate-400 hover:text-slate-900 transition-colors">
                     <ArrowsPointingOutIcon v-if="!isWorkspaceFullScreen" class="w-4 h-4" />
                     <ArrowsPointingInIcon v-else class="w-4 h-4" />
                 </button>
-                <button @click="downloadZip" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
+                <button @click="downloadZip" class="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 text-xs font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
                     <ArrowDownTrayIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.zip') }}
                 </button>
-                <button class="flex items-center gap-2 px-3 py-1.5 bg-surface-800 text-slate-500 text-xs font-bold rounded-lg transition-all border border-surface-700 cursor-not-allowed relative overflow-hidden group">
+                <button class="flex items-center gap-2 px-3 py-1.5 bg-white text-slate-500 text-xs font-bold rounded-lg transition-all border border-slate-100 cursor-not-allowed relative overflow-hidden group">
                     <CloudArrowUpIcon class="w-3.5 h-3.5" /> {{ t('agent_chat.workspace.deploy') }}
-                    <span class="absolute -top-1 -right-1 bg-amber-500 text-[8px] text-white px-1.5 py-0.5 rounded shadow-sm rotate-12 scale-90 group-hover:scale-100 transition-transform">{{ t('agent_chat.workspace.soon') }}</span>
+                    <span class="absolute -top-1 -right-1 bg-amber-500 text-[8px] text-slate-900 px-1.5 py-0.5 rounded shadow-sm rotate-12 scale-90 group-hover:scale-100 transition-transform">{{ t('agent_chat.workspace.soon') }}</span>
                 </button>
                 <button @click="isWorkspaceOpen = false" class="p-2 text-slate-500 hover:text-rose-400 transition-colors ml-2">
                     <XMarkIcon class="w-5 h-5" />
@@ -981,13 +981,13 @@ const openInWorkspace = (msg) => {
         </div>
 
         <!-- Address Bar (Browser-like) -->
-        <div v-if="activeWorkspaceTab === 'app'" class="flex items-center gap-4 px-4 py-2 bg-[#0a0f1d] border-b border-surface-800">
+        <div v-if="activeWorkspaceTab === 'app'" class="flex items-center gap-4 px-4 py-2 bg-[#0a0f1d] border-b border-slate-200">
             <div class="flex items-center gap-1 text-slate-500">
                 <ChevronLeftIcon class="w-4 h-4" />
                 <ChevronRightIcon class="w-4 h-4" />
                 <ArrowPathIcon class="w-3.5 h-3.5 ml-1" />
             </div>
-            <div class="flex-1 bg-surface-950 border border-surface-800 rounded-lg px-3 py-1.5 flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+            <div class="flex-1 bg-[#F9FAFB] border border-slate-200 rounded-lg px-3 py-1.5 flex items-center gap-2 text-[11px] text-slate-400 font-mono">
                 <span class="opacity-50">http://localhost:3000/</span>
             </div>
             <div class="text-slate-600 text-[10px] font-black uppercase tracking-widest">3000</div>
@@ -996,12 +996,12 @@ const openInWorkspace = (msg) => {
         <!-- Workspace Content Area -->
         <div class="flex-1 w-full overflow-hidden relative bg-white">
             <!-- LOADING STATE -->
-            <div v-if="isGeneratingPortfolio" class="absolute inset-0 z-50 bg-surface-950 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+            <div v-if="isGeneratingPortfolio" class="absolute inset-0 z-50 bg-[#F9FAFB] flex flex-col items-center justify-center p-8 text-center animate-fade-in">
                 <div class="relative mb-8">
                     <div class="w-24 h-24 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
                     <SparklesIcon class="w-8 h-8 text-indigo-400 absolute inset-0 m-auto animate-pulse" />
                 </div>
-                <h3 class="text-2xl font-display font-black text-white mb-3 tracking-tight">{{ t('agent_chat.workspace.generating_portfolio', ['Portfolio']) }}</h3>
+                <h3 class="text-2xl font-display font-black text-slate-900 mb-3 tracking-tight">{{ t('agent_chat.workspace.generating_portfolio', ['Portfolio']) }}</h3>
                 <p class="text-slate-400 text-sm max-w-sm leading-relaxed">
                     {{ t('agent_chat.workspace.generating_portfolio_desc') }}
                 </p>
@@ -1013,7 +1013,7 @@ const openInWorkspace = (msg) => {
             </div>
 
             <!-- APP PREVIEW (rendered via srcdoc - no backend endpoint needed) -->
-            <div v-if="activeWorkspaceTab === 'app' && !computedSrcdoc && !isGeneratingPortfolio" class="flex flex-col items-center justify-center h-full bg-surface-950 text-slate-500 gap-3">
+            <div v-if="activeWorkspaceTab === 'app' && !computedSrcdoc && !isGeneratingPortfolio" class="flex flex-col items-center justify-center h-full bg-[#F9FAFB] text-slate-500 gap-3">
                 <GlobeAltIcon class="w-10 h-10 opacity-30" />
                 <p class="text-sm font-medium">{{ t('agent_chat.workspace.no_preview') }}</p>
             </div>
@@ -1028,14 +1028,14 @@ const openInWorkspace = (msg) => {
             <!-- CODE EDITOR (Pre) -->
             <div v-else-if="activeWorkspaceTab === 'code'" class="h-full bg-[#0d1117] flex flex-col">
                 <!-- File Selector Tabs -->
-                <div class="flex items-center gap-1 p-2 bg-surface-950 border-b border-surface-800">
-                    <button @click="activeFileTab = 'html'" :class="activeFileTab === 'html' ? 'bg-surface-800 text-orange-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
+                <div class="flex items-center gap-1 p-2 bg-[#F9FAFB] border-b border-slate-200">
+                    <button @click="activeFileTab = 'html'" :class="activeFileTab === 'html' ? 'bg-white text-orange-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> index.html
                     </button>
-                    <button @click="activeFileTab = 'css'" :class="activeFileTab === 'css' ? 'bg-surface-800 text-blue-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
+                    <button @click="activeFileTab = 'css'" :class="activeFileTab === 'css' ? 'bg-white text-blue-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> style.css
                     </button>
-                    <button @click="activeFileTab = 'js'" :class="activeFileTab === 'js' ? 'bg-surface-800 text-yellow-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
+                    <button @click="activeFileTab = 'js'" :class="activeFileTab === 'js' ? 'bg-white text-yellow-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> script.js
                     </button>
                 </div>
@@ -1084,33 +1084,33 @@ const openInWorkspace = (msg) => {
         leave-to-class="opacity-0 translate-y-4 scale-95"
     >
         <div v-if="showAuditModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <div class="bg-surface-900 border border-surface-700 w-full max-w-md rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+            <div class="bg-white border border-slate-100 w-full max-w-md rounded-3xl p-8 shadow-2xl relative overflow-hidden">
                 <!-- Glossy overlay -->
                 <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none"></div>
                 
                 <div class="relative z-10 flex flex-col items-center text-center">
                     <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-6">
-                        <DocumentTextIcon class="w-8 h-8 text-white" />
+                        <DocumentTextIcon class="w-8 h-8 text-slate-900" />
                     </div>
-                    <h3 class="text-2xl font-black text-white mb-2 tracking-tight">{{ t('agent_chat.audit_modal.title') }}</h3>
+                    <h3 class="text-2xl font-black text-slate-900 mb-2 tracking-tight">{{ t('agent_chat.audit_modal.title') }}</h3>
                     <p class="text-slate-400 text-sm mb-8 leading-relaxed">{{ t('agent_chat.audit_modal.desc') }}</p>
                     
                     <div class="w-full space-y-3">
                         <button 
                             v-if="hasStoredCv"
                             @click="useStoredCv"
-                            class="group w-full flex items-center justify-between p-4 bg-surface-800 hover:bg-surface-700 border border-surface-700 hover:border-indigo-500/50 rounded-2xl transition-all"
+                            class="group w-full flex items-center justify-between p-4 bg-white hover:bg-surface-700 border border-slate-100 hover:border-indigo-500/50 rounded-2xl transition-all"
                         >
                             <div class="text-left">
-                                <p class="font-bold text-white text-sm m-0">{{ t('agent_chat.audit_modal.use_stored') }}</p>
+                                <p class="font-bold text-slate-900 text-sm m-0">{{ t('agent_chat.audit_modal.use_stored') }}</p>
                                 <p class="text-slate-500 text-[10px] m-0">{{ t('agent_chat.audit_modal.recommended') }}</p>
                             </div>
-                            <div class="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase tracking-widest rounded-full border border-indigo-500/30 group-hover:bg-indigo-500 group-hover:text-white transition-colors">VIP</div>
+                            <div class="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase tracking-widest rounded-full border border-indigo-500/30 group-hover:bg-indigo-500 group-hover:text-slate-900 transition-colors">VIP</div>
                         </button>
                         
                         <button 
                             @click="() => { showAuditModal = false; isUploading = true; }"
-                            class="w-full flex items-center justify-between p-4 bg-surface-800/40 hover:bg-surface-800 border border-surface-800 hover:border-surface-600 rounded-2xl transition-all"
+                            class="w-full flex items-center justify-between p-4 bg-white/40 hover:bg-white border border-slate-200 hover:border-slate-200 rounded-2xl transition-all"
                         >
                             <div class="text-left">
                                 <p class="font-bold text-slate-300 text-sm m-0">{{ t('agent_chat.audit_modal.upload_new') }}</p>
@@ -1120,7 +1120,7 @@ const openInWorkspace = (msg) => {
                         </button>
                     </div>
                     
-                    <button @click="showAuditModal = false" class="mt-8 text-slate-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors">{{ t('common.cancel') }}</button>
+                    <button @click="showAuditModal = false" class="mt-8 text-slate-500 hover:text-slate-900 text-xs font-bold uppercase tracking-widest transition-colors">{{ t('common.cancel') }}</button>
                 </div>
             </div>
         </div>
@@ -1153,7 +1153,7 @@ const openInWorkspace = (msg) => {
   }
 
   /* Message input bar: location field goes full-width */
-  .bg-surface-900.border.border-surface-700.p-2.rounded-2xl.shadow-lg {
+  .bg-white.border.border-slate-100.p-2.rounded-2xl.shadow-lg {
     flex-direction: column;
   }
   .w-full.sm\\:w-1\/3 {
