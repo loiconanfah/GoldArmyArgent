@@ -80,18 +80,22 @@ class ProfileAgent(BaseAgent):
 
 
     async def _generate_search_strategy(self, query: str, profile: Dict[str, Any]) -> Dict[str, Any]:
-        """Génère des variations de mots-clés et des termes à exclure."""
+        """Génère des variations de mots-clés STRICTEMENT ancrées sur la query utilisateur."""
         prompt = f"""
-        Analyse cette recherche d'emploi et génère une stratégie de recherche optimale.
-        RECHERCHE: "{query}"
-        PROFIL CIBLE: {profile.get('target_roles')}
-        
-        CONSIGNES:
-        1. NE génère PAS de verbes d'action. Génère des TITRES DE POSTE précis (ex: "Développeur Logiciel", "Ingénieur Etudes et Développement").
-        2. Liste 10 termes à EXCLURE pour éviter le bruit (ex: commercial, marketing, hse, dessinateur, projeteur, maintenance, support client, rh, recruteur, comptable).
-        3. Assure-toi d'inclure des termes anglais équivalents.
-        
-        RETOURNE UNIQUEMENT DU JSON:
+        L'utilisateur cherche des offres d'emploi. Génère une stratégie de recherche.
+
+        REQUÊTE UTILISATEUR (PRIORITÉ ABSOLUE): "{query}"
+        Profil CV (contexte seulement, NE PAS remplacer la requête): {profile.get('target_roles', [])}
+
+        RÈGLES STRICTES:
+        1. Tous les mots-clés générés DOIVENT être des variantes du métier "{query}". 
+           Par exemple si query="préposé", génère: "Préposé aux bénéficiaires", "Agent de service", "Aide-soignant", etc.
+           NE JAMAIS générer des métiers non liés à "{query}".
+        2. Génère des TITRES DE POSTE précis (pas de verbes).
+        3. Inclure des variantes françaises ET anglaises proches du métier "{query}".
+        4. Liste 8 termes à EXCLURE qui seraient du bruit pour cette recherche spécifique.
+
+        RETOURNE UNIQUEMENT DU JSON valide:
         {{
           "keywords": ["Titre Poste 1", "Titre Poste 2", "Titre Poste 3"],
           "exclude": ["excl1", "excl2", ...]

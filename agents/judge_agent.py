@@ -78,37 +78,40 @@ class JudgeAgent(BaseAgent):
             job_list_text += f"ID: {i}\nTITRE: {job.get('title')}\nENTREPRISE: {job.get('company')}\nLOC: {job.get('location')}\nDESC: {job.get('description')[:500]}...\n---\n"
 
         target_job_type = profile.get("target_job_type") or profile.get("target_level") or "emploi"
-        search_query = (profile.get("search_query") or "").strip().lower()
+        search_query = (profile.get("search_query") or "").strip()
+        search_query_lower = search_query.lower()
         target_loc = (profile.get("target_location") or "").lower()
         is_quebec = "quebec" in target_loc or "québec" in target_loc or "montreal" in target_loc or "qc" in target_loc
-        is_dev_search = any(w in search_query for w in ["dev", "developpeur", "developer", "logiciel", "software", "programmation", "programming", "informatique", "web", "frontend", "backend"])
 
-        prompt = f"""Tu es un Judge recrutement. Note chaque offre sur 100. APPLIQUE D'ABORD LES 3 RÈGLES ÉLIMINATOIRES (score 0 obligatoire), puis score le reste.
+        prompt = f"""Tu es un expert en recrutement. Note chaque offre d'emploi sur 100 en fonction de sa pertinence pour la recherche de l'utilisateur.
 
-=== RÈGLES ÉLIMINATOIRES (score 0 SANS EXCEPTION) ===
-A) LOCALISATION CIBLE = QUÉBEC/Montreal/QC : Si le champ LOC de l'offre est exactement "Canada" (sans Québec, QC, Montreal, ou ville québécoise) → score 0. L'utilisateur veut le Québec, pas le Canada entier.
-B) RÔLE : Si la recherche ou le profil vise DÉVELOPPEMENT LOGICIEL / SOFTWARE (dev, programmation, software) : offres en mécanique, formation/RH, relations industrielles, génie manufacturier, "Controls Engineering" (sans software), maintenance, logistique → score 0.
-C) TYPE CONTRAT (PRIORITAIRE) :
-   - Si l'utilisateur cherche un STAGE : l'offre DOIT être explicitement un stage/intern (TITRE ou DESC contient stage, intern, stagiaire, internship). Sinon → score 0. Les offres CDI, permanent, full-time sans "stage/intern/stagiaire" = 0.
-   - Si l'utilisateur cherche un EMPLOI (CDI) : les offres uniquement "Stage" ou "Intern" sans poste permanent = 0.
+=== RECHERCHE DE L'UTILISATEUR ===
+- Métier recherché (PRIORITÉ ABSOLUE): "{search_query}"
+- Localisation cible : "{profile.get('target_location', 'Non spécifié')}"
+- Type de contrat : {target_job_type.upper()}
+- Rôles du CV (contexte secondaire seulement) : {profile.get('target_roles', [])}
 
-=== BON SCORE (70-100) ===
-- Offre AU QUÉBEC (LOC contient Québec, QC, Montreal ou ville du Québec) ET métier = développement logiciel / software / programmation → score 70 à 100 selon adéquation.
-- Description vide mais TITRE = dev/programmation et LOC = Québec → minimum 70.
+=== RÈGLES DE NOTATION ===
+1. PERTINENCE DU MÉTIER (critère principal, 0-60 pts) :
+   - L'offre correspond directement au métier "{search_query}" → 50-60 pts
+   - L'offre est proche/similaire → 30-49 pts
+   - L'offre n'a AUCUN rapport avec "{search_query}" → 0 pts IMMÉDIATEMENT
+   
+2. LOCALISATION (0-25 pts) :
+   - Localisation correspond exactement → 25 pts
+   - Région proche / remote → 15 pts
+   - Autre pays/région → 5 pts
+   - {"Offre marquée 'Canada' sans province québécoise précise → 0 pts" if is_quebec else "Localisation non précisée → 10 pts"}
 
-=== PROFIL & RECHERCHE ===
-- Recherche utilisateur (mots-clés) : "{search_query or 'non fourni'}"
-- Localisation cible : "{profile.get('target_location')}"
-- Type contrat recherché : {target_job_type.upper()} — Si STAGE : ne garder QUE les offres dont le titre ou la description indique clairement stage/intern/stagiaire/internship.
-- Rôles visés : {profile.get('target_roles')}
-- Compétences : {profile.get('skills')}
+3. TYPE DE CONTRAT (0-15 pts) :
+   - {"Offre = stage/intern/stagiaire → 15 pts. Offre permanente sans 'stage' → 0 pts" if "stage" in target_job_type.lower() else "Offre permanente/CDI → 15 pts. Offre uniquement stage → 0 pts"}
 
-=== OFFRES (ID = index 0 à N-1) ===
+=== OFFRES À NOTER (ID = index 0 à N-1) ===
 {job_list_text}
 
-=== RÉPONSE (JSON uniquement, un objet par offre) ===
-[{{"id": 0, "score": 85, "reason": "..."}}, {{"id": 1, "score": 0, "reason": "..."}}, ...]
-Exactement un objet par offre. Pas d'oubli."""
+=== RÉPONSE JSON UNIQUEMENT ===
+[{{"id": 0, "score": 85, "reason": "Correspond bien à {search_query}..."}}, {{"id": 1, "score": 0, "reason": "Métier sans rapport avec {search_query}"}}, ...]
+Exactement un objet par offre. Scores de 0 à 100."""
         
         try:
             resp = await self.generate_response(prompt, json_mode=True, model=model)
@@ -133,14 +136,12 @@ Exactement un objet par offre. Pas d'oubli."""
                     jobs[idx]["match_score"] = s.get("score", 0)
                     jobs[idx]["match_justification"] = s.get("reason", "")
 
-            # Filet de sécurité : forcer 0 si le LLM a laissé passer des offres non conformes
+            # Filet de sécurité universel : règles strictes indépendantes du métier recherché
             target_loc = (profile.get("target_location") or "").lower()
             search_q = (profile.get("search_query") or "").lower()
             job_type = (profile.get("target_job_type") or profile.get("target_level") or "emploi").lower()
             user_wants_stage = job_type == "stage" or any(w in search_q for w in ["stage", "intern", "stagiaire", "internship"])
             is_quebec_target = any(x in target_loc for x in ["quebec", "québec", "montreal", ", qc"])
-            is_dev_search = any(w in search_q for w in ["dev", "developpeur", "developer", "logiciel", "software", "programmation", "programming"])
-            non_dev_keywords = ["mécanique", "mechanic", "formation", "rh", "relations industrielles", "manufacturing engineering", "controls engineering", "ordnance", "maintenance "]
             stage_intern_keywords = ["stage", "intern", "stagiaire", "internship"]
 
             for job in jobs:
@@ -150,13 +151,12 @@ Exactement un objet par offre. Pas d'oubli."""
                 job_type_field = (job.get("job_type") or "").lower()
                 text = f"{title} {desc} {job_type_field}"
 
-                if is_quebec_target and loc == "canada" and "quebec" not in loc and "qc" not in loc and "montreal" not in loc:
+                # Règle 1 : Québec ciblé → forcer 0 si localisation = "Canada" seul sans province québécoise
+                if is_quebec_target and loc.strip() == "canada":
                     job["match_score"] = 0
-                    job["match_justification"] = "Localisation « Canada » seule : hors Québec."
-                if is_dev_search and any(kw in title or kw in desc for kw in non_dev_keywords):
-                    job["match_score"] = 0
-                    job["match_justification"] = (job.get("match_justification") or "") + " [Hors dev: mécanique/formation/manufacturing.]"
-                # Utilisateur veut un STAGE : l'offre doit être clairement un stage/intern, sinon 0
+                    job["match_justification"] = "Localisation « Canada » seule sans province québécoise."
+
+                # Règle 2 : Stage ciblé → l'offre DOIT être un stage/intern
                 if user_wants_stage and job.get("match_score", 0) > 0:
                     if not any(kw in text for kw in stage_intern_keywords):
                         job["match_score"] = 0

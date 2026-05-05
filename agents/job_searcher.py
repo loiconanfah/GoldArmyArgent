@@ -121,10 +121,14 @@ class JobSearchAgent(BaseAgent):
         profiler = ProfileAgent()
         await profiler.initialize()
         
+        # BUG FIX: Use cv_text from the task dict if the parameter is not provided
+        resolved_cv_text = cv_text or task.get("cv_text") or None
+        raw_query = task.get("query", "")
+
         # Le ProfileAgent extrait le profil et prépare les mots-clés
         analysis_task = {
-            "cv_text": cv_text,
-            "query": task.get("query", ""),
+            "cv_text": resolved_cv_text,
+            "query": raw_query,
             "location": task.get("location", "")
         }
         
@@ -133,12 +137,25 @@ class JobSearchAgent(BaseAgent):
         explicit_location = task.get("location", "")
         # Normalisation obligatoire pour éviter les ambiguïtés (ex: Paris, TX)
         base_location = self._normalize_location(explicit_location)
+
+        # BUG FIX: The user's explicit query MUST anchor the search.
+        # If the LLM-generated keywords don't contain the query's key term,
+        # prepend it to avoid the CV profile hijacking the search intent.
+        generated_keywords = profile_data.get("keywords_list", [raw_query])
+        query_lower = raw_query.lower().strip()
+        # Check if any generated keyword contains the main query term
+        query_anchor = raw_query.split()[0].lower() if raw_query.split() else ""
+        has_query_anchor = any(query_anchor in kw.lower() for kw in generated_keywords) if query_anchor else True
+        if not has_query_anchor and raw_query:
+            # The CV profile has overridden the query intent — fix by prepending the raw query
+            logger.warning(f"⚠️ Keywords bias detected! Query '{raw_query}' not in {generated_keywords}. Anchoring to user query.")
+            generated_keywords = [raw_query] + generated_keywords[:4]  # Raw query first, limit to 5 total
         
         action_plan = {
             "task_id": task.get("id", "unknown"),
-            "query": task.get("query", ""),
+            "query": raw_query,
             "criteria": {
-                "keywords_list": profile_data.get("keywords_list", [task.get("query")]),
+                "keywords_list": generated_keywords,
                 "exclude_list": profile_data.get("exclude_list", []),
                 "location": base_location,
                 "job_type": profile_data.get("job_type", "emploi")
@@ -148,6 +165,7 @@ class JobSearchAgent(BaseAgent):
         }
         
         logger.info(f"✅ Orchestration prête: {len(action_plan['criteria']['keywords_list'])} variations pour {base_location}")
+        logger.info(f"🔑 Keywords finaux: {action_plan['criteria']['keywords_list']}")
         return action_plan
 
     async def act(self, action_plan: Dict[str, Any]) -> Dict[str, Any]:
@@ -160,7 +178,11 @@ class JobSearchAgent(BaseAgent):
 
         # --- CACHE CHECK ---
         criteria = action_plan.get("criteria", {})
+        # BUG FIX: Include the raw user query in the cache key so that
+        # "préposé" and "développeur" NEVER share a cached result.
+        raw_query = action_plan.get("query", "")
         cache_key = cache.make_key(
+            raw_query,
             "|".join(sorted(criteria.get("keywords_list", []))),
             criteria.get("location", ""),
             criteria.get("job_type", "emploi")
@@ -194,7 +216,7 @@ class JobSearchAgent(BaseAgent):
         
         cv_profile = action_plan.get("cv_profile", {})
         criteria_loc = action_plan.get("criteria", {})
-        cv_profile["target_location"] = criteria_loc.get("location", "Paris, France")
+        cv_profile["target_location"] = criteria_loc.get("location", "Montreal, QC, Canada")  # BUG FIX: was hardcoded "Paris, France"
         cv_profile["target_job_type"] = criteria_loc.get("job_type", "emploi")
         cv_profile["search_query"] = action_plan.get("query", "")
         

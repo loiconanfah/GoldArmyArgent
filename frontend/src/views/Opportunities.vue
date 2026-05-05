@@ -155,11 +155,25 @@ const parseMarkdownJobs = (mdText) => {
     return parsedJobs
 }
 
+const clearCv = () => {
+    cvText.value = ''
+    selectedFileName.value = ''
+    toastState.addToast('CV effacé du contexte de recherche.', 'info')
+}
+
 const performSearch = async () => {
     if (!searchQuery.value.trim()) return
     
     isLoading.value = true
     jobs.value = [] // Clear previous results
+    
+    // DEBUG: Log what's sent to the API to track query/CV context issues
+    console.log('[GoldArmy Search] Payload:', {
+        message: searchQuery.value,
+        cv_text: cvText.value ? `[CV présent: ${cvText.value.length} chars]` : '[Aucun CV]',
+        nb_results: resultLimit.value,
+        location: inputLocation.value
+    })
     
     try {
         const res = await authFetch('/api/chat', {
@@ -204,6 +218,8 @@ const performSearch = async () => {
              desc: job.description || job.snippet || t('opportunities.no_desc') || 'Aucune description fournie.',
              rawUrl: job.url || ''
         }))
+        
+        console.log(`[GoldArmy Search] ${jobs.value.length} offres reçues.`)
         
     } catch(e) {
         toastState.addToast(t('opportunities.search_error') || "Erreur de connexion avec le Serveur de Recherche GoldArmy.", "error")
@@ -549,6 +565,14 @@ const addToCrmAndApply = async (job) => {
                                 <p class="text-slate-900 font-bold text-lg">{{ selectedFileName }}</p>
                                 <p class="text-slate-400 text-sm mt-1">{{ t('opportunities.cv_ready_desc') }}</p>
                             </div>
+                            <!-- Clear CV button -->
+                            <button
+                                @click.stop="clearCv"
+                                class="mt-2 flex items-center gap-1.5 text-xs text-rose-500 hover:text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-full transition-all font-semibold"
+                            >
+                                <XMarkIcon class="w-3.5 h-3.5" />
+                                Effacer le CV du contexte
+                            </button>
                         </div>
                         <div v-else class="flex flex-col items-center">
                             <div class="p-5 bg-surface-800 rounded-full group-hover:bg-gold-500/10 mb-4 transition-colors ring-1 ring-surface-700 group-hover:ring-gold-500/30">
