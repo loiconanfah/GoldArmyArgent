@@ -79,39 +79,52 @@ class JudgeAgent(BaseAgent):
 
         target_job_type = profile.get("target_job_type") or profile.get("target_level") or "emploi"
         search_query = (profile.get("search_query") or "").strip()
-        search_query_lower = search_query.lower()
         target_loc = (profile.get("target_location") or "").lower()
-        is_quebec = "quebec" in target_loc or "québec" in target_loc or "montreal" in target_loc or "qc" in target_loc
+        is_quebec = "quebec" in target_loc or "qu\u00e9bec" in target_loc or "montreal" in target_loc or "qc" in target_loc
 
-        prompt = f"""Tu es un expert en recrutement. Note chaque offre d'emploi sur 100 en fonction de sa pertinence pour la recherche de l'utilisateur.
+        # CV profile — used for real skills matching when available
+        cv_skills = profile.get("skills") or []
+        cv_roles = profile.get("target_roles") or []
+        cv_experience = profile.get("experience_years") or 0
+        has_cv = bool(cv_skills or cv_roles)
+
+        if has_cv:
+            cv_section = f"""\n=== PROFIL CV DE L'UTILISATEUR ===\n- Comp\u00e9tences cl\u00e9s : {cv_skills[:15]}\n- Exp\u00e9rience : {cv_experience} ans\n- R\u00f4les dans le CV : {cv_roles}"""
+            skills_rule = f"""2. CORRESPONDANCE CV / OFFRE (0-25 pts) :\n   - Les comp\u00e9tences du CV ({cv_skills[:5]}) correspondent aux exigences de l'offre \u2192 20-25 pts\n   - Correspondance partielle \u2192 10-19 pts\n   - Aucune correspondance \u2192 0-9 pts\n   - Description vide \u2192 12 pts (neutre)"""
+        else:
+            cv_section = "\n=== PROFIL CV === Non fourni \u2014 noter sans crit\u00e8re comp\u00e9tences."
+            skills_rule = "2. CORRESPONDANCE CV (0-25 pts) : CV non fourni \u2192 attribuer 12 pts par d\u00e9faut."
+
+        prompt = f"""Tu es un recruteur expert. Note chaque offre d'emploi sur 100 selon 4 crit\u00e8res.
+{cv_section}
 
 === RECHERCHE DE L'UTILISATEUR ===
-- Métier recherché (PRIORITÉ ABSOLUE): "{search_query}"
-- Localisation cible : "{profile.get('target_location', 'Non spécifié')}"
+- M\u00e9tier recherch\u00e9 (CRI\u00c8RE PRINCIPAL) : \"{search_query}\"
+- Localisation cible : \"{profile.get('target_location', 'Non sp\u00e9cifi\u00e9')}\"
 - Type de contrat : {target_job_type.upper()}
-- Rôles du CV (contexte secondaire seulement) : {profile.get('target_roles', [])}
 
-=== RÈGLES DE NOTATION ===
-1. PERTINENCE DU MÉTIER (critère principal, 0-60 pts) :
-   - L'offre correspond directement au métier "{search_query}" → 50-60 pts
-   - L'offre est proche/similaire → 30-49 pts
-   - L'offre n'a AUCUN rapport avec "{search_query}" → 0 pts IMMÉDIATEMENT
-   
-2. LOCALISATION (0-25 pts) :
-   - Localisation correspond exactement → 25 pts
-   - Région proche / remote → 15 pts
-   - Autre pays/région → 5 pts
-   - {"Offre marquée 'Canada' sans province québécoise précise → 0 pts" if is_quebec else "Localisation non précisée → 10 pts"}
+=== GRILLE DE NOTATION (total = 100 pts) ===
+1. PERTINENCE DU M\u00c9TIER (0-50 pts) \u2014 \u00c9LIMINATOIRE :
+   - L'offre correspond directement au m\u00e9tier \"{search_query}\" \u2192 40-50 pts
+   - L'offre est proche/similaire \u2192 20-39 pts
+   - L'offre n'a AUCUN rapport avec \"{search_query}\" \u2192 0 pts (stop, ignorer les autres crit\u00e8res)
 
-3. TYPE DE CONTRAT (0-15 pts) :
-   - {"Offre = stage/intern/stagiaire → 15 pts. Offre permanente sans 'stage' → 0 pts" if "stage" in target_job_type.lower() else "Offre permanente/CDI → 15 pts. Offre uniquement stage → 0 pts"}
+{skills_rule}
 
-=== OFFRES À NOTER (ID = index 0 à N-1) ===
+3. LOCALISATION (0-15 pts) :
+   - Correspond exactement \u2192 15 pts
+   - R\u00e9gion proche ou remote \u2192 10 pts
+   - {"Offre 'Canada' seule sans province qu\u00e9b\u00e9coise \u2192 0 pts" if is_quebec else "Autre r\u00e9gion \u2192 5 pts"}
+
+4. TYPE DE CONTRAT (0-10 pts) :
+   - {"Stage/intern clairement indiqu\u00e9 \u2192 10 pts. Offre permanente \u2192 0 pts" if "stage" in target_job_type.lower() else "Offre permanente/CDI \u2192 10 pts. Stage uniquement \u2192 0 pts"}
+
+=== OFFRES \u00c0 NOTER (ID = index 0 \u00e0 N-1) ===
 {job_list_text}
 
-=== RÉPONSE JSON UNIQUEMENT ===
-[{{"id": 0, "score": 85, "reason": "Correspond bien à {search_query}..."}}, {{"id": 1, "score": 0, "reason": "Métier sans rapport avec {search_query}"}}, ...]
-Exactement un objet par offre. Scores de 0 à 100."""
+=== R\u00c9PONSE JSON UNIQUEMENT ===
+[{{\"id\": 0, \"score\": 82, \"reason\": \"Correspond bien \u00e0 {search_query}. Comp\u00e9tences CV align\u00e9es. Montr\u00e9al \u2713\"}}, ...]
+Un objet par offre. Scores 0-100."""
         
         try:
             resp = await self.generate_response(prompt, json_mode=True, model=model)
