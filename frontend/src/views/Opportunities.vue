@@ -768,7 +768,8 @@ const addToCrmAndApply = async (job) => {
 
 <style scoped>
 
-.db-root { 
+.db-root {
+  padding: 2rem; 
     padding: 2rem; 
     max-width: 1500px; 
     margin: 0 auto; 
@@ -781,6 +782,7 @@ const addToCrmAndApply = async (job) => {
 }
 
 .db-header {
+    flex-direction: row;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -857,4 +859,5 @@ const addToCrmAndApply = async (job) => {
   to { transform: scale(1); opacity: 1; }
 }
 </style>
+
 

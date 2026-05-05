@@ -132,7 +132,7 @@ const stopLoadingAnimation = () => {
 }
 
 onMounted(async () => {
-  // 1. Charger le profil utilisateur en priorité
+    // 1. Charger le profil utilisateur en priorité
   try {
       const res = await authFetch('/api/profile')
       if (res.ok) {
