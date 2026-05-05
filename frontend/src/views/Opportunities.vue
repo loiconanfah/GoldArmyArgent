@@ -574,17 +574,17 @@ const addToCrmAndApply = async (job) => {
                 <span class="text-2xl">🪖</span>
             </div>
         </div>
-        <h3 class="text-2xl font-display font-bold text-white mb-3 tracking-tight">{{ t('opportunities.analyzing_market') }}</h3>
+        <h3 class="text-2xl font-display font-bold text-slate-900 mb-3 tracking-tight">{{ t('opportunities.analyzing_market') }}</h3>
         <p class="text-slate-400 text-center max-w-md text-sm leading-relaxed">
             {{ t('opportunities.analyzing_market_desc') }}
         </p>
     </div>
     
-    <div v-else-if="jobs.length === 0 && !isLoading" class="flex flex-col items-center justify-center py-24 bg-surface-900/50 rounded-[2rem] border-dashed border-2 border-slate-100">
-        <div class="p-6 bg-surface-800 rounded-full mb-6 ring-1 ring-surface-700">
+    <div v-else-if="jobs.length === 0 && !isLoading" class="flex flex-col items-center justify-center py-24 bg-white rounded-[2rem] border-dashed border-2 border-slate-200">
+        <div class="p-6 bg-slate-50 rounded-full mb-6 ring-1 ring-slate-100">
             <BriefcaseIcon class="w-12 h-12 text-slate-500" />
         </div>
-        <h3 class="text-2xl font-display font-bold text-white mb-2 tracking-tight">{{ t('opportunities.no_opportunities') }}</h3>
+        <h3 class="text-2xl font-display font-bold text-slate-900 mb-2 tracking-tight">{{ t('opportunities.no_opportunities') }}</h3>
         <p class="text-slate-500 text-center">{{ t('opportunities.no_opportunities_desc') }}</p>
     </div>
 
@@ -593,7 +593,7 @@ const addToCrmAndApply = async (job) => {
        <div 
          v-for="(job, index) in filteredJobs" 
          :key="job.id"
-         class="relative bg-surface-900 border border-slate-100 p-6 rounded-3xl transition-all hover:border-surface-600 shadow-xl shadow-black/20 group flex flex-col justify-between overflow-hidden"
+         class="relative bg-white border border-slate-200 p-6 rounded-3xl transition-all hover:border-[#E85D3E] hover:shadow-md group flex flex-col justify-between overflow-hidden"
          :style="`animation-delay: ${index * 50}ms`"
          style="animation: fadeInUp 0.5s ease-out forwards; opacity: 0;"
        >
@@ -657,7 +657,7 @@ const addToCrmAndApply = async (job) => {
              <button 
                 v-if="job.rawUrl" 
                 @click="addToCrmAndApply(job)"
-                class="flex-1 flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95 outline-none">
+                class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-emerald-600/20 active:scale-95 outline-none">
                 {{ t('opportunities.apply') }}
              </button>
              <button disabled class="flex-1 bg-surface-800 text-slate-500 px-4 py-3.5 rounded-xl font-bold text-sm cursor-not-allowed" v-else>
