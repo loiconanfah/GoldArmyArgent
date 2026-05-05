@@ -17,6 +17,7 @@ import sys
 import socket
 import time
 import zipfile
+import datetime
 
 from agents.orchestrator import OrchestratorAgent
 
@@ -70,6 +71,14 @@ app.add_middleware(
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
+    # Security Headers to prevent Clickjacking and other attacks
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    # Content Security Policy (Basic)
+    # Allows frames only from same origin to prevent Clickjacking
+    response.headers["Content-Security-Policy"] = "frame-ancestors 'self'"
+    
     # Fix for Google Auth COOP issues in console
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
     response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
@@ -239,6 +248,22 @@ class SupportMessageRequest(BaseModel):
     email: str
     subject: str
     message: str
+
+class BroadcastRequest(BaseModel):
+    title: str
+    message: str
+    type: str = "info"
+    action_url: Optional[str] = None
+
+class EmailAdminRequest(BaseModel):
+    to_email: Optional[str] = None # If None, it's a broadcast
+    subject: str
+    content: str
+
+class TrackEventRequest(BaseModel):
+    event_name: str
+    page_url: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 @app.post("/api/users/push-token")
 async def register_push_token(
@@ -1438,6 +1463,114 @@ async def admin_promote_user(req: PromoteUserRequest, current_user: dict = Depen
     
     logger.info(f"👑 Admin {current_user['email']} a promu {req.email} au tier {req.tier}")
     return {"status": "success", "message": f"Utilisateur {req.email} promu au tier {req.tier} avec succès."}
+
+@app.get("/api/admin/system-info")
+async def admin_system_info(current_user: dict = Depends(get_current_user)):
+    """Récupère les informations techniques du serveur."""
+    _require_admin(current_user)
+    import platform
+    import psutil
+    import time
+    
+    # Calcul simple de l'uptime
+    uptime = time.time() - psutil.boot_time()
+    
+    return {
+        "status": "success",
+        "data": {
+            "os": platform.system(),
+            "os_release": platform.release(),
+            "python_version": platform.python_version(),
+            "cpu_usage": psutil.cpu_percent(),
+            "memory_usage": psutil.virtual_memory().percent,
+            "uptime_seconds": uptime,
+            "server_time": datetime.utcnow().isoformat()
+        }
+    }
+
+@app.post("/api/admin/broadcast")
+async def admin_broadcast(req: BroadcastRequest, current_user: dict = Depends(get_current_user)):
+    """Envoie une notification à toute la flotte."""
+    _require_admin(current_user)
+    from api.notifications import broadcast_notification
+    
+    count = await broadcast_notification(
+        title=req.title,
+        message=req.message,
+        type=req.type,
+        action_url=req.action_url
+    )
+    
+    logger.info(f"📢 BROADCAST: {req.title} envoyé à {count} agents par {current_user['email']}")
+    return {"status": "success", "count": count}
+
+@app.get("/api/admin/analytics")
+async def admin_get_analytics(current_user: dict = Depends(get_current_user)):
+    """Récupère les statistiques de vues et de clics."""
+    _require_admin(current_user)
+    db = get_db()
+    
+    # 1. Top Pages
+    pipeline_pages = [
+        {"$match": {"event_name": "page_view"}},
+        {"$group": {"_id": "$page_url", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    top_pages = await db.analytics.aggregate(pipeline_pages).to_list(length=10)
+    
+    # 2. Top Clicks
+    pipeline_clicks = [
+        {"$match": {"event_name": "click"}},
+        {"$group": {"_id": "$metadata.target", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    top_clicks = await db.analytics.aggregate(pipeline_clicks).to_list(length=10)
+    
+    # 3. Total Views/Clicks
+    total_views = await db.analytics.count_documents({"event_name": "page_view"})
+    total_clicks = await db.analytics.count_documents({"event_name": "click"})
+    
+    return {
+        "status": "success",
+        "data": {
+            "total_views": total_views,
+            "total_clicks": total_clicks,
+            "top_pages": top_pages,
+            "top_clicks": top_clicks
+        }
+    }
+
+@app.post("/api/admin/send-email")
+async def admin_send_email(req: EmailAdminRequest, current_user: dict = Depends(get_current_user)):
+    """Envoie un email à un utilisateur ou à tous."""
+    _require_admin(current_user)
+    from core.email_service import email_service
+    
+    if req.to_email:
+        # Email unique
+        ok = await email_service.send_email(req.to_email, req.subject, req.content)
+        return {"status": "success" if ok else "error"}
+    else:
+        # Broadcast email
+        db = get_db()
+        users = await db.users.find({}, {"email": 1}).to_list(length=None)
+        emails = [u["email"] for u in users if u.get("email")]
+        count = await email_service.broadcast_email(emails, req.subject, req.content)
+        return {"status": "success", "count": count}
+
+@app.post("/api/analytics/track")
+async def track_event(req: TrackEventRequest, request: Request):
+    """Enregistre un événement analytique (public)."""
+    db = get_db()
+    event_data = req.dict()
+    event_data["timestamp"] = datetime.datetime.utcnow()
+    event_data["ip"] = request.client.host
+    event_data["user_agent"] = request.headers.get("user-agent")
+    
+    await db.analytics.insert_one(event_data)
+    return {"status": "success"}
 
 @app.get("/api/portfolio/render/{user_id}")
 async def render_portfolio(user_id: str):

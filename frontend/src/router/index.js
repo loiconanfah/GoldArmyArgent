@@ -133,6 +133,8 @@ const router = createRouter({
     }
 })
 
+import { trackEvent } from '../utils/analytics'
+
 router.beforeEach((to, from, next) => {
     const isAuthenticated = !!localStorage.getItem('token')
     if (to.meta.requiresAuth && !isAuthenticated) {
@@ -150,6 +152,11 @@ router.beforeEach((to, from, next) => {
     } else {
         next()
     }
+})
+
+router.afterEach((to) => {
+    // Track page view
+    trackEvent('page_view', { name: to.name, path: to.path })
 })
 
 export default router

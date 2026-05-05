@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { authFetch } from '../utils/auth'
 import { toastState } from '../store/toastState'
+import gsap from 'gsap'
 import { 
     UsersIcon, 
     ChartBarIcon, 
@@ -17,10 +18,33 @@ import {
     ClockIcon,
     SparklesIcon,
     CheckBadgeIcon,
-    QueueListIcon
+    QueueListIcon,
+    CommandLineIcon,
+    ServerIcon,
+    BellAlertIcon,
+    CpuChipIcon,
+    CircleStackIcon,
+    BoltIcon,
+    ExclamationTriangleIcon,
+    ArrowRightIcon,
+    SignalIcon,
+    WrenchScrewdriverIcon,
+    ChevronRightIcon,
+    CursorArrowRaysIcon,
+    PresentationChartLineIcon
 } from '@heroicons/vue/24/outline'
 
-// --- State ---
+// --- Navigation State ---
+const currentSection = ref('overview')
+const sidebarItems = [
+    { id: 'overview', name: 'Vue d\'ensemble', icon: ChartBarIcon },
+    { id: 'agents', name: 'Utilisateurs', icon: UsersIcon },
+    { id: 'analytics', name: 'Analytiques', icon: PresentationChartLineIcon },
+    { id: 'terminal', name: 'Logs Système', icon: CommandLineIcon },
+    { id: 'control', name: 'Configuration', icon: WrenchScrewdriverIcon },
+]
+
+// --- Global Data State ---
 const isLoading = ref(true)
 const isActionLoading = ref(false)
 const users = ref([])
@@ -29,7 +53,35 @@ const stats = ref({
     tiers: { pro: 0, essential: 0, free: 0 },
     total_applications: 0
 })
+const systemInfo = ref({
+    os: '---',
+    python_version: '---',
+    cpu_usage: 0,
+    memory_usage: 0,
+    uptime_seconds: 0
+})
+const analyticsData = ref({
+    total_views: 0,
+    total_clicks: 0,
+    top_pages: [],
+    top_clicks: []
+})
+const errorLogs = ref([])
 const searchQuery = ref('')
+
+// --- Broadcast/Email State ---
+const broadcast = ref({
+    title: '',
+    message: '',
+    type: 'info',
+    action_url: ''
+})
+const emailForm = ref({
+    subject: '',
+    content: '',
+    isBroadcast: true,
+    toEmail: ''
+})
 
 // --- Inspection Panel State ---
 const isPanelOpen = ref(false)
@@ -38,35 +90,57 @@ const userDetails = ref({ profile: {}, applications: [] })
 const isDetailsLoading = ref(false)
 
 // --- Fetch Data ---
+const fetchAllData = async () => {
+    isLoading.value = true
+    await Promise.all([
+        fetchStats(),
+        fetchUsers(),
+        fetchSystemInfo(),
+        fetchErrors(),
+        fetchAnalytics()
+    ])
+    isLoading.value = false
+    animateEntrance()
+}
+
 const fetchStats = async () => {
     try {
         const res = await authFetch('/api/admin/stats')
         const json = await res.json()
-        if (json.status === 'success') {
-            stats.value = json.data
-        } else {
-            console.error("Stats Error:", json.detail)
-        }
-    } catch (e) {
-        console.error("Stats connection error", e)
-    }
+        if (json.status === 'success') stats.value = json.data
+    } catch (e) { console.error(e) }
 }
 
 const fetchUsers = async () => {
-    isLoading.value = true
     try {
         const res = await authFetch('/api/admin/users')
         const json = await res.json()
-        if (json.status === 'success') {
-            users.value = json.data
-        } else {
-            toastState.addToast(json.detail || "Échec du scan de la flotte", "error")
-        }
-    } catch (e) {
-        toastState.addToast("Erreur critique de connexion RADAR", "error")
-    } finally {
-        isLoading.value = false
-    }
+        if (json.status === 'success') users.value = json.data
+    } catch (e) { console.error(e) }
+}
+
+const fetchSystemInfo = async () => {
+    try {
+        const res = await authFetch('/api/admin/system-info')
+        const json = await res.json()
+        if (json.status === 'success') systemInfo.value = json.data
+    } catch (e) { console.error(e) }
+}
+
+const fetchErrors = async () => {
+    try {
+        const res = await authFetch('/api/admin/errors?limit=20')
+        const json = await res.json()
+        if (json.status === 'success') errorLogs.value = json.data
+    } catch (e) { console.error(e) }
+}
+
+const fetchAnalytics = async () => {
+    try {
+        const res = await authFetch('/api/admin/analytics')
+        const json = await res.json()
+        if (json.status === 'success') analyticsData.value = json.data
+    } catch (e) { console.error(e) }
 }
 
 const fetchUserDetails = async (user) => {
@@ -77,11 +151,9 @@ const fetchUserDetails = async (user) => {
         const userId = user.id || user._id
         const res = await authFetch(`/api/admin/user/${userId}`)
         const json = await res.json()
-        if (json.status === 'success') {
-            userDetails.value = json.data
-        }
+        if (json.status === 'success') userDetails.value = json.data
     } catch (e) {
-        toastState.addToast("Impossible de scanner cet agent", "error")
+        toastState.addToast("Erreur lors de l'inspection", "error")
     } finally {
         isDetailsLoading.value = false
     }
@@ -97,424 +169,532 @@ const updateTier = async (email, newTier) => {
         })
         const json = await res.json()
         if (json.status === 'success') {
-            toastState.addToast(`Rang mis à jour : ${newTier}`, "success")
-            await fetchUsers()
-            await fetchStats()
-            // If the user being updated is the one in the panel, refresh details
-            if (selectedUser.value && selectedUser.value.email === email) {
-                userDetails.value.profile.subscription_tier = newTier
-            }
-        } else {
-            toastState.addToast(json.detail || "Échec de l'upgrade", "error")
+            toastState.addToast(`Statut mis à jour`, "success")
+            await fetchUsers(); await fetchStats()
+            if (selectedUser.value?.email === email) userDetails.value.profile.subscription_tier = newTier
         }
-    } catch (e) {
-        toastState.addToast("Erreur de connexion tactique", "error")
-    } finally {
-        isActionLoading.value = false
-    }
+    } catch (e) { toastState.addToast("Échec de la mise à jour", "error") } finally { isActionLoading.value = false }
+}
+
+const sendBroadcast = async () => {
+    if (!broadcast.value.title || !broadcast.value.message) return
+    isActionLoading.value = true
+    try {
+        const res = await authFetch('/api/admin/broadcast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(broadcast.value)
+        })
+        const json = await res.json()
+        if (json.status === 'success') {
+            toastState.addToast("Diffusion Push réussie", "success")
+            broadcast.value = { title: '', message: '', type: 'info', action_url: '' }
+        }
+    } catch (e) { toastState.addToast("Échec de diffusion", "error") } finally { isActionLoading.value = false }
+}
+
+const sendEmail = async () => {
+    if (!emailForm.value.subject || !emailForm.value.content) return
+    isActionLoading.value = true
+    try {
+        const payload = {
+            subject: emailForm.value.subject,
+            content: emailForm.value.content,
+            to_email: emailForm.value.isBroadcast ? null : emailForm.value.toEmail
+        }
+        const res = await authFetch('/api/admin/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        const json = await res.json()
+        if (json.status === 'success') {
+            toastState.addToast(emailForm.value.isBroadcast ? "Email envoyé à toute la flotte" : "Email envoyé à l'agent", "success")
+            emailForm.value.subject = ''
+            emailForm.value.content = ''
+        }
+    } catch (e) { toastState.addToast("Échec de l'envoi email", "error") } finally { isActionLoading.value = false }
+}
+
+const openDirectEmail = (email) => {
+    emailForm.value.isBroadcast = false
+    emailForm.value.toEmail = email
+    currentSection.value = 'control'
+    isPanelOpen.value = false
+}
+
+const resolveError = async (id) => {
+    try {
+        const res = await authFetch(`/api/admin/errors/${id}/resolve`, { method: 'PATCH' })
+        const json = await res.json()
+        if (json.status === 'success') { toastState.addToast("Résolu", "success"); await fetchErrors() }
+    } catch (e) { console.error(e) }
 }
 
 // --- Computed ---
 const filteredUsers = computed(() => {
     if (!searchQuery.value) return users.value
     const q = searchQuery.value.toLowerCase()
-    return users.value.filter(u => 
-        (u.email && u.email.toLowerCase().includes(q)) || 
-        (u.full_name && u.full_name.toLowerCase().includes(q))
-    )
+    return users.value.filter(u => u.email?.toLowerCase().includes(q) || u.full_name?.toLowerCase().includes(q))
 })
 
-const getStatusColor = (status) => {
-    const s = status?.toLowerCase() || ''
-    if (s.includes('sent') || s.includes('envoyé')) return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-    if (s.includes('refused') || s.includes('refus')) return 'text-rose-400 bg-rose-500/10 border-rose-500/20'
-    if (s.includes('wait') || s.includes('attente')) return 'text-amber-400 bg-amber-500/10 border-amber-500/20'
-    return 'text-slate-400 bg-slate-500/10 border-slate-500/20'
+const uptimeFormatted = computed(() => {
+    const sec = systemInfo.value.uptime_seconds
+    const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60)
+    return `${d}d ${h}h ${m}m`
+})
+
+// --- Animations ---
+const animateEntrance = () => {
+    nextTick(() => {
+        gsap.from('.fade-up', { y: 20, opacity: 0, duration: 0.6, stagger: 0.05, ease: 'power2.out' })
+    })
 }
 
-onMounted(() => {
-    fetchStats()
-    fetchUsers()
+watch(currentSection, () => {
+    nextTick(() => {
+        gsap.from('.section-anim', { x: 10, opacity: 0, duration: 0.4, ease: 'power2.out' })
+    })
 })
+
+onMounted(fetchAllData)
 </script>
 
 <template>
-  <div class="relative min-h-screen bg-black text-white selection:bg-red-500/30">
+  <div class="flex min-h-screen bg-[#F8FAFC] text-slate-700 font-sans selection:bg-indigo-100">
     
-    <!-- Hero Background Effects -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-[10%] -left-[5%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full animate-pulse"></div>
-        <div class="absolute top-[20%] -right-[5%] w-[35%] h-[35%] bg-rose-600/5 blur-[100px] rounded-full"></div>
-    </div>
-
-    <div class="relative z-10 px-6 md:px-12 py-10 max-w-[1700px] mx-auto w-full animate-fade-in">
-        
-        <!-- --- HEADER --- -->
-        <header class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-16">
-            <div class="space-y-4">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-[0.2em] italic shadow-lg shadow-red-500/10">
-                    <ShieldCheckIcon class="w-3.5 h-3.5" />
-                    Terminal Haute Sécurité
-                </div>
-                <h1 class="text-5xl md:text-6xl font-display font-black tracking-tighter italic uppercase">
-                    Admin <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-rose-600">Intelligence</span>
-                </h1>
-                <p class="text-slate-400 max-w-xl font-medium text-base leading-relaxed">
-                    Surveillance globale de la flotte GoldArmy. Inspectez les profils, validez les CV et gérez les déploiements Premium en temps réel.
-                </p>
+    <!-- --- SIDEBAR (Minimalist Light) --- -->
+    <aside class="w-20 lg:w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 z-50">
+        <div class="p-6 lg:p-8 flex items-center gap-3">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                <ShieldCheckIcon class="w-5 h-5 text-white" />
             </div>
-            
-            <div class="flex items-center gap-4">
-                 <div class="hidden md:flex flex-col items-right text-right pr-4 border-r border-surface-800">
-                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">État du Système</span>
-                    <span class="text-xs font-bold text-emerald-500 flex items-center gap-1 justify-end">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        OPÉRATIONNEL
-                    </span>
-                 </div>
-                 <button @click="fetchUsers" class="group flex items-center gap-3 px-8 py-4 bg-white text-black font-black rounded-2xl hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-2xl shadow-white/5">
+            <h1 class="hidden lg:block text-lg font-bold tracking-tight text-slate-900 uppercase">Admin<span class="text-indigo-600">Box</span></h1>
+        </div>
+
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <button 
+                v-for="item in sidebarItems" :key="item.id"
+                @click="currentSection = item.id"
+                :class="[
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
+                    currentSection === item.id ? 'bg-indigo-50 text-indigo-600 shadow-sm shadow-indigo-100' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                ]"
+            >
+                <component :is="item.icon" class="w-5 h-5 shrink-0" />
+                <span class="hidden lg:block font-semibold text-sm">{{ item.name }}</span>
+            </button>
+        </nav>
+
+        <div class="p-6 border-t border-slate-100 hidden lg:block">
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <div class="flex items-center gap-2 mb-1">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span class="text-[10px] font-bold text-slate-900 uppercase">Live Ops</span>
+                </div>
+                <div class="text-[10px] text-slate-500 font-medium">Node: Region-West-1</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- --- MAIN AREA --- -->
+    <main class="flex-1 flex flex-col min-w-0">
+        
+        <!-- Header -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-40">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ sidebarItems.find(i => i.id === currentSection).name }}</span>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <div class="hidden lg:flex items-center gap-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <div class="flex items-center gap-1.5"><CpuChipIcon class="w-3.5 h-3.5" /> {{ systemInfo.cpu_usage }}%</div>
+                    <div class="flex items-center gap-1.5"><CircleStackIcon class="w-3.5 h-3.5" /> {{ systemInfo.memory_usage }}%</div>
+                    <div class="flex items-center gap-1.5"><BoltIcon class="w-3.5 h-3.5 text-amber-500" /> {{ uptimeFormatted }}</div>
+                </div>
+                <button @click="fetchAllData" :disabled="isLoading" class="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-500">
                     <ArrowPathIcon class="w-5 h-5" :class="isLoading ? 'animate-spin' : ''" />
-                    SYNCHRONISER
                 </button>
             </div>
         </header>
 
-        <!-- --- STATS CARDS --- -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-            <!-- Total Users -->
-            <div class="bg-surface-900/40 backdrop-blur-xl border border-surface-800 p-8 rounded-[2.5rem] hover:border-red-500/40 transition-all group relative overflow-hidden">
-                <div class="absolute right-0 top-0 w-32 h-32 bg-red-500/10 blur-[60px] group-hover:bg-red-500/20 transition-all"></div>
-                <div class="relative z-10">
-                    <div class="p-3 bg-red-500/10 rounded-2xl w-fit mb-6">
-                        <UsersIcon class="w-7 h-7 text-red-500" />
-                    </div>
-                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 italic">Effectif Total</div>
-                    <div class="text-5xl font-black text-white tracking-tighter">{{ stats.total_users }} <span class="text-lg text-slate-600">Agents</span></div>
-                </div>
-            </div>
-
-            <!-- Premium Ratio -->
-            <div class="bg-surface-900/40 backdrop-blur-xl border border-surface-800 p-8 rounded-[2.5rem] hover:border-violet-500/40 transition-all group relative overflow-hidden">
-                <div class="absolute right-0 top-0 w-32 h-32 bg-violet-500/10 blur-[60px] group-hover:bg-violet-500/20 transition-all"></div>
-                <div class="relative z-10">
-                    <div class="p-3 bg-violet-500/10 rounded-2xl w-fit mb-6">
-                        <SparklesIcon class="w-7 h-7 text-violet-400" />
-                    </div>
-                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 italic">Membres Premium</div>
-                    <div class="text-5xl font-black text-white tracking-tighter">{{ stats.tiers.pro + stats.tiers.essential }} <span class="text-lg text-slate-600">VIP</span></div>
-                </div>
-            </div>
-
-            <!-- Applications -->
-            <div class="bg-surface-900/40 backdrop-blur-xl border border-surface-800 p-8 rounded-[2.5rem] hover:border-indigo-500/40 transition-all group relative overflow-hidden">
-                <div class="absolute right-0 top-0 w-32 h-32 bg-indigo-500/10 blur-[60px] group-hover:bg-indigo-500/20 transition-all"></div>
-                <div class="relative z-10">
-                    <div class="p-3 bg-indigo-500/10 rounded-2xl w-fit mb-6">
-                        <BriefcaseIcon class="w-7 h-7 text-indigo-400" />
-                    </div>
-                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 italic">Missions Lancées</div>
-                    <div class="text-5xl font-black text-white tracking-tighter">{{ stats.total_applications }} <span class="text-lg text-slate-600">Apps</span></div>
-                </div>
-            </div>
-
-            <!-- Conversion Estimate -->
-            <div class="bg-surface-900/40 backdrop-blur-xl border border-surface-800 p-8 rounded-[2.5rem] hover:border-emerald-500/40 transition-all group relative overflow-hidden">
-                <div class="absolute right-0 top-0 w-32 h-32 bg-emerald-500/10 blur-[60px] group-hover:bg-emerald-500/20 transition-all"></div>
-                <div class="relative z-10">
-                    <div class="p-3 bg-emerald-500/10 rounded-2xl w-fit mb-6">
-                        <ChartBarIcon class="w-7 h-7 text-emerald-400" />
-                    </div>
-                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 italic">Taux de Rétention</div>
-                    <div class="text-5xl font-black text-white tracking-tighter">94<span class="text-2xl text-emerald-500/50">%</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- --- USER LIST SECTION --- -->
-        <div class="bg-surface-900/30 backdrop-blur-2xl border border-surface-800 rounded-[3rem] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
-            <div class="p-10 border-b border-surface-800 flex flex-col md:flex-row md:items-center justify-between gap-8">
-                <div>
-                    <h2 class="text-2xl font-black text-white tracking-tight flex items-center gap-3 italic uppercase">
-                        Détection de Flotte
-                        <span class="bg-white/5 text-slate-500 text-xs px-2 py-0.5 rounded-md not-italic font-mono border border-white/10">{{ filteredUsers.length }}</span>
-                    </h2>
-                    <p class="text-slate-500 text-sm mt-1">Identifiez et interagissez avec chaque agent déployé.</p>
-                </div>
-                
-                <div class="relative group max-w-lg w-full">
-                    <MagnifyingGlassIcon class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-red-500 transition-colors" />
-                    <input 
-                        v-model="searchQuery"
-                        type="text" 
-                        placeholder="Scanner par email, nom ou ID tactique..." 
-                        class="w-full bg-black/50 border border-surface-800 rounded-[1.2rem] pl-14 pr-6 py-4 text-sm text-white focus:outline-none focus:border-red-500/50 transition-all font-medium placeholder:text-slate-600 shadow-inner"
-                    />
-                </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-black/40 text-[11px] font-black text-slate-600 uppercase tracking-[0.25em]">
-                            <th class="px-10 py-6 border-b border-surface-800">AGENT IDENTITÉ</th>
-                            <th class="px-10 py-6 border-b border-surface-800">COORDONNÉES</th>
-                            <th class="px-10 py-6 border-b border-surface-800 text-center">STATUT DE RANG</th>
-                            <th class="px-10 py-6 border-b border-surface-800 text-right">COMMANDES</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-surface-800/50">
-                        <tr v-for="user in filteredUsers" :key="user.email" 
-                            @click="fetchUserDetails(user)"
-                            class="hover:bg-white/[0.03] transition-all group cursor-pointer"
-                        >
-                            <td class="px-10 py-7">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-surface-800 to-surface-700 flex items-center justify-center text-xl text-white font-black border border-surface-600 shadow-xl transition-all group-hover:scale-110 group-hover:rotate-3 group-hover:border-red-500/30">
-                                        {{ user.full_name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase() }}
-                                    </div>
-                                    <div>
-                                        <div class="text-lg font-black text-white tracking-tight group-hover:text-red-400 transition-colors">{{ user.full_name || 'Agent Inconnu' }}</div>
-                                        <div class="text-[10px] text-slate-500 font-mono tracking-tighter uppercase mt-0.5 bg-white/5 w-fit px-1.5 rounded">ID: {{ user._id?.slice(-12) || user.id?.slice(-8) }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-10 py-7">
-                                <div class="flex flex-col gap-1">
-                                    <span class="text-sm text-slate-300 font-bold flex items-center gap-2">
-                                        <EnvelopeIcon class="w-3.5 h-3.5 text-slate-500" />
-                                        {{ user.email }}
-                                    </span>
-                                    <span class="text-[10px] text-slate-600 font-black uppercase tracking-widest flex items-center gap-2">
-                                        <ClockIcon class="w-3.5 h-3.5" />
-                                        Inscrit le : 12/02/2024
-                                    </span>
-                                </div>
-                            </td>
-                            <td class="px-10 py-7 text-center">
-                                <div v-if="user.subscription_tier === 'ADMIN'" class="inline-flex items-center gap-1.5 bg-red-500/10 text-red-500 text-[10px] font-black px-4 py-1.5 rounded-full border border-red-500/20 uppercase tracking-widest italic shadow-lg shadow-red-500/5">
-                                    <ShieldCheckIcon class="w-3.5 h-3.5" />
-                                    Administrateur
-                                </div>
-                                <div v-else-if="user.subscription_tier === 'PRO'" class="inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-4 py-1.5 rounded-full border border-indigo-500/20 uppercase tracking-widest italic shadow-lg shadow-indigo-500/5">
-                                    <SparklesIcon class="w-3.5 h-3.5" />
-                                    Premium Pro
-                                </div>
-                                <div v-else-if="user.subscription_tier === 'ESSENTIAL'" class="inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-500 text-[10px] font-black px-4 py-1.5 rounded-full border border-amber-500/20 uppercase tracking-widest italic shadow-lg shadow-amber-500/5">
-                                    <CheckBadgeIcon class="w-3.5 h-3.5" />
-                                    Essentiel
-                                </div>
-                                <div v-else class="inline-flex items-center gap-1.5 bg-surface-800 text-slate-500 text-[10px] font-black px-4 py-1.5 rounded-full border border-white/5 uppercase tracking-widest italic">
-                                    Agent Libre
-                                </div>
-                            </td>
-                            <td class="px-10 py-7 text-right" @click.stop>
-                                <div class="flex items-center justify-end gap-3 grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
-                                    <button @click="fetchUserDetails(user)" class="p-2.5 bg-surface-800 hover:bg-white hover:text-black rounded-xl border border-white/10 transition-all" title="Inspecter l'agent">
-                                        <EyeIcon class="w-5 h-5" />
-                                    </button>
-                                    <select 
-                                        @change="(e) => updateTier(user.email, e.target.value)" 
-                                        :value="user.subscription_tier || 'FREE'"
-                                        class="bg-black border border-surface-800 text-slate-300 text-[10px] font-black uppercase rounded-xl px-4 py-2.5 focus:outline-none focus:border-red-500 transition-all hover:bg-surface-800 disabled:opacity-50 cursor-pointer shadow-lg"
-                                        :disabled="isActionLoading || user.email === stats.admin_email"
-                                    >
-                                        <option value="FREE">LIBRE (FREE)</option>
-                                        <option value="ESSENTIAL">ESSENTIEL</option>
-                                        <option value="PRO">MISSION PRO</option>
-                                        <option value="ADMIN">COMMANDANT (ADMIN)</option>
-                                    </select>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <div v-if="isLoading" class="py-32 flex flex-col items-center justify-center gap-6">
-                    <div class="relative w-16 h-16">
-                        <div class="absolute inset-0 border-4 border-red-500/20 rounded-full"></div>
-                        <div class="absolute inset-0 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                    <span class="text-xs font-black text-slate-500 uppercase tracking-[0.4em] italic animate-pulse">Scan RADAR en cours...</span>
-                </div>
-
-                <div v-if="!isLoading && filteredUsers.length === 0" class="py-32 text-center">
-                    <div class="text-6xl mb-6 opacity-20">📡</div>
-                    <p class="text-slate-500 font-black uppercase tracking-widest italic">Aucun agent détecté sur cette fréquence.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- --- DEEP INSPECTION SIDE PANEL --- -->
-    <Transition name="slide-right">
-        <aside v-if="isPanelOpen" class="fixed top-0 right-0 h-full w-full lg:w-[600px] bg-black border-l border-surface-800 z-[100] shadow-[-20px_0_60px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col">
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar">
             
-            <!-- Panel Header -->
-            <div class="p-8 border-b border-surface-800 bg-surface-950/50 backdrop-blur-md flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-red-600 flex items-center justify-center text-white font-black shadow-lg shadow-red-600/20">
-                        <ShieldCheckIcon class="w-7 h-7" />
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-black text-white uppercase italic tracking-tight">Rapport d'Agent</h3>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Niveau d'accès : Maximum</p>
+            <!-- OVERVIEW -->
+            <div v-if="currentSection === 'overview'" class="section-anim space-y-10">
+                <!-- Stats Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div v-for="(stat, idx) in [
+                        { label: 'Utilisateurs', val: stats.total_users, sub: 'Inscrits', color: 'indigo', icon: UsersIcon },
+                        { label: 'Abonnés Pro', val: stats.tiers.pro, sub: 'Tier Premium', color: 'indigo', icon: SparklesIcon },
+                        { label: 'Vues Pages', val: analyticsData.total_views, sub: 'Analytiques', color: 'emerald', icon: EyeIcon },
+                        { label: 'Interactions', val: analyticsData.total_clicks, sub: 'Clics', color: 'rose', icon: CursorArrowRaysIcon }
+                    ]" :key="idx" class="fade-up bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-4">
+                            <div :class="`p-2 bg-${stat.color}-50 rounded-lg`"><component :is="stat.icon" :class="`w-5 h-5 text-${stat.color}-600`" /></div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ stat.sub }}</span>
+                        </div>
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-tight mb-1">{{ stat.label }}</div>
+                        <div class="text-3xl font-bold text-slate-900">{{ stat.val.toLocaleString() }}</div>
                     </div>
                 </div>
-                <button @click="isPanelOpen = false" class="p-3 bg-surface-800 hover:bg-rose-500/20 hover:text-rose-500 text-slate-400 rounded-2xl transition-all border border-white/5">
-                    <XMarkIcon class="w-6 h-6" />
-                </button>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Health -->
+                    <div class="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-6">Performance Système</h3>
+                        <div class="space-y-6">
+                            <div v-for="item in [{l:'CPU', v:systemInfo.cpu_usage, c:'indigo'}, {l:'RAM', v:systemInfo.memory_usage, c:'indigo'}]" :key="item.l">
+                                <div class="flex justify-between text-[10px] font-bold uppercase mb-2">
+                                    <span class="text-slate-500">{{ item.l }}</span>
+                                    <span class="text-slate-900">{{ item.v }}%</span>
+                                </div>
+                                <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-indigo-600 transition-all duration-1000" :style="{ width: `${item.v}%` }"></div>
+                                </div>
+                            </div>
+                            <div class="pt-4 space-y-3">
+                                <div v-for="(v, l) in { 'OS': systemInfo.os, 'Python': systemInfo.python_version, 'Uptime': uptimeFormatted }" :key="l" class="flex justify-between text-[10px] border-b border-slate-50 pb-2">
+                                    <span class="font-bold text-slate-400 uppercase">{{ l }}</span>
+                                    <span class="text-slate-700">{{ v }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Activity Preview -->
+                    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-8 shadow-sm flex flex-col">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-tight">Vues Populaires</h3>
+                            <button @click="currentSection = 'analytics'" class="text-[10px] font-bold text-indigo-600 hover:underline">Voir Analytics</button>
+                        </div>
+                        <div class="space-y-4 flex-1">
+                            <div v-for="page in analyticsData.top_pages.slice(0, 5)" :key="page._id" class="flex items-center gap-4 p-3 hover:bg-slate-50 rounded-xl transition-colors">
+                                <div class="p-2 bg-indigo-50 rounded-lg"><EyeIcon class="w-4 h-4 text-indigo-600" /></div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-xs font-bold text-slate-900 truncate">{{ page._id || 'Landing Page' }}</div>
+                                    <div class="text-[10px] text-slate-400 uppercase font-bold">{{ page.count }} Vues</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Panel Content -->
-            <div class="flex-1 overflow-y-auto p-10 space-y-12">
-                
-                <div v-if="isDetailsLoading" class="flex flex-col items-center justify-center h-full py-20 gap-4">
-                    <div class="w-10 h-10 border-t-2 border-red-500 rounded-full animate-spin"></div>
-                    <p class="text-xs font-black text-slate-600 uppercase tracking-widest italic">Extraction des données cryptées...</p>
-                </div>
-
-                <div v-else class="animate-fade-in space-y-12">
-                    
-                    <!-- Top Info Card -->
-                    <div class="bg-surface-900/50 rounded-[2rem] p-8 border border-surface-800 relative overflow-hidden">
-                        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/5 blur-3xl rounded-full"></div>
-                        <div class="flex items-center gap-6 mb-8 relative z-10">
-                            <div class="w-20 h-20 rounded-[1.5rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl text-white font-black shadow-2xl">
-                                {{ userDetails.profile.full_name?.charAt(0) || userDetails.profile.email?.charAt(0) }}
-                            </div>
-                            <div>
-                                <h4 class="text-2xl font-black text-white italic truncate">{{ userDetails.profile.full_name || 'Anonyme' }}</h4>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-xs font-bold text-slate-400">{{ userDetails.profile.email }}</span>
-                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
-                                    <span class="text-[10px] font-black text-indigo-400 uppercase italic">Opérateur de Territoire</span>
-                                </div>
-                            </div>
+            <!-- ANALYTICS -->
+            <div v-if="currentSection === 'analytics'" class="section-anim space-y-10">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Top Pages Table -->
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex items-center gap-3">
+                            <PresentationChartLineIcon class="w-5 h-5 text-indigo-600" />
+                            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-tight">Pages les plus vues</h3>
                         </div>
-
-                        <div class="grid grid-cols-2 gap-4 relative z-10">
-                            <div class="bg-black/50 p-4 rounded-2xl border border-white/5">
-                                <span class="text-[10px] font-black text-slate-500 uppercase block mb-1">Forfait Actuel</span>
-                                <span class="text-sm font-bold text-white uppercase italic tracking-tight text-red-500">{{ userDetails.profile.subscription_tier || 'FREE' }}</span>
-                            </div>
-                            <div class="bg-black/50 p-4 rounded-2xl border border-white/5">
-                                <span class="text-[10px] font-black text-slate-500 uppercase block mb-1">Candidatures</span>
-                                <span class="text-sm font-bold text-white uppercase italic tracking-tight">{{ userDetails.applications.length }} envois</span>
+                        <div class="divide-y divide-slate-50">
+                            <div v-for="(page, i) in analyticsData.top_pages" :key="i" class="px-6 py-4 flex items-center justify-between group hover:bg-slate-50 transition-colors">
+                                <div class="flex items-center gap-4 min-w-0">
+                                    <span class="text-xs font-bold text-slate-300 w-4">{{ i+1 }}</span>
+                                    <span class="text-xs font-semibold text-slate-700 truncate max-w-xs">{{ page._id || '/' }}</span>
+                                </div>
+                                <div class="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-full">{{ page.count }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- CV SECTION -->
-                    <section class="space-y-4">
-                        <div class="flex items-center gap-3">
-                            <DocumentTextIcon class="w-5 h-5 text-red-500" />
-                            <h5 class="text-sm font-black text-white uppercase italic border-b border-red-500/30 pb-1">Analyse du CV (TEXT_RAW)</h5>
+                    <!-- Top Clicks Table -->
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex items-center gap-3">
+                            <CursorArrowRaysIcon class="w-5 h-5 text-rose-600" />
+                            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-tight">Boutons les plus cliqués</h3>
                         </div>
-                        <div class="bg-surface-900 rounded-3xl p-6 border border-surface-800 max-h-[300px] overflow-y-auto custom-scrollbar">
-                           <pre v-if="userDetails.profile.cv_text" class="text-slate-400 text-xs font-mono leading-relaxed whitespace-pre-wrap">{{ userDetails.profile.cv_text }}</pre>
-                           <div v-else class="text-slate-600 text-xs italic py-10 text-center">Aucune donnée de curriculum vitae enregistrée pour cet agent.</div>
-                        </div>
-                    </section>
-
-                    <!-- CRM HISTORY -->
-                    <section class="space-y-6">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <QueueListIcon class="w-5 h-5 text-indigo-400" />
-                                <h5 class="text-sm font-black text-white uppercase italic border-b border-indigo-500/30 pb-1">Historique des Opérations (CRM)</h5>
+                        <div class="divide-y divide-slate-50">
+                            <div v-for="(click, i) in analyticsData.top_clicks" :key="i" class="px-6 py-4 flex items-center justify-between group hover:bg-slate-50 transition-colors">
+                                <div class="flex items-center gap-4 min-w-0">
+                                    <span class="text-xs font-bold text-slate-300 w-4">{{ i+1 }}</span>
+                                    <span class="text-xs font-semibold text-slate-700 truncate max-w-xs">{{ click._id || 'Bouton Inconnu' }}</span>
+                                </div>
+                                <div class="px-3 py-1 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-full">{{ click.count }}</div>
                             </div>
                         </div>
-                        
-                        <div v-if="userDetails.applications.length > 0" class="space-y-3">
-                            <div v-for="app in userDetails.applications" :key="app._id" class="p-4 bg-surface-900/50 rounded-2xl border border-white/5 flex items-center justify-between group hover:bg-surface-800 hover:border-white/10 transition-all">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-lg bg-black flex items-center justify-center font-black text-indigo-500 border border-white/5">
-                                        {{ app.company_name?.charAt(0) }}
-                                    </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AGENTS -->
+            <div v-if="currentSection === 'agents'" class="section-anim">
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 uppercase tracking-tight">Base Utilisateurs</h2>
+                            <p class="text-xs text-slate-500 font-medium">Gérer les accès et surveiller l'activité.</p>
+                        </div>
+                        <div class="relative max-w-sm w-full">
+                            <MagnifyingGlassIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input v-model="searchQuery" type="text" placeholder="Rechercher..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-2.5 text-sm outline-none focus:border-indigo-500 transition-all font-medium" />
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                    <th class="px-8 py-4">Utilisateur</th>
+                                    <th class="px-8 py-4">Statut</th>
+                                    <th class="px-8 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="user in filteredUsers" :key="user.email" @click="fetchUserDetails(user)" class="hover:bg-slate-50 transition-colors cursor-pointer group">
+                                    <td class="px-8 py-5">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-200 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                                {{ (user.full_name || user.email).charAt(0).toUpperCase() }}
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{{ user.full_name || 'Utilisateur' }}</div>
+                                                <div class="text-[10px] text-slate-400 font-medium">{{ user.email }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-8 py-5">
+                                        <span v-if="user.subscription_tier === 'ADMIN'" class="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-bold rounded-md border border-indigo-200 uppercase">Admin</span>
+                                        <span v-else-if="user.subscription_tier === 'PRO'" class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[9px] font-bold rounded-md border border-emerald-100 uppercase">Pro</span>
+                                        <span v-else class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded-md border border-slate-200 uppercase">Libre</span>
+                                    </td>
+                                    <td class="px-8 py-5 text-right" @click.stop>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button @click="fetchUserDetails(user)" class="p-2 hover:bg-white hover:shadow-sm rounded-lg border border-transparent hover:border-slate-200 transition-all">
+                                                <EyeIcon class="w-4 h-4 text-slate-400" />
+                                            </button>
+                                            <select 
+                                                @change="(e) => updateTier(user.email, e.target.value)" 
+                                                :value="user.subscription_tier || 'FREE'"
+                                                class="bg-white border border-slate-200 text-[10px] font-bold rounded-lg px-2 py-1.5 outline-none hover:border-indigo-500 transition-colors cursor-pointer"
+                                            >
+                                                <option value="FREE">Libre</option>
+                                                <option value="ESSENTIAL">Essentiel</option>
+                                                <option value="PRO">Pro</option>
+                                                <option value="ADMIN">Admin</option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TERMINAL -->
+            <div v-if="currentSection === 'terminal'" class="section-anim">
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="p-8 border-b border-slate-100 flex items-center justify-between">
+                        <h2 class="text-lg font-bold text-slate-900 uppercase tracking-tight">Logs d'Exceptions</h2>
+                        <button @click="fetchErrors" class="p-2 hover:bg-slate-50 rounded-lg text-slate-400"><ArrowPathIcon class="w-5 h-5" /></button>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        <div v-for="err in errorLogs" :key="err._id" class="p-6 hover:bg-slate-50/50 transition-colors relative group">
+                            <div v-if="err.resolved" class="absolute inset-0 bg-white/60 z-10 flex items-center justify-center backdrop-blur-[1px]">
+                                <span class="bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">Résolu</span>
+                            </div>
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-rose-50 rounded-lg"><ExclamationTriangleIcon class="w-5 h-5 text-rose-600" /></div>
                                     <div>
-                                        <div class="text-sm font-bold text-white truncate max-w-[200px]">{{ app.job_title }}</div>
-                                        <div class="text-[10px] text-slate-500 uppercase font-black tracking-tighter">{{ app.company_name }}</div>
+                                        <h4 class="text-sm font-bold text-slate-900 uppercase tracking-tight">{{ err.error_type }}</h4>
+                                        <p class="text-[10px] text-slate-400 font-bold uppercase">{{ new Date(err.timestamp).toLocaleString() }}</p>
                                     </div>
                                 </div>
-                                <div :class="`text-[9px] font-black px-3 py-1 rounded-lg border uppercase tracking-widest ${getStatusColor(app.status)}`">
-                                    {{ app.status }}
+                                <button v-if="!err.resolved" @click="resolveError(err._id)" class="px-4 py-1.5 bg-slate-900 text-white hover:bg-indigo-600 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors">Résoudre</button>
+                            </div>
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-600 overflow-x-auto whitespace-pre">
+                                {{ err.message }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTROL -->
+            <div v-if="currentSection === 'control'" class="section-anim max-w-4xl mx-auto space-y-12">
+                
+                <!-- Email Management Tool -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-10 shadow-sm space-y-8">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-indigo-600 rounded-xl shadow-lg"><EnvelopeIcon class="w-6 h-6 text-white" /></div>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 uppercase tracking-tight">Gestion des Emails</h2>
+                            <p class="text-xs text-slate-500 font-medium">Envoyez des communications ciblées ou globales.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div class="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <button @click="emailForm.isBroadcast = true" :class="[
+                                'flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all',
+                                emailForm.isBroadcast ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'
+                            ]">Envoi Global (Broadcast)</button>
+                            <button @click="emailForm.isBroadcast = false" :class="[
+                                'flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all',
+                                !emailForm.isBroadcast ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'
+                            ]">Agent Spécifique</button>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div v-if="!emailForm.isBroadcast" class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email Destinataire</label>
+                                <input v-model="emailForm.toEmail" type="email" placeholder="agent@goldarmy.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Objet de l'Email</label>
+                                <input v-model="emailForm.subject" type="text" placeholder="Ex: Mise à jour de vos services..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Contenu (HTML accepté)</label>
+                                <textarea v-model="emailForm.content" rows="6" placeholder="Rédigez votre message ici..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
+                            </div>
+                            <button @click="sendEmail" :disabled="isActionLoading" class="w-full py-4 bg-slate-900 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 disabled:opacity-50">
+                                <EnvelopeIcon v-if="!isActionLoading" class="w-5 h-5" />
+                                <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
+                                {{ emailForm.isBroadcast ? 'Diffuser l\'email à tous' : 'Envoyer l\'email à l\'agent' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Push Broadcast Tool -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-10 shadow-sm space-y-8 opacity-60 hover:opacity-100 transition-opacity">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-slate-900 rounded-xl shadow-lg"><BellAlertIcon class="w-6 h-6 text-white" /></div>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 uppercase tracking-tight">Push Notification</h2>
+                            <p class="text-xs text-slate-500 font-medium">Alerte instantanée sur le terminal agent.</p>
+                        </div>
+                    </div>
+                    <!-- Reuse broadcast form from before -->
+                    <div class="space-y-5">
+                        <div class="grid grid-cols-2 gap-5">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Titre Push</label>
+                                <input v-model="broadcast.title" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Urgence</label>
+                                <select v-model="broadcast.type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all">
+                                    <option value="info">Information</option>
+                                    <option value="success">Succès</option>
+                                    <option value="warning">Attention</option>
+                                    <option value="error">Alerte</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Message</label>
+                            <textarea v-model="broadcast.message" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
+                        </div>
+                        <button @click="sendBroadcast" :disabled="isActionLoading" class="w-full py-4 bg-slate-100 text-slate-900 font-bold uppercase tracking-widest rounded-xl hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50">
+                            <BoltIcon v-if="!isActionLoading" class="w-5 h-5" />
+                            <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
+                            Diffuser Push
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SIDE PANEL -->
+    <Transition name="slide-right">
+        <aside v-if="isPanelOpen" class="fixed top-0 right-0 h-full w-full lg:w-[600px] bg-white border-l border-slate-200 z-[100] shadow-2xl flex flex-col">
+            <div class="p-8 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg"><ShieldCheckIcon class="w-6 h-6" /></div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 uppercase tracking-tight">Détails de l'Agent</h3>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Contrôle Niveau 3</p>
+                    </div>
+                </div>
+                <button @click="isPanelOpen = false" class="p-2 hover:bg-slate-200 rounded-xl transition-all text-slate-400"><XMarkIcon class="w-6 h-6" /></button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+                <div v-if="isDetailsLoading" class="flex flex-col items-center justify-center py-40 gap-4">
+                    <div class="w-10 h-10 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chargement...</span>
+                </div>
+                <div v-else class="space-y-10">
+                    <!-- User Info Card -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex items-center gap-6">
+                        <div class="w-20 h-20 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-3xl font-bold text-slate-300 shadow-sm">
+                            {{ (userDetails.profile.full_name || userDetails.profile.email).charAt(0).toUpperCase() }}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h4 class="text-xl font-bold text-slate-900 truncate">{{ userDetails.profile.full_name || 'Anonyme' }}</h4>
+                            <div class="text-xs text-slate-500 font-medium mb-4">{{ userDetails.profile.email }}</div>
+                            <div class="flex flex-wrap gap-3">
+                                <button @click="openDirectEmail(userDetails.profile.email)" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold uppercase text-indigo-600 hover:border-indigo-600 transition-colors flex items-center gap-2">
+                                    <EnvelopeIcon class="w-3.5 h-3.5" /> Mail Direct
+                                </button>
+                                <div class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[9px] font-bold uppercase text-slate-400">
+                                    Missions: <span class="text-slate-900">{{ userDetails.applications.length }}</span>
                                 </div>
                             </div>
                         </div>
-                        <div v-else class="text-center py-10 bg-surface-900/30 rounded-[2rem] border border-dashed border-surface-800">
-                             <p class="text-slate-600 text-xs italic uppercase tracking-widest">Nulle trace d'activité CRM pour cet agent.</p>
-                        </div>
-                    </section>
+                    </div>
 
-                    <!-- ACTIONS BOTTOM -->
-                    <div class="pt-10 flex flex-col gap-4">
-                        <p class="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] text-center mb-2">Décisions de la Zone de Commandement</p>
+                    <!-- CV Content -->
+                    <div class="space-y-4">
+                        <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Contenu du CV</h5>
+                        <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 max-h-60 overflow-y-auto font-mono text-[11px] text-slate-600 leading-relaxed custom-scrollbar">
+                            <pre v-if="userDetails.profile.cv_text" class="whitespace-pre-wrap">{{ userDetails.profile.cv_text }}</pre>
+                            <p v-else class="text-center italic py-4">Aucune donnée.</p>
+                        </div>
+                    </div>
+
+                    <!-- App History -->
+                    <div class="space-y-4">
+                        <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Historique des Missions</h5>
+                        <div v-if="userDetails.applications.length" class="space-y-2">
+                            <div v-for="app in userDetails.applications" :key="app._id" class="p-4 bg-white border border-slate-100 rounded-xl flex items-center justify-between shadow-sm">
+                                <div class="min-w-0 flex-1 mr-4">
+                                    <div class="text-xs font-bold text-slate-900 truncate">{{ app.job_title }}</div>
+                                    <div class="text-[10px] text-slate-400 font-bold uppercase">{{ app.company_name }}</div>
+                                </div>
+                                <span class="px-2 py-0.5 bg-slate-50 text-[9px] font-bold rounded border border-slate-100 text-slate-500 uppercase">{{ app.status }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Decision Center -->
+                    <div class="pt-8 border-t border-slate-100 flex flex-col gap-4">
                         <div class="grid grid-cols-2 gap-4">
-                            <button @click="updateTier(userDetails.profile.email, 'PRO')" class="flex items-center justify-center gap-2 py-4 bg-white text-black font-black text-xs uppercase rounded-2xl hover:bg-indigo-500 hover:text-white transition-all shadow-xl">
-                                <SparklesIcon class="w-4 h-4" />
-                                Upgrade PREMIUM PRO
+                            <button @click="updateTier(userDetails.profile.email, 'PRO')" class="flex items-center justify-center gap-2 py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 text-xs uppercase tracking-widest">
+                                <SparklesIcon class="w-4 h-4" /> Upgrade Pro
                             </button>
-                            <button @click="updateTier(userDetails.profile.email, 'FREE')" class="flex items-center justify-center gap-2 py-4 bg-surface-800 text-slate-400 font-bold text-xs uppercase rounded-2xl hover:bg-rose-500/20 hover:text-rose-500 transition-all border border-white/5">
-                                <XMarkIcon class="w-4 h-4" />
-                                Révoquer Accès
+                            <button @click="updateTier(userDetails.profile.email, 'FREE')" class="flex items-center justify-center gap-2 py-4 bg-white border border-slate-200 text-slate-500 font-bold rounded-xl hover:bg-slate-50 transition-all active:scale-95 text-xs uppercase tracking-widest">
+                                <XMarkIcon class="w-4 h-4" /> Révoquer
                             </button>
                         </div>
-                        <button @click="updateTier(userDetails.profile.email, 'ADMIN')" class="w-full py-4 bg-red-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:bg-red-500 transition-all shadow-2xl shadow-red-600/20 flex items-center justify-center gap-2">
-                             <ShieldCheckIcon class="w-4 h-4" />
-                             Muter vers COMMANDANT (ADMIN)
-                        </button>
                     </div>
                 </div>
             </div>
         </aside>
     </Transition>
 
-    <!-- Overlay for panel -->
-    <div v-if="isPanelOpen" @click="isPanelOpen = false" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[90] animate-fade-in"></div>
+    <div v-if="isPanelOpen" @click="isPanelOpen = false" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[90]"></div>
 
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;400;700;900&display=swap');
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
 
-:host, :root {
-    font-family: 'Outfit', sans-serif;
-}
+.slide-right-enter-active, .slide-right-leave-active { transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease; }
+.slide-right-enter-from, .slide-right-leave-to { transform: translateX(100%); opacity: 0; }
 
-.animate-fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.slide-right-enter-active, .slide-right-leave-active {
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
-}
-
-.slide-right-enter-from, .slide-right-leave-to {
-    transform: translateX(100%);
-    opacity: 0;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-pre {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-}
+pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 </style>

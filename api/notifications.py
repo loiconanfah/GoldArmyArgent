@@ -159,3 +159,53 @@ async def mark_read(
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la mise à jour: {e}")
+async def broadcast_notification(title: str, message: str, type: str = "info", action_url: Optional[str] = None):
+    """Envoie une notification à tous les utilisateurs enregistrés."""
+    from core.database import get_db
+    db = get_db()
+    
+    # 1. Récupérer tous les IDs d'utilisateurs
+    cursor = db.users.find({}, {"id": 1, "push_tokens": 1})
+    users = await cursor.to_list(length=None)
+    
+    if not users:
+        return 0
+        
+    created_at = datetime.utcnow().isoformat()
+    
+    # 2. Créer les notifications en DB (bulk insert)
+    notifications = []
+    for user in users:
+        notifications.append({
+            "user_id": user["id"],
+            "title": title,
+            "message": message,
+            "type": type,
+            "action_url": action_url,
+            "is_read": False,
+            "created_at": created_at
+        })
+    
+    if notifications:
+        await db.notifications.insert_many(notifications)
+    
+    # 3. Envoyer les Push Notifications en arrière-plan
+    push_tasks = []
+    for user in users:
+        if "push_tokens" in user:
+            for token in user["push_tokens"]:
+                push_tasks.append(
+                    send_expo_push_notification(
+                        token=token,
+                        title=title,
+                        body=message,
+                        data={"url": action_url}
+                    )
+                )
+    
+    if push_tasks:
+        # On limite le nombre de tâches simultanées pour ne pas saturer l'event loop
+        # ou on laisse asyncio gérer. Pour un broadcast massif, on pourrait utiliser des chunks.
+        asyncio.gather(*push_tasks, return_exceptions=True)
+        
+    return len(users)
