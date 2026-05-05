@@ -1,12 +1,12 @@
 <script setup>
-import { authFetch } from '../utils/auth'
-import { toastState } from '../store/toastState'
-import { getApiUrl } from '../config'
+import {     authFetch } from '../utils/auth'
+import {     toastState } from '../store/toastState'
+import {     getApiUrl } from '../config'
 
-import { ref, onMounted, nextTick, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
-import { 
+import {     ref, onMounted, nextTick, computed } from 'vue'
+import {     useI18n } from 'vue-i18n'
+import {     useRoute } from 'vue-router'
+import {     
   PaperAirplaneIcon, 
   ArrowPathIcon, 
   DocumentTextIcon, 
@@ -23,17 +23,37 @@ import {
   ArrowDownTrayIcon,
   PhotoIcon,
   ArrowsPointingOutIcon,
-  ArrowsPointingInIcon
+  ArrowsPointingInIcon,
+  ClockIcon,
+  MapPinIcon,
+  CpuChipIcon,
+  IdentificationIcon,
+  AcademicCapIcon,
 } from '@heroicons/vue/24/solid'
-import {
+import {    
     SparklesIcon,
     CloudArrowDownIcon,
     CheckCircleIcon
 } from '@heroicons/vue/24/outline'
-import { CV_TEMPLATES } from '../utils/cvTemplates/index'
+import {     CV_TEMPLATES } from '../utils/cvTemplates/index'
 
 const route = useRoute()
+
 const { t } = useI18n()
+
+// CV Themes for Audit Report
+const CV_THEMES = computed(() => CV_TEMPLATES.map(tem => ({
+  id: tem.id,
+  name: tem.label,
+  description: tem.description || 'Professional ATS-friendly layout',
+  colors: [tem.accentColor || '#E85D3E', tem.accentColor || '#E85D3E'],
+  build: tem.build,
+})))
+
+const selectedTheme = ref('goldarmy')
+const hoveredTheme = ref(null)
+const isDownloadingDocx = ref(false)
+
 const inputQuery = ref('')
 const inputLocation = ref('')
 const cvText = ref('')
@@ -50,6 +70,7 @@ const selectedImage = ref(null) // Base64 of the design image
 const currentUser = ref(null)
 
 // Workspace IDE State
+const showCvHistory = ref(false)
 const isWorkspaceOpen = ref(false)
 const activeWorkspaceTab = ref('app') // 'app', 'code', 'terminal'
 const workspaceProject = ref({
@@ -419,17 +440,7 @@ const downloadZip = async () => {
     }
 }
 
-// Build the theme list from the mobile-identical TS templates
-const CV_THEMES = CV_TEMPLATES.map(t => ({
-    id: t.id,
-    name: t.label,
-    description: t.description,
-    colors: [t.accentColor, t.accentColor],
-    build: t.build,
-}))
-const selectedTheme = ref('goldarmy')
-const hoveredTheme = ref(null)
-const isDownloadingDocx = ref(false)
+
 
 const downloadCvDocx = async (cvJsonString) => {
     isDownloadingDocx.value = true
@@ -488,6 +499,13 @@ const openInWorkspace = (msg) => {
     isWorkspaceOpen.value = true
     activeWorkspaceTab.value = 'app'
 }
+
+const restoreCvFromHistory = (entry) => {
+    cvText.value = entry.cv_text
+    cvFilename.value = entry.name || t('agent_chat.cv_history.restored_cv') || 'CV Restauré'
+    showCvHistory.value = false
+    toastState.addToast(t('agent_chat.cv_history.restore_success') || 'CV restauré avec succès')
+}
 </script>
 
 <template>
@@ -532,12 +550,59 @@ const openInWorkspace = (msg) => {
         leave-to-class="transform scale-y-95 opacity-0"
     >
         <div v-if="isUploading" class="mb-6 bg-white border border-slate-200 p-4 rounded-2xl shadow-sm relative z-10">
+            
             <div class="flex justify-between items-center mb-3">
                 <h3 class="text-slate-900 font-bold text-sm tracking-wide flex items-center gap-2">
                     {{ t('agent_chat.cv_context') }}
                 </h3>
-                <button @click="isUploading = false" class="text-slate-500 hover:text-slate-900 text-xs font-bold uppercase tracking-wider">{{ t('common.close') || 'Fermer' }}</button>
+                <div class="flex items-center gap-3">
+                    <button 
+                        v-if="currentUser?.cv_history?.length"
+                        @click="showCvHistory = !showCvHistory" 
+                        class="flex items-center gap-1.5 text-[#E85D3E] hover:text-[#C44A2D] text-[10px] font-black uppercase tracking-widest transition-colors"
+                    >
+                        <ClockIcon class="w-3 h-3" /> {{ t('agent_chat.view_history') }}
+                    </button>
+                    <button @click="isUploading = false" class="text-slate-500 hover:text-slate-900 text-[10px] font-black uppercase tracking-widest">{{ t('common.close') || 'Fermer' }}</button>
+                </div>
             </div>
+
+            <!-- CV HISTORY DROPDOWN -->
+            <transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="opacity-0 -translate-y-2"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-2"
+            >
+                <div v-if="showCvHistory && currentUser?.cv_history?.length" class="mb-4 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-inner">
+                    <div class="p-3 border-b border-slate-200 bg-white/50">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest m-0">{{ t('agent_chat.cv_history.versions_desc') }}</p>
+                    </div>
+                    <div class="max-h-48 overflow-y-auto custom-scrollbar">
+                        <button 
+                            v-for="(entry, i) in currentUser.cv_history" 
+                            :key="i"
+                            @click="restoreCvFromHistory(entry)"
+                            class="w-full text-left p-3 hover:bg-white flex items-center justify-between group transition-colors border-b border-slate-100 last:border-0"
+                        >
+                            <div class="flex items-center gap-3">
+                                <div class="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-[#E85D3E] transition-colors">
+                                    <DocumentTextIcon class="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-700 m-0 group-hover:text-slate-900">{{ entry.name }}</p>
+                                    <p class="text-[9px] text-slate-400 m-0">{{ i === 0 ? t('agent_chat.cv_history.current') : '' }}</p>
+                                </div>
+                            </div>
+                            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span class="text-[9px] font-black text-[#E85D3E] uppercase tracking-widest">{{ t('agent_chat.cv_history.restore') }}</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </transition>
 
             <!-- Uploaded state -->
             <div v-if="cvFilename" class="flex items-center gap-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
@@ -577,7 +642,7 @@ const openInWorkspace = (msg) => {
         <div v-if="msg.role === 'assistant'" class="flex gap-4 max-w-[95%] md:max-w-[85%]">
           <!-- Avatar -->
           <div class="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-[#E85D3E] to-[#C44A2D] flex items-center justify-center shadow-lg shadow-[#E85D3E]/20 text-sm mt-1">
-             🪖
+             <SparklesIcon class="w-4 h-4 text-white" />
           </div>
           
           <div class="flex-1 min-w-0 prose prose-slate prose-p:leading-relaxed prose-a:text-[#E85D3E] hover:prose-a:text-gold-300 prose-strong:text-slate-900 prose-headings:text-slate-900 prose-pre:bg-white prose-pre:border prose-pre:border-slate-100 prose-pre:shadow-inner w-full">
@@ -587,201 +652,216 @@ const openInWorkspace = (msg) => {
             </div>
 
             <!-- ══════════ AUDIT + ATS DASHBOARD ══════════ -->
-            <div v-else-if="msg.is_audit_rewrite && msg.audit && typeof msg.audit === 'object'" class="w-full space-y-4">
+            
+            <div v-else-if="msg.is_audit_rewrite && msg.audit && typeof msg.audit === 'object'" class="w-full space-y-6">
 
-              <!-- Header candidat -->
-              <div class="flex items-center gap-3 p-4 bg-white/60 border border-slate-100 rounded-2xl">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg">🎯</div>
-                <div>
-                  <p class="font-bold text-slate-900 text-sm m-0">{{ msg.audit.candidate_name || t('agent_chat.audit.candidate') }}</p>
-                  <p class="text-slate-400 text-xs m-0">{{ msg.audit.candidate_title || t('agent_chat.audit.title') }}</p>
+              <!-- HEADER PREMIUM -->
+              <div class="flex flex-col md:flex-row items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm relative overflow-hidden group">
+                <div class="absolute inset-0 bg-gradient-to-r from-slate-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="w-16 h-16 rounded-2xl bg-[#F9FAFB] border border-slate-100 flex items-center justify-center text-3xl shadow-inner relative z-10"><IdentificationIcon class="w-8 h-8 text-[#E85D3E]" /></div>
+                <div class="flex-1 text-center md:text-left relative z-10">
+                  <h3 class="text-xl font-black text-slate-900 m-0 leading-tight tracking-tight">{{ msg.audit.candidate_name || t('agent_chat.audit.candidate') }}</h3>
+                  <div class="flex items-center justify-center md:justify-start gap-2 mt-1">
+                      <span class="px-2 py-0.5 bg-[#E85D3E]/10 text-[#E85D3E] text-[10px] font-black uppercase tracking-wider rounded-md border border-[#E85D3E]/20">
+                        {{ msg.audit.candidate_title || t('agent_chat.audit.title') }}
+                      </span>
+                  </div>
                 </div>
-                <div class="ml-auto text-right">
-                  <p class="text-[10px] text-slate-500 uppercase tracking-wide">{{ t('agent_chat.audit.ats_report') }}</p>
+                <div class="px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 text-center shrink-0">
+                  <p class="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em] mb-0.5">{{ t('agent_chat.audit.ats_report') }}</p>
+                  <p class="text-[11px] text-slate-900 font-bold">#{{ msg.id }}</p>
                 </div>
               </div>
 
-              <!-- Score ATS principal + barres de catégories -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                <!-- Score circulaire -->
-                <div class="p-5 bg-white/60 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-3">
-                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ t('agent_chat.audit.global_score') }}</p>
-                  <div class="relative w-32 h-32">
-                    <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                      <circle cx="60" cy="60" r="52" fill="none" stroke="rgb(30,41,59)" stroke-width="12"/>
+              <!-- BENTO GRID: SCORE & CATEGORIES -->
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- SCORE CENTRAL -->
+                <div class="lg:col-span-1 p-8 bg-white border border-slate-100 rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden shadow-sm group">
+                  <div class="absolute -top-4 -right-4 text-8xl font-black text-slate-50 select-none pointer-events-none group-hover:text-slate-100/50 transition-colors">ATS</div>
+                  
+                  <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8 relative z-10">{{ t('agent_chat.audit.global_score') }}</p>
+                  
+                  <div class="relative w-44 h-44 z-10">
+                    <svg class="w-full h-full -rotate-90 drop-shadow-xl" viewBox="0 0 120 120">
+                      <circle cx="60" cy="60" r="52" fill="none" stroke="#F1F5F9" stroke-width="10"/>
                       <circle cx="60" cy="60" r="52" fill="none"
-                        :stroke="msg.audit.ats_score >= 75 ? '#22c55e' : msg.audit.ats_score >= 50 ? '#f59e0b' : '#ef4444'"
-                        stroke-width="12"
+                        :stroke="msg.audit.ats_score >= 75 ? '#10b981' : msg.audit.ats_score >= 50 ? '#f59e0b' : '#ef4444'"
+                        stroke-width="10"
                         stroke-linecap="round"
                         :stroke-dasharray="`${(msg.audit.ats_score || 0) * 3.267} 326.7`"
-                        style="transition: stroke-dasharray 1.2s ease"
+                        class="transition-all duration-[2000ms] ease-out"
                       />
                     </svg>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                      <span class="text-3xl font-black"
-                        :class="msg.audit.ats_score >= 75 ? 'text-green-400' : msg.audit.ats_score >= 50 ? 'text-amber-400' : 'text-red-400'"
-                      >{{ msg.audit.ats_score || 0 }}</span>
-                      <div class="flex items-center gap-1">
-                          <span class="text-slate-500 text-[10px] font-bold">/100</span>
-                          <span v-if="msg.audit.original_ats_score && msg.audit.original_ats_score !== msg.audit.ats_score" 
-                                class="text-[9px] font-black text-slate-500 uppercase opacity-50">Draft</span>
+                      <div class="flex items-start">
+                        <span class="text-6xl font-black tracking-tighter text-slate-900 leading-none">{{ msg.audit.ats_score || 0 }}</span>
                       </div>
-                      
-                      <!-- Badge de Progression -->
-                      <div v-if="msg.audit.original_ats_score && msg.audit.original_ats_score !== msg.audit.ats_score" 
-                           class="mt-1 px-2 py-0.5 bg-green-500/10 border border-green-500/20 text-green-400 text-[9px] font-black rounded-full flex items-center gap-1 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-2 h-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd" />
-                        </svg>
-                        AVANT: {{ msg.audit.original_ats_score }}
+                      <div class="flex items-center gap-1.5 mt-2">
+                        <span class="text-slate-400 text-xs font-bold">/100</span>
+                        <div v-if="msg.audit.original_ats_score && msg.audit.original_ats_score !== msg.audit.ats_score" 
+                             class="px-2 py-0.5 bg-slate-100 rounded-full text-[9px] font-bold text-slate-500 border border-slate-200">
+                           {{ t('common.draft') || 'Draft' }}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <p class="text-xs text-center font-semibold m-0"
-                    :class="msg.audit.ats_score >= 75 ? 'text-green-400' : msg.audit.ats_score >= 50 ? 'text-amber-400' : 'text-red-400'"
-                  >
-                    {{ msg.audit.ats_score >= 75 ? t('agent_chat.audit.good_profile') : msg.audit.ats_score >= 50 ? t('agent_chat.audit.to_improve') : t('agent_chat.audit.risk_rejection') }}
-                  </p>
+
+                  <div v-if="msg.audit.original_ats_score" class="mt-6 flex flex-col items-center gap-2">
+                      <div class="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-600 text-[10px] font-black rounded-full border border-green-100">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                          PROGRESSION: +{{ msg.audit.ats_score - msg.audit.original_ats_score }}%
+                      </div>
+                      <p class="text-[11px] font-bold text-slate-400">AVANT: {{ msg.audit.original_ats_score }}</p>
+                  </div>
                 </div>
 
-                <!-- Barres de scores par catégorie -->
-                <div class="p-5 bg-white/60 border border-slate-100 rounded-2xl space-y-3">
-                  <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">{{ t('common.detail_by_category') || 'Détail par catégorie' }}</p>
-                  <template v-if="msg.audit.scores">
+                <!-- CATEGORIES GRID -->
+                <div class="lg:col-span-2 p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm relative overflow-hidden">
+                  <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">{{ t('common.detail_by_category') }}</p>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
                     <div v-for="(val, key) in {
-                      [t('agent_chat.audit.categories.keywords')]: msg.audit.scores.mots_cles,
-                      [t('agent_chat.audit.categories.impact')]: msg.audit.scores.impact_resultats,
-                      [t('agent_chat.audit.categories.formatting')]: msg.audit.scores.mise_en_forme,
-                      [t('agent_chat.audit.categories.readability')]: msg.audit.scores.lisibilite,
-                      [t('agent_chat.audit.categories.relevance')]: msg.audit.scores.experience_pertinence
-                    }" :key="key" class="space-y-1">
-                      <div class="flex justify-between text-[11px]">
-                        <span class="text-slate-300 font-medium">{{ key }}</span>
-                        <span :class="val >= 70 ? 'text-green-400' : val >= 45 ? 'text-amber-400' : 'text-red-400'" class="font-bold">{{ val }}/100</span>
+                      [t('agent_chat.audit.categories.keywords')]: msg.audit.scores?.mots_cles,
+                      [t('agent_chat.audit.categories.impact')]: msg.audit.scores?.impact_resultats,
+                      [t('agent_chat.audit.categories.formatting')]: msg.audit.scores?.mise_en_forme,
+                      [t('agent_chat.audit.categories.readability')]: msg.audit.scores?.lisibilite,
+                      [t('agent_chat.audit.categories.relevance')]: msg.audit.scores?.experience_pertinence
+                    }" :key="key" class="space-y-3 group/cat">
+                      <div class="flex justify-between items-end">
+                        <span class="text-xs font-bold text-slate-500 group-hover/cat:text-[#E85D3E] transition-colors uppercase tracking-wider">{{ key }}</span>
+                        <span class="text-sm font-black text-slate-900">{{ val || 0 }}<span class="text-[10px] text-slate-300 ml-0.5">/100</span></span>
                       </div>
-                      <div class="h-1.5 bg-surface-700 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-1000"
-                          :class="val >= 70 ? 'bg-green-500' : val >= 45 ? 'bg-amber-500' : 'bg-red-500'"
+                      <div class="h-2.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100 relative shadow-inner">
+                        <div class="h-full rounded-full transition-all duration-[1500ms] ease-out shadow-sm"
+                          :class="val >= 75 ? 'bg-emerald-500' : val >= 50 ? 'bg-amber-500' : 'bg-rose-500'"
                           :style="`width: ${val}%`"
                         ></div>
                       </div>
                     </div>
-                  </template>
+                  </div>
+                  
+                  <!-- Final Verdict -->
+                  <div class="mt-10 pt-6 border-t border-slate-50 flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                          <div :class="msg.audit.ats_score >= 75 ? 'bg-emerald-500' : 'bg-amber-500'" class="w-2 h-2 rounded-full animate-pulse"></div>
+                          <span class="text-xs font-bold text-slate-400">{{ t('agent_chat.audit.status') || 'Status' }}:</span>
+                          <span :class="msg.audit.ats_score >= 75 ? 'text-emerald-600' : 'text-amber-600'" class="text-xs font-black uppercase tracking-widest">
+                            {{ msg.audit.ats_score >= 75 ? t('agent_chat.audit.good_profile') : t('agent_chat.audit.to_improve') }}
+                          </span>
+                      </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Failles + Actions côte à côte -->
-               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <!-- Failles critiques -->
-                 <div class="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl">
-                   <p class="text-xs font-bold text-red-400 uppercase tracking-widest mb-3">
-                        {{ msg.audit.original_failles ? (t('agent_chat.audit.initial_flaws') || 'Défauts Initiaux') : t('agent_chat.audit.critical_flaws') }}
-                    </p>
-                   <ul class="space-y-2">
-                     <li v-for="(faille, i) in (msg.audit.original_failles || msg.audit.failles || [])" :key="i"
-                       class="flex gap-2 text-xs text-slate-300 leading-snug"
-                     >
-                       <span class="text-red-400 shrink-0 font-bold mt-0.5">{{ i + 1 }}.</span>
-                       <span>{{ faille }}</span>
-                     </li>
-                   </ul>
+              <!-- ANALYSIS: FLAWS & ACTIONS -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <!-- FLAWS -->
+                 <div class="p-6 bg-rose-50/30 border border-rose-100 rounded-[2rem] relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500 border border-rose-500/20">
+                            <XMarkIcon class="w-5 h-5" />
+                        </div>
+                        <h4 class="text-sm font-black text-rose-600 uppercase tracking-[0.2em] m-0">{{ msg.audit.original_failles ? t('agent_chat.audit.initial_flaws') : t('agent_chat.audit.critical_flaws') }}</h4>
+                    </div>
+                    <ul class="space-y-4">
+                      <li v-for="(faille, i) in (msg.audit.original_failles || msg.audit.failles || [])" :key="i"
+                        class="flex gap-4 group/li"
+                      >
+                        <span class="text-rose-300 font-black text-xs mt-0.5 group-hover/li:text-rose-500 transition-colors">{{ (i + 1).toString().padStart(2, '0') }}</span>
+                        <p class="text-[13px] text-slate-600 font-medium leading-relaxed m-0">{{ faille }}</p>
+                      </li>
+                    </ul>
                  </div>
- 
-                 <!-- Actions prioritaires -->
-                 <div class="p-4 bg-green-500/5 border border-green-500/20 rounded-2xl">
-                   <p class="text-xs font-bold text-green-400 uppercase tracking-widest mb-3">{{ t('agent_chat.audit.priority_actions') }}</p>
-                   <ul class="space-y-2">
-                     <li v-for="(action, i) in (msg.audit.actions || [])" :key="i"
-                       class="flex gap-2 text-xs text-slate-300 leading-snug"
-                     >
-                       <span class="text-green-400 shrink-0 font-bold mt-0.5">{{ i + 1 }}.</span>
-                       <span>{{ action }}</span>
-                     </li>
-                   </ul>
+
+                 <!-- ACTIONS -->
+                 <div class="p-6 bg-emerald-50/30 border border-emerald-100 rounded-[2rem] relative overflow-hidden group">
+                    <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
+                            <CheckIcon class="w-5 h-5" />
+                        </div>
+                        <h4 class="text-sm font-black text-emerald-600 uppercase tracking-[0.2em] m-0">{{ t('agent_chat.audit.priority_actions') }}</h4>
+                    </div>
+                    <ul class="space-y-4">
+                      <li v-for="(action, i) in (msg.audit.actions || [])" :key="i"
+                        class="flex gap-4 group/li"
+                      >
+                        <span class="text-emerald-300 font-black text-xs mt-0.5 group-hover/li:text-emerald-600 transition-colors">{{ (i + 1).toString().padStart(2, '0') }}</span>
+                        <p class="text-[13px] text-slate-600 font-medium leading-relaxed m-0">{{ action }}</p>
+                      </li>
+                    </ul>
                  </div>
-               </div>
- 
-               <!-- Technologies manquantes + Points forts -->
-               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <!-- Tech manquantes -->
-                 <div v-if="msg.audit.tech_manquantes && msg.audit.tech_manquantes.length" class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
-                   <p class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">{{ t('agent_chat.audit.missing_tech') }}</p>
-                   <div class="flex flex-wrap gap-2">
-                     <span v-for="tech in msg.audit.tech_manquantes" :key="tech"
-                       class="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-bold rounded-lg"
-                     >{{ tech }}</span>
-                   </div>
+              </div>
+
+              <!-- IMPACT TRANSFORMATIONS -->
+              <div v-if="msg.audit.correction_mapping && Object.keys(msg.audit.correction_mapping).length" class="space-y-6">
+                 <div class="flex items-center justify-between px-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E85D3E] to-gold-500 flex items-center justify-center text-white shadow-lg shadow-gold-500/20">
+                            <SparklesIcon class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 class="text-base font-black text-slate-900 uppercase tracking-widest m-0">{{ t('agent_chat.audit.transformations_impact') }}</h4>
+                            <p class="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">God Mode Intelligence 3.1 Pro</p>
+                        </div>
+                    </div>
                  </div>
- 
-                 <!-- Points forts -->
-                 <div v-if="msg.audit.points_forts && msg.audit.points_forts.length" class="p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-2xl">
-                   <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3">{{ t('agent_chat.audit.strengths') }}</p>
-                   <ul class="space-y-1.5">
-                     <li v-for="(pt, i) in msg.audit.points_forts" :key="i" class="flex gap-2 text-xs text-slate-300">
-                       <span class="text-indigo-400 shrink-0">•</span>
-                       <span>{{ pt }}</span>
-                     </li>
-                   </ul>
-                 </div>
-               </div>
- 
-                <!-- ══════════ IMPACT DES TRANSFORMATIONS (Interactive) ══════════ -->
-                <div v-if="msg.audit.correction_mapping && Object.keys(msg.audit.correction_mapping).length" class="space-y-3">
-                   <div class="flex items-center justify-between mb-2">
-                       <div class="flex items-center gap-2">
-                           <span class="p-1 bg-[#E85D3E]/20 rounded text-[#E85D3E]"><SparklesIcon class="w-4 h-4" /></span>
-                           <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider m-0">{{ t('agent_chat.audit.transformations_impact') || 'Impact des Transformations' }}</h4>
-                       </div>
-                       <div v-if="msg.audit.original_failles" class="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-full">
-                           God Mode Active
-                       </div>
-                   </div>
-                   
-                   <div class="grid grid-cols-1 gap-3">
-                       <div v-for="(solution, flaw) in msg.audit.correction_mapping" :key="flaw" 
-                            class="group relative overflow-hidden bg-white/40 border border-slate-200 rounded-2xl p-4 hover:border-[#E85D3E]/30 transition-all duration-300">
-                            
-                            <!-- Progress line -->
-                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-red-500 via-gold-500 to-emerald-500 opacity-20 group-hover:opacity-100 transition-opacity"></div>
-                            
-                            <div class="flex flex-col md:flex-row gap-4">
-                                <div class="flex-1 space-y-1">
-                                    <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-500/70">
-                                        <XMarkIcon class="w-3 h-3" /> {{ t('agent_chat.audit.flaw') || 'Défaut' }}
-                                    </div>
-                                    <p class="text-xs text-slate-400 font-medium leading-relaxed m-0 italic">{{ flaw }}</p>
+
+                 <div class="grid grid-cols-1 gap-4">
+                    <div v-for="(solution, flaw) in msg.audit.correction_mapping" :key="flaw" 
+                         class="group relative bg-white border border-slate-100 rounded-[2rem] p-6 hover:border-[#E85D3E]/30 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-[#E85D3E]/5 overflow-hidden">
+                        
+                        <div class="absolute top-0 bottom-0 left-0 w-1.5 bg-gradient-to-b from-rose-400 via-[#E85D3E] to-emerald-400 opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                            <!-- Flaw -->
+                            <div class="lg:col-span-5 space-y-2">
+                                <div class="flex items-center gap-2 text-[10px] font-black text-rose-500 uppercase tracking-widest opacity-60">
+                                    <XMarkIcon class="w-3 h-3" /> {{ t('agent_chat.audit.flaw') }}
                                 </div>
-                                
-                                <div class="hidden md:flex items-center justify-center shrink-0">
-                                    <ChevronRightIcon class="w-5 h-5 text-gold-500/40 group-hover:text-gold-500 transition-colors" />
-                                </div>
-                                
-                                <div class="flex-1 space-y-1">
-                                    <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
-                                        <CheckCircleIcon class="w-3 h-3" /> {{ t('agent_chat.audit.impact') || 'Impact' }}
-                                    </div>
-                                    <p class="text-xs text-slate-900 font-bold leading-relaxed m-0">{{ solution }}</p>
-                                </div>
+                                <p class="text-[13px] text-slate-400 font-semibold italic leading-relaxed m-0">{{ flaw }}</p>
                             </div>
-                       </div>
-                   </div>
-                </div>
- 
-                 <!-- Sélecteur de Thème avec Preview -->
-                 <div class="p-5 bg-white/60 border border-slate-100 mb-4 rounded-2xl">
-                   <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">{{ t('agent_chat.audit.choose_template') || 'Choisir un Modèle de CV' }}</p>
-                   <div class="flex flex-col sm:flex-row gap-5">
-                      <!-- Preview Miniature Dynamic -->
-                      <div class="w-full sm:w-28 h-36 bg-white rounded-xl border border-slate-200 overflow-hidden shrink-0 shadow-inner relative group">
-                          <div class="absolute inset-0 transition-all duration-300" :style="{ backgroundColor: (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) === '#ffffff' ? '#f8fafc' : (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) }">
-                              <div class="absolute left-0 top-0 bottom-0 w-1/3 opacity-30" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
-                              <div class="absolute top-4 left-1/3 right-2 h-2 rounded-full opacity-40" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
-                              <div class="absolute top-8 left-1/3 right-4 h-1 rounded-full opacity-20" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
-                          </div>
+
+                            <!-- Arrow -->
+                            <div class="lg:col-span-1 flex items-center justify-center opacity-20 group-hover:opacity-100 group-hover:scale-110 transition-all">
+                                <svg class="w-6 h-6 text-[#E85D3E] transform rotate-90 lg:rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+
+                            <!-- Solution -->
+                            <div class="lg:col-span-6 p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50 group-hover:bg-emerald-50 group-hover:border-emerald-200 transition-colors">
+                                <div class="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">
+                                    <CheckCircleIcon class="w-3 h-3" /> {{ t('agent_chat.audit.impact') }}
+                                </div>
+                                <p class="text-[13px] text-slate-900 font-bold leading-relaxed m-0">{{ solution }}</p>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+              </div>
+
+              <!-- TEMPLATE SELECTOR -->
+              <div class="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm">
+                  <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">{{ t('agent_chat.audit.choose_template') }}</p>
+                  
+                  <div class="flex flex-col md:flex-row gap-8">
+                      <!-- PREVIEW -->
+                      <div class="w-full md:w-32 h-44 bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden shrink-0 shadow-inner group relative">
+                           <div class="absolute inset-0 transition-all duration-500" :style="{ backgroundColor: (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) === '#ffffff' ? '#f8fafc' : (CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[0]) }">
+                               <div class="absolute left-0 top-0 bottom-0 w-1/3 opacity-30" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                               <div class="absolute top-4 left-1/3 right-4 h-2 rounded-full opacity-40" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                               <div class="absolute top-8 left-1/3 right-8 h-1.5 rounded-full opacity-20" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                               <div class="absolute top-12 left-1/3 right-4 h-1 rounded-full opacity-10" :style="{ backgroundColor: CV_THEMES.find(t => t.id === (hoveredTheme || selectedTheme))?.colors[1] }"></div>
+                           </div>
+                           <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/10 backdrop-blur-[2px]">
+                               <EyeIcon class="w-8 h-8 text-white" />
+                           </div>
                       </div>
-                      <!-- Boutons de Sélection -->
-                      <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2.5">
+
+                      <!-- GRID -->
+                      <div class="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-3">
                           <button
                               v-for="theme in CV_THEMES"
                               :key="theme.id"
@@ -789,35 +869,43 @@ const openInWorkspace = (msg) => {
                               @mouseenter="hoveredTheme = theme.id"
                               @mouseleave="hoveredTheme = null"
                               :class="[
-                                  'p-2.5 rounded-xl border text-left flex flex-col transition-all duration-200 cursor-pointer',
+                                  'p-4 rounded-2xl border text-left flex flex-col gap-2 transition-all duration-300 relative overflow-hidden',
                                   selectedTheme === theme.id
-                                      ? 'bg-[#E85D3E]/10 border-[#E85D3E] shadow-md ring-1 ring-gold-500/50'
-                                      : 'bg-white border-slate-100 hover:border-surface-500 hover:bg-surface-700/80'
+                                      ? 'bg-[#E85D3E] border-[#E85D3E] shadow-xl shadow-[#E85D3E]/20 translate-y-[-2px]'
+                                      : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'
                               ]"
                           >
-                              <div class="flex items-center gap-2 mb-1.5">
-                                  <div class="w-3 h-3 rounded-full border border-slate-200 shadow-inner block shrink-0" :style="{ background: `linear-gradient(135deg, ${theme.colors[0]} 50%, ${theme.colors[1]} 50%)` }"></div>
-                                  <span :class="selectedTheme === theme.id ? 'text-[#E85D3E] font-bold' : 'text-slate-300 font-semibold'" class="text-[11px] truncate block">{{ theme.name }}</span>
+                              <div class="flex items-center gap-3">
+                                  <div class="w-4 h-4 rounded-full border border-white/20 shadow-inner shrink-0" :style="{ background: `linear-gradient(135deg, ${theme.colors[0]} 50%, ${theme.colors[1]} 50%)` }"></div>
+                                  <span :class="selectedTheme === theme.id ? 'text-white' : 'text-slate-900'" class="text-xs font-black truncate">{{ theme.name }}</span>
                               </div>
-                              <span class="text-[9px] text-slate-500 truncate w-full block">{{ theme.description }}</span>
+                              <span :class="selectedTheme === theme.id ? 'text-white/70' : 'text-slate-400'" class="text-[9px] font-bold uppercase tracking-widest">{{ theme.id === 'goldarmy' ? 'Official' : 'Modern' }}</span>
                           </button>
                       </div>
-                   </div>
-                 </div>
+                  </div>
+              </div>
 
-               <!-- Bouton téléchargement -->
-               <button
-                 @click="downloadCvDocx(msg.content)"
-                 :disabled="isDownloadingDocx"
-                 class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
-               >
-                 <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
-                 <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
-                 {{ isDownloadingDocx ? t('agent_chat.audit.generating_file') : t('agent_chat.audit.download_cv') }}
-               </button>
-               <p class="text-[10px] text-slate-500 text-center">{{ t('agent_chat.audit.ats_friendly') }}</p>
-             </div>
- 
+              <!-- ACTIONS -->
+              <div class="flex flex-col gap-3">
+                  <button
+                    @click="downloadCvDocx(msg.content)"
+                    :disabled="isDownloadingDocx"
+                    class="w-full group flex items-center justify-center gap-3 px-8 py-5 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-[#E85D3E] hover:to-gold-600 text-white rounded-[2rem] font-black transition-all duration-500 shadow-2xl shadow-slate-900/20 active:scale-[0.98] disabled:opacity-50"
+                  >
+                    <ArrowDownTrayIcon v-if="!isDownloadingDocx" class="w-6 h-6 transform group-hover:translate-y-1 transition-transform" />
+                    <ArrowPathIcon v-else class="w-6 h-6 animate-spin" />
+                    <span class="text-base uppercase tracking-widest">
+                        {{ isDownloadingDocx ? t('agent_chat.audit.generating_file') : t('agent_chat.audit.download_cv_rewritten') }}
+                    </span>
+                  </button>
+                  <p class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-widest flex items-center justify-center gap-2">
+                      <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                      {{ t('agent_chat.audit.ats_friendly') }}
+                  </p>
+              </div>
+
+            </div>
+
              <!-- Fallback audit si format non-structuré (chaîne texte) -->
              <div v-else-if="msg.is_audit_rewrite && msg.audit && typeof msg.audit === 'string'" class="space-y-4 w-full">
                <div class="whitespace-pre-wrap text-slate-300 pb-4 border-b border-slate-100" v-html="msg.audit.replace(/\n/g, '<br/>')"></div>
@@ -865,7 +953,7 @@ const openInWorkspace = (msg) => {
       <!-- Typing Indicator & Analysis Steps -->
       <div v-if="isLoading" class="flex w-full justify-start gap-4 transition-all duration-500">
          <div class="shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-slate-100 text-sm mt-1 animate-pulse shadow-glow shadow-gold-500/10">
-             🤖
+             <CpuChipIcon class="w-5 h-5 text-[#E85D3E]" />
          </div>
          
          <!-- Loading CV Analysis Steps -->
@@ -905,7 +993,7 @@ const openInWorkspace = (msg) => {
         <div class="bg-white border border-slate-100 p-2 rounded-2xl shadow-lg flex flex-col sm:flex-row items-end sm:items-center gap-2">
            <!-- Location Field -->
            <div class="w-full sm:w-1/3 flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-100">
-               <span class="text-slate-400">📍</span>
+               <MapPinIcon class="w-4 h-4 text-slate-400" />
                <input v-model="inputLocation" type="text" :placeholder="t('agent_chat.placeholders.location')" class="w-full bg-transparent border-none focus:ring-0 text-slate-900 text-xs"/>
            </div>
             <!-- Image Upload -->

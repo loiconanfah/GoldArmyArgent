@@ -560,12 +560,28 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
 async def update_profile(request: ProfileUpdateRequest, current_user: dict = Depends(get_current_user)):
     """Met à jour les informations du profil utilisateur."""
     from core.database import get_db
+    from datetime import datetime
     db = get_db()
     try:
         fields = request.dict(exclude_unset=True)
         if not fields:
             return {"status": "success", "message": "Aucun champ à mettre à jour"}
         
+        # --- LOGIQUE HISTORIQUE CV ---
+        if "cv_text" in fields:
+            old_user = await db.users.find_one({"id": current_user["id"]}, {"cv_text": 1})
+            if old_user and old_user.get("cv_text") and old_user.get("cv_text") != fields["cv_text"]:
+                history_entry = {
+                    "cv_text": old_user["cv_text"],
+                    "updated_at": datetime.utcnow().isoformat(),
+                    "name": f"Version du {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}"
+                }
+                await db.users.update_one(
+                    {"id": current_user["id"]},
+                    {"$push": {"cv_history": {"$each": [history_entry], "$position": 0, "$slice": 10}}}
+                )
+        # -----------------------------
+
         await db.users.update_one(
             {"id": current_user["id"]},
             {"$set": fields}

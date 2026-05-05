@@ -395,7 +395,8 @@
         "confirm": "Confirmer",
         "total": "Total",
         "network_error": "Erreur réseau : impossible de joindre le serveur.",
-        "server_error": "Connexion au serveur impossible."
+        "server_error": "Connexion au serveur impossible.",
+        "detail_by_category": "Détail par catégorie"
     },
     "auth": {
         "login_title": "Connexion à GoldArmy",
@@ -819,8 +820,8 @@
         }
     },
     "agent_chat": {
-        "title": "Agent GoldArmy",
-        "tagline": "Orchestration, Analyse CV & Génération Web",
+        "title": "Mentor IA",
+        "tagline": "Préparez votre succès",
         "add_cv": "Ajouter CV (PDF)",
         "cv_context": "CV en Contexte",
         "cv_from_profile": "CV de mon profil",
@@ -837,7 +838,7 @@
         "upload_pdf_only": "Veuillez sélectionner un fichier PDF.",
         "error_reading_pdf": "Erreur lors de la lecture du PDF.",
         "network_error_pdf": "Impossible de contacter le serveur pour lire le PDF.",
-        "initial_message": "Bonjour ! Je suis GoldArmy, ton Co-Pilote de Carrière. 🪖\n\nJe suis connecté et prêt. Uploade ton CV en PDF pour que je l'audite, génère ton portfolio, ou pose-moi n'importe quelle question.",
+        "initial_message": "Bonjour ! Je suis votre Mentor IA. Comment puis-je vous aider aujourd'hui ? Je peux auditer votre CV, simuler un entretien ou générer votre portfolio.",
         "portfolio_soon_title": "🚀 **Générateur de Portfolio : Bientôt disponible !**",
         "portfolio_soon_desc": "Nous finalisons les derniers réglages pour te proposer des designs encore plus spectaculaires et une personnalisation totale.\n\nReviens très bientôt pour générer ton site web en un clic ! En attendant, je peux auditer ton CV ou t'aider pour tes recherches d'emploi.",
         "network_error_backend": "⚠️ Erreur de connexion avec le quartier général (Backend indisponible).",
@@ -849,16 +850,16 @@
             "step_4": "Génération du rapport d'optimisation..."
         },
         "placeholders": {
-            "location": "Lieu...",
-            "message": "Question ou commande (Ex: Design-le comme ça...)"
+            "location": "Localisation (facultatif)",
+            "message": "Tapez votre message ici..."
         },
         "workspace": {
-            "app": "App",
+            "app": "Application",
             "code": "Code",
             "terminal": "Terminal",
-            "save": "Sauvegarder",
-            "saving": "Sauvegarde...",
-            "zip": "ZIP",
+            "save": "Enregistrer",
+            "saving": "Enregistrement...",
+            "zip": "Exporter ZIP",
             "deploy": "Déployer",
             "soon": "Bientôt",
             "save_success": "Portfolio sauvegardé avec succès !",
@@ -866,16 +867,18 @@
             "zip_error": "Erreur lors de la génération du ZIP.",
             "generating_portfolio": "Génération de ton {0}",
             "generating_portfolio_desc": "Gemini 3.1 analyse ton profil, définit une direction artistique sur mesure et structure ton code source. Cette étape prend quelques secondes...",
-            "no_preview": "Génère un portfolio pour voir l'aperçu ici."
+            "no_preview": "Génère un portfolio pour voir l'aperçu ici.",
+            "new_project": "Nouveau Projet",
+            "restored_project": "Projet Portfolio (Restauré)"
         },
         "audit": {
             "candidate": "Candidat",
-            "title": "Profil Professionnel",
+            "title": "Titre",
             "ats_report": "Rapport ATS",
-            "global_score": "Score ATS Global",
+            "global_score": "Score Global",
             "good_profile": "✅ Bon profil ATS",
-            "to_improve": "⚠️ Profil à améliorer",
-            "risk_rejection": "❌ Risque de rejet ATS",
+            "to_improve": "⚠️ Profil à optimiser",
+            "risk_rejection": "❌ Risque de rejet",
             "categories": {
                 "keywords": "Mots-clés",
                 "impact": "Impact & Résultats",
@@ -883,22 +886,26 @@
                 "readability": "Lisibilité",
                 "relevance": "Pertinence Exp."
             },
-            "critical_flaws": "❌ Failles Critiques",
+            "critical_flaws": "Failles Critiques",
             "initial_flaws": "Défauts Initiaux",
             "priority_actions": "🛠️ Actions Prioritaires",
-            "missing_tech": "💡 Technologies Manquantes",
-            "strengths": "✅ Points Forts",
-            "download_cv": "⬇ Télécharger le CV Corrigé (.pdf)",
-            "download_cv_rewritten": "⬇ Télécharger le CV Réécrit (.pdf)",
+            "missing_tech": "Technologies Manquantes",
+            "strengths": "Points Forts",
+            "download_cv": "Télécharger le CV Corrigé",
+            "download_cv_rewritten": "Télécharger le CV Réécrit",
             "generating_file": "Génération du fichier...",
-            "ats_friendly": "✅ ATS-friendly · Calibri 10pt · Mono-colonne · Mots-clés optimisés",
+            "ats_friendly": "Format 100% compatible ATS (.docx)",
             "rewrite_title": "CV Réécrit & Optimisé ATS",
-            "rewrite_desc": "Ton CV a été restructuré avec des verbes d'action et des mots-clés ATS."
+            "rewrite_desc": "Ton CV a été restructuré avec des verbes d'action et des mots-clés ATS.",
+            "transformations_impact": "Impact des Transformations",
+            "flaw": "Défaut",
+            "impact": "Impact",
+            "choose_template": "Choisir un Modèle de CV"
         },
         "terminal": {
-            "init": "[GoldArmy] Système d'initialisation démarré...",
-            "build_success": "[Buid] Compilation du code source terminée.",
-            "listening": "[DevServer] Écoute sur port 3000",
+            "init": "Initialisation du moteur de rendu GoldArmy...",
+            "build_success": "Build terminé avec succès en 1.2s.",
+            "listening": "Serveur à l'écoute sur http://localhost:3000",
             "restoring": "[System] Récupération du portfolio sauvegardé...",
             "restore_success": "[System] Portfolio restauré avec succès.",
             "restore_error": "[Error] Aucun portfolio sauvegardé trouvé.",
@@ -906,7 +913,15 @@
             "analysis": "[IA] Analyse : {0}",
             "project_success": "[Action] Projet structuré généré avec succès.",
             "save_db": "[System] Modifications sauvegardées en base de données."
-        }
+        },
+        "cv_history": {
+            "title": "Historique des CV",
+            "no_history": "Aucun historique disponible.",
+            "restore": "Restaurer",
+            "current": "Actuel",
+            "versions_desc": "Retrouvez vos 10 dernières versions analysées ou modifiées."
+        },
+        "view_history": "Voir l'historique"
     },
     "interview": {
         "wizard": {

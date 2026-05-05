@@ -63,7 +63,7 @@ const handleFeatureClick = (feature) => {
         </div>
 
         <div class="header-date-box hidden md:flex">
-          <div class="date-num">🎓</div>
+          <div class="date-num"><AcademicCapIcon class="w-6 h-6 text-[#E85D3E]" /></div>
           <div class="date-str">MENTOR IA</div>
           <div class="date-divider"></div>
           <div class="date-str text-slate-400">GOLDARMY PLATFORM</div>
