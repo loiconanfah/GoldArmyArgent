@@ -3,6 +3,8 @@ import json
 import asyncio
 import base64
 import re
+import httpx
+from bs4 import BeautifulSoup
 import uuid as uuid_lib
 import edge_tts
 from datetime import datetime, timezone
@@ -76,6 +78,71 @@ async def transcribe_audio(req: TranscribeRequest, current_user: dict = Depends(
         return {"status": "success", "text": text}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /extract-url — extract job info from URL
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ExtractUrlRequest(BaseModel):
+    url: str
+
+@router.post("/extract-url")
+async def extract_job_info(req: ExtractUrlRequest, current_user: dict = Depends(get_current_user)):
+    url = req.url.strip()
+    if not url:
+        return {"status": "error", "message": "URL manquante"}
+
+    try:
+        # 1. Fetch page content
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            resp = await client.get(url, headers=headers)
+            resp.raise_for_status()
+            html_content = resp.text
+
+        # 2. Basic cleanup
+        soup = BeautifulSoup(html_content, "html.parser")
+        for s in soup(["script", "style", "nav", "footer", "header"]):
+            s.decompose()
+        
+        text_content = soup.get_text(separator="\n", strip=True)
+        truncated_text = text_content[:6000]
+
+        # 3. Extract via Gemini
+        extraction_prompt = f"""Tu es un assistant de recrutement expert. Voici le contenu textuel d'une page d'offre d'emploi. 
+Extrais précisément les informations suivantes :
+1. Le nom de l'entreprise (company)
+2. Le titre précis du poste (jobTitle)
+3. Un résumé structuré des détails du poste, missions et profil recherché (jobDetails)
+
+RÉPONDS UNIQUEMENT EN JSON VALIDE :
+{{
+  "company": "...",
+  "jobTitle": "...",
+  "jobDetails": "..."
+}}
+
+CONTENU DE LA PAGE :
+{truncated_text}
+"""
+        model = genai.GenerativeModel(INTERVIEW_LLM_MODEL)
+        response = await asyncio.to_thread(model.generate_content, extraction_prompt)
+        raw_text = getattr(response, "text", None) or ""
+        
+        clean_json = re.sub(r"^[^{]*", "", raw_text.replace("```json", "").replace("```", "").strip()).strip()
+        extracted_data = json.loads(clean_json)
+
+        return {
+            "status": "success",
+            "data": extracted_data
+        }
+    except Exception as e:
+        from loguru import logger
+        logger.error(f"Extraction Error: {e}")
+        return {"status": "error", "message": f"Erreur lors de l'extraction : {str(e)}"}
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────

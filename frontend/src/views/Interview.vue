@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { authFetch } from '../utils/auth'
 import { getWsUrl, getApiUrl } from '../config'
-import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon, ChartBarIcon, AcademicCapIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
+import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon, ChartBarIcon, AcademicCapIcon, CheckCircleIcon, LinkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline'
 import { CheckIcon, UserCircleIcon, StarIcon, VideoCameraIcon } from '@heroicons/vue/24/solid'
 
 const router = useRouter()
@@ -17,6 +17,7 @@ const config = ref({
     jobTitle: '',
     company: '',
     jobDetails: '',
+    jobUrl: '',
     interviewType: 'general',
     recruiterId: 'tech' // 'tech', 'hr', 'ceo'
 })
@@ -46,6 +47,7 @@ const userVideo = ref(null)
 const stream = ref(null)
 const showChat = ref(true) // Transcription visible par défaut pour lire l'entretien
 const showScorecard = ref(false)
+const isExtractingUrl = ref(false)
 const isAnalyzing = ref(false)
 const scorecard = ref(null)
 const ttsStatus = ref('Initialisation...') // Diagnostic status
@@ -154,6 +156,35 @@ const handleFileUpload = async (event) => {
     } finally {
         isUploadingCV.value = false
         if (fileInput.value) fileInput.value.value = '' // Reset input
+    }
+}
+
+const extractFromUrl = async () => {
+    if (!config.value.jobUrl || !config.value.jobUrl.startsWith('http')) {
+        errorMsg.value = "Veuillez entrer une URL valide (http...)"
+        return
+    }
+    
+    errorMsg.value = ""
+    isExtractingUrl.value = true
+    
+    try {
+        const response = await authFetch('/api/interview/extract-url', {
+            method: 'POST',
+            body: JSON.stringify({ url: config.value.jobUrl })
+        })
+        const result = await response.json()
+        if (result.status === 'success') {
+            config.value.company = result.data.company || config.value.company
+            config.value.jobTitle = result.data.jobTitle || config.value.jobTitle
+            config.value.jobDetails = result.data.jobDetails || config.value.jobDetails
+        } else {
+            errorMsg.value = result.message || "Erreur lors de l'extraction."
+        }
+    } catch (e) {
+        errorMsg.value = "Erreur de connexion pour l'extraction URL."
+    } finally {
+        isExtractingUrl.value = false
     }
 }
 
@@ -661,6 +692,22 @@ onUnmounted(() => {
                 <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <BuildingOfficeIcon class="w-4 h-4 text-[#E85D3E]" /> Contexte du Poste
                 </h3>
+
+                <div class="mb-8 p-6 bg-[#E85D3E]/5 rounded-2xl border border-[#E85D3E]/10 border-dashed">
+                    <label class="block text-[10px] font-black text-[#E85D3E] uppercase tracking-widest mb-3">Importer depuis une URL (Nouveau)</label>
+                    <div class="flex gap-3">
+                        <div class="relative flex-1">
+                            <LinkIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#E85D3E]/50" />
+                            <input v-model="config.jobUrl" type="text" placeholder="Collez le lien LinkedIn, Indeed, ou site carrière..." class="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 transition-all">
+                        </div>
+                        <button @click="extractFromUrl" :disabled="isExtractingUrl" class="px-6 py-3 bg-[#E85D3E] text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-[#C44A2D] transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-[#E85D3E]/20">
+                            <span v-if="isExtractingUrl" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <SparklesIcon v-else class="w-4 h-4" />
+                            {{ isExtractingUrl ? 'Analyse...' : 'Extraire' }}
+                        </button>
+                    </div>
+                    <p class="text-[9px] text-slate-400 font-bold mt-3 italic uppercase tracking-wider">L'IA remplira automatiquement les champs ci-dessous pour vous.</p>
+                </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
