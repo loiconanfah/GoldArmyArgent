@@ -921,7 +921,10 @@
             "current": "Actuel",
             "versions_desc": "Retrouvez vos 10 dernières versions analysées ou modifiées."
         },
-        "view_history": "Voir l'historique"
+        "view_history": "Voir l'historique",
+        "preview": {
+            "title": "Aperçu du CV"
+        }
     },
     "interview": {
         "wizard": {

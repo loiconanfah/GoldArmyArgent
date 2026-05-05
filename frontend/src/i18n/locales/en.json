@@ -959,7 +959,10 @@
             "current": "Current",
             "versions_desc": "Find your last 10 analyzed or modified versions."
         },
-        "view_history": "View History"
+        "view_history": "View History",
+        "preview": {
+            "title": "Resume Preview"
+        }
     },
     "interview": {
         "wizard": {
