@@ -666,8 +666,8 @@
         "description": "Scraping intelligent du marché en temps réel et matching contextuel avec votre profil.",
         "filters": {
             "all": "Toutes les pertinentes",
-            "internships": "Stages Uniquement",
-            "juniors": "Juniors (< 2 ans)",
+            "internships": "Stages",
+            "juniors": "Juniors",
             "score_80": "Score > 80%"
         },
         "max_results": "Résultats max:",
@@ -705,7 +705,9 @@
         "recent": "Récent",
         "no_desc": "Aucune description fournie.",
         "adapt_cv_toast_info": "Veuillez d'abord télécharger/coller votre CV dans la section ci-dessus avant d'adapter.",
-        "radar_error": "Erreur lors de l'appel au Radar."
+        "radar_error": "Erreur lors de l'appel au Radar.",
+        "title_sniper": "Sniper",
+        "title_recruitment": "Recrutement."
     },
     "crm_board": {
         "title": "CRM Candidatures",

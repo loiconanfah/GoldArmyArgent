@@ -709,17 +709,17 @@
     },
     "opportunities": {
         "title": "Sniper Opportunities",
-        "tagline": "Active Radar",
-        "description": "Smart market scraping in real-time and contextual matching with your profile.",
+        "tagline": "Radar Active",
+        "description": "Intelligent real-time market scraping and contextual matching with your profile.",
         "filters": {
             "all": "All Relevant",
-            "internships": "Internships Only",
-            "juniors": "Juniors (< 2 years)",
+            "internships": "Internships",
+            "juniors": "Juniors",
             "score_80": "Score > 80%"
         },
         "max_results": "Max Results:",
         "search_placeholder": "Ex: Software Engineer Intern...",
-        "location_placeholder": "Location (ex: New York, NY)",
+        "location_placeholder": "Location (e.g. Montreal, QC)",
         "launch_button": "Launch Sniper",
         "upload_pdf_only": "Please select a PDF file.",
         "error_reading_pdf": "Error reading PDF.",
@@ -733,7 +733,7 @@
         "analyzing_market": "Analyzing Market...",
         "analyzing_market_desc": "Searching via multiple providers, filtering noise, and calculating neural matching with your CV profile.",
         "no_opportunities": "No opportunities detected",
-        "no_opportunities_desc": "Enter your search criteria above to launch the Sniper.",
+        "no_opportunities_desc": "Fill in your search criteria above to launch the Sniper.",
         "apply": "Apply",
         "dead_link": "Dead Link",
         "adapt_cv": "Adapt CV",
@@ -752,7 +752,9 @@
         "recent": "Recent",
         "no_desc": "No description provided.",
         "adapt_cv_toast_info": "Please upload/paste your CV in the section above before adapting.",
-        "radar_error": "Error calling Radar."
+        "radar_error": "Error calling Radar.",
+        "title_sniper": "Sniper",
+        "title_recruitment": "Recruitment."
     },
     "crm_board": {
         "title": "Applications CRM",
