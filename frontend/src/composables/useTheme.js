@@ -4,7 +4,7 @@ const STORAGE_KEY = 'goldarmy-theme'
 
 export function useTheme() {
   const theme = ref(
-    typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) || 'dark' : 'dark'
+    typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) || 'light' : 'light'
   )
 
   function toggleTheme() {

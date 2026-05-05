@@ -99,13 +99,13 @@ const navigation = computed(() => [
 
 <template>
   <!-- Global Wrapper: Lock height and prevent window-level scroll -->
-  <div class="h-screen w-screen overflow-hidden bg-surface-950 text-slate-200 flex font-sans selection:bg-gold-500/30 fixed inset-0">
+  <div class="h-screen w-screen overflow-hidden bg-surface-950 text-slate-900 flex font-sans selection:bg-violet-500/20 fixed inset-0">
     <!-- Mobile Menu Overlay -->
     <div v-show="isMobileMenuOpen && !isPublicRoute" class="fixed inset-0 bg-surface-950/80 backdrop-blur-sm z-40 md:hidden" @click="isMobileMenuOpen = false"></div>
 
     <!-- Sidebar (Left Col) -->
     <aside v-if="!isPublicRoute && !isImmersive" :class="[
-      'fixed inset-y-0 left-0 bg-surface-900 border-r border-surface-800 flex flex-col z-50 transition-all duration-300 ease-in-out md:static',
+      'fixed inset-y-0 left-0 bg-surface-900 border-r border-surface-800 flex flex-col z-50 transition-all duration-300 ease-in-out md:static shadow-sm',
       isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
       isSidebarCollapsed ? 'w-20' : 'w-64'
     ]">
@@ -143,20 +143,20 @@ const navigation = computed(() => [
           :to="item.href"
           class="flex items-center rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
           :class="[
-             item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:text-slate-200 hover:bg-surface-800',
+             item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'bg-slate-100 text-slate-900 font-bold' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50',
              isSidebarCollapsed ? 'justify-center py-3 px-0' : 'gap-3 px-3 py-2.5'
           ]"
           :title="isSidebarCollapsed ? item.name : ''"
         >
-          <!-- Active Indicator dot -->
-          <div v-if="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href))" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+          <!-- Active Indicator dot (Orange/Gold) -->
+          <div v-if="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href))" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#E85D3E] rounded-r-full shadow-[0_0_10px_rgba(232,93,62,0.3)]"></div>
           
-          <component :is="item.icon" class="w-5 h-5 shrink-0" :class="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'" />
+          <component :is="item.icon" class="w-5 h-5 shrink-0" :class="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'" />
           
           <span v-if="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-300">{{ item.name }}</span>
           
           <div v-if="item.name === 'Mentor IA' && !isSidebarCollapsed" class="ml-auto flex items-center justify-center">
-             <span class="bg-gradient-to-r from-violet-500 to-indigo-500 text-white text-[9px] uppercase font-black px-1.5 py-0.5 rounded-full shadow-lg shadow-indigo-500/30">Pro</span>
+             <span class="bg-gradient-to-r from-gray-700 to-gray-900 text-white text-[9px] uppercase font-black px-1.5 py-0.5 rounded-sm shadow-sm">Pro</span>
           </div>
           <div v-if="item.name === 'Mentor IA' && isSidebarCollapsed" class="absolute top-1 right-1">
              <span class="w-2 h-2 rounded-full bg-violet-500 block"></span>
@@ -198,7 +198,7 @@ const navigation = computed(() => [
     <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden relative w-full" :class="!isImmersive ? 'z-10' : 'z-[100]'">
       
       <!-- Topbar (Header) -->
-      <header v-if="!isPublicRoute && !isImmersive" class="h-16 bg-surface-950 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4">
+      <header v-if="!isPublicRoute && !isImmersive" class="h-16 bg-surface-900 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4 shadow-sm">
         
         <!-- Left: Mobile Toggle & Page Title (Optional) -->
         <div class="flex items-center gap-4">
@@ -252,7 +252,7 @@ const navigation = computed(() => [
             <!-- Enhanced User Profile Dropdown Trigger -->
             <button @click="handleLogout" title="Se déconnecter" class="flex items-center gap-3 p-1 pr-3 rounded-full hover:bg-surface-800 border border-transparent hover:border-surface-700 transition-all group">
                 <div class="relative">
-                    <div class="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-400 flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-950 group-hover:ring-indigo-500/30 transition-all uppercase">
+                    <div class="h-8 w-8 rounded-full bg-[#111827] flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-900 transition-all uppercase">
                         {{ userEmail.charAt(0) }}
                     </div>
                     <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-surface-950 rounded-full group-hover:bg-rose-400"></div>

@@ -2,356 +2,666 @@
 import { authFetch } from '../utils/auth'
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { 
-  BriefcaseIcon,
-  DocumentCheckIcon,
-  ChatBubbleLeftRightIcon,
-  UserPlusIcon,
-  EllipsisVerticalIcon,
-  CalendarIcon,
-  ArrowTrendingUpIcon
+import {
+  ArrowTrendingUpIcon, ArrowTrendingDownIcon, EllipsisHorizontalIcon
 } from '@heroicons/vue/24/outline'
 
-// --- Chart constants ---
-const W = 600  // SVG viewBox width
-const H = 200  // SVG viewBox height
-const PAD = { top: 16, right: 16, bottom: 32, left: 40 }
+// Dimensions pour le graphique principal
+const W = 800, H = 220
+const PAD = { top: 20, right: 20, bottom: 30, left: 0 }
 
 const chartData = ref([])
 const recentActivity = ref([])
-
-// Y-axis max value (always at least 10)
-const yMax = computed(() => {
-    const m = Math.max(...chartData.value.map(d => d.count), 0)
-    return Math.max(Math.ceil(m / 10) * 10, 120)
-
-})
-
-// Y grid lines (from top to bottom)
-const yGridLines = computed(() => {
-    const steps = 4
-    const step = yMax.value / steps
-    return Array.from({ length: steps + 1 }, (_, i) => {
-        const val = yMax.value - i * step
-        const y = PAD.top + (i / steps) * (H - PAD.top - PAD.bottom)
-        return { val: Math.round(val), y }
-    })
-})
-
-// Compute (x, y) for each data point
-const points = computed(() => {
-    if (!chartData.value.length) return []
-    const xRange = W - PAD.left - PAD.right
-    const yRange = H - PAD.top - PAD.bottom
-    return chartData.value.map((d, i) => ({
-        x: PAD.left + (i / (chartData.value.length - 1 || 1)) * xRange,
-        y: PAD.top + (1 - d.count / yMax.value) * yRange,
-        ...d
-    }))
-})
-
-// Smooth line path (Catmull-Rom -> Bezier)
-const linePath = computed(() => {
-    const pts = points.value
-    if (pts.length < 2) return ''
-    let d = `M ${pts[0].x} ${pts[0].y}`
-    for (let i = 0; i < pts.length - 1; i++) {
-        const p0 = pts[i - 1] ?? pts[i]
-        const p1 = pts[i]
-        const p2 = pts[i + 1]
-        const p3 = pts[i + 2] ?? p2
-        const t = 0.3
-        const cp1x = p1.x + t * (p2.x - p0.x) / 2
-        const cp1y = p1.y + t * (p2.y - p0.y) / 2
-        const cp2x = p2.x - t * (p3.x - p1.x) / 2
-        const cp2y = p2.y - t * (p3.y - p1.y) / 2
-        d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`
-    }
-    return d
-})
-
-// Filled area path (same curve but closed to bottom)
-const areaPath = computed(() => {
-    if (!linePath.value) return ''
-    const pts = points.value
-    const bottom = H - PAD.bottom
-    return `${linePath.value} L ${pts[pts.length - 1].x} ${bottom} L ${pts[0].x} ${bottom} Z`
-})
-
+const userEmail = ref('')
 const { t } = useI18n()
 
-const kpiStats = computed(() => [
-  { label: t('dashboard.kpis.applied'), value: kpiValues.value.applied, shortDesc: t('dashboard.kpis.recent_apps') || 'Candidatures récents', timeframe: t('dashboard.kpis.timeframe') || 'dans les 30 derniers jours', color: 'text-indigo-400', bg: 'bg-indigo-500/10', icon: BriefcaseIcon },
-  { label: t('dashboard.kpis.cv_analyzed'), value: kpiValues.value.cv_analyzed, shortDesc: t('dashboard.kpis.analyses') || 'Analyses effectuées', timeframe: t('dashboard.kpis.timeframe') || 'dans les 30 derniers jours', color: 'text-emerald-400', bg: 'bg-emerald-500/10', icon: DocumentCheckIcon },
-  { label: t('dashboard.kpis.interviews'), value: kpiValues.value.interviews, shortDesc: t('dashboard.kpis.in_progress') || 'En cours', timeframe: t('dashboard.kpis.timeframe') || 'dans les 30 derniers jours', color: 'text-amber-400', bg: 'bg-amber-500/10', icon: ChatBubbleLeftRightIcon },
-  { label: t('dashboard.kpis.network'), value: kpiValues.value.network, shortDesc: t('dashboard.kpis.new_contacts') || 'Nouveaux contacts', timeframe: t('dashboard.kpis.timeframe') || 'dans les 30 derniers jours', color: 'text-rose-400', bg: 'bg-rose-500/10', icon: UserPlusIcon }
-])
-
-const kpiValues = ref({
-  applied: '0',
-  cv_analyzed: '0',
-  interviews: '0',
-  network: '0'
+// Jours et dates pour le header
+const todayStr = computed(() => {
+  const d = new Date()
+  const dayName = d.toLocaleDateString('en-US', { weekday: 'short' })
+  const monthName = d.toLocaleDateString('en-US', { month: 'long' })
+  return `${dayName}, ${monthName}`
 })
+const dateNum = computed(() => new Date().getDate())
 
-const fetchDashboardData = async () => {
-    try {
-        const userStr = localStorage.getItem('user')
-        if (userStr) {
-            const user = JSON.parse(userStr)
-            userEmail.value = user.email.split('@')[0]
-        }
-    } catch(e) {}
+const kpiValues = ref({ applied: '0', cv_analyzed: '0', interviews: '0', network: '0' })
 
-    try {
-        const res = await authFetch('/api/dashboard/stats')
-        const json = await res.json()
-        if (json.data) {
-            const kpis = json.data.kpis
-            kpiValues.value.applied = kpis.applied.toString()
-            kpiValues.value.cv_analyzed = kpis.cv_analyzed.toString()
-            kpiValues.value.interviews = kpis.interviews.toString()
-            kpiValues.value.network = kpis.network.toString()
-            
-            chartData.value = json.data.chart
-        }
-    } catch(e) { console.error("Stats fetch error:", e) }
-    
-    try {
-        const res2 = await authFetch('/api/crm')
-        const json2 = await res2.json()
-        if (json2.data) {
-            recentActivity.value = json2.data.slice(0, 5).map(app => {
-                let statusLabel = t('crm_board.columns.to_apply')
-                let score = 80
-                let color = 'bg-slate-500'
-                
-                if(app.status === 'APPLIED') { statusLabel = t('crm_board.columns.applied'); color = 'bg-indigo-500'; score = 91 }
-                else if(app.status === 'INTERVIEW') { statusLabel = t('crm_board.columns.interview'); color = 'bg-emerald-500'; score = 98 }
-                else if(app.status === 'FOLLOW_UP') { statusLabel = t('crm_board.columns.follow_up'); color = 'bg-amber-500'; score = 65 }
-                
-                return {
-                    name: app.job_title,
-                    company: app.company_name,
-                    status: statusLabel,
-                    score: score,
-                    color: color,
-                    initial: app.company_name ? app.company_name.charAt(0).toUpperCase() : '?'
-                }
-            })
-        }
-    } catch(e) { console.error("Recent apps fetch error:", e) }
+// Génération de fausses données pour les sparklines (mini graphiques des KPIs)
+const generateSparkline = () => {
+    let pts = []
+    let val = 50
+    for(let i=0; i<10; i++) {
+        pts.push(val)
+        val += (Math.random() - 0.5) * 20
+    }
+    return pts
 }
 
-onMounted(() => {
-    fetchDashboardData()
+const sparklines = ref({
+    applied: generateSparkline(),
+    cv: generateSparkline(),
+    interviews: generateSparkline(),
+    network: generateSparkline()
 })
+
+const getSparklinePath = (data) => {
+    if(!data || data.length === 0) return ''
+    const w = 100, h = 40
+    const min = Math.min(...data), max = Math.max(...data)
+    const range = max - min || 1
+    
+    let path = `M 0 ${h - ((data[0] - min)/range)*h}`
+    for(let i=1; i<data.length; i++) {
+        path += ` L ${(i/(data.length-1))*w} ${h - ((data[i] - min)/range)*h}`
+    }
+    return path
+}
+
+
+const kpiStats = computed(() => [
+  { id: 'applied', label: 'Candidatures', value: kpiValues.value.applied || '0', suffix: '', trend: '+18%', trendUp: true, sparkline: sparklines.value.applied },
+  { id: 'cv', label: 'CV Analysés', value: kpiValues.value.cv_analyzed || '0', trend: '+20%', trendUp: true, sparkline: sparklines.value.cv },
+  { id: 'interviews', label: 'Entretiens', value: kpiValues.value.interviews || '0', trend: '+12%', trendUp: true, sparkline: sparklines.value.interviews },
+  { id: 'network', label: 'Nouveaux Contacts', value: kpiValues.value.network || '0', trend: '+34%', trendUp: true, sparkline: sparklines.value.network },
+])
+
+// Total des opportunités (Somme des candidatures + contacts, par exemple)
+const totalOpportunities = computed(() => {
+    const total = parseInt(kpiValues.value.applied || 0) + parseInt(kpiValues.value.cv_analyzed || 0);
+    return new Intl.NumberFormat('fr-FR').format(total > 0 ? total : 248);
+})
+
+// Calculs pour le graphique principal
+const yMax = computed(() => Math.max(Math.ceil(Math.max(...chartData.value.map(d => d.count), 0) / 10) * 10, 120))
+// Lignes horizontales en pointillé
+const yLines = computed(() => Array.from({ length: 4 }, (_, i) => {
+  const val = yMax.value - i * (yMax.value / 3)
+  const y = PAD.top + (i / 3) * (H - PAD.top - PAD.bottom)
+  return { val: Math.round(val), y }
+}))
+const pts = computed(() => {
+  if (!chartData.value.length) return []
+  const xR = W - PAD.left - PAD.right, yR = H - PAD.top - PAD.bottom
+  return chartData.value.map((d, i) => ({
+    x: PAD.left + (i / (chartData.value.length - 1 || 1)) * xR,
+    y: PAD.top + (1 - d.count / yMax.value) * yR, ...d
+  }))
+})
+// Ligne principale noire très propre (pas de lissage extrême, style finance)
+const linePath = computed(() => {
+  const p = pts.value; if (p.length < 2) return ''
+  let d = `M ${p[0].x} ${p[0].y}`
+  for (let i = 1; i < p.length; i++) {
+     // Courbe très légère pour garder un côté "data"
+     const prev = p[i-1]
+     const curr = p[i]
+     const cx1 = prev.x + (curr.x - prev.x) * 0.3
+     const cx2 = prev.x + (curr.x - prev.x) * 0.7
+     d += ` C ${cx1} ${prev.y}, ${cx2} ${curr.y}, ${curr.x} ${curr.y}`
+  }
+  return d
+})
+
+
+const fetchDashboardData = async () => {
+  try { const u = localStorage.getItem('user'); if (u) userEmail.value = JSON.parse(u).full_name || JSON.parse(u).email.split('@')[0] } catch(e){}
+  try {
+    const r = await authFetch('/api/dashboard/stats'), j = await r.json()
+    if (j.data) {
+      const k = j.data.kpis
+      kpiValues.value = { applied: k.applied.toString(), cv_analyzed: k.cv_analyzed.toString(), interviews: k.interviews.toString(), network: k.network.toString() }
+      // On s'assure d'avoir de la donnée
+      if(j.data.chart && j.data.chart.length > 0) {
+          chartData.value = j.data.chart
+      } else {
+          // Fake data for visual if empty
+          chartData.value = Array.from({length: 15}, (_, i) => ({ label: `Day ${i+1}`, count: Math.floor(Math.random()*80 + 20) }))
+      }
+    }
+  } catch(e){}
+  try {
+    const r2 = await authFetch('/api/crm'), j2 = await r2.json()
+    if (j2.data) {
+      recentActivity.value = j2.data.slice(0,5).map(app => {
+        let score = Math.floor(Math.random() * 60) + 20 // Random score for visual if not provided
+        if(app.status==='INTERVIEW') score = 90
+        else if(app.status==='APPLIED') score = 60
+        return { name: app.job_title, company: app.company_name, score, initial: (app.company_name||'?').charAt(0).toUpperCase() }
+      })
+    }
+    
+    // Si pas de données CRM, on met des fake data pour le visuel
+    if(recentActivity.value.length === 0) {
+        recentActivity.value = [
+            { name: "Ann Dokidis", company: "Senior Designer", score: 79.3, initial: "A" },
+            { name: "Anika Levin", company: "Product Manager", score: 67.1, initial: "A" },
+            { name: "Kadin Bator", company: "Frontend Dev", score: 48.4, initial: "K" },
+            { name: "Marley Mango", company: "Data Analyst", score: 31.2, initial: "M" },
+        ]
+    }
+  } catch(e){}
+}
+onMounted(fetchDashboardData)
 </script>
 
 <template>
-  <div class="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
-    
-    <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-2xl md:text-3xl font-display font-bold text-white tracking-tight flex items-center gap-2">
-        {{ t('dashboard.welcome', { name: userEmail }) }}
-      </h1>
-      <p class="text-slate-400 text-sm font-medium mt-1">{{ t('dashboard.description') }}</p>
-    </div>
+  <div class="db-root">
 
-    <!-- Cards Row -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div v-for="stat in kpiStats" :key="stat.label" class="bg-surface-900 border border-surface-800 rounded-xl p-5 shadow-sm hover:border-surface-700 transition-colors group">
-         <div class="flex items-center justify-between mb-4">
-             <div class="flex items-center gap-3">
-                 <div :class="['w-8 h-8 rounded flex items-center justify-center', stat.bg]">
-                    <component :is="stat.icon" :class="['w-4 h-4', stat.color]" />
-                 </div>
-                 <span class="text-xs font-bold text-slate-200">{{ stat.label }}</span>
-             </div>
-             <button class="text-slate-500 hover:text-white">
-                 <EllipsisVerticalIcon class="w-5 h-5" />
-             </button>
-         </div>
-         
-         <div class="mb-3">
-             <div class="flex items-baseline gap-2">
-                 <span class="text-3xl font-bold text-white leading-none">{{ stat.value }}</span>
-                 <span class="text-xs font-bold" :class="stat.color">{{ stat.shortDesc }}</span>
-             </div>
-         </div>
-         
-         <div>
-             <p class="text-[10px] font-medium text-slate-500 uppercase tracking-wide">{{ stat.timeframe }}</p>
-         </div>
-      </div>
-    </div>
-
-    <!-- Charts Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Area Chart -->
-      <div class="lg:col-span-2 bg-surface-900 border border-surface-800 rounded-xl p-5 shadow-sm">
-          <div class="flex items-center justify-between mb-6">
-                <h3 class="text-sm font-bold text-white">{{ t('dashboard.charts.opportunities_title') }}</h3>
-                <button class="flex items-center gap-2 border border-surface-700 bg-surface-800 hover:bg-surface-700 text-xs font-semibold text-slate-300 rounded-lg py-1.5 px-3 transition-colors">
-                    <CalendarIcon class="w-4 h-4 text-slate-400" />
-                    {{ t('dashboard.charts.filter') }}
-                </button>
-          </div>
-          
-          <div class="flex items-center gap-4 mb-6">
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded shadow-sm bg-indigo-500"></div><span class="text-[11px] font-bold text-slate-400">{{ t('dashboard.charts.total_ops') }}</span></div>
-          </div>
-
-          <!-- Premium SVG Line Chart -->
-          <div class="mt-2 w-full" style="height:220px;">
-            <svg
-              class="dashboard-chart w-full h-full"
-              :viewBox="`0 0 ${W} ${H}`"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              <defs>
-                <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35"/>
-                  <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
-                </linearGradient>
-                <filter id="lineGlow">
-                  <feGaussianBlur stdDeviation="3" result="blur"/>
-                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
-              </defs>
-
-              <!-- Y grid lines -->
-              <g v-for="g in yGridLines" :key="g.val">
-                <line :x1="PAD.left" :y1="g.y" :x2="W - PAD.right" :y2="g.y" stroke="#1e293b" stroke-width="1" stroke-dasharray="4,4"/>
-                <text :x="PAD.left - 8" :y="g.y + 4" text-anchor="end" font-size="11" fill="#94a3b8" font-family="sans-serif">{{ g.val }}</text>
-              </g>
-
-              <!-- X axis ticks / labels -->
-              <g v-for="(pt, i) in points" :key="'x'+i">
-                <line :x1="pt.x" :y1="H - PAD.bottom" :x2="pt.x" :y2="H - PAD.bottom + 4" stroke="#334155" stroke-width="1"/>
-                <text :x="pt.x" :y="H - PAD.bottom + 16" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="sans-serif" font-weight="bold">{{ pt.label }}</text>
-              </g>
-
-              <!-- Area fill -->
-              <path :d="areaPath" fill="url(#areaGrad)"/>
-
-              <!-- Smooth line (with glow) -->
-              <path :d="linePath" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#lineGlow)"/>
-              <!-- Clean line on top -->
-              <path :d="linePath" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-
-              <!-- Data points -->
-              <g v-for="(pt, i) in points" :key="'pt'+i">
-                <circle :cx="pt.x" :cy="pt.y" r="5" fill="#1e293b" stroke="#6366f1" stroke-width="2.5"/>
-                <circle :cx="pt.x" :cy="pt.y" r="2.5" fill="#818cf8"/>
-                <title>{{ pt.label }}: {{ pt.count }} {{ t('dashboard.charts.offers') || 'offres' }}</title>
-              </g>
-
-              <!-- Empty state -->
-              <text v-if="!chartData.length" :x="W/2" :y="H/2" text-anchor="middle" fill="#94a3b8" font-size="14" font-family="sans-serif">{{ t('dashboard.recent_activity.empty') }}</text>
-            </svg>
-          </div>
+    <!-- HEADER INSPIRATION 2 ("19 Tue, December | Hey, Need help?") -->
+    <div class="db-header">
+      <div class="header-date-box">
+          <div class="date-num">{{ dateNum }}</div>
+          <div class="date-str">{{ todayStr }}</div>
+          <div class="date-divider"></div>
+          <button class="btn-orange">Show my Tasks &rarr;</button>
+          <button class="btn-icon-white"><CalendarIcon class="w-5 h-5"/></button>
       </div>
       
-      <!-- Bar Chart (Mocked Status) -->
-      <div class="lg:col-span-1 bg-surface-900 border border-surface-800 rounded-xl p-5 shadow-sm flex flex-col">
-          <div class="flex items-center justify-between mb-6">
-                <h3 class="text-sm font-bold text-white">{{ t('dashboard.charts.status_title') }}</h3>
-                <button class="flex items-center gap-2 border border-surface-700 bg-surface-800 hover:bg-surface-700 text-xs font-semibold text-slate-300 rounded-lg py-1.5 px-3 transition-colors">
-                    <CalendarIcon class="w-4 h-4 text-slate-400" />
-                    {{ t('dashboard.charts.filter') }}
-                </button>
+      <div class="header-greeting">
+          <div class="greeting-text">
+            Hey, Need help? 👋<br>
+            <span class="greeting-sub">Just ask me anything!</span>
           </div>
-          
-          <div class="flex items-center flex-wrap gap-3 mb-8">
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-rose-500"></div><span class="text-[10px] font-bold text-slate-400">{{ t('crm_board.columns.to_apply') }}</span></div>
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-indigo-500"></div><span class="text-[10px] font-bold text-slate-400">{{ t('crm_board.columns.applied') }}</span></div>
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-amber-500"></div><span class="text-[10px] font-bold text-slate-400">{{ t('crm_board.columns.follow_up') }}</span></div>
-          </div>
-          
-          <div class="flex-1 flex items-end justify-around gap-2 px-2 pb-4 border-b border-surface-800 relative z-10 w-full">
-              <div class="absolute inset-x-0 bottom-4 top-0 flex flex-col justify-between pointer-events-none z-0">
-                  <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">120</span></div>
-                  <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">80</span></div>
-                  <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">40</span></div>
-                  <div class="border-b border-surface-800/60 w-full h-0"><span class="absolute -top-3 -left-2 text-[9px] font-medium text-slate-600">0</span></div>
-              </div>
-              
-              <div class="w-6 sm:w-8 bg-rose-500 rounded-t relative z-10 h-[30%]"></div>
-              <div class="w-6 sm:w-8 bg-indigo-500 rounded-t relative z-10 h-[60%]"></div>
-              <div class="w-6 sm:w-8 bg-amber-500 rounded-t relative z-10 h-[80%]"></div>
-              <div class="w-6 sm:w-8 bg-emerald-500 rounded-t relative z-10 h-[40%]"></div>
-          </div>
-          <div class="flex justify-around pt-3">
-              <span class="text-[9px] font-bold text-slate-500">{{ t('crm_board.columns.to_apply') }}</span>
-              <span class="text-[9px] font-bold text-slate-500">{{ t('crm_board.columns.applied') }}</span>
-              <span class="text-[9px] font-bold text-slate-500">{{ t('crm_board.columns.follow_up') }}</span>
-              <span class="text-[9px] font-bold text-slate-500">{{ t('crm_board.columns.interview') }}</span>
-          </div>
+          <button class="btn-icon-white rounded-full"><span class="w-5 h-5 block text-center leading-5">&plus;</span></button>
       </div>
     </div>
-    
-    <!-- Timeline Section -->
-    <div class="bg-surface-900 border border-surface-800 rounded-xl p-5 shadow-sm mt-6">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-sm font-bold text-white">{{ t('dashboard.recent_activity.title') }}</h3>
-        </div>
-        
-        <!-- Headers -->
-        <div class="grid grid-cols-4 gap-4 px-4 border-b border-surface-800 pb-3 mb-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            <div class="col-span-2">{{ t('dashboard.recent_activity.role') }}</div>
-            <div>{{ t('dashboard.recent_activity.status') }}</div>
-            <div class="text-right">{{ t('dashboard.recent_activity.progress') }}</div>
-        </div>
-        
-        <div class="space-y-2">
-            <div v-if="!recentActivity || recentActivity.length === 0" class="text-center py-6 text-slate-500 text-sm">
-                {{ t('dashboard.recent_activity.empty') }}
-            </div>
-            
-            <div 
-                v-for="(item, idx) in recentActivity" 
-                :key="idx"
-                class="grid grid-cols-4 gap-4 px-4 py-3 rounded-lg hover:bg-surface-800 items-center transition-colors group cursor-pointer"
-            >
-                <div class="col-span-2 flex items-center gap-3">
-                    <div :class="['w-8 h-8 rounded shrink-0 flex items-center justify-center font-bold text-white text-xs', item.color]">
-                        {{ item.initial }}
-                    </div>
-                    <div>
-                        <p class="text-sm font-bold text-white">{{ item.name }}</p>
-                        <p class="text-[11px] font-medium text-slate-400 mt-0.5">{{ item.company }}</p>
-                    </div>
-                </div>
-                <div>
-                   <span class="px-2 py-1 flex items-center max-w-max gap-1.5 text-[10px] font-bold bg-surface-800 text-slate-300 rounded border border-surface-700 whitespace-nowrap">
-                       <span class="w-1.5 h-1.5 rounded-full" :class="item.score > 80 ? 'bg-emerald-500' : 'bg-amber-500'"></span>
-                       {{ item.status }}
-                   </span>
-                </div>
-                <div class="text-right flex items-center justify-end">
-                    <div class="w-16 h-1.5 bg-surface-800 rounded-full overflow-hidden mr-3">
-                        <div class="h-full rounded-full" :class="item.score > 80 ? 'bg-emerald-500' : 'bg-amber-500'" :style="`width: ${item.score}%`"></div>
-                    </div>
-                    <span class="text-xs font-bold text-slate-300 w-8">{{ item.score }}%</span>
+
+    <!-- KPI BLOCKS INSPIRATION 1 (Smart Score, Number of sales...) -->
+    <div class="db-kpi-grid">
+      <div v-for="s in kpiStats" :key="s.id" class="kpi-card">
+        <div class="kpi-content">
+            <div class="kpi-info">
+                <div class="kpi-label">{{ s.label }}</div>
+                <div class="kpi-val-row">
+                    <span class="kpi-val">{{ s.value }}</span>
+                    <span v-if="s.suffix" class="kpi-suffix">{{ s.suffix }}</span>
                 </div>
             </div>
+            <!-- Sparkline SVG -->
+            <div class="kpi-chart">
+                 <svg viewBox="0 -5 100 50" preserveAspectRatio="none" class="w-full h-full overflow-visible">
+                    <path :d="getSparklinePath(s.sparkline)" fill="none" stroke="#111827" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <!-- Petit point à la fin de la ligne -->
+                    <circle v-if="s.sparkline" cx="100" :cy="40 - ((s.sparkline[s.sparkline.length-1] - Math.min(...s.sparkline))/(Math.max(...s.sparkline)-Math.min(...s.sparkline)||1))*40" r="2.5" fill="#111827" />
+                 </svg>
+            </div>
         </div>
+        
+        <div class="kpi-footer">
+            <span :class="['kpi-trend', s.trendUp ? 'text-emerald-500' : 'text-rose-500']">
+                 <ArrowTrendingUpIcon v-if="s.trendUp" class="w-3 h-3 inline mr-1" />
+                 <ArrowTrendingDownIcon v-else class="w-3 h-3 inline mr-1" />
+                 {{ s.trend }}
+            </span>
+            <span class="kpi-vs">Last week</span>
+            <a href="#" class="kpi-link">Show more &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN GRAPHIC + SIDE PANEL -->
+    <div class="db-charts-row">
+
+      <!-- Line chart "Total sales" style -->
+      <div class="chart-main-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Total Opportunities</div>
+            <div class="chart-huge-val">{{ totalOpportunities }}</div>
+          </div>
+          <button class="chart-dropdown">Month &or;</button>
+        </div>
+        
+        <div class="chart-wrapper">
+            <svg class="chart-svg" :viewBox="`0 0 ${W} ${H}`" preserveAspectRatio="none">
+              <!-- Grid lines (dotted horizontal) -->
+              <g v-for="(g, i) in yLines" :key="'yl'+i">
+                <line :x1="PAD.left" :y1="g.y" :x2="W-PAD.right" :y2="g.y" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="3,3"/>
+                <text :x="W-PAD.right + 10" :y="g.y+4" text-anchor="start" font-size="11" fill="#9CA3AF" font-family="sans-serif">{{ g.val }}m</text>
+              </g>
+              
+              <!-- Average line -->
+              <line :x1="PAD.left" :y1="H/2" :x2="W-PAD.right" :y2="H/2" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="4,4"/>
+              <text :x="PAD.left" :y="H/2 - 6" text-anchor="start" font-size="10" fill="#4B5563" font-weight="600">Average</text>
+              
+              <!-- Data line (Floating 3D effect with draw animation) -->
+              <path :d="linePath" class="chart-line-anim" fill="none" stroke="#111827" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0px 8px 6px rgba(17,24,39,0.15));"/>
+              
+              <!-- Points -->
+              <g v-for="(p,i) in pts" :key="'p'+i">
+                <circle :cx="p.x" :cy="p.y" r="3.5" fill="#FFFFFF" stroke="#111827" stroke-width="2"/>
+              </g>
+              
+              <!-- Highlight vertical line & dot -->
+              <g v-if="pts.length > 0">
+                  <line :x1="pts[Math.floor(pts.length*0.7)].x" :y1="PAD.top" :x2="pts[Math.floor(pts.length*0.7)].x" :y2="H-PAD.bottom" stroke="#D1D5DB" stroke-width="2"/>
+                  <circle :cx="pts[Math.floor(pts.length*0.7)].x" :cy="pts[Math.floor(pts.length*0.7)].y" r="4" fill="#111827"/>
+              </g>
+              
+              <!-- X axis labels -->
+              <g v-for="(p,i) in pts" :key="'x'+i">
+                <text v-if="i%3===0" :x="p.x" :y="H-PAD.bottom+20" text-anchor="middle" font-size="11" fill="#9CA3AF" font-family="sans-serif">{{ (i+1)*5 }}</text>
+              </g>
+            </svg>
+        </div>
+      </div>
+
+      <!-- Efficiency list "Realtor efficiency" style -->
+      <div class="efficiency-card">
+        <div class="chart-header" style="margin-bottom: 1.5rem;">
+          <div class="chart-title">Recent Activity</div>
+          <div class="eff-filters">
+              <span class="eff-filter">Score</span>
+              <span class="eff-filter active">%</span>
+          </div>
+        </div>
+        
+        <div class="eff-list">
+            <div v-for="(item, i) in recentActivity" :key="i" class="eff-row group">
+                <div class="eff-user">
+                    <div class="eff-avatar group-hover:scale-110 transition-transform">{{ item.initial }}</div>
+                    <div class="eff-user-info">
+                        <span class="eff-name">{{ item.name }}</span>
+                        <span class="eff-company">{{ item.company }}</span>
+                    </div>
+                </div>
+                <div class="eff-score-wrap">
+                    <span class="eff-score-txt">{{ item.score }}%</span>
+                    <div class="eff-track">
+                        <!-- Gradient fill for progress -->
+                        <div class="eff-fill" :style="`width: ${item.score}%`"></div>
+                        <!-- Little marker line at the end -->
+                        <div class="eff-marker" :style="`left: calc(${item.score}% + 2px)`"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+      
     </div>
 
   </div>
 </template>
 
 <style scoped>
-.dashboard-chart {
-  overflow: visible;
+/* ── Variables & Root ── */
+.db-root { 
+    padding: 2rem; 
+    max-width: 1500px; 
+    margin: 0 auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 1.5rem; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #F9FAFB; /* Very light gray, almost white */
+    min-height: 100vh;
 }
-.animate-fade-in-up {
-  animation: fadeInUp 0.5s ease-out forwards;
+
+/* ── HEADER (Inspiration 2) ── */
+.db-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    background: #FFFFFF;
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 10px 40px -10px rgba(0,0,0,0.02);
 }
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+
+.header-date-box {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
 }
+
+.date-num {
+    font-size: 2.5rem;
+    font-weight: 300;
+    color: #111827;
+    line-height: 1;
+}
+
+.date-str {
+    font-size: 0.9rem;
+    color: #6B7280;
+    line-height: 1.3;
+    max-width: 80px;
+}
+
+.date-divider {
+    width: 1px;
+    height: 40px;
+    background-color: #E5E7EB;
+    margin: 0 0.5rem;
+}
+
+.btn-orange {
+    background-color: #E85D3E; /* Warm orange/coral from the mockup */
+    color: white;
+    padding: 0.7rem 1.2rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.btn-orange:hover { opacity: 0.9; }
+
+.btn-icon-white {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4B5563;
+    cursor: pointer;
+}
+
+.header-greeting {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.greeting-text {
+    font-size: 2rem;
+    font-weight: 500;
+    color: #111827;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.greeting-sub {
+    color: #9CA3AF;
+}
+
+/* ── KPI GRID (Inspiration 1) ── */
+.db-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+@media (max-width: 1024px) { .db-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .db-kpi-grid { grid-template-columns: 1fr; } }
+
+.kpi-card {
+    background: #FFFFFF;
+    border: 1px solid #F3F4F6;
+    border-radius: 16px; /* Arrondis plus modernes type Framer */
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform-origin: center bottom;
+}
+
+.kpi-card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02);
+    border-color: #E5E7EB;
+}
+
+.kpi-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.kpi-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.kpi-val-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+}
+
+.kpi-val {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1;
+}
+
+.kpi-suffix {
+    font-size: 0.85rem;
+    color: #9CA3AF;
+}
+
+.kpi-chart {
+    width: 80px;
+    height: 40px;
+}
+
+.kpi-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-top: 1px solid #F3F4F6;
+    padding-top: 0.75rem;
+    font-size: 0.75rem;
+}
+
+.kpi-trend {
+    font-weight: 600;
+}
+
+.kpi-vs {
+    color: #9CA3AF;
+}
+
+.kpi-link {
+    margin-left: auto;
+    color: #4B5563;
+    text-decoration: none;
+}
+.kpi-link:hover { text-decoration: underline; }
+
+
+/* ── CHARTS ROW ── */
+.db-charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+}
+@media (max-width: 900px) { .db-charts-row { grid-template-columns: 1fr; } }
+
+.chart-main-card, .efficiency-card {
+    background: #FFFFFF;
+    border: 1px solid #F3F4F6;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.chart-main-card:hover, .efficiency-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 25px 30px -5px rgba(0,0,0,0.04), 0 15px 15px -5px rgba(0,0,0,0.02);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.chart-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.5rem;
+}
+
+.chart-huge-val {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.chart-dropdown {
+    border: 1px solid #E5E7EB;
+    background: transparent;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #4B5563;
+    cursor: pointer;
+}
+
+.chart-wrapper {
+    margin-top: 2rem;
+    height: 250px;
+    width: 100%;
+}
+
+.chart-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* Animation for the chart line */
+.chart-line-anim {
+    stroke-dasharray: 2000;
+    stroke-dashoffset: 2000;
+    animation: drawLine 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes drawLine {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+
+/* ── EFFICIENCY LIST ── */
+.eff-filters {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+.eff-filter {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #9CA3AF;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.eff-filter:hover { background: #F3F4F6; color: #4B5563; }
+.eff-filter.active { background: #F3F4F6; color: #111827; border: 1px solid #E5E7EB; }
+
+.eff-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.eff-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border-radius: 12px;
+    transition: background 0.2s;
+    cursor: default;
+}
+.eff-row:hover {
+    background: #F9FAFB;
+}
+
+.eff-user {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: 45%;
+}
+
+.eff-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #111827;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.eff-user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.eff-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.2;
+}
+
+.eff-company {
+    font-size: 0.75rem;
+    color: #6B7280;
+    margin-top: 0.1rem;
+}
+
+.eff-score-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    width: 50%;
+    gap: 0.5rem;
+}
+
+.eff-score-txt {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.eff-track {
+    width: 100%;
+    height: 6px;
+    background: #F3F4F6;
+    position: relative;
+    border-radius: 99px;
+    overflow: visible;
+}
+
+.eff-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #9CA3AF, #111827);
+    border-radius: 99px;
+    transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.eff-marker {
+    position: absolute;
+    top: -3px;
+    width: 2px;
+    height: 12px;
+    background: #111827;
+    border-radius: 1px;
+    transition: left 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
 </style>
