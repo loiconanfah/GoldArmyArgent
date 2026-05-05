@@ -61,46 +61,46 @@
           
           <div class="absolute inset-0 bg-gradient-to-br from-[#E85D3E]/5 to-[#6366f1]/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem] -z-10 blur-xl"></div>
           
-          <div class="bg-white/60 backdrop-blur-2xl border border-white/80 rounded-[3rem] p-10 h-full shadow-[0_20px_50px_rgba(0,0,0,0.02)] group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.06)] group-hover:-translate-y-2 transition-all duration-500 cursor-pointer flex flex-col">
+          <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[2.5rem] p-8 h-full shadow-[0_20px_50px_rgba(0,0,0,0.02)] group-hover:shadow-[0_40px_100px_rgba(232,93,62,0.1)] group-hover:-translate-y-2 transition-all duration-700 cursor-pointer flex flex-col relative overflow-hidden">
+            <!-- Hover Gradient -->
+            <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-[#E85D3E]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
             
-            <div class="flex justify-between items-start mb-8">
-              <div class="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-3xl transition-transform group-hover:scale-110 group-hover:rotate-6">
-                {{ getRecruiter(session.recruiter_id).avatar }}
+            <div class="flex justify-between items-start mb-8 relative z-10">
+              <div class="w-12 h-12 rounded-2xl bg-white shadow-xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 border border-slate-50">
+                <component :is="getRecruiter(session.recruiter_id).icon" :class="getRecruiter(session.recruiter_id).color" class="w-6 h-6" />
               </div>
-              <div :class="decisionClassRaw(session.decision)" class="px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-xl border border-white/50 shadow-sm">
+              <div :class="decisionClassRaw(session.decision)" class="px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest backdrop-blur-xl border border-white/50 shadow-sm transition-transform group-hover:scale-105">
                 {{ session.decision }}
               </div>
             </div>
 
-            <div class="space-y-2 mb-8">
-              <h3 class="text-2xl font-black text-slate-900 tracking-tighter leading-tight group-hover:text-[#E85D3E] transition-colors line-clamp-2">
+            <div class="space-y-2 mb-8 relative z-10">
+              <h3 class="text-xl font-black text-slate-900 tracking-tighter leading-tight group-hover:text-[#E85D3E] transition-colors line-clamp-2">
                 {{ session.job_title }}
               </h3>
-              <p class="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
-                <BuildingOfficeIcon class="w-4 h-4 text-[#E85D3E]/50" /> {{ session.company || 'Confidentiel' }}
-              </p>
+              <div class="flex items-center gap-2">
+                <div class="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-[#E85D3E]/30 transition-colors"></div>
+                <p class="text-slate-400 font-bold text-[9px] uppercase tracking-[0.2em]">
+                  {{ session.company || 'Confidentiel' }}
+                </p>
+              </div>
             </div>
 
-            <div class="mt-auto space-y-6 pt-6 border-t border-slate-100/50">
-              <div class="flex justify-between items-center">
-                <div class="flex flex-col">
-                  <span class="text-[2rem] font-black text-slate-900 leading-none tabular-nums">{{ session.scores?.overall || 0 }}</span>
-                  <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1">Score Global / 10</span>
+            <div class="mt-auto pt-6 border-t border-slate-100/50 flex items-center justify-between relative z-10">
+              <div class="flex flex-col">
+                <div class="flex items-baseline gap-0.5">
+                  <span class="text-2xl font-black text-slate-900 tabular-nums">{{ session.scores?.overall || 0 }}</span>
+                  <span class="text-[9px] font-black text-slate-300">/10</span>
                 </div>
-                <div class="flex -space-x-2">
-                   <div v-for="i in 3" :key="i" class="w-8 h-8 rounded-full border-2 border-white bg-slate-50 flex items-center justify-center text-[10px]">
-                      {{ i === 1 ? '🎨' : i === 2 ? '⚡' : '🧠' }}
-                   </div>
-                </div>
+                <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-0.5">Performance</span>
               </div>
 
-              <div class="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <div class="flex items-center gap-2">
-                  <CalendarIcon class="w-4 h-4" /> {{ formatDateShort(session.created_at) }}
+              <div class="flex items-center gap-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                <div class="flex items-center gap-1.5 group/time">
+                  <ClockIcon class="w-3.5 h-3.5 text-slate-200 group-hover/time:text-[#E85D3E] transition-colors" />
+                  {{ session.duration_minutes || 0 }}m
                 </div>
-                <div class="flex items-center gap-2">
-                  <ClockIcon class="w-4 h-4" /> {{ session.duration_minutes || 0 }}m
-                </div>
+                <ChevronRightIcon class="w-4 h-4 text-slate-200 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </div>
@@ -108,158 +108,132 @@
       </div>
     </div>
 
-    <!-- DETAIL MODAL (Inspired by Scorecard) -->
     <transition name="modal">
-      <div v-if="selected" class="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
+      <div v-if="selected" class="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="selected = null"></div>
-          <div class="bg-white border border-slate-100 rounded-[3rem] w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl animate-fade-in-up custom-scrollbar flex flex-col">
-          <!-- Close -->
-          <button @click="selected = null" class="absolute top-6 right-6 w-12 h-12 flex items-center justify-center bg-slate-50/50 backdrop-blur-md rounded-2xl text-slate-400 hover:text-slate-900 transition-all z-20">
-            <XMarkIcon class="w-6 h-6" />
-          </button>
-
-          <!-- Top Banner Decor -->
-          <div class="h-32 bg-gradient-to-r from-slate-50 to-white relative overflow-hidden shrink-0">
-            <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#E85D3E 1px, transparent 1px); background-size: 20px 20px;"></div>
-            <div class="absolute bottom-0 left-12 transform translate-y-1/2">
-                <div class="w-24 h-24 rounded-[2rem] bg-white border-4 border-[#F9FAFB] shadow-xl flex items-center justify-center text-4xl">
-                    {{ getRecruiter(selected.recruiter_id).avatar }}
-                </div>
-            </div>
-          </div>
-
-          <!-- Header -->
-          <div class="px-12 pt-16 pb-8 border-b border-slate-50 shrink-0">
-            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-              <div>
-                <div class="flex items-center gap-3 mb-2">
-                    <span class="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                        <CalendarIcon class="w-3 h-3" /> {{ formatDate(selected.created_at) }}
-                    </span>
-                    <span class="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                        <ClockIcon class="w-3 h-3" /> {{ selected.duration_minutes || 0 }} min
-                    </span>
-                    <span class="px-3 py-1 bg-[#E85D3E]/10 text-[#E85D3E] rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                        <UserGroupIcon class="w-3 h-3" /> {{ selected.interview_type === 'technical' ? 'Technique' : 'RH' }}
-                    </span>
-                </div>
-                <h2 class="text-4xl font-black text-slate-900 tracking-tight">{{ selected.job_title }}</h2>
-                <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                    <BuildingOfficeIcon class="w-4 h-4 text-[#E85D3E]" /> {{ selected.company || 'Entreprise Confidentielle' }}
-                </p>
+        
+        <div class="bg-white rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-y-auto md:overflow-hidden relative z-10 shadow-2xl animate-modal-in flex flex-col md:flex-row custom-scrollbar">
+          
+          <!-- SIDEBAR (META & SCORES) -->
+          <div class="w-full md:w-[300px] bg-slate-50/50 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col p-8 md:overflow-y-auto custom-scrollbar shrink-0">
+            <div class="flex items-center gap-5 md:flex-col md:text-center mb-8">
+              <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center justify-center md:mb-4 shrink-0">
+                <component :is="getRecruiter(selected.recruiter_id).icon" :class="getRecruiter(selected.recruiter_id).color" class="w-8 h-8 md:w-10 md:h-10" />
               </div>
-
-              <div class="flex flex-col items-end gap-3">
-                <div :class="decisionClass(selected.decision)" class="px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
-                    {{ selected.decision }}
-                </div>
-                <button class="text-[10px] font-black text-slate-300 uppercase tracking-widest hover:text-[#E85D3E] transition-colors flex items-center gap-2">
-                    <ChatBubbleLeftRightIcon class="w-4 h-4" /> Voir la transcription complète
-                </button>
+              <div class="flex-1">
+                <h3 class="text-base font-black text-slate-900 tracking-tight">{{ getRecruiter(selected.recruiter_id).name }}</h3>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{{ getRecruiter(selected.recruiter_id).role }}</p>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div v-for="(val, cat) in selected.scores" :key="cat" v-show="['technical', 'communication', 'soft_skills', 'overall'].includes(cat)" class="p-6 bg-white border border-slate-100 rounded-[2.5rem] text-center shadow-sm relative overflow-hidden group">
-                <div class="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <span class="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 relative z-10">
-                  {{ cat === 'technical' ? 'Technique' : cat === 'communication' ? 'Communication' : cat === 'soft_skills' ? 'Soft Skills' : 'Global' }}
-                </span>
-                <div class="relative flex items-center justify-center z-10">
-                  <svg class="w-20 h-20 transform -rotate-90">
-                    <circle cx="40" cy="40" r="34" stroke="currentColor" stroke-width="8" fill="transparent" class="text-slate-50" />
-                    <circle cx="40" cy="40" r="34" stroke="currentColor" stroke-width="8" fill="transparent" :stroke-dasharray="2 * Math.PI * 34" :stroke-dashoffset="2 * Math.PI * 34 * (1 - val / 10)" class="text-[#E85D3E] transition-all duration-1000" stroke-linecap="round" />
-                  </svg>
-                  <span class="absolute text-xl font-black text-slate-900">{{ val }}</span>
+            <div class="space-y-6">
+              <div class="p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div class="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-3">Verdict</div>
+                <div :class="decisionClassRaw(selected.decision)" class="w-full py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-center border">
+                  {{ selected.decision }}
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- Content -->
-          <div class="p-12 space-y-12 overflow-y-auto">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <!-- Points Forts -->
-              <div class="p-10 bg-emerald-50/30 rounded-[3rem] border border-emerald-100/50 relative overflow-hidden">
-                <div class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-100/20 rounded-full blur-3xl"></div>
-                <h3 class="text-sm font-black text-emerald-900 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
-                  <div class="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center shadow-sm">
-                    <CheckCircleIcon class="w-5 h-5 text-emerald-600" />
-                  </div>
-                  Points Forts
-                </h3>
-                <ul class="space-y-5 relative z-10">
-                  <li v-for="point in selected.feedback?.points_forts" :key="point" class="flex gap-4 text-emerald-900/70 text-sm font-bold leading-relaxed">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0"></span> {{ point }}
-                  </li>
-                </ul>
-              </div>
-
-              <!-- Points à améliorer -->
-              <div class="p-10 bg-amber-50/30 rounded-[3rem] border border-amber-100/50 relative overflow-hidden">
-                <div class="absolute -top-10 -right-10 w-40 h-40 bg-amber-100/20 rounded-full blur-3xl"></div>
-                <h3 class="text-sm font-black text-amber-900 uppercase tracking-widest mb-8 flex items-center gap-4 relative z-10">
-                  <div class="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center shadow-sm">
-                    <AcademicCapIcon class="w-5 h-5 text-amber-600" />
-                  </div>
-                  Axes d'amélioration
-                </h3>
-                <ul class="space-y-5 relative z-10">
-                  <li v-for="point in selected.feedback?.points_amelioration" :key="point" class="flex gap-4 text-amber-900/70 text-sm font-bold leading-relaxed">
-                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 shrink-0"></span> {{ point }}
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <!-- Recruiter Opinion Card -->
-            <div class="bg-slate-900 p-12 rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl">
-              <div class="absolute top-0 right-0 p-12 opacity-[0.05]">
-                <SparklesIcon class="w-48 h-48 text-white" />
-              </div>
-              
-              <div class="flex items-center justify-between relative z-10 mb-10">
-                <div class="flex items-center gap-5">
-                  <div class="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/5 shadow-xl">
-                    <StarIcon class="w-7 h-7 text-[#E85D3E]" />
-                  </div>
-                  <div>
-                    <h3 class="text-2xl font-black tracking-tight">Verdict de {{ getRecruiter(selected.recruiter_id).name }}</h3>
-                    <p class="text-slate-500 font-bold text-[10px] uppercase tracking-widest">{{ getRecruiter(selected.recruiter_id).role }}</p>
-                  </div>
-                </div>
-                <div class="w-16 h-16 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
-                    {{ getRecruiter(selected.recruiter_id).avatar }}
-                </div>
-              </div>
-              
-              <div class="relative z-10 mb-10">
-                <div class="absolute -left-6 top-0 text-6xl text-white/10 font-serif">"</div>
-                <p class="text-slate-300 text-xl font-medium leading-relaxed italic px-2">
-                  {{ selected.feedback?.conseils || 'Aucun conseil spécifique pour cette session.' }}
-                </p>
-              </div>
-              
-              <div class="pt-8 border-t border-white/5 flex items-center justify-between relative z-10">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-2xl bg-[#E85D3E] flex items-center justify-center font-black text-sm shadow-lg shadow-[#E85D3E]/20">GA</div>
-                    <div>
-                    <p class="text-[10px] font-black uppercase tracking-widest text-white">GoldArmy Intelligence</p>
-                    <p class="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em]">Système d'Analyse 3.1 Pro</p>
+              <div class="space-y-3">
+                <div class="text-[8px] font-black text-slate-300 uppercase tracking-widest px-1">Scores détaillés</div>
+                <div v-for="(val, cat) in selected.scores" :key="cat" v-show="['technical', 'communication', 'soft_skills', 'overall'].includes(cat)" 
+                  class="p-4 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                  <div class="flex flex-col">
+                    <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{{ cat === 'overall' ? 'Global' : cat }}</span>
+                    <div class="w-20 h-1 bg-slate-50 rounded-full overflow-hidden">
+                      <div class="h-full bg-[#E85D3E] transition-all duration-1000" :style="{ width: val * 10 + '%' }"></div>
                     </div>
+                  </div>
+                  <div class="text-lg font-black text-slate-900">{{ val }}<span class="text-[9px] text-slate-300">/10</span></div>
                 </div>
-                
-                <div class="flex gap-2">
-                    <div class="w-1.5 h-1.5 rounded-full bg-[#E85D3E] animate-pulse"></div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-[#E85D3E]/50"></div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-[#E85D3E]/20"></div>
+              </div>
+
+              <button class="w-full py-3.5 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#E85D3E] transition-all shadow-lg flex items-center justify-center gap-2">
+                <ChatBubbleLeftRightIcon class="w-4 h-4" /> Transcription complète
+              </button>
+            </div>
+          </div>
+
+          <!-- MAIN CONTENT (ANALYSIS) -->
+          <div class="flex-1 md:overflow-y-auto custom-scrollbar flex flex-col bg-white">
+            <div class="p-8 md:p-10 space-y-10">
+              <!-- Header -->
+              <div class="space-y-4">
+                <div class="flex flex-wrap gap-2">
+                  <span class="px-2.5 py-1 bg-slate-50 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                    <CalendarIcon class="w-3 h-3" /> {{ formatDateShort(selected.created_at) }}
+                  </span>
+                  <span class="px-2.5 py-1 bg-slate-50 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                    <ClockIcon class="w-3 h-3" /> {{ selected.duration_minutes || 0 }} minutes
+                  </span>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+                  {{ selected.job_title }}
+                </h2>
+                <div class="flex items-center gap-2 text-slate-400 font-bold text-xs">
+                  <BuildingOfficeIcon class="w-4 h-4 text-[#E85D3E]/50" /> {{ selected.company || 'Confidentiel' }}
+                </div>
+              </div>
+
+              <!-- Feedback Bento -->
+              <div class="grid grid-cols-1 gap-6">
+                <div class="p-8 bg-emerald-50/20 rounded-3xl border border-emerald-100/30">
+                  <div class="flex items-center gap-3 text-emerald-600 mb-6">
+                    <CheckCircleIcon class="w-5 h-5" />
+                    <h4 class="text-[10px] font-black uppercase tracking-widest">Points Forts</h4>
+                  </div>
+                  <ul class="space-y-4">
+                    <li v-for="p in selected.feedback?.points_forts" :key="p" class="flex gap-3 text-emerald-900/70 text-sm font-bold leading-snug">
+                      <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></div> {{ p }}
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="p-8 bg-amber-50/20 rounded-3xl border border-amber-100/30">
+                  <div class="flex items-center gap-3 text-amber-600 mb-6">
+                    <AcademicCapIcon class="w-5 h-5" />
+                    <h4 class="text-[10px] font-black uppercase tracking-widest">Axes d'amélioration</h4>
+                  </div>
+                  <ul class="space-y-4">
+                    <li v-for="p in selected.feedback?.points_amelioration" :key="p" class="flex gap-3 text-amber-900/70 text-sm font-bold leading-snug">
+                      <div class="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0"></div> {{ p }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Verdict -->
+              <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 relative overflow-hidden">
+                <div class="relative z-10 space-y-6">
+                  <div class="flex items-center gap-3 text-[#E85D3E]">
+                    <StarIcon class="w-5 h-5" />
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Verdict GoldArmy AI</span>
+                  </div>
+                  <p class="text-xl md:text-2xl font-bold text-slate-900 leading-tight tracking-tight italic">
+                    "{{ selected.feedback?.conseils || 'Performance solide.' }}"
+                  </p>
+                  <div class="pt-6 border-t border-slate-200/50 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[8px] font-black shadow-lg shadow-slate-900/20">GA</div>
+                      <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Analyse v4.0 Pro</span>
+                    </div>
+                    <button class="px-6 py-3 bg-[#E85D3E] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-[#E85D3E]/20">
+                      Améliorer mon score
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Close -->
+          <button @click="selected = null" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all z-20 shadow-sm hover:rotate-90">
+            <XMarkIcon class="w-5 h-5" />
+          </button>
         </div>
       </div>
     </transition>
+
   </div>
 </template>
 
@@ -282,12 +256,12 @@ const loading  = ref(true)
 const selected = ref(null)
 
 const RECRUITERS = {
-  tech: { name: 'Sophie', role: 'CTO / Tech Lead', avatar: '👩‍💻' },
-  hr: { name: 'Marc', role: 'Responsable RH', avatar: '👨‍💼' },
-  ceo: { name: 'Alice', role: 'Fondatrice / CEO', avatar: '👩‍💼' }
+  tech: { name: 'Sophie', role: 'CTO / Tech Lead', icon: CpuChipIcon, color: 'text-indigo-500' },
+  hr: { name: 'Marc', role: 'Responsable RH', icon: UserGroupIcon, color: 'text-emerald-500' },
+  ceo: { name: 'Alice', role: 'Fondatrice / CEO', icon: StarIcon, color: 'text-amber-500' }
 }
 
-const getRecruiter = (id) => RECRUITERS[id] || { name: 'IA Expert', role: 'Recruteur GoldArmy', avatar: '🤖' }
+const getRecruiter = (id) => RECRUITERS[id] || { name: 'IA Expert', role: 'Recruteur GoldArmy', icon: SparklesIcon, color: 'text-[#E85D3E]' }
 
 // Calculated Stats
 const avgScore = computed(() => {
@@ -421,12 +395,13 @@ onMounted(fetchHistory)
   animation-delay: 2s;
 }
 
-.modal-enter-active, .modal-leave-active {
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.9) translateY(40px) rotate(-1deg); }
+  to { opacity: 1; transform: scale(1) translateY(0) rotate(0deg); }
 }
-.modal-enter-from, .modal-leave-to {
-  opacity: 0;
-  transform: scale(0.95);
+
+.animate-modal-in {
+  animation: modalIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
