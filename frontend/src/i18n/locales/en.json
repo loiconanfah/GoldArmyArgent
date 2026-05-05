@@ -410,40 +410,15 @@
         }
     },
     "dashboard": {
-        "title": "Gold Platform",
-        "welcome": "Organize your research, Hello {name} 🔥",
-        "description": "Easily manage your applications, track your interviews, and reach your goals in one place.",
-        "kpis": {
-            "applied": "Applications Sent",
-            "cv_analyzed": "CVs Analyzed",
-            "interviews": "Interviews Secured",
-            "network": "Network (Contacts)",
-            "recent_apps": "Recent applications",
-            "timeframe": "in the last 30 days",
-            "analyses": "Analyses performed",
-            "in_progress": "In progress",
-            "new_contacts": "New contacts"
-        },
-        "charts": {
-            "opportunities_title": "Opportunity Growth",
-            "total_ops": "Total Opportunities",
-            "status_title": "Opportunities by Status",
-            "filter": "Filter",
-            "offers": "offers"
-        },
-        "recent_activity": {
-            "title": "Recent Activity",
-            "role": "Role & Opportunity",
-            "status": "Status",
-            "progress": "Progress",
-            "empty": "No recent activity."
-        },
-        "stats": {
-            "total_users": "Total Staff",
-            "active_missions": "Missions Launched",
-            "success_rate": "Success Rate",
-            "system_status": "Fleet Status"
-        }
+        "show_tasks": "Show my Tasks",
+        "need_help": "Hey, Need help?",
+        "ask_anything": "Just ask me anything!",
+        "smart_score": "Smart score",
+        "applications": "Applications",
+        "interviews": "Interviews",
+        "network": "Network",
+        "total_opportunities": "Total Opportunities",
+        "interviews_chart": "Interviews"
     },
     "common": {
         "loading": "Loading...",

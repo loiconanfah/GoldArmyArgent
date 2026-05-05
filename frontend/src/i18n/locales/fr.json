@@ -363,39 +363,15 @@
         }
     },
     "dashboard": {
-        "title": "Plateforme Or",
-        "welcome": "Organise tes recherches, Bonjour {name} 🔥",
-        "description": "Gère facilement tes candidatures, suis tes entretiens et atteins tes objectifs au même endroit.",
-        "kpis": {
-            "applied": "Candidatures envoyées",
-            "cv_analyzed": "CV Analysés",
-            "interviews": "Entretiens Décrochés",
-            "network": "Réseau (Contacts)",
-            "recent_apps": "Candidatures récents",
-            "timeframe": "dans les 30 derniers jours",
-            "analyses": "Analyses effectuées",
-            "in_progress": "En cours",
-            "new_contacts": "Nouveaux contacts"
-        },
-        "charts": {
-            "opportunities_title": "Croissance des Opportunités",
-            "total_ops": "Total Opportunités",
-            "status_title": "Opportunités par Statut",
-            "filter": "Filtrer"
-        },
-        "recent_activity": {
-            "title": "Activité Récente",
-            "role": "Rôle & Opportunité",
-            "status": "Statut",
-            "progress": "Progression",
-            "empty": "Aucune activité récente."
-        },
-        "stats": {
-            "total_users": "Effectif Total",
-            "active_missions": "Missions Lancées",
-            "success_rate": "Taux de Succès",
-            "system_status": "État de la Flotte"
-        }
+        "show_tasks": "Voir mes tâches",
+        "need_help": "Besoin d'aide ?",
+        "ask_anything": "Demandez-moi n'importe quoi !",
+        "smart_score": "Smart score",
+        "applications": "Candidatures",
+        "interviews": "Entretiens",
+        "network": "Contacts",
+        "total_opportunities": "Total Opportunités",
+        "interviews_chart": "Entretiens"
     },
     "common": {
         "loading": "Chargement...",
