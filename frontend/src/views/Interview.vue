@@ -632,95 +632,121 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="interview-page fixed inset-0 z-[60] bg-surface-950 overflow-y-auto custom-scrollbar flex flex-col">
-    <!-- CONFIGURATION WIZARD -->
-    <div v-if="!isInterviewStarted" class="p-6 md:p-10 max-w-4xl mx-auto animate-fade-in-up space-y-8 flex flex-col w-full">
-     <div class="flex items-center gap-4 border-b border-surface-800 pb-6 mb-8 mt-6 relative">
-        <button @click="goBackToDashboard" class="p-2 bg-surface-800 hover:bg-surface-700 rounded-full text-slate-400 hover:text-white transition-colors shrink-0">
-            <ArrowLeftIcon class="w-5 h-5" />
-        </button>
-        <div class="flex-1">
-            <h1 class="text-3xl font-display font-bold text-white tracking-tight">Paramètres de l'Entretien</h1>
-            <p class="text-slate-400 mt-1">Configurez le contexte pour que l'IA simule l'entretien parfaitement.</p>
+  <div class="interview-page fixed inset-0 z-[60] bg-[#F9FAFB] overflow-y-auto custom-scrollbar flex flex-col">
+        <!-- CONFIGURATION WIZARD -->
+    <div v-if="!isInterviewStarted" class="p-4 md:p-10 max-w-6xl mx-auto animate-fade-in-up space-y-10 flex flex-col w-full min-h-screen">
+      <!-- NEW PREMIUM HEADER -->
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6 pt-10">
+        <div class="flex items-center gap-6">
+            <button @click="goBackToDashboard" class="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-[#E85D3E] hover:border-[#E85D3E]/30 transition-all shadow-sm">
+                <ArrowLeftIcon class="w-6 h-6" />
+            </button>
+            <div>
+                <h1 class="text-4xl font-black text-slate-900 tracking-tight leading-none mb-2">Simulateur d'Entretien</h1>
+                <p class="text-slate-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                    <SparklesIcon class="w-4 h-4 text-[#E85D3E]" /> God Mode Intelligence 3.1
+                </p>
+            </div>
         </div>
         
-        <router-link to="/interview/history" class="px-5 py-2.5 bg-surface-800 hover:bg-surface-700 text-indigo-400 font-bold rounded-xl transition-all flex items-center gap-2 border border-surface-700 hover:border-indigo-500/50 shrink-0">
-            📋 Mon Historique
+        <router-link to="/interview/history" class="px-6 py-3 bg-white border border-slate-200 text-slate-900 font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center gap-3 hover:border-[#E85D3E]/30 shadow-sm">
+            <DocumentTextIcon class="w-4 h-4 text-[#E85D3E]" /> Mon Historique
         </router-link>
-     </div>
+      </div>
 
-     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-         <div class="space-y-5">
-             <div>
-                <label class="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><BuildingOfficeIcon class="w-4 h-4" /> Entreprise cible <span class="text-rose-500">*</span></label>
-                <input v-model="config.company" type="text" placeholder="Ex: Google, Alan, Startup X..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
+           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+         <!-- MAIN CONFIG (Left Col) -->
+         <div class="lg:col-span-7 space-y-6">
+             <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
+                <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <BuildingOfficeIcon class="w-4 h-4 text-[#E85D3E]" /> Contexte du Poste
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Entreprise cible</label>
+                        <input v-model="config.company" type="text" placeholder="Ex: Google, Alan, Startup X..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 focus:ring-4 focus:ring-[#E85D3E]/5 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Poste visé</label>
+                        <input v-model="config.jobTitle" type="text" placeholder="Ex: Développeur Fullstack..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 focus:ring-4 focus:ring-[#E85D3E]/5 transition-all">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Détails de l'offre (Optionnel)</label>
+                    <textarea v-model="config.jobDetails" rows="4" placeholder="Collez ici les missions, la tech stack, ou les prérequis..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 focus:ring-4 focus:ring-[#E85D3E]/5 transition-all resize-none"></textarea>
+                </div>
              </div>
-             <div>
-                <label class="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><BriefcaseIcon class="w-4 h-4" /> Poste visé <span class="text-rose-500">*</span></label>
-                <input v-model="config.jobTitle" type="text" placeholder="Ex: Développeur Fullstack, Product Manager..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors">
-             </div>
-             <div>
-                <label class="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2"><DocumentTextIcon class="w-4 h-4" /> Description de l'offre (Détails)</label>
-                <textarea v-model="config.jobDetails" rows="4" placeholder="Collez ici les missions principales de l'offre, la tech stack, ou les prérequis..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"></textarea>
-             </div>
-         </div>
-         
-         <div class="space-y-5">
-             <div>
-                <div class="flex items-center justify-between mb-2">
-                    <label class="block text-sm font-bold text-slate-300">Votre Profil / CV Actuel</label>
-                    <button @click="$refs.fileInput.click()" class="text-xs font-bold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg border border-indigo-500/20 transition-colors flex items-center gap-2">
-                        <span v-if="isUploadingCV" class="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></span>
-                        <DocumentTextIcon v-else class="w-3.5 h-3.5" />
-                        {{ isUploadingCV ? 'Extraction...' : 'Importer un PDF' }}
+
+             <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 m-0">
+                        <UserIcon class="w-4 h-4 text-[#E85D3E]" /> Votre Profil / CV
+                    </h3>
+                    <button @click="$refs.fileInput.click()" class="px-4 py-2 bg-[#E85D3E]/5 text-[#E85D3E] hover:bg-[#E85D3E]/10 rounded-xl border border-[#E85D3E]/20 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+                        <span v-if="isUploadingCV" class="w-3 h-3 border-2 border-[#E85D3E] border-t-transparent rounded-full animate-spin"></span>
+                        <ArrowUpTrayIcon v-else class="w-4 h-4" />
+                        {{ isUploadingCV ? 'Extraction...' : 'Importer PDF' }}
                     </button>
                     <input type="file" accept=".pdf" class="hidden" ref="fileInput" @change="handleFileUpload">
                 </div>
-                <textarea v-model="config.cv" rows="5" placeholder="Collez le texte brut de votre CV ou importez un PDF pour que le recruteur puisse réagir dessus..." class="w-full bg-surface-900 border border-surface-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"></textarea>
+                <textarea v-model="config.cv" rows="6" placeholder="Collez le texte de votre CV ou importez un PDF..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 focus:ring-4 focus:ring-[#E85D3E]/5 transition-all resize-none"></textarea>
              </div>
-             
-              <div>
-                  <label class="block text-sm font-bold text-slate-300 mb-3">Choix du Recruteur</label>
-                  <div class="grid grid-cols-3 gap-3">
+         </div>
+         
+         <!-- RECRUITER & FORMAT (Right Col) -->
+         <div class="lg:col-span-5 space-y-6">
+              <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
+                  <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <ChatBubbleLeftRightIcon class="w-4 h-4 text-[#E85D3E]" /> Votre Recruteur
+                  </h3>
+                  <div class="space-y-3">
                       <button v-for="r in recruiters" :key="r.id" 
                          @click="config.recruiterId = r.id" 
-                         :class="config.recruiterId === r.id ? 'bg-indigo-500/20 border-indigo-500 ring-2 ring-indigo-500/10' : 'bg-surface-900 border-surface-700 hover:border-surface-600'"
-                         class="p-3 border rounded-xl flex flex-col items-center gap-2 transition-all relative overflow-hidden group"
+                         :class="config.recruiterId === r.id ? 'bg-[#E85D3E] border-[#E85D3E] shadow-xl shadow-[#E85D3E]/20 translate-y-[-2px]' : 'bg-slate-50 border-slate-100 hover:border-slate-300'"
+                         class="w-full p-4 border rounded-2xl flex items-center gap-4 transition-all group relative overflow-hidden"
                       >
-                         <img :src="r.img" class="w-14 h-14 rounded-full object-cover border-2 border-surface-800 group-hover:scale-105 transition-transform" />
-                         <span class="text-[11px] font-bold text-white text-center leading-tight">{{ r.name }}</span>
-                         <span class="text-[9px] text-slate-500 uppercase tracking-tighter">{{ r.role }}</span>
-                         <CheckIcon v-if="config.recruiterId === r.id" class="absolute top-1 right-1 w-3 h-3 text-indigo-400" />
+                         <img :src="r.img" class="w-12 h-12 rounded-xl object-cover border-2 border-white group-hover:scale-105 transition-transform" />
+                         <div class="text-left flex-1">
+                             <p :class="config.recruiterId === r.id ? 'text-white' : 'text-slate-900'" class="text-sm font-black m-0 leading-tight">{{ r.name }}</p>
+                             <p :class="config.recruiterId === r.id ? 'text-white/70' : 'text-slate-400'" class="text-[10px] font-bold uppercase tracking-widest m-0 mt-1">{{ r.role }}</p>
+                         </div>
+                         <div v-if="config.recruiterId === r.id" class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[#E85D3E] shadow-sm">
+                             <CheckIcon class="w-4 h-4" />
+                         </div>
                       </button>
                   </div>
               </div>
 
-              <div>
-                  <label class="block text-sm font-bold text-slate-300 mb-3">Format de l'Entretien</label>
+              <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
+                  <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <VideoCameraIcon class="w-4 h-4 text-[#E85D3E]" /> Format & Intensité
+                  </h3>
                   <div class="grid grid-cols-2 gap-3">
-                      <button @click="config.interviewType = 'general'" :class="config.interviewType === 'general' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-surface-900 border-surface-700 text-slate-400 hover:border-surface-600'" class="p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all">
-                         <span v-if="config.interviewType === 'general'" class="absolute top-2 right-2"><CheckIcon class="w-4 h-4 text-indigo-400" /></span>
-                         <span class="font-bold relative text-sm">Général & HR</span>
+                      <button @click="config.interviewType = 'general'" :class="config.interviewType === 'general' ? 'bg-[#E85D3E] border-[#E85D3E] text-white shadow-xl shadow-[#E85D3E]/20' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'" class="p-6 border rounded-2xl flex flex-col items-center justify-center gap-3 transition-all">
+                         <span class="font-black text-xs uppercase tracking-widest">Général & HR</span>
+                         <UserCircleIcon class="w-6 h-6" />
                       </button>
-                      <button @click="config.interviewType = 'technical'" :class="config.interviewType === 'technical' ? 'bg-rose-500/20 border-rose-500 text-rose-400' : 'bg-surface-900 border-surface-700 text-slate-400 hover:border-surface-600'" class="p-4 border rounded-xl flex flex-col items-center justify-center gap-2 transition-all">
-                         <span v-if="config.interviewType === 'technical'" class="absolute top-2 right-2"><CheckIcon class="w-4 h-4 text-rose-400" /></span>
-                         <span class="font-bold relative text-sm">Technique</span>
+                      <button @click="config.interviewType = 'technical'" :class="config.interviewType === 'technical' ? 'bg-[#E85D3E] border-[#E85D3E] text-white shadow-xl shadow-[#E85D3E]/20' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'" class="p-6 border rounded-2xl flex flex-col items-center justify-center gap-3 transition-all">
+                         <span class="font-black text-xs uppercase tracking-widest">Technique</span>
+                         <CpuChipIcon class="w-6 h-6" />
                       </button>
                   </div>
               </div>
-          </div>
+         </div>
       </div>
-      
-      <div v-if="errorMsg" class="mt-4 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 font-semibold text-sm text-center animate-shake">
+
+      <div v-if="errorMsg" class="mt-4 p-4 rounded-xl bg-rose-50 border border-rose-100 text-rose-500 font-semibold text-sm text-center animate-shake">
           {{ errorMsg }}
       </div>
 
       <!-- Paywall banner: shown when free tier reached -->
-      <div v-if="showPaywall" class="mt-4 p-5 rounded-2xl bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border border-indigo-500/40 flex flex-col items-center gap-4 text-center">
+      <div v-if="showPaywall" class="mt-4 p-5 rounded-2xl bg-indigo-50 border border-indigo-100 flex flex-col items-center gap-4 text-center">
           <div class="text-3xl">🔒</div>
           <div>
-              <p class="font-bold text-white text-lg">Limite d'entretiens gratuits atteinte</p>
-              <p class="text-slate-400 text-sm mt-1">Vous avez utilisé vos 2 entretiens gratuits. Passez à l'abonnement <strong class="text-indigo-400">PRO</strong> pour des entretiens illimités.</p>
+              <p class="font-bold text-slate-900 text-lg">Limite d'entretiens gratuits atteinte</p>
+              <p class="text-slate-500 text-sm mt-1">Vous avez utilisé vos 2 entretiens gratuits. Passez à l'abonnement <strong class="text-indigo-400">PRO</strong> pour des entretiens illimités.</p>
           </div>
           <div class="flex items-center gap-3 flex-wrap justify-center">
               <router-link to="/settings" class="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-xl text-sm hover:opacity-90 transition-opacity">
@@ -732,67 +758,71 @@ onUnmounted(() => {
           </div>
       </div>
 
-      <div class="mt-8 pt-8 border-t border-surface-800 flex items-center justify-between">
-          <div class="flex items-center gap-4">
-              <button @click="testAudio" class="px-4 py-2 bg-surface-800 hover:bg-surface-700 text-indigo-400 text-xs font-bold rounded-lg border border-indigo-500/20 flex items-center gap-2 transition-all">
-                  <SpeakerWaveIcon class="w-4 h-4" />
+            <!-- FOOTER ACTIONS -->
+      <div class="mt-4 pt-10 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="flex items-center gap-6">
+              <button @click="testAudio" class="px-6 py-3 bg-white border border-slate-200 text-slate-900 text-xs font-black rounded-2xl hover:border-[#E85D3E]/30 transition-all flex items-center gap-3 shadow-sm">
+                  <SpeakerWaveIcon class="w-4 h-4 text-[#E85D3E]" />
                   Tester le son
               </button>
-              <span v-if="ttsStatus" class="text-[10px] text-slate-500 uppercase font-medium">{{ ttsStatus }}</span>
+              <div class="flex flex-col">
+                <span class="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Système Audio</span>
+                <span v-if="ttsStatus" class="text-[10px] text-slate-900 font-bold uppercase">{{ ttsStatus }}</span>
+              </div>
           </div>
-          <button @click="startInterview" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold rounded-xl shadow-xl shadow-indigo-500/20 flex items-center gap-3 transition-all hover:scale-[1.05] active:scale-95">
+          <button @click="startInterview" class="w-full md:w-auto px-10 py-5 bg-gradient-to-r from-[#E85D3E] to-[#C44A2D] hover:from-[#C44A2D] hover:to-[#E85D3E] text-white font-black rounded-[2rem] shadow-2xl shadow-[#E85D3E]/30 flex items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-95 text-base uppercase tracking-widest">
               Lancer la Visioconférence
-              <VideoCameraIcon class="w-5 h-5" />
+              <VideoCameraIcon class="w-6 h-6" />
           </button>
       </div>
-   </div>
+    </div>
 
-    <!-- IMMERSIVE VIDEO CALL UI — Design réaliste type visio pro -->
+        <!-- IMMERSIVE VIDEO CALL UI — Design Premium SaaS -->
     <div v-else class="fixed inset-0 bg-[#0c0c0e] flex flex-col md:flex-row z-[210] overflow-hidden font-sans interview-room">
       
       <!-- ═══ PANNEAU GAUCHE : Salle d'appel ═══ -->
       <div class="flex-1 flex flex-col min-w-0 relative">
-        <!-- Fond ambiant (salle sombre) -->
-        <div class="interview-room-bg absolute inset-0 z-0 bg-gradient-to-b from-slate-950/95 via-slate-950 to-black">
-          <div class="absolute inset-0 interview-room-grain pointer-events-none"></div>
+        <!-- Background -->
+        <div class="absolute inset-0 z-0 bg-gradient-to-b from-[#111113] to-black">
+          <div class="absolute inset-0 interview-room-grain pointer-events-none opacity-20"></div>
         </div>
 
-        <!-- Header réaliste (barre d'appel) -->
-        <header class="relative z-10 flex items-center justify-between px-4 md:px-6 py-3 border-b border-white/[0.08] bg-black/50 backdrop-blur-xl">
-          <div class="flex items-center gap-4">
-            <button @click="goBackToDashboard" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 transition-all hover:scale-105 active:scale-95">
+        <!-- NEW PREMIUM CALL HEADER -->
+        <header class="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/[0.05] bg-black/40 backdrop-blur-2xl">
+          <div class="flex items-center gap-6">
+            <button @click="goBackToDashboard" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/70 transition-all border border-white/5">
               <ArrowLeftIcon class="w-5 h-5" />
             </button>
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl overflow-hidden border border-white/10 bg-surface-900 flex-shrink-0">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg">
                 <img :src="currentRecruiter?.img" class="w-full h-full object-cover" alt="" />
               </div>
               <div>
-                <h1 class="text-sm md:text-base font-bold text-white truncate max-w-[180px] md:max-w-sm">
-                  {{ config.company }} · {{ config.jobTitle }}
+                <h1 class="text-sm font-black text-white m-0 tracking-tight flex items-center gap-2">
+                  {{ config.company }} <span class="w-1 h-1 rounded-full bg-white/20"></span> {{ config.jobTitle }}
                 </h1>
-                <div class="flex items-center gap-2 mt-0.5">
-                  <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-[0.1em]">
                     <span class="relative flex h-1.5 w-1.5">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                     </span>
-                    En direct
+                    Live Interview
                   </span>
-                  <span class="text-slate-500 text-[10px] font-medium tabular-nums">{{ callElapsed }}</span>
+                  <span class="text-slate-500 text-[10px] font-black tabular-nums">{{ callElapsed }}</span>
                 </div>
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] text-slate-400">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              Connexion stable
-            </span>
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
-              <img :src="currentRecruiter?.img" class="w-6 h-6 rounded-full object-cover border border-white/20" alt="" />
-              <span class="text-xs font-semibold text-white hidden sm:inline">{{ currentRecruiter?.name }}</span>
-            </div>
+          
+          <div class="flex items-center gap-3">
+             <div class="hidden sm:flex items-center gap-3 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                <div class="flex flex-col items-end">
+                    <span class="text-white text-[10px] font-black tracking-tight">{{ currentRecruiter?.name }}</span>
+                    <span class="text-slate-500 text-[8px] font-bold uppercase tracking-widest">{{ currentRecruiter?.role }}</span>
+                </div>
+                <img :src="currentRecruiter?.img" class="w-8 h-8 rounded-full object-cover border border-white/20" />
+             </div>
           </div>
         </header>
 
@@ -893,75 +923,96 @@ onUnmounted(() => {
           </p>
         </div>
 
-        <!-- Barre de contrôles (style pro) -->
-        <div class="relative z-20 px-4 pb-6 flex items-center justify-center">
-          <div class="interview-room-controls inline-flex items-center gap-1 p-2 rounded-[2rem] bg-black/70 backdrop-blur-xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+                <!-- NEW PREMIUM CONTROLS -->
+        <div class="relative z-20 px-4 pb-8 flex flex-col items-center gap-4">
+          <div v-if="isListening" class="text-[#E85D3E] font-black uppercase tracking-[0.3em] text-[10px] animate-pulse drop-shadow-lg mb-2">
+              Microphone Actif — Parlez Maintenant
+          </div>
+          
+          <div class="inline-flex items-center gap-2 p-2.5 rounded-[2.5rem] bg-black/60 backdrop-blur-2xl border border-white/10 shadow-2xl">
             <button @click="showChat = !showChat" 
-              :class="showChat ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'"
-              class="p-3.5 rounded-full transition-all duration-200" title="Transcription">
+              :class="showChat ? 'bg-[#E85D3E] text-white shadow-xl shadow-[#E85D3E]/20' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'"
+              class="w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300">
               <ChatBubbleLeftRightIcon class="w-5 h-5" />
             </button>
-            <button @click="testAudio" class="p-3.5 rounded-full bg-white/5 text-slate-400 hover:text-indigo-400 hover:bg-white/10 transition-all" title="Tester le son">
+            
+            <button @click="testAudio" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 text-slate-400 hover:text-[#E85D3E] hover:bg-white/10 transition-all">
               <SpeakerWaveIcon class="w-5 h-5" />
             </button>
+            
+            <div class="w-px h-8 bg-white/10 mx-1"></div>
+            
             <button @click="triggerListen" 
-              :class="isListening ? 'bg-rose-500 text-white scale-110 shadow-lg shadow-rose-500/40' : (isAIThinking ? 'bg-indigo-500 text-white scale-105' : 'bg-white/10 text-white hover:bg-white/20')"
-              class="p-5 rounded-full transition-all duration-200 mx-1 interview-mic-btn" title="Micro">
+              :class="isListening ? 'bg-rose-500 text-white scale-110 shadow-xl shadow-rose-500/40' : (isAIThinking ? 'bg-[#E85D3E] text-white scale-105 shadow-xl shadow-[#E85D3E]/20' : 'bg-white/10 text-white hover:bg-white/20')"
+              class="w-16 h-16 flex items-center justify-center rounded-full transition-all duration-300 mx-1">
               <MicrophoneIcon v-if="!isListening && !isAIThinking" class="w-6 h-6" />
               <StopIcon v-else-if="isListening" class="w-6 h-6" />
-              <span v-else class="flex gap-1">
-                <span class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0ms"></span>
-                <span class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 100ms"></span>
-                <span class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 200ms"></span>
-              </span>
+              <div v-else class="flex gap-1">
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                <span class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+              </div>
             </button>
-            <button @click="finishInterview" class="p-3.5 rounded-full bg-rose-500 hover:bg-rose-400 text-white transition-all hover:scale-105 active:scale-95 shadow-lg shadow-rose-900/30" title="Terminer l'entretien">
-              <PhoneIcon class="w-5 h-5 rotate-[135deg]" />
+
+            <div class="w-px h-8 bg-white/10 mx-1"></div>
+
+            <button @click="finishInterview" class="w-14 h-14 flex items-center justify-center rounded-full bg-rose-600 hover:bg-rose-500 text-white transition-all hover:scale-105 active:scale-95 shadow-xl shadow-rose-900/40">
+              <PhoneIcon class="w-6 h-6 rotate-[135deg]" />
             </button>
-          </div>
         </div>
         <p v-if="isListening" class="text-center text-rose-400 text-[10px] font-bold uppercase tracking-[0.2em] pb-3 animate-pulse">Micro actif — parlez maintenant</p>
       </div>
+    </div>
 
-      <!-- ═══ PANNEAU DROIT : Transcription (style chat pro) ═══ -->
-      <div v-show="showChat" class="interview-room-chat w-full md:w-[380px] lg:w-[420px] shrink-0 flex flex-col bg-[#111113] border-l border-white/[0.06] shadow-2xl">
-        <div class="interview-room-chat-header p-4 border-b border-white/[0.06] flex items-center justify-between bg-black/30">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-              <DocumentTextIcon class="w-4 h-4 text-indigo-400" />
+      <!-- ═══ PANNEAU DROIT : Transcription Premium ═══ -->
+      <div v-show="showChat" class="interview-room-chat w-full md:w-[400px] lg:w-[440px] shrink-0 flex flex-col bg-[#111113] border-l border-white/[0.05] shadow-2xl relative z-[220]">
+        <div class="p-6 border-b border-white/[0.05] flex items-center justify-between bg-black/20">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-[#E85D3E]/10 flex items-center justify-center">
+              <ChatBubbleLeftRightIcon class="w-5 h-5 text-[#E85D3E]" />
             </div>
-            <h2 class="text-sm font-bold text-white">Transcription en direct</h2>
+            <div>
+                <h2 class="text-sm font-black text-white m-0 tracking-tight">Transcription Live</h2>
+                <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">IA Insight System</p>
+            </div>
           </div>
-          <button @click="showChat = false" class="md:hidden p-2 rounded-lg hover:bg-white/10 text-slate-400 transition-colors">
+          <button @click="showChat = false" class="p-2 rounded-xl hover:bg-white/5 text-slate-500 transition-colors">
             <XMarkIcon class="w-5 h-5" />
           </button>
         </div>
-        <div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth custom-scrollbar" ref="chatContainer">
-          <div v-for="msg in conversation" :key="msg.id" :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth custom-scrollbar" ref="chatContainer">
+          <div v-for="msg in conversation" :key="msg.id" :class="msg.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'">
             <div :class="msg.role === 'user' 
-              ? 'max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 bg-indigo-500/95 text-white shadow-lg border border-indigo-400/20' 
-              : 'max-w-[85%] rounded-2xl rounded-bl-md px-4 py-3 bg-white/[0.07] text-slate-200 border border-white/[0.08]'">
-              <p class="text-[10px] font-bold opacity-90 mb-1.5 flex items-center gap-1.5">
-                <span v-if="msg.role !== 'user'" class="w-4 h-4 rounded-full overflow-hidden border border-white/20">
-                  <img :src="currentRecruiter?.img" class="w-full h-full object-cover" alt="" />
+              ? 'max-w-[90%] rounded-2xl rounded-tr-sm p-4 bg-white/5 border border-white/10 text-white shadow-sm' 
+              : 'max-w-[90%] rounded-2xl rounded-tl-sm p-4 bg-[#E85D3E]/5 border border-[#E85D3E]/10 text-slate-200'">
+              
+              <div class="flex items-center gap-2 mb-2">
+                <div v-if="msg.role !== 'user'" class="w-5 h-5 rounded-full overflow-hidden border border-[#E85D3E]/30">
+                  <img :src="currentRecruiter?.img" class="w-full h-full object-cover" />
+                </div>
+                <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    {{ msg.role === 'user' ? 'Candidat (Vous)' : currentRecruiter?.name }}
                 </span>
-                {{ msg.role === 'user' ? 'Vous' : currentRecruiter?.name }}
-              </p>
-              <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
+              </div>
+              
+              <p class="text-sm leading-relaxed whitespace-pre-wrap font-medium">{{ msg.content }}</p>
             </div>
           </div>
-          <div v-if="isAIThinking" class="flex justify-start">
-            <div class="rounded-2xl rounded-bl-md px-4 py-3 bg-indigo-500/15 border border-indigo-500/25 text-slate-300 text-sm flex items-center gap-3">
-              <span class="flex gap-1">
-                <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
-                <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
-                <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
-              </span>
-              Le recruteur rédige sa réponse...
+          
+          <div v-if="isAIThinking" class="flex flex-col items-start animate-pulse">
+            <div class="rounded-2xl rounded-tl-sm p-4 bg-white/5 border border-white/10 text-slate-400 text-xs flex items-center gap-3">
+              <div class="flex gap-1">
+                <span class="w-1 h-1 bg-white/40 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                <span class="w-1 h-1 bg-white/40 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                <span class="w-1 h-1 bg-white/40 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+              </div>
+              Analyse de la réponse...
             </div>
           </div>
-          <div v-if="transcript && !isAIThinking" class="flex justify-end">
-            <div class="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 bg-rose-500/20 border border-rose-500/30 text-rose-200 text-sm italic">
+          
+          <div v-if="transcript && !isAIThinking" class="flex flex-col items-end">
+            <div class="max-w-[90%] rounded-2xl p-4 bg-white/5 border border-white/10 border-dashed text-slate-400 text-xs italic">
               {{ transcript }}...
             </div>
           </div>
@@ -984,123 +1035,143 @@ onUnmounted(() => {
 
       <!-- SCORECARD MODAL -->
       <div v-if="showScorecard" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div class="absolute inset-0 bg-black/80 backdrop-blur-md" @click="!isAnalyzing ? stopInterview() : null"></div>
+          <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="!isAnalyzing ? stopInterview() : null"></div>
           
-          <div class="bg-surface-900 border border-white/10 w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 animate-scale-in">
+          <div class="bg-white border border-slate-100 w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl relative z-10 animate-scale-in">
               <!-- Header -->
-              <div class="p-8 border-b border-white/5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 flex items-center justify-between">
+              <div class="p-8 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                   <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                      <div class="w-12 h-12 rounded-2xl bg-[#E85D3E] flex items-center justify-center shadow-lg shadow-[#E85D3E]/20">
                           <ChartBarIcon class="w-6 h-6 text-white" />
                       </div>
                       <div>
-                          <h2 class="text-2xl font-display font-bold text-white tracking-tight">Récapitulatif de votre entretien</h2>
-                          <p class="text-sm text-slate-400">Analyse générée par l'IA GoldArmy</p>
+                          <h2 class="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1">Rapport d'Entretien</h2>
+                          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">God Mode Analysis System</p>
                       </div>
                   </div>
-                  <button v-if="!isAnalyzing" @click="stopInterview" class="p-2 text-slate-500 hover:text-white transition-colors">
+                  <button v-if="!isAnalyzing" @click="stopInterview" class="p-2 text-slate-400 hover:text-slate-900 transition-colors">
                       <XMarkIcon class="w-6 h-6" />
                   </button>
               </div>
 
               <!-- Content -->
-              <div class="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div class="p-8 max-h-[75vh] overflow-y-auto custom-scrollbar bg-white">
                   <!-- Loading State -->
-                  <div v-if="isAnalyzing" class="flex flex-col items-center justify-center py-20 gap-6">
-                      <div class="relative w-20 h-20">
-                          <div class="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
-                          <div class="absolute inset-0 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div v-if="isAnalyzing" class="flex flex-col items-center justify-center py-20 gap-8">
+                      <div class="relative w-24 h-24">
+                          <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                          <div class="absolute inset-0 border-4 border-[#E85D3E] border-t-transparent rounded-full animate-spin"></div>
                       </div>
-                      <p class="text-lg font-bold text-white animate-pulse">Analyse de vos réponses en cours...</p>
-                      <p class="text-sm text-slate-400 max-w-xs text-center">Le Mentor IA examine votre communication et votre expertise technique.</p>
+                      <div class="text-center">
+                        <p class="text-xl font-black text-slate-900 mb-2">Analyse IA en cours...</p>
+                        <p class="text-sm text-slate-400 max-w-xs mx-auto">Nous examinons votre communication, votre expertise et votre attitude professionnelle.</p>
+                      </div>
                   </div>
 
                   <!-- Results State -->
                   <div v-else-if="scorecard" class="space-y-10">
-                      <!-- Hero Score -->
-                      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                          <div v-for="(val, cat) in scorecard.scores" :key="cat" class="bg-white/5 border border-white/10 p-6 rounded-3xl flex flex-col items-center gap-3">
-                              <span class="text-[10px] uppercase font-black tracking-widest text-slate-500">{{ cat === 'technical' ? 'Technique' : cat === 'communication' ? 'Élocution' : cat === 'soft_skills' ? 'Attitude' : 'Global' }}</span>
+                      <!-- Hero Scores (Bento) -->
+                      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div v-for="(val, cat) in scorecard.scores" :key="cat" class="bg-slate-50 border border-slate-100 p-6 rounded-[2rem] flex flex-col items-center gap-4 transition-all hover:border-[#E85D3E]/20">
+                              <span class="text-[9px] uppercase font-black tracking-widest text-slate-400">{{ cat === 'technical' ? 'Technique' : cat === 'communication' ? 'Élocution' : cat === 'soft_skills' ? 'Attitude' : 'Global' }}</span>
                               <div class="relative flex items-center justify-center">
-                                  <svg class="w-20 h-20">
-                                      <circle class="text-white/5" stroke-width="6" stroke="currentColor" fill="transparent" r="34" cx="40" cy="40"/>
+                                  <svg class="w-20 h-20 -rotate-90">
+                                      <circle class="text-white" stroke-width="6" stroke="currentColor" fill="transparent" r="34" cx="40" cy="40"/>
                                       <circle :class="val >= 7 ? 'text-emerald-500' : val >= 5 ? 'text-amber-500' : 'text-rose-500'" stroke-width="6" :stroke-dasharray="213" :stroke-dashoffset="213 - (213 * val / 10)" stroke-linecap="round" stroke="currentColor" fill="transparent" r="34" cx="40" cy="40"/>
                                   </svg>
-                                  <span class="absolute text-xl font-black text-white">{{ val }}/10</span>
+                                  <span class="absolute text-xl font-black text-slate-900">{{ val }}<span class="text-[10px] text-slate-400 opacity-50">/10</span></span>
                               </div>
                           </div>
                       </div>
 
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <!-- Points Forts -->
-                          <div class="space-y-4">
-                              <h3 class="text-sm font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
-                                  <CheckCircleIcon class="w-5 h-5" />
+                          <div class="p-8 bg-emerald-50/50 border border-emerald-100 rounded-[2.5rem] space-y-6">
+                              <h3 class="text-xs font-black uppercase tracking-widest text-emerald-600 flex items-center gap-3">
+                                  <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-emerald-100">
+                                    <CheckCircleIcon class="w-4 h-4" />
+                                  </div>
                                   Points Forts
                               </h3>
-                              <ul class="space-y-3">
-                                  <li v-for="p in scorecard.feedback.points_forts" :key="p" class="flex gap-3 text-sm text-slate-300">
-                                      <span class="text-emerald-500 shrink-0">●</span>
+                              <ul class="space-y-4">
+                                  <li v-for="p in scorecard.feedback.points_forts" :key="p" class="flex gap-4 text-sm text-slate-700 font-bold leading-relaxed">
+                                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
                                       {{ p }}
                                   </li>
                               </ul>
                           </div>
 
                           <!-- Points à améliorer -->
-                          <div class="space-y-4">
-                              <h3 class="text-sm font-black uppercase tracking-widest text-amber-400 flex items-center gap-2">
-                                  <AcademicCapIcon class="w-5 h-5" />
-                                  Axe d'amélioration
+                          <div class="p-8 bg-amber-50/50 border border-amber-100 rounded-[2.5rem] space-y-6">
+                              <h3 class="text-xs font-black uppercase tracking-widest text-amber-600 flex items-center gap-3">
+                                  <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm border border-amber-100">
+                                    <AcademicCapIcon class="w-4 h-4" />
+                                  </div>
+                                  Axes d'amélioration
                               </h3>
-                              <ul class="space-y-3">
-                                  <li v-for="p in scorecard.feedback.points_amelioration" :key="p" class="flex gap-3 text-sm text-slate-300">
-                                      <span class="text-amber-500 shrink-0">●</span>
+                              <ul class="space-y-4">
+                                  <li v-for="p in scorecard.feedback.points_amelioration" :key="p" class="flex gap-4 text-sm text-slate-700 font-bold leading-relaxed">
+                                      <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0"></span>
                                       {{ p }}
                                   </li>
                               </ul>
                           </div>
                       </div>
 
-                      <!-- Final Advice Card -->
-                      <div class="bg-indigo-600/10 border border-indigo-500/30 p-8 rounded-[2rem] space-y-4 relative overflow-hidden group">
-                          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
-                              <SparklesIcon class="w-24 h-24 text-indigo-400" />
+                      <!-- Recruiter Opinion Card -->
+                      <div class="bg-slate-900 p-10 rounded-[3rem] space-y-6 relative overflow-hidden group shadow-2xl">
+                          <div class="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform">
+                              <SparklesIcon class="w-32 h-32 text-white" />
                           </div>
-                          <div class="flex items-center gap-3">
-                              <StarIcon class="w-6 h-6 text-indigo-400" />
-                              <h3 class="text-lg font-bold text-white">L'avis du Recruteur</h3>
+                          
+                          <div class="flex items-center justify-between relative z-10">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                    <StarIcon class="w-6 h-6 text-[#E85D3E]" />
+                                </div>
+                                <h3 class="text-xl font-black text-white m-0">Verdict du Recruteur</h3>
+                            </div>
+                            <div :class="scorecard.decision.includes('Favorable') ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'" class="px-6 py-2 rounded-full border font-black text-[10px] uppercase tracking-widest">
+                                {{ scorecard.decision }}
+                            </div>
                           </div>
-                          <p class="text-slate-300 text-sm leading-relaxed relative z-10">{{ scorecard.feedback.conseils }}</p>
-                          <div class="pt-4 flex items-center justify-between border-t border-white/5">
-                              <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Décision finale :</span>
-                              <span :class="scorecard.decision.includes('Favorable') ? 'text-emerald-400' : 'text-amber-400'" class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 font-black text-xs">
-                                  {{ scorecard.decision }}
-                              </span>
+                          
+                          <p class="text-slate-400 text-base font-medium leading-relaxed relative z-10 italic">
+                            " {{ scorecard.feedback.conseils }} "
+                          </p>
+                          
+                          <div class="pt-6 border-t border-white/5 flex items-center gap-4">
+                             <img :src="currentRecruiter?.img" class="w-10 h-10 rounded-full object-cover border border-white/10" />
+                             <div>
+                                <p class="text-xs font-black text-white m-0">{{ currentRecruiter?.name }}</p>
+                                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest m-0">{{ currentRecruiter?.role }}</p>
+                             </div>
                           </div>
                       </div>
                   </div>
               </div>
 
               <!-- Footer -->
-              <div class="p-8 bg-black/20 flex justify-end gap-4">
-                  <router-link to="/interview/history" class="px-6 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 font-bold rounded-2xl transition-all flex items-center gap-2">
-                      📋 Mon Historique
+              <div class="p-8 bg-slate-50 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                  <router-link to="/interview/history" class="text-[10px] font-black text-slate-400 hover:text-slate-900 uppercase tracking-[0.2em] transition-colors">
+                      Voir l'historique complet
                   </router-link>
-                  <button @click="stopInterview" class="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:scale-105 active:scale-95 text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-500/20">
-                      Retour au Dashboard
-                  </button>
+                  <div class="flex gap-4">
+                    <button @click="stopInterview" class="px-10 py-4 bg-[#E85D3E] hover:bg-[#C44A2D] text-white font-black rounded-2xl transition-all shadow-xl shadow-[#E85D3E]/20 text-xs uppercase tracking-widest">
+                        Quitter l'entretien
+                    </button>
+                  </div>
               </div>
           </div>
       </div>
 
       <!-- Live status text -->
-      <div v-if="isListening" class="absolute bottom-32 left-1/2 -translate-x-1/2 text-pink-400 font-black uppercase tracking-[0.3em] text-xs animate-pulse z-10 drop-shadow-lg">
+      <div v-if="isListening" class="absolute bottom-32 left-1/2 -translate-x-1/2 text-[#E85D3E] font-black uppercase tracking-[0.3em] text-xs animate-pulse z-10 drop-shadow-lg">
           Microphone Actif — Parlez Maintenant
       </div>
-   </div>
+    </div>
   </div>
 </template>
-
 <style scoped>
 .noise-overlay {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
