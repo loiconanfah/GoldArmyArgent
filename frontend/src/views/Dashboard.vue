@@ -86,7 +86,7 @@ const kpiValues = ref({ applied: '0', cv_analyzed: '0', interviews: '0', network
 
 const playbooks = ref([
   { id: 1, name: 'Sniper-to-Apply', desc: 'Candidature Express 1-Clic', fullDesc: "Ce workflow analyse l'offre d'emploi, adapte votre CV spécifiquement pour celle-ci, et remplit automatiquement le formulaire ATS de l'entreprise via l'agent MultiOn.", icon: RocketLaunchIcon, active: false },
-  { id: 2, name: 'Ghostbuster', desc: 'Relance Anti-Fantôme', fullDesc: "Détecte automatiquement les candidatures sans réponse depuis plus de 7 jours et génère un email de relance poli et percutant pour le recruteur.", icon: EnvelopeIcon, active: false },
+  { id: 2, name: 'Ghostbuster', desc: 'Relance Anti-Fantôme', fullDesc: "Détecte automatiquement les candidatures sans réponse depuis plus de 15 jours ouvrables et génère un email de relance + message LinkedIn personnalisé. Mode auto disponible (scan toutes les 48h).", icon: EnvelopeIcon, active: false },
   { id: 3, name: 'Network Ninja', desc: 'Chasseur de Décideurs', fullDesc: "Cherche et identifie les décideurs clés (RH, CEO, Lead Dev) de l'entreprise sur LinkedIn et prépare un message d'accroche personnalisé.", icon: UsersIcon, active: false },
   { id: 4, name: 'Pre-Interview', desc: 'Entraînement Immersif', fullDesc: "Récupère les détails du poste et de l'entreprise pour préparer un simulateur d'entretien avec des questions probables et des conseils de posture.", icon: LightBulbIcon, active: false },
   { id: 5, name: 'Daily Hunt', desc: 'Chasse Matinale (Cron)', fullDesc: "S'exécute tous les matins à 7h00. Scanne le web pour trouver 5 nouvelles offres d'emploi correspondant exactement à votre profil et les ajoute au CRM.", icon: MagnifyingGlassIcon, active: false },
@@ -108,6 +108,20 @@ const currentPreviewLetter = ref(null)
 const isPremiumUpgradeModalOpen = ref(false)
 const isDownloadChoiceModalOpen = ref(false)
 const downloadPendingItem = ref(null)
+
+// ── Ghostbuster state ──
+const isGhostbusterModalOpen = ref(false)
+const isGhostbusterScanning = ref(false)
+const ghostbusterResults = ref([])
+const ghostbusterTotalScanned = ref(0)
+const ghostbusterAutoEnabled = ref(false)
+const ghostbusterLastRun = ref(null)
+const ghostbusterError = ref('')
+const ghostbusterExpandedEmail = ref(null)   // app_id expanded
+const ghostbusterExpandedLinkedin = ref(null)
+const ghostbusterCopied = ref({})             // { app_id_email: true, ... }
+const ghostbusterSent = ref({})               // { app_id: 'email'|'linkedin'|'manual' }
+const ghostbusterChainTo = ref('none')        // 'none' | 'network_ninja' | 'post_interview'
 
 const isPremium = computed(() => {
     try {
@@ -148,6 +162,12 @@ const togglePlaybook = async (pb) => {
         execPlaybook.value = pb
         return
     }
+
+    if (pb.id === 2) {
+        // Ghostbuster — vrai workflow
+        openGhostbusterModal(pb)
+        return
+    }
     
     // Start simulation for others
     execPlaybook.value = pb
@@ -160,6 +180,114 @@ const togglePlaybook = async (pb) => {
     setTimeout(() => advanceStep(3, `[00:05] Agent en action. Traitement en cours...`), 5500)
     setTimeout(() => advanceStep(4, `[00:07] Contrôle qualité validé. Mission accomplie.`), 7500)
     setTimeout(() => finishExecution(), 9000)
+}
+
+// ─── Ghostbuster functions ───
+
+const openGhostbusterModal = async (pb) => {
+    execPlaybook.value = pb
+    isGhostbusterModalOpen.value = true
+    ghostbusterError.value = ''
+    // Charger le statut auto
+    await fetchGhostbusterStatus()
+    // Lancer le scan automatiquement
+    await runGhostbusterScan()
+}
+
+const fetchGhostbusterStatus = async () => {
+    try {
+        const r = await authFetch('/api/workflows/ghostbuster/status')
+        const j = await r.json()
+        if (j.status === 'success') {
+            ghostbusterAutoEnabled.value = j.data.auto_enabled
+            ghostbusterLastRun.value = j.data.last_run_at
+        }
+    } catch(e) { console.warn('[Ghostbuster] Status fetch failed', e) }
+}
+
+const runGhostbusterScan = async (forceRegenerate = false) => {
+    isGhostbusterScanning.value = true
+    ghostbusterError.value = ''
+    ghostbusterResults.value = []
+    try {
+        const r = await authFetch('/api/workflows/ghostbuster/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                force_regenerate: forceRegenerate,
+                chain_to: ghostbusterChainTo.value === 'none' ? null : ghostbusterChainTo.value
+            })
+        })
+        const j = await r.json()
+        if (j.status === 'success') {
+            ghostbusterResults.value = j.data.eligible || []
+            ghostbusterTotalScanned.value = j.data.total_scanned || 0
+            // Marquer le playbook comme actif si des relances ont été trouvées
+            if (ghostbusterResults.value.length > 0) {
+                const pb = playbooks.value.find(p => p.id === 2)
+                if (pb) pb.active = true
+            }
+        } else {
+            ghostbusterError.value = 'Erreur lors du scan. Réessayez.'
+        }
+    } catch(e) {
+        ghostbusterError.value = 'Erreur réseau. Vérifiez votre connexion.'
+    } finally {
+        isGhostbusterScanning.value = false
+    }
+}
+
+const toggleGhostbusterAuto = async () => {
+    const newState = !ghostbusterAutoEnabled.value
+    try {
+        const r = await authFetch('/api/workflows/ghostbuster/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: newState })
+        })
+        const j = await r.json()
+        if (j.status === 'success') {
+            ghostbusterAutoEnabled.value = newState
+        }
+    } catch(e) { console.warn('[Ghostbuster] Toggle failed', e) }
+}
+
+const copyGhostbusterText = async (text, key) => {
+    try {
+        await navigator.clipboard.writeText(text)
+        ghostbusterCopied.value = { ...ghostbusterCopied.value, [key]: true }
+        setTimeout(() => {
+            ghostbusterCopied.value = { ...ghostbusterCopied.value, [key]: false }
+        }, 2500)
+    } catch(e) { console.warn('Clipboard failed', e) }
+}
+
+const markGhostbusterSent = async (appId, via = 'manual') => {
+    try {
+        const r = await authFetch('/api/workflows/ghostbuster/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ app_id: appId, via })
+        })
+        const j = await r.json()
+        if (j.status === 'success') {
+            ghostbusterSent.value = { ...ghostbusterSent.value, [appId]: via }
+        }
+    } catch(e) { console.warn('[Ghostbuster] Mark sent failed', e) }
+}
+
+const closeGhostbusterModal = () => {
+    isGhostbusterModalOpen.value = false
+    ghostbusterResults.value = []
+    ghostbusterExpandedEmail.value = null
+    ghostbusterExpandedLinkedin.value = null
+    ghostbusterError.value = ''
+}
+
+const formatRelativeDate = (isoStr) => {
+    if (!isoStr) return ''
+    const d = new Date(isoStr)
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 const last10RecentApplications = computed(() => {
@@ -598,7 +726,253 @@ onMounted(fetchDashboardData)
       </div>
     </Transition>
 
-    <!-- Modal: Sélection des Offres (Workflow 10) -->
+    <!-- =====================================================
+         GHOSTBUSTER MODAL — Workflow #2
+         ===================================================== -->
+    <Transition name="fade">
+      <div v-if="isGhostbusterModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-3 bg-slate-900/50 backdrop-blur-sm" @click.self="closeGhostbusterModal">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-slide-up" style="max-height:90vh; animation-duration:0.35s">
+
+          <!-- Header -->
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50/30 shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-xl bg-indigo-100 text-indigo-600 shadow-inner">
+                <EnvelopeIcon class="w-5 h-5" />
+              </div>
+              <div>
+                <h2 class="font-extrabold text-slate-800 text-base leading-tight tracking-tight">👻 Ghostbuster — Relances Anti-Fantôme</h2>
+                <p class="text-[11px] text-slate-500 mt-0.5">Candidatures sans réponse depuis &gt; 15 jours ouvrables</p>
+              </div>
+            </div>
+            <button @click="closeGhostbusterModal" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <!-- Controls Bar -->
+          <div class="px-5 py-3 border-b border-slate-100 bg-white flex items-center justify-between gap-3 shrink-0 flex-wrap">
+            <!-- Stats -->
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-slate-500 font-medium">
+                <span class="font-bold text-slate-800">{{ ghostbusterTotalScanned }}</span> candidatures scannées
+              </span>
+              <span v-if="ghostbusterResults.length > 0" class="text-xs px-2 py-0.5 bg-amber-50 text-amber-700 font-bold rounded-full border border-amber-200">
+                {{ ghostbusterResults.length }} relance(s) à envoyer
+              </span>
+              <span v-if="ghostbusterLastRun" class="text-[10px] text-slate-400">
+                Dernier scan : {{ formatRelativeDate(ghostbusterLastRun) }}
+              </span>
+            </div>
+            <!-- Actions -->
+            <div class="flex items-center gap-2">
+              <!-- Refresh / Force regenerate -->
+              <button @click="runGhostbusterScan(true)" :disabled="isGhostbusterScanning"
+                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-all disabled:opacity-50">
+                <ArrowPathIcon class="w-3.5 h-3.5" :class="isGhostbusterScanning ? 'animate-spin' : ''" />
+                Re-générer
+              </button>
+              <!-- Chain to workflow -->
+              <select v-model="ghostbusterChainTo" class="text-[10px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none font-semibold text-slate-600 cursor-pointer hover:border-indigo-300 transition-colors">
+                <option value="none">Aucun chaînage</option>
+                <option value="network_ninja">→ Network Ninja (LinkedIn)</option>
+                <option value="post_interview">→ Post-Interview (Merci)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Mode Auto Toggle Bar -->
+          <div class="px-5 py-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/30 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full animate-pulse" :class="ghostbusterAutoEnabled ? 'bg-emerald-500' : 'bg-slate-300'"></div>
+              <span class="text-xs font-semibold text-slate-700">Mode Auto (48h)</span>
+              <span class="text-[10px] text-slate-500">— Scan automatique toutes les 48h pour tous tes comptes actifs</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" :checked="ghostbusterAutoEnabled" @change="toggleGhostbusterAuto" class="sr-only peer">
+              <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 transition-colors"></div>
+            </label>
+          </div>
+
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto custom-scrollbar">
+
+            <!-- Loading State -->
+            <div v-if="isGhostbusterScanning" class="flex flex-col items-center justify-center py-16 gap-4">
+              <div class="relative">
+                <div class="w-14 h-14 rounded-full border-4 border-indigo-100 border-t-indigo-500 animate-spin"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-xl">👻</div>
+              </div>
+              <p class="text-sm font-semibold text-slate-600">Scan des candidatures en cours...</p>
+              <p class="text-xs text-slate-400">Calcul des jours ouvrables · Génération LLM</p>
+            </div>
+
+            <!-- Error State -->
+            <div v-else-if="ghostbusterError" class="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
+              <div class="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-2xl">⚠️</div>
+              <p class="text-sm font-bold text-rose-600">{{ ghostbusterError }}</p>
+              <button @click="runGhostbusterScan()" class="mt-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+                Réessayer
+              </button>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="!isGhostbusterScanning && ghostbusterResults.length === 0" class="flex flex-col items-center justify-center py-14 gap-3 text-center px-6">
+              <div class="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center text-3xl shadow-inner">✅</div>
+              <h3 class="text-base font-bold text-slate-800">Aucun fantôme détecté !</h3>
+              <p class="text-xs text-slate-500 leading-relaxed max-w-xs">
+                Toutes tes candidatures ont reçu une réponse, ou sont envoyées depuis moins de 15 jours ouvrables.
+                <br>Scannées : <strong>{{ ghostbusterTotalScanned }}</strong>
+              </p>
+              <div v-if="ghostbusterTotalScanned === 0" class="mt-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-medium">
+                💡 Ajoute des candidatures dans le CRM avec le statut <strong>APPLIED</strong> pour les suivre ici.
+              </div>
+            </div>
+
+            <!-- Results List -->
+            <div v-else class="p-4 space-y-3">
+              <div v-for="item in ghostbusterResults" :key="item.app_id"
+                class="rounded-2xl border overflow-hidden transition-all duration-300"
+                :class="ghostbusterSent[item.app_id] ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white hover:border-indigo-200'">
+
+                <!-- Item Header -->
+                <div class="flex items-center justify-between px-4 py-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
+                      {{ (item.company_name || '?').charAt(0).toUpperCase() }}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-slate-800 text-sm truncate">{{ item.company_name }}</p>
+                      <p class="text-xs text-slate-500 truncate">{{ item.job_title }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <!-- Days badge -->
+                    <span class="text-[10px] px-2 py-1 rounded-full font-bold"
+                      :class="item.working_days_elapsed >= 30 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-700'">
+                      {{ item.working_days_elapsed }}j ouv.
+                    </span>
+                    <!-- Sent badge -->
+                    <span v-if="ghostbusterSent[item.app_id]" class="text-[10px] px-2 py-1 bg-emerald-100 text-emerald-700 font-bold rounded-full">
+                      ✓ Envoyé
+                    </span>
+                    <!-- Already generated badge -->
+                    <span v-else-if="item.already_generated" class="text-[10px] px-2 py-1 bg-slate-100 text-slate-500 font-medium rounded-full">
+                      Existante
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Applied date info -->
+                <div class="px-4 pb-2 flex items-center gap-2 text-[10px] text-slate-400">
+                  <span>Candidature envoyée le {{ formatRelativeDate(item.applied_at) }}</span>
+                </div>
+
+                <!-- Expandable Sections -->
+                <div class="border-t border-slate-100 divide-y divide-slate-100">
+
+                  <!-- Email Section -->
+                  <div>
+                    <button @click="ghostbusterExpandedEmail = ghostbusterExpandedEmail === item.app_id ? null : item.app_id"
+                      class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors text-left">
+                      <div class="flex items-center gap-2">
+                        <EnvelopeIcon class="w-4 h-4 text-indigo-500" />
+                        <span class="text-xs font-semibold text-slate-700">Email de relance</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button @click.stop="copyGhostbusterText(item.relance_email, item.app_id + '_email')"
+                          class="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all"
+                          :class="ghostbusterCopied[item.app_id + '_email'] ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'">
+                          <CheckIcon v-if="ghostbusterCopied[item.app_id + '_email']" class="w-3 h-3" />
+                          <DocumentDuplicateIcon v-else class="w-3 h-3" />
+                          {{ ghostbusterCopied[item.app_id + '_email'] ? 'Copié !' : 'Copier' }}
+                        </button>
+                        <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200"
+                          :class="ghostbusterExpandedEmail === item.app_id ? 'rotate-180' : ''"
+                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </div>
+                    </button>
+                    <Transition name="slide-down">
+                      <div v-if="ghostbusterExpandedEmail === item.app_id" class="px-4 pb-3">
+                        <pre class="text-[11px] leading-relaxed text-slate-600 bg-slate-50 rounded-xl p-3 whitespace-pre-wrap font-sans border border-slate-100 max-h-48 overflow-y-auto custom-scrollbar">{{ item.relance_email }}</pre>
+                      </div>
+                    </Transition>
+                  </div>
+
+                  <!-- LinkedIn Section -->
+                  <div>
+                    <button @click="ghostbusterExpandedLinkedin = ghostbusterExpandedLinkedin === item.app_id ? null : item.app_id"
+                      class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors text-left">
+                      <div class="flex items-center gap-2">
+                        <!-- LinkedIn icon (inline SVG) -->
+                        <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                        </svg>
+                        <span class="text-xs font-semibold text-slate-700">Message LinkedIn</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button @click.stop="copyGhostbusterText(item.relance_linkedin, item.app_id + '_linkedin')"
+                          class="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all"
+                          :class="ghostbusterCopied[item.app_id + '_linkedin'] ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'">
+                          <CheckIcon v-if="ghostbusterCopied[item.app_id + '_linkedin']" class="w-3 h-3" />
+                          <DocumentDuplicateIcon v-else class="w-3 h-3" />
+                          {{ ghostbusterCopied[item.app_id + '_linkedin'] ? 'Copié !' : 'Copier' }}
+                        </button>
+                        <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200"
+                          :class="ghostbusterExpandedLinkedin === item.app_id ? 'rotate-180' : ''"
+                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </div>
+                    </button>
+                    <Transition name="slide-down">
+                      <div v-if="ghostbusterExpandedLinkedin === item.app_id" class="px-4 pb-3">
+                        <pre class="text-[11px] leading-relaxed text-slate-600 bg-blue-50/50 rounded-xl p-3 whitespace-pre-wrap font-sans border border-blue-100 max-h-36 overflow-y-auto custom-scrollbar">{{ item.relance_linkedin }}</pre>
+                      </div>
+                    </Transition>
+                  </div>
+
+                  <!-- Mark as Sent -->
+                  <div class="px-4 py-2.5 flex items-center justify-between bg-slate-50/50">
+                    <span class="text-[10px] text-slate-400">Après envoi, marquer comme :</span>
+                    <div class="flex items-center gap-1.5">
+                      <button v-if="!ghostbusterSent[item.app_id]"
+                        @click="markGhostbusterSent(item.app_id, 'email')"
+                        class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-semibold text-slate-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
+                        ✉️ Email envoyé
+                      </button>
+                      <button v-if="!ghostbusterSent[item.app_id]"
+                        @click="markGhostbusterSent(item.app_id, 'linkedin')"
+                        class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all">
+                        💼 LinkedIn envoyé
+                      </button>
+                      <span v-else class="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                        <CheckIcon class="w-3.5 h-3.5" /> Relance confirmée
+                      </span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="px-5 py-3.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+            <p class="text-[10px] text-slate-400">
+              Les relances sont générées par IA et sauvegardées dans le CRM.
+            </p>
+            <button @click="closeGhostbusterModal" class="px-4 py-2 text-xs font-bold bg-slate-900 text-white rounded-xl hover:bg-black transition-colors shadow-sm">
+              Fermer
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </Transition>
+
+
     <Transition name="fade">
       <div v-if="isSelectionModalOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm">
         <div class="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
@@ -1389,6 +1763,26 @@ onMounted(fetchDashboardData)
     background: #111827;
     border-radius: 99px;
     transition: width 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Ghostbuster slide-down accordion transition */
+.slide-down-enter-active,
+.slide-down-leave-active {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    max-height: 400px;
+}
+.slide-down-enter-from,
+.slide-down-leave-to {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+}
+.slide-down-enter-to,
+.slide-down-leave-from {
+    max-height: 400px;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 </style>

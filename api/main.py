@@ -178,6 +178,14 @@ async def startup_event():
         except Exception as e:
             logger.warning(f"Non-critical Playwright check error: {e}")
 
+        # --- Ghostbuster Scheduler (48h auto mode) ---
+        logger.info("👻 Étape 4: Démarrage du Ghostbuster Scheduler (48h)...")
+        try:
+            from core.ghostbuster_scheduler import start_ghostbuster_scheduler
+            start_ghostbuster_scheduler()
+        except Exception as e:
+            logger.warning(f"Non-critical Ghostbuster scheduler start error: {e}")
+
         logger.success("✨ Initialisation du backend terminée avec succès!")
     except Exception as e:
         logger.error(f"💥 Erreur critique lors de l'initialisation: {e}")
@@ -1454,6 +1462,156 @@ async def download_cover_letter(data: dict, current_user: dict = Depends(get_cur
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+# ==========================================
+# Ghostbuster Workflow Endpoints (#2)
+# ==========================================
+
+class GhostbusterToggleRequest(BaseModel):
+    enabled: bool
+
+class GhostbusterSendRequest(BaseModel):
+    app_id: str
+    via: str = "manual"  # "email" | "linkedin" | "manual"
+
+class GhostbusterScanRequest(BaseModel):
+    force_regenerate: bool = False
+    chain_to: Optional[str] = None  # "network_ninja" | "post_interview" | None
+
+@app.post("/api/workflows/ghostbuster/scan")
+async def ghostbuster_scan(
+    req: GhostbusterScanRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Scanne les candidatures APPLIED sans réponse depuis > 15 jours ouvrables.
+    Génère email de relance + message LinkedIn pour chaque candidature éligible.
+    Ne re-génère pas si une relance existe déjà (sauf si force_regenerate=True).
+    """
+    try:
+        from agents.ghostbuster_agent import ghostbuster_agent
+        user_id = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
+
+        result = await ghostbuster_agent.scan_and_generate(
+            user_id=user_id,
+            chain_to=req.chain_to,
+            force_regenerate=req.force_regenerate,
+        )
+
+        # Mettre à jour la config ghostbuster (last_run_at)
+        await db.ghostbuster_config.update_one(
+            {"user_id": user_id},
+            {
+                "$set": {
+                    "last_run_at": datetime.datetime.utcnow(),
+                    "last_result_count": len(result.get("eligible", [])),
+                }
+            },
+            upsert=True,
+        )
+
+        return {"status": "success", "data": result}
+    except Exception as e:
+        logger.error(f"[API] Ghostbuster scan error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/workflows/ghostbuster/status")
+async def ghostbuster_status(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Retourne le statut du Ghostbuster pour l'utilisateur :
+    - mode auto activé/désactivé
+    - dernière exécution
+    - prochaine exécution prévue
+    - nombre de relances détectées lors du dernier run
+    """
+    try:
+        user_id = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
+        config = await db.ghostbuster_config.find_one({"user_id": user_id}, {"_id": 0}) or {}
+
+        return {
+            "status": "success",
+            "data": {
+                "auto_enabled": config.get("auto_enabled", False),
+                "last_run_at": config.get("last_run_at"),
+                "next_run_at": config.get("next_run_at"),
+                "last_result_count": config.get("last_result_count", 0),
+                "threshold_days": 15,
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/workflows/ghostbuster/toggle")
+async def ghostbuster_toggle(
+    req: GhostbusterToggleRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Active ou désactive le mode automatique 48h du Ghostbuster.
+    Quand activé, le scheduler global le traitera automatiquement.
+    """
+    try:
+        user_id = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
+        now = datetime.datetime.utcnow()
+
+        await db.ghostbuster_config.update_one(
+            {"user_id": user_id},
+            {
+                "$set": {
+                    "auto_enabled": req.enabled,
+                    "updated_at": now,
+                    # Si on active, programmer le premier run dans 48h
+                    "next_run_at": now + datetime.timedelta(hours=48) if req.enabled else None,
+                }
+            },
+            upsert=True,
+        )
+
+        action = "activé" if req.enabled else "désactivé"
+        logger.info(f"[Ghostbuster] Mode auto {action} pour user {user_id}")
+        return {
+            "status": "success",
+            "message": f"Mode automatique Ghostbuster {action}.",
+            "auto_enabled": req.enabled,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/workflows/ghostbuster/send")
+async def ghostbuster_send(
+    req: GhostbusterSendRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Marque une relance Ghostbuster comme envoyée (copie manuelle par l'utilisateur).
+    Met à jour relance_sent_at et relance_sent_via dans MongoDB.
+    """
+    try:
+        from agents.ghostbuster_agent import ghostbuster_agent
+        user_id = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
+
+        ok = await ghostbuster_agent.mark_sent(
+            user_id=user_id,
+            app_id=req.app_id,
+            via=req.via,
+        )
+        if not ok:
+            raise HTTPException(status_code=404, detail="Candidature introuvable ou aucune modification.")
+        return {"status": "success", "message": "Relance marquée comme envoyée."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- Radar Endpoints (Market Insights) ---
 class RadarRequest(BaseModel):
