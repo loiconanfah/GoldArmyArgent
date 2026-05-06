@@ -3,7 +3,10 @@ import { authFetch } from '../utils/auth'
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
-  ArrowTrendingUpIcon, ArrowTrendingDownIcon, EllipsisHorizontalIcon
+  ArrowTrendingUpIcon, ArrowTrendingDownIcon, EllipsisHorizontalIcon,
+  RocketLaunchIcon, EnvelopeIcon, UsersIcon, LightBulbIcon,
+  MagnifyingGlassIcon, MegaphoneIcon, HandThumbUpIcon, PhoneIcon,
+  ArrowPathIcon, DocumentTextIcon, InformationCircleIcon, XMarkIcon
 } from '@heroicons/vue/24/outline'
 
 // Dimensions pour le graphique principal
@@ -48,7 +51,6 @@ const { t, locale } = useI18n()
 // Jours et dates pour le header
 const todayStr = computed(() => {
   const d = new Date()
-  // Déterminer la locale en fonction de vue-i18n
   const loc = (locale.value && locale.value.includes('fr')) ? 'fr-FR' : 'en-US'
   const dayName = d.toLocaleDateString(loc, { weekday: 'short' })
   const monthName = d.toLocaleDateString(loc, { month: 'long' })
@@ -57,6 +59,31 @@ const todayStr = computed(() => {
 const dateNum = computed(() => new Date().getDate())
 
 const kpiValues = ref({ applied: '0', cv_analyzed: '0', interviews: '0', network: '0' })
+
+const playbooks = ref([
+  { id: 1, name: 'Sniper-to-Apply', desc: 'Candidature Express 1-Clic', fullDesc: "Ce workflow analyse l'offre d'emploi, adapte votre CV spécifiquement pour celle-ci, et remplit automatiquement le formulaire ATS de l'entreprise via l'agent MultiOn.", icon: RocketLaunchIcon, active: true },
+  { id: 2, name: 'Ghostbuster', desc: 'Relance Anti-Fantôme', fullDesc: "Détecte automatiquement les candidatures sans réponse depuis plus de 7 jours et génère un email de relance poli et percutant pour le recruteur.", icon: EnvelopeIcon, active: true },
+  { id: 3, name: 'Network Ninja', desc: 'Chasseur de Décideurs', fullDesc: "Cherche et identifie les décideurs clés (RH, CEO, Lead Dev) de l'entreprise sur LinkedIn et prépare un message d'accroche personnalisé.", icon: UsersIcon, active: false },
+  { id: 4, name: 'Pre-Interview', desc: 'Entraînement Immersif', fullDesc: "Récupère les détails du poste et de l'entreprise pour préparer un simulateur d'entretien avec des questions probables et des conseils de posture.", icon: LightBulbIcon, active: true },
+  { id: 5, name: 'Daily Hunt', desc: 'Chasse Matinale (Cron)', fullDesc: "S'exécute tous les matins à 7h00. Scanne le web pour trouver 5 nouvelles offres d'emploi correspondant exactement à votre profil et les ajoute au CRM.", icon: MagnifyingGlassIcon, active: true },
+  { id: 6, name: 'Elevator Pitch', desc: 'Présentation Instantanée', fullDesc: "Génère un pitch de présentation de 30 secondes (texte + audio) adapté à l'entreprise que vous ciblez.", icon: MegaphoneIcon, active: false },
+  { id: 7, name: 'Post-Interview', desc: 'Debrief & Remerciement', fullDesc: "S'active après un entretien. Génère un email de remerciement stratégique et met à jour le statut de la candidature dans le CRM.", icon: HandThumbUpIcon, active: false },
+  { id: 8, name: 'Cold Call', desc: 'Script Téléphonique', fullDesc: "Prépare un script d'appel téléphonique sur mesure pour contacter directement un recruteur ou un manager, avec gestion des objections.", icon: PhoneIcon, active: false },
+  { id: 9, name: 'Rejection Pivot', desc: 'Rebond & Alternatives', fullDesc: "Suite à un refus, envoie un email demandant du feedback constructif, et trouve instantanément 3 offres similaires pour rebondir.", icon: ArrowPathIcon, active: true },
+  { id: 10, name: 'Smart Cover', desc: 'Lettre d\'Actualité', fullDesc: "Rédige une lettre de motivation dynamique en intégrant la dernière actualité pertinente de l'entreprise ciblée.", icon: DocumentTextIcon, active: false }
+])
+
+const togglePlaybook = (pb) => {
+    pb.active = !pb.active
+}
+
+const selectedPlaybookInfo = ref(null)
+const showInfo = (pb) => {
+    selectedPlaybookInfo.value = pb
+}
+const closeInfo = () => {
+    selectedPlaybookInfo.value = null
+}
 
 // Génération de fausses données pour les sparklines (mini graphiques des KPIs)
 const generateSparkline = () => {
@@ -88,7 +115,6 @@ const getSparklinePath = (data) => {
     }
     return path
 }
-
 
 const kpiStats = computed(() => [
   { id: 'applied', label: t('dashboard.smart_score'), value: kpiValues.value.cv_analyzed || '0', suffix: ' / 100', trend: '+18', trendUp: true, chartType: 'gauge' },
@@ -208,8 +234,44 @@ onMounted(fetchDashboardData)
       </div>
     </div>
 
-    <div class="db-kpi-grid">
-      <div v-for="(s, index) in kpiStats" :key="s.id" class="kpi-card animate-slide-up" :style="`animation-delay: ${0.1 + index * 0.1}s;`">
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-800">Playbooks Actifs</h2>
+      <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full font-medium border border-slate-200">10 Workflows Disponibles</span>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+      <button v-for="(pb, index) in playbooks" :key="pb.id" 
+          @click="togglePlaybook(pb)"
+          class="relative flex flex-col items-start p-3 rounded-xl border text-left transition-all duration-300 group overflow-hidden bg-white animate-slide-up hover:-translate-y-1 active:scale-95 cursor-pointer"
+          :class="pb.active ? 'border-indigo-500 shadow-md shadow-indigo-200/50 ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-100 opacity-80 hover:opacity-100'"
+          :style="`animation-delay: ${0.05 * index}s;`">
+        
+        <!-- Active indicator -->
+        <div class="absolute top-0 right-0 w-8 h-8 flex items-center justify-center">
+            <div v-if="pb.active" class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+            <div v-else class="w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors duration-300 group-hover:bg-indigo-300"></div>
+        </div>
+
+        <div class="mb-2 p-1.5 rounded-lg transition-transform duration-300 group-hover:scale-110" :class="pb.active ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-500'">
+           <component :is="pb.icon" class="w-5 h-5" />
+        </div>
+        
+        <div class="font-semibold text-sm mb-0.5 flex items-center gap-1" :class="pb.active ? 'text-slate-800' : 'text-slate-600'">
+            {{ pb.name }}
+            <button @click.stop="showInfo(pb)" class="text-slate-400 hover:text-indigo-500 transition-colors bg-white/80 rounded-full hover:bg-indigo-50" title="Plus d'infos">
+                <InformationCircleIcon class="w-3.5 h-3.5" />
+            </button>
+        </div>
+        <div class="text-[10px] leading-tight text-slate-500 font-medium">{{ pb.desc }}</div>
+        
+        <!-- Background subtle glow if active -->
+        <div v-if="pb.active" class="absolute -bottom-6 -right-6 w-16 h-16 bg-indigo-50 rounded-full blur-xl -z-10"></div>
+      </button>
+    </div>
+
+    <!-- ANCIENNES CARTES KPI A LA PLACE DES GRAPHIQUES -->
+    <div class="db-kpi-grid mt-2 mb-8">
+      <div v-for="(s, index) in kpiStats" :key="s.id" class="kpi-card animate-slide-up" :style="`animation-delay: ${0.2 + index * 0.1}s;`">
         <div class="kpi-content">
             <div class="kpi-info">
                 <div class="kpi-label">{{ s.label }}</div>
@@ -245,159 +307,6 @@ onMounted(fetchDashboardData)
             </span>
             <span class="kpi-vs">Last week</span>
             <a href="#" class="kpi-link">Show more &rarr;</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- MAIN GRAPHIC + SIDE PANEL -->
-    <div class="db-charts-row">
-      <div class="chart-main-card animate-slide-up" style="animation-delay: 0.3s;">
-        <div class="chart-header relative">
-          <div>
-            <div class="chart-title">{{ t('dashboard.total_opportunities') }}</div>
-            <div class="chart-huge-val">{{ totalOpportunities }}</div>
-          </div>
-          <div class="flex flex-col items-end gap-1">
-              <button @click="monthDropdownOpen = !monthDropdownOpen" class="flex items-center gap-1.5 border border-gray-200 rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                  {{ selectedMonth }}
-                  <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-              </button>
-              
-              <div v-if="monthDropdownOpen" class="absolute top-8 right-0 mt-1 w-32 bg-white border border-gray-100 rounded-lg shadow-lg z-10 py-1">
-                  <button @click="selectedMonth='Last 30 Days'; monthDropdownOpen=false" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50">Last 30 Days</button>
-                  <button @click="selectedMonth='Last Month'; monthDropdownOpen=false" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50">Last Month</button>
-              </div>
-
-              <div class="flex gap-3 text-[0.7rem] font-medium text-gray-400 mt-2">
-                  <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#111827]"></span> Oct</span>
-                  <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#D1D5DB]"></span> Sep</span>
-              </div>
-          </div>
-        </div>
-        
-        <div class="chart-wrapper">
-            <svg :viewBox="`0 0 ${W} ${H}`" class="chart-svg">
-              <defs>
-                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#111827" stop-opacity="0.06" />
-                      <stop offset="100%" stop-color="#111827" stop-opacity="0" />
-                  </linearGradient>
-              </defs>
-
-              <!-- Grid Verticals -->
-              <g v-for="(p, i) in pts" :key="'grid-v'+i">
-                  <line v-if="(i+1) % 5 === 0" :x1="p.x" :y1="PAD.top" :x2="p.x" :y2="H - PAD.bottom" stroke="#F3F4F6" stroke-width="1" stroke-dasharray="2,2"/>
-                  <text v-if="(i+1) % 5 === 0" :x="p.x" :y="H - PAD.bottom + 20" text-anchor="middle" font-size="11" fill="#9CA3AF" font-weight="500">{{ i+1 }}</text>
-                  <line v-if="(i+1) % 5 === 0" :x1="p.x" :y1="H - PAD.bottom" :x2="p.x" :y2="H - PAD.bottom + 4" stroke="#E5E7EB" stroke-width="1"/>
-              </g>
-
-              <!-- Grid Horizontals -->
-              <line :x1="PAD.left" :y1="H - PAD.bottom - (H - PAD.top - PAD.bottom)/2" :x2="W - PAD.right" :y2="H - PAD.bottom - (H - PAD.top - PAD.bottom)/2" stroke="#F3F4F6" stroke-width="1" stroke-dasharray="2,2"/>
-              <text :x="W - PAD.right + 10" :y="H - PAD.bottom - (H - PAD.top - PAD.bottom)/2 + 4" text-anchor="start" font-size="11" fill="#9CA3AF" font-weight="500">{{ formatYLabel(Math.floor(yMax/2)) }}</text>
-              
-              <line :x1="PAD.left" :y1="PAD.top" :x2="W - PAD.right" :y2="PAD.top" stroke="#F3F4F6" stroke-width="1" stroke-dasharray="2,2"/>
-              <text :x="W - PAD.right + 10" :y="PAD.top + 4" text-anchor="start" font-size="11" fill="#9CA3AF" font-weight="500">{{ formatYLabel(yMax) }}</text>
-
-              <!-- Average Line -->
-              <line :x1="PAD.left" :y1="H/2" :x2="W - PAD.right" :y2="H/2" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="2,2"/>
-              <rect x="0" :y="H/2 - 10" width="55" height="20" fill="#FFFFFF"/>
-              <text x="5" :y="H/2 + 4" text-anchor="start" font-size="11" fill="#374151" font-weight="600">{{ t('dashboard.average', 'Average') }}</text>
-              
-              <!-- Area Fill (Primary) -->
-              <path :d="areaPath" fill="url(#areaGradient)" class="chart-area-anim" />
-              
-              <!-- Secondary line (Previous Month) -->
-              <path :d="linePath2" fill="none" stroke="#D1D5DB" stroke-width="1.5" stroke-linejoin="miter"/>
-              
-              <!-- Primary line (Current Month) -->
-              <path :d="linePath" class="chart-line-anim" fill="none" stroke="#111827" stroke-width="1.5" stroke-linejoin="miter"/>
-              
-              <g v-for="(p,i) in pts" :key="'p'+i" 
-                 @mouseenter="activePoint = { ...p, index: i }; activePoint2 = pts2[i] || null" 
-                 @mouseleave="activePoint = null; activePoint2 = null"
-                 class="cursor-pointer">
-                <circle :cx="p.x" :cy="p.y" r="15" fill="transparent" />
-                <circle v-if="pts2[i]" :cx="pts2[i].x" :cy="pts2[i].y" r="15" fill="transparent" />
-              </g>
-
-              <g v-if="activePoint">
-                  <line :x1="activePoint.x" :y1="PAD.top" :x2="activePoint.x" :y2="H-PAD.bottom" stroke="#4B5563" stroke-width="1"/>
-                  <circle :cx="activePoint.x" :cy="activePoint.y" r="3.5" fill="#111827" />
-                  <circle :cx="activePoint.x" :cy="activePoint.y" r="5" fill="transparent" stroke="#FFFFFF" stroke-width="1.5" />
-                  <circle v-if="activePoint2" :cx="activePoint2.x" :cy="activePoint2.y" r="3.5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1.5" />
-              </g>
-              
-              <g v-if="pts.length > 0 && pts2.length > 0 && !activePoint">
-                  <line :x1="pts[Math.floor(pts.length*0.8)].x" :y1="PAD.top" :x2="pts[Math.floor(pts.length*0.8)].x" :y2="H-PAD.bottom" stroke="#4B5563" stroke-width="1"/>
-                  <circle :cx="pts[Math.floor(pts.length*0.8)].x" :cy="pts[Math.floor(pts.length*0.8)].y" r="3.5" fill="#111827"/>
-                  <circle :cx="pts[Math.floor(pts.length*0.8)].x" :cy="pts[Math.floor(pts.length*0.8)].y" r="5" fill="transparent" stroke="#FFFFFF" stroke-width="1.5" />
-                  <circle :cx="pts2[Math.floor(pts2.length*0.8)].x" :cy="pts2[Math.floor(pts2.length*0.8)].y" r="3.5" fill="#FFFFFF" stroke="#D1D5DB" stroke-width="1.5" />
-              </g>
-            </svg>
-        </div>
-      </div>
-
-      <!-- Bar chart "Number of sales" style -->
-      <div class="chart-main-card animate-slide-up" style="animation-delay: 0.4s;">
-        <div class="chart-header relative">
-          <div>
-            <div class="chart-title">{{ t('dashboard.interviews_chart') }}</div>
-            <div class="chart-huge-val">{{ kpiValues.interviews || 24 }}</div>
-          </div>
-          <div class="flex flex-col items-end gap-1">
-              <button @click="yearDropdownOpen = !yearDropdownOpen" class="flex items-center gap-1.5 border border-gray-200 rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                  {{ selectedYear }}
-                  <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-              </button>
-              
-              <div v-if="yearDropdownOpen" class="absolute top-8 right-0 mt-1 w-24 bg-white border border-gray-100 rounded-lg shadow-lg z-10 py-1">
-                  <button @click="selectedYear='2024'; yearDropdownOpen=false" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50">2024</button>
-                  <button @click="selectedYear='2023'; yearDropdownOpen=false" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50">2023</button>
-              </div>
-
-              <div class="flex gap-3 text-[0.7rem] font-medium text-gray-400 mt-2">
-                  <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#E85D3E]"></span> 2024</span>
-                  <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#D1D5DB]"></span> 2023</span>
-              </div>
-          </div>
-        </div>
-        
-        <div class="chart-wrapper">
-            <svg :viewBox="`0 0 ${W} ${H}`" class="chart-svg">
-              <!-- Grid Horizontals -->
-              <line :x1="PAD.left" :y1="H - PAD.bottom - (H - PAD.top - PAD.bottom)/2" :x2="W - PAD.right" :y2="H - PAD.bottom - (H - PAD.top - PAD.bottom)/2" stroke="#F3F4F6" stroke-width="1" stroke-dasharray="2,2"/>
-              <text :x="W - PAD.right + 10" :y="H - PAD.bottom - (H - PAD.top - PAD.bottom)/2 + 4" text-anchor="start" font-size="11" fill="#9CA3AF" font-weight="500">{{ Math.floor(barYMax/2) }}</text>
-              
-              <line :x1="PAD.left" :y1="PAD.top" :x2="W - PAD.right" :y2="PAD.top" stroke="#F3F4F6" stroke-width="1" stroke-dasharray="2,2"/>
-              <text :x="W - PAD.right + 10" :y="PAD.top + 4" text-anchor="start" font-size="11" fill="#9CA3AF" font-weight="500">{{ barYMax }}</text>
-
-              <!-- Bars -->
-              <g v-for="(val, i) in barData" :key="'bar'+i">
-                 <g :transform="`translate(${PAD.left + i * ((W - PAD.left - PAD.right)/12)}, 0)`" class="group cursor-pointer">
-                     
-                     <!-- Dark Bar (2024) - Left -->
-                     <rect :x="((W - PAD.left - PAD.right)/12)*0.1" 
-                           :y="H - PAD.bottom - (val/barYMax)*(H - PAD.top - PAD.bottom)" 
-                           :width="((W - PAD.left - PAD.right)/12)*0.35" 
-                           :height="(val/barYMax)*(H - PAD.top - PAD.bottom)" 
-                           fill="#E85D3E" class="bar-anim-dark" />
-                           
-                     <!-- White stylistic cut inside dark bar -->
-                     <line :x1="((W - PAD.left - PAD.right)/12)*0.1"
-                           :y1="H - PAD.bottom - (val/barYMax)*(H - PAD.top - PAD.bottom) + 2"
-                           :x2="((W - PAD.left - PAD.right)/12)*0.45"
-                           :y2="H - PAD.bottom - (val/barYMax)*(H - PAD.top - PAD.bottom) + 2"
-                           stroke="#FFFFFF" stroke-width="1" />
-
-                     <!-- Light Gray Bar (2023) - Right -->
-                     <rect :x="((W - PAD.left - PAD.right)/12)*0.45" 
-                           :y="H - PAD.bottom - (barData2[i]/barYMax)*(H - PAD.top - PAD.bottom)" 
-                           :width="((W - PAD.left - PAD.right)/12)*0.35" 
-                           :height="(barData2[i]/barYMax)*(H - PAD.top - PAD.bottom)" 
-                           fill="#E5E7EB" class="bar-anim" />
-                 </g>
-              </g>
-            </svg>
         </div>
       </div>
     </div>
@@ -445,13 +354,65 @@ onMounted(fetchDashboardData)
             </div>
         </div>
       </div>
-      
     </div>
+      
+    <!-- Info Modal -->
+    <Transition name="fade">
+      <div v-if="selectedPlaybookInfo" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="closeInfo">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-slide-up" style="animation-delay: 0s;" @click.stop>
+          <div class="p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="p-2.5 rounded-xl bg-indigo-50 text-indigo-600">
+                  <component :is="selectedPlaybookInfo.icon" class="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold text-slate-800 leading-tight">{{ selectedPlaybookInfo.name }}</h3>
+                  <p class="text-xs font-medium text-slate-500 mt-0.5">{{ selectedPlaybookInfo.desc }}</p>
+                </div>
+              </div>
+              <button @click="closeInfo" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
+                <XMarkIcon class="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div class="bg-slate-50/80 p-4 rounded-xl border border-slate-100 mb-6 relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-100 rounded-full blur-2xl opacity-50 -mr-10 -mt-10"></div>
+              <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 relative z-10 flex items-center gap-1.5">
+                  <InformationCircleIcon class="w-3.5 h-3.5" />
+                  Comment ça marche ?
+              </h4>
+              <p class="text-sm text-slate-700 leading-relaxed relative z-10">
+                {{ selectedPlaybookInfo.fullDesc }}
+              </p>
+            </div>
+            
+            <div class="flex justify-end gap-3">
+              <button @click="closeInfo" class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-800 rounded-lg transition-colors">
+                Fermer
+              </button>
+              <button @click="togglePlaybook(selectedPlaybookInfo); closeInfo()" class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors shadow-sm" :class="selectedPlaybookInfo.active ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-200' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'">
+                {{ selectedPlaybookInfo.active ? 'Désactiver' : 'Activer' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
 
   </div>
 </template>
 
 <style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 /* ── Variables & Root ── */
 .db-root { 
     padding: 2rem; 

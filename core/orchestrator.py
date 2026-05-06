@@ -238,6 +238,17 @@ class Orchestrator:
             counts[agent.agent_type] = counts.get(agent.agent_type, 0) + 1
         return counts
 
+    async def dispatch_event(self, event_name: str, payload: Dict[str, Any]):
+        """Transmet un événement au moteur de workflows."""
+        from core.workflows import workflow_engine
+        await workflow_engine.dispatch_event(event_name, payload)
 
 # Instance globale
 orchestrator = Orchestrator()
+
+# Démarrer le planificateur de tâches du moteur de workflows au chargement
+try:
+    from core.workflows import workflow_engine
+    workflow_engine.start_scheduler()
+except Exception as e:
+    logger.error(f"Erreur au démarrage du planificateur de workflows: {e}")

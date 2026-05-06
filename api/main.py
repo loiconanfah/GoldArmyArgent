@@ -1312,6 +1312,17 @@ async def create_crm_entry(request: CRMApplicationRequest, current_user: dict = 
         }
         
         await db.applications.insert_one(new_app)
+        
+        # Trigger workflow event
+        if request.status == "TO_APPLY":
+            from core.orchestrator import orchestrator
+            await orchestrator.dispatch_event("sniper_to_apply", {
+                "companyName": request.company_name,
+                "jobTitle": request.job_title,
+                "app_id": app_id,
+                "user_id": current_user["id"]
+            })
+            
         return {"status": "success", "data": {"id": app_id}}
     except Exception as e:
         logger.error(f"Error creating CRM entry: {e}")
@@ -1334,6 +1345,25 @@ async def update_crm_entry(item_id: str, updates: Dict[str, Any], current_user: 
             {"id": item_id, "user_id": current_user["id"]},
             {"$set": update_fields}
         )
+        
+        # Dispatch workflow events based on status change
+        if "status" in update_fields:
+            new_status = update_fields["status"]
+            app_data = await db.applications.find_one({"id": item_id, "user_id": current_user["id"]})
+            if app_data:
+                from core.orchestrator import orchestrator
+                payload = {
+                    "companyName": app_data.get("company_name", ""),
+                    "jobTitle": app_data.get("job_title", ""),
+                    "app_id": item_id,
+                    "user_id": current_user["id"]
+                }
+                if new_status == "TO_APPLY":
+                    await orchestrator.dispatch_event("sniper_to_apply", payload)
+                elif new_status == "INTERVIEW":
+                    await orchestrator.dispatch_event("interview_scheduled", payload)
+                elif new_status == "REJECTED":
+                    await orchestrator.dispatch_event("card_rejected", payload)
         
         return {"status": "success"}
     except Exception as e:
