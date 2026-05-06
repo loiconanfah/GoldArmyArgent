@@ -121,14 +121,14 @@ class HeadhunterAgent(BaseAgent):
                     pass
         return []
     
-    async def generate_smart_cover_letter(self, company_name: str, job_title: str = "Poste ouvert") -> Dict[str, Any]:
+    async def generate_smart_cover_letter(self, company_name: str, job_title: str = "Poste ouvert", cv_text: str = "") -> Dict[str, Any]:
         """
         Génère une lettre de motivation 'Smart' en scrapant les dernières actus de la boîte.
         """
         logger.info(f"🗞️ Génération Smart Cover pour {company_name}")
         
         # 1. Rechercher les actualités récentes
-        search_prompt = f"Trouve les 3 dernières actualités majeures (levée de fonds, nouveaux produits, partenariats) concernant l'entreprise '{company_name}'."
+        search_prompt = f"Trouve les 3 dernières actualités majeures (levée de fonds, nouveaux produits, recrutements, partenariats) concernant l'entreprise '{company_name}'."
         try:
             news_text, _ = await self.generate_with_sources(
                 search_prompt,
@@ -140,20 +140,34 @@ class HeadhunterAgent(BaseAgent):
             logger.error(f"Erreur scraping news: {e}")
             news_text = "Pas d'actualités récentes trouvées."
 
-        # 2. Rédiger la lettre
-        writing_prompt = f"""
-        Rédige une lettre de motivation percutante pour le poste de '{job_title}' chez '{company_name}'.
-        UTILISE les actualités suivantes pour montrer que je suis l'entreprise de près:
-        {news_text}
+        # 2. Rédiger la lettre avec contexte candidat
+        candidate_context = f"\nVoici mon profil (CV) pour orienter la rédaction :\n{cv_text}" if cv_text else ""
         
-        Ton: Professionnel, enthousiaste, tourné vers l'avenir.
-        Format: Markdown.
+        writing_prompt = f"""
+        Rédige une lettre de motivation COMPLÈTE et UNIQUE pour le poste de '{job_title}' chez '{company_name}'.
+        {candidate_context}
+        
+        STRUCTURE DE LA LETTRE :
+        1. EN-TÊTE : [Votre Nom] à [Lieu/Date].
+        2. OBJET : Candidature au poste de {job_title}.
+        3. ACCROCHE : Mentionne impérativement une de ces actualités de '{company_name}' pour montrer ton intérêt : {news_text}.
+        4. CORPS (VOUS/MOI/NOUS) : 
+           - Pourquoi l'entreprise m'attire (basé sur l'actu).
+           - Ce que j'apporte (basé sur mon CV).
+           - Ce que nous ferons ensemble.
+        5. CONCLUSION : Appel à l'action pour un entretien.
+        6. SIGNATURE : Cordialement, [Votre Nom].
+
+        CONSIGNES :
+        - Ne sois pas générique. Sois spécifique à {company_name}.
+        - Ne retourne QUE le texte de la lettre, sans introduction ni blabla d'IA.
+        - Pas de Markdown (# ou **).
         """
         try:
             letter, _ = await self.generate_with_sources(
                 writing_prompt,
                 model="gemini-2.0-flash",
-                system="Expert en recrutement et copywriting. Ta mission est de rendre le candidat irrésistible."
+                system="Tu es un expert en copywriting A-List. Tu rédiges des lettres de motivation percutantes, uniques et structurées qui captent l'attention en 5 secondes. Tu fournis uniquement le texte final, prêt à l'emploi."
             )
             return {
                 "news": news_text,

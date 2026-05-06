@@ -2,12 +2,32 @@
 import { authFetch } from '../utils/auth'
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  ArrowTrendingUpIcon, ArrowTrendingDownIcon, EllipsisHorizontalIcon,
-  RocketLaunchIcon, EnvelopeIcon, UsersIcon, LightBulbIcon,
-  MagnifyingGlassIcon, MegaphoneIcon, HandThumbUpIcon, PhoneIcon,
-  ArrowPathIcon, DocumentTextIcon, InformationCircleIcon, XMarkIcon,
-  DocumentDuplicateIcon, CheckIcon, ArrowDownTrayIcon
+import { 
+  PlayIcon, 
+  BoltIcon, 
+  PuzzlePieceIcon, 
+  MapIcon, 
+  TrophyIcon, 
+  BriefcaseIcon, 
+  ChatBubbleLeftRightIcon, 
+  PresentationChartLineIcon, 
+  UserGroupIcon, 
+  PhoneIcon, 
+  ArrowPathIcon, 
+  DocumentDuplicateIcon,
+  CheckIcon,
+  DocumentTextIcon,
+  ArrowDownTrayIcon,
+  EyeIcon,
+  XMarkIcon,
+  RocketLaunchIcon, 
+  EnvelopeIcon, 
+  UsersIcon, 
+  LightBulbIcon,
+  MagnifyingGlassIcon, 
+  MegaphoneIcon, 
+  HandThumbUpIcon, 
+  InformationCircleIcon
 } from '@heroicons/vue/24/outline'
 
 // Dimensions pour le graphique principal
@@ -74,10 +94,22 @@ const playbooks = ref([
   { id: 10, name: 'Smart Cover', desc: 'Lettre d\'Actualité', fullDesc: "Rédige une lettre de motivation dynamique en intégrant la dernière actualité pertinente de l'entreprise ciblée.", icon: DocumentTextIcon, active: false }
 ])
 
+const isSelectionModalOpen = ref(false)
 const isExecuting = ref(false)
 const execPlaybook = ref(null)
 const execStep = ref(0)
 const execLogs = ref([])
+const selectedOffers = ref([])
+const isLetterPreviewOpen = ref(false)
+const currentPreviewLetter = ref(null)
+
+const isPremium = computed(() => {
+    try {
+        const u = localStorage.getItem('user')
+        if (u) return JSON.parse(u).tier === 'PRO'
+    } catch(e) {}
+    return false
+})
 
 const executionPhases = [
   { title: "Initialisation", desc: "Connexion aux clusters d'agents GoldArmy..." },
@@ -87,8 +119,6 @@ const executionPhases = [
 ]
 
 const realExecutionResult = ref(null)
-const isSelectionModalOpen = ref(false)
-const selectedOffers = ref([])
 const bulkResults = ref([])
 
 const togglePlaybook = async (pb) => {
@@ -165,8 +195,21 @@ const startBulkExecution = async () => {
     }
 }
 
+const openLetterPreview = (item) => {
+    currentPreviewLetter.value = item
+    isLetterPreviewOpen.value = true
+}
+
 const downloadPDF = async (item) => {
     try {
+        // Si non premium, on prévient qu'il y aura le branding
+        if (!isPremium.value) {
+            if (!confirm("Vous n'êtes pas abonné Premium. Le PDF contiendra le logo GoldArmy et des informations génériques. Voulez-vous continuer ou passer à l'offre Premium ?")) {
+                // Ici on pourrait rediriger vers la page de prix
+                return;
+            }
+        }
+
         const response = await authFetch('/api/workflows/smart-cover/download', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -677,9 +720,14 @@ onMounted(fetchDashboardData)
                             <p class="text-[10px] text-slate-400">Basé sur {{ item.news.length }} actualités scannées</p>
                           </div>
                        </div>
-                       <button @click="downloadPDF(item)" class="p-2.5 rounded-lg bg-white border border-slate-200 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm">
-                          <ArrowDownTrayIcon class="w-5 h-5"/>
-                       </button>
+                       <div class="flex items-center gap-2">
+                          <button @click="openLetterPreview(item)" class="p-2.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all shadow-sm" title="Aperçu">
+                             <EyeIcon class="w-5 h-5"/>
+                          </button>
+                          <button @click="downloadPDF(item)" class="p-2.5 rounded-lg bg-white border border-slate-200 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm" title="Télécharger">
+                             <ArrowDownTrayIcon class="w-5 h-5"/>
+                          </button>
+                       </div>
                     </div>
                   </div>
 
@@ -721,6 +769,45 @@ onMounted(fetchDashboardData)
       </div>
     </Transition>
 
+    <!-- Letter Preview Modal -->
+    <Transition name="fade">
+      <div v-if="isLetterPreviewOpen" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+                <DocumentTextIcon class="w-6 h-6"/>
+              </div>
+              <h3 class="font-bold text-slate-800">Aperçu de la Lettre : {{ currentPreviewLetter?.company }}</h3>
+            </div>
+            <button @click="isLetterPreviewOpen = false" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <XMarkIcon class="w-6 h-6 text-slate-400"/>
+            </button>
+          </div>
+          
+          <div class="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/30">
+            <div class="bg-white p-10 shadow-sm border border-slate-100 rounded-lg min-h-[500px] text-slate-700 leading-relaxed font-serif whitespace-pre-wrap">
+              {{ currentPreviewLetter?.letter }}
+            </div>
+          </div>
+
+          <div class="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
+             <p v-if="!isPremium" class="text-xs text-amber-600 font-medium flex items-center gap-2">
+                <BoltIcon class="w-4 h-4 text-amber-500 animate-pulse"/> Version Standard (Branding GoldArmy inclus)
+             </p>
+             <div class="flex gap-3 ml-auto">
+               <button @click="isLetterPreviewOpen = false" class="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-50 rounded-xl transition-all">
+                 Fermer
+               </button>
+               <button @click="downloadPDF(currentPreviewLetter); isLetterPreviewOpen = false" 
+                       class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2">
+                 <ArrowDownTrayIcon class="w-4 h-4"/> Télécharger
+               </button>
+             </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
 
   </div>
 </template>

@@ -1387,12 +1387,16 @@ class SmartCoverRequest(BaseModel):
     job_title: Optional[str] = "Poste ouvert"
 
 @app.post("/api/workflows/smart-cover")
-async def execute_smart_cover(req: SmartCoverRequest, current_user: dict = Depends(get_current_user)):
+async def execute_smart_cover(req: SmartCoverRequest, current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
     """Exécute le Playbook 10 (Smart Cover) et retourne le résultat."""
     from agents.headhunter import headhunter_agent
     
+    user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
+    user_data = await db.users.find_one({"id": user_id})
+    cv_text = user_data.get("cv_text", "") if user_data else ""
+    
     logger.info(f"🧪 Test Smart Cover pour {req.company_name} par {current_user['email']}")
-    result = await headhunter_agent.generate_smart_cover_letter(req.company_name, req.job_title)
+    result = await headhunter_agent.generate_smart_cover_letter(req.company_name, req.job_title, cv_text=cv_text)
     
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
@@ -1403,27 +1407,47 @@ async def execute_smart_cover(req: SmartCoverRequest, current_user: dict = Depen
     }
 
 @app.post("/api/workflows/smart-cover/bulk")
-async def execute_smart_cover_bulk(req: List[SmartCoverRequest], current_user: dict = Depends(get_current_user)):
+async def execute_smart_cover_bulk(req: List[SmartCoverRequest], current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
     """Exécute le Playbook 10 pour plusieurs entreprises."""
     from agents.headhunter import headhunter_agent
+    
+    user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
+    user_data = await db.users.find_one({"id": user_id})
+    cv_text = user_data.get("cv_text", "") if user_data else ""
+    
     results = []
     for item in req:
         logger.info(f"🧪 Bulk Smart Cover pour {item.company_name}")
-        res = await headhunter_agent.generate_smart_cover_letter(item.company_name, item.job_title)
+        res = await headhunter_agent.generate_smart_cover_letter(item.company_name, item.job_title, cv_text=cv_text)
         results.append({"company": item.company_name, "result": res})
     
     return {"status": "success", "data": results}
 
 @app.post("/api/workflows/smart-cover/download")
-async def download_cover_letter(data: dict):
-    """Génère et retourne un PDF de la lettre."""
+async def download_cover_letter(data: dict, current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Génère et retourne un PDF de la lettre avec gestion Premium."""
     from core.pdf_service import generate_cover_letter_pdf
-    pdf_bytes = generate_cover_letter_pdf(data)
-    from fastapi import Response
-    return Response(
-        content=pdf_bytes,
+    
+    # Vérification Premium
+    user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
+    user_data = await db.users.find_one({"id": user_id})
+    is_premium = (user_data.get("tier") == "PRO") if user_data else False
+    
+    # Données pour le PDF
+    pdf_data = {
+        "letter": data.get("letter", ""),
+        "full_name": user_data.get("full_name") if user_data else "Candidat",
+        "email": user_data.get("email") if user_data else "",
+        "phone": user_data.get("phone", "") if user_data else ""
+    }
+    
+    pdf_bytes = generate_cover_letter_pdf(pdf_data, is_premium=is_premium)
+    
+    filename = f"lettre_motivation_{data.get('company','box')}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=lettre_motivation_{data.get('company','box')}.pdf"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
 # --- Radar Endpoints (Market Insights) ---
