@@ -6,7 +6,8 @@ import {
   ArrowTrendingUpIcon, ArrowTrendingDownIcon, EllipsisHorizontalIcon,
   RocketLaunchIcon, EnvelopeIcon, UsersIcon, LightBulbIcon,
   MagnifyingGlassIcon, MegaphoneIcon, HandThumbUpIcon, PhoneIcon,
-  ArrowPathIcon, DocumentTextIcon, InformationCircleIcon, XMarkIcon
+  ArrowPathIcon, DocumentTextIcon, InformationCircleIcon, XMarkIcon,
+  DocumentDuplicateIcon, CheckIcon, ArrowDownTrayIcon
 } from '@heroicons/vue/24/outline'
 
 // Dimensions pour le graphique principal
@@ -61,20 +62,149 @@ const dateNum = computed(() => new Date().getDate())
 const kpiValues = ref({ applied: '0', cv_analyzed: '0', interviews: '0', network: '0' })
 
 const playbooks = ref([
-  { id: 1, name: 'Sniper-to-Apply', desc: 'Candidature Express 1-Clic', fullDesc: "Ce workflow analyse l'offre d'emploi, adapte votre CV spécifiquement pour celle-ci, et remplit automatiquement le formulaire ATS de l'entreprise via l'agent MultiOn.", icon: RocketLaunchIcon, active: true },
-  { id: 2, name: 'Ghostbuster', desc: 'Relance Anti-Fantôme', fullDesc: "Détecte automatiquement les candidatures sans réponse depuis plus de 7 jours et génère un email de relance poli et percutant pour le recruteur.", icon: EnvelopeIcon, active: true },
+  { id: 1, name: 'Sniper-to-Apply', desc: 'Candidature Express 1-Clic', fullDesc: "Ce workflow analyse l'offre d'emploi, adapte votre CV spécifiquement pour celle-ci, et remplit automatiquement le formulaire ATS de l'entreprise via l'agent MultiOn.", icon: RocketLaunchIcon, active: false },
+  { id: 2, name: 'Ghostbuster', desc: 'Relance Anti-Fantôme', fullDesc: "Détecte automatiquement les candidatures sans réponse depuis plus de 7 jours et génère un email de relance poli et percutant pour le recruteur.", icon: EnvelopeIcon, active: false },
   { id: 3, name: 'Network Ninja', desc: 'Chasseur de Décideurs', fullDesc: "Cherche et identifie les décideurs clés (RH, CEO, Lead Dev) de l'entreprise sur LinkedIn et prépare un message d'accroche personnalisé.", icon: UsersIcon, active: false },
-  { id: 4, name: 'Pre-Interview', desc: 'Entraînement Immersif', fullDesc: "Récupère les détails du poste et de l'entreprise pour préparer un simulateur d'entretien avec des questions probables et des conseils de posture.", icon: LightBulbIcon, active: true },
-  { id: 5, name: 'Daily Hunt', desc: 'Chasse Matinale (Cron)', fullDesc: "S'exécute tous les matins à 7h00. Scanne le web pour trouver 5 nouvelles offres d'emploi correspondant exactement à votre profil et les ajoute au CRM.", icon: MagnifyingGlassIcon, active: true },
+  { id: 4, name: 'Pre-Interview', desc: 'Entraînement Immersif', fullDesc: "Récupère les détails du poste et de l'entreprise pour préparer un simulateur d'entretien avec des questions probables et des conseils de posture.", icon: LightBulbIcon, active: false },
+  { id: 5, name: 'Daily Hunt', desc: 'Chasse Matinale (Cron)', fullDesc: "S'exécute tous les matins à 7h00. Scanne le web pour trouver 5 nouvelles offres d'emploi correspondant exactement à votre profil et les ajoute au CRM.", icon: MagnifyingGlassIcon, active: false },
   { id: 6, name: 'Elevator Pitch', desc: 'Présentation Instantanée', fullDesc: "Génère un pitch de présentation de 30 secondes (texte + audio) adapté à l'entreprise que vous ciblez.", icon: MegaphoneIcon, active: false },
   { id: 7, name: 'Post-Interview', desc: 'Debrief & Remerciement', fullDesc: "S'active après un entretien. Génère un email de remerciement stratégique et met à jour le statut de la candidature dans le CRM.", icon: HandThumbUpIcon, active: false },
   { id: 8, name: 'Cold Call', desc: 'Script Téléphonique', fullDesc: "Prépare un script d'appel téléphonique sur mesure pour contacter directement un recruteur ou un manager, avec gestion des objections.", icon: PhoneIcon, active: false },
-  { id: 9, name: 'Rejection Pivot', desc: 'Rebond & Alternatives', fullDesc: "Suite à un refus, envoie un email demandant du feedback constructif, et trouve instantanément 3 offres similaires pour rebondir.", icon: ArrowPathIcon, active: true },
+  { id: 9, name: 'Rejection Pivot', desc: 'Rebond & Alternatives', fullDesc: "Suite à un refus, envoie un email demandant du feedback constructif, et trouve instantanément 3 offres similaires pour rebondir.", icon: ArrowPathIcon, active: false },
   { id: 10, name: 'Smart Cover', desc: 'Lettre d\'Actualité', fullDesc: "Rédige une lettre de motivation dynamique en intégrant la dernière actualité pertinente de l'entreprise ciblée.", icon: DocumentTextIcon, active: false }
 ])
 
-const togglePlaybook = (pb) => {
-    pb.active = !pb.active
+const isExecuting = ref(false)
+const execPlaybook = ref(null)
+const execStep = ref(0)
+const execLogs = ref([])
+
+const executionPhases = [
+  { title: "Initialisation", desc: "Connexion aux clusters d'agents GoldArmy..." },
+  { title: "Extraction & Analyse", desc: "Collecte de données et analyse contextuelle..." },
+  { title: "Exécution de la Mission", desc: "L'Agent est en action sur la cible..." },
+  { title: "Vérification", desc: "Contrôle qualité des résultats..." }
+]
+
+const realExecutionResult = ref(null)
+const isSelectionModalOpen = ref(false)
+const selectedOffers = ref([])
+const bulkResults = ref([])
+
+const togglePlaybook = async (pb) => {
+    if (pb.active) {
+        pb.active = false
+        return
+    }
+    
+    // Reset result
+    realExecutionResult.value = null
+    bulkResults.value = []
+    
+    if (pb.id === 10) {
+        // Ouvre la sélection pour le Workflow 10
+        isSelectionModalOpen.value = true
+        execPlaybook.value = pb
+        return
+    }
+    
+    // Start simulation for others
+    execPlaybook.value = pb
+    isExecuting.value = true
+    execStep.value = 0
+    execLogs.value = [`[00:00] Initialisation du Playbook: ${pb.name}`]
+    
+    setTimeout(() => advanceStep(1, `[00:01] Clusters d'agents connectés avec succès.`), 1500)
+    setTimeout(() => advanceStep(2, `[00:03] Extraction des données démarrée... OK.`), 3500)
+    setTimeout(() => advanceStep(3, `[00:05] Agent en action. Traitement en cours...`), 5500)
+    setTimeout(() => advanceStep(4, `[00:07] Contrôle qualité validé. Mission accomplie.`), 7500)
+    setTimeout(() => finishExecution(), 9000)
+}
+
+const last10RecentApplications = computed(() => {
+    return recentActivity.value.slice(0, 10)
+})
+
+const startBulkExecution = async () => {
+    if (selectedOffers.value.length === 0) return
+    isSelectionModalOpen.value = false
+    isExecuting.value = true
+    execStep.value = 0
+    execLogs.value = [`[00:00] Initialisation du traitement groupé (${selectedOffers.value.length} offres)...`]
+    
+    try {
+        advanceStep(1, `[00:01] Connexion aux clusters d'agents GoldArmy...`)
+        
+        for (const offerId of selectedOffers.value) {
+            const offer = recentActivity.value.find(o => o.id === offerId) || { company: "Google", name: "Software Engineer" }
+            advanceStep(2, `[00:02] Recherche & Analyse pour ${offer.company}...`)
+            
+            const response = await authFetch('/api/workflows/smart-cover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ company_name: offer.company, job_title: offer.name })
+            })
+            const res = await response.json()
+            if (res.status === 'success') {
+                bulkResults.value.push({
+                    company: offer.company,
+                    letter: res.data.letter,
+                    news: res.data.news
+                })
+                execLogs.value.push(`[OK] Lettre générée pour ${offer.company}`)
+            }
+        }
+        
+        advanceStep(3, `[00:06] Finalisation des documents...`)
+        await new Promise(r => setTimeout(r, 1000))
+        advanceStep(4, `[00:08] Mission terminée. ${bulkResults.value.length} lettres disponibles.`)
+        realExecutionResult.value = { isBulk: true, items: bulkResults.value }
+        finishExecution()
+    } catch (e) {
+        advanceStep(4, `[ERR] Échec du traitement.`)
+    }
+}
+
+const downloadPDF = async (item) => {
+    try {
+        const response = await authFetch('/api/workflows/smart-cover/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                full_name: "Candidat GoldArmy", 
+                email: "contact@goldarmy.com",
+                letter: item.letter,
+                company: item.company
+            })
+        })
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `lettre_${item.company}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+    } catch (e) {
+        console.error("Erreur PDF", e)
+    }
+}
+
+const advanceStep = (stepIdx, logMsg) => {
+    if(!isExecuting.value) return; 
+    execStep.value = stepIdx
+    execLogs.value.push(logMsg)
+}
+
+const finishExecution = () => {
+    if(!isExecuting.value) return;
+    execStep.value = 4 // Montre l'overlay de succès
+    execPlaybook.value.active = true
+}
+
+const cancelExecution = () => {
+    isExecuting.value = false
+    execPlaybook.value = null
 }
 
 const selectedPlaybookInfo = ref(null)
@@ -195,14 +325,22 @@ const fetchDashboardData = async () => {
   try {
     const r2 = await authFetch('/api/crm'), j2 = await r2.json()
     if (j2.data) {
-      recentActivity.value = j2.data.slice(0,5).map(app => {
+      recentActivity.value = j2.data.slice(0, 10).map(app => {
         let score = 20;
         if(app.status==='APPLIED') score = 40;
         else if(app.status==='FOLLOW_UP') score = 60;
         else if(app.status==='INTERVIEW') score = 85;
         else if(app.status==='OFFER') score = 100;
         
-        return { name: app.job_title, company: app.company_name, score, initial: (app.company_name||app.job_title||'?').charAt(0).toUpperCase(), status: app.status }
+        return { 
+          id: app.id || Math.random().toString(36),
+          name: app.job_title, 
+          company: app.company_name, 
+          score, 
+          initial: (app.company_name||app.job_title||'?').charAt(0).toUpperCase(), 
+          status: app.status,
+          date: app.created_at ? new Date(app.created_at).toLocaleDateString() : 'Récent'
+        }
       })
     }
   } catch(e){}
@@ -399,6 +537,190 @@ onMounted(fetchDashboardData)
         </div>
       </div>
     </Transition>
+
+    <!-- Modal: Sélection des Offres (Workflow 10) -->
+    <Transition name="fade">
+      <div v-if="isSelectionModalOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
+          <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+              <span class="p-2 rounded-lg bg-indigo-50 text-indigo-500"><DocumentDuplicateIcon class="w-5 h-5"/></span>
+              Sélectionner les offres (Max 3)
+            </h3>
+            <button @click="isSelectionModalOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
+          </div>
+          
+          <!-- Banner Information -->
+          <div class="px-5 py-2.5 bg-indigo-50/50 border-b border-indigo-100/50 flex items-center gap-2">
+            <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+            <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-tight">Focus : 10 dernières candidatures ajoutées</p>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            <div v-for="offer in last10RecentApplications" :key="offer.id" 
+                 class="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all cursor-pointer"
+                 @click="selectedOffers.includes(offer.id) ? selectedOffers = selectedOffers.filter(id => id !== offer.id) : (selectedOffers.length < 3 && selectedOffers.push(offer.id))">
+              <div class="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors" 
+                   :class="selectedOffers.includes(offer.id) ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-200'">
+                <CheckIcon v-if="selectedOffers.includes(offer.id)" class="w-3 h-3"/>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-bold text-slate-800">{{ offer.company }}</p>
+                <p class="text-xs text-slate-500">{{ offer.name }}</p>
+              </div>
+              <span class="text-[10px] px-2 py-1 bg-slate-100 rounded text-slate-500">{{ offer.date }}</span>
+            </div>
+            <div v-if="last10RecentApplications.length === 0" class="text-center py-10 text-slate-400 text-sm">
+              Aucune offre récente disponible dans le CRM.
+            </div>
+          </div>
+          <div class="p-5 border-t border-slate-100 bg-slate-50 flex flex-col gap-4">
+             <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+                <span>{{ selectedOffers.length }} / 3 sélectionné(s)</span>
+                <span v-if="selectedOffers.length === 3" class="text-amber-600">Limite atteinte</span>
+             </div>
+             <button @click="startBulkExecution" :disabled="selectedOffers.length === 0"
+                     class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:shadow-none hover:bg-indigo-700 transition-all">
+               Lancer l'Agent Sniper Smart-Cover
+             </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Execution Console Modal (Light & Soft Theme) -->
+    <Transition name="fade">
+      <div v-if="isExecuting" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden text-slate-600 flex flex-col h-[550px]">
+          
+          <!-- Header -->
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-indigo-50 text-indigo-500">
+                <component :is="execPlaybook.icon" class="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h3 class="text-xs font-bold text-slate-800 tracking-wider uppercase">Console d'Exécution</h3>
+                <p class="text-xs text-indigo-500 font-medium">WORKFLOW: {{ execPlaybook.name }}</p>
+              </div>
+            </div>
+            <button @click="cancelExecution" class="px-3 py-1.5 text-xs text-slate-400 border border-slate-200 rounded hover:bg-slate-100 hover:text-slate-600 transition-colors">
+              Annuler
+            </button>
+          </div>
+
+          <!-- Body: Stepper and Logs -->
+          <div class="flex-1 flex overflow-hidden relative">
+            
+            <!-- Left Side: Stepper -->
+            <div class="w-1/2 p-6 border-r border-slate-100 flex flex-col justify-center gap-6 bg-white">
+              <div v-for="(phase, idx) in executionPhases" :key="idx" class="relative flex items-start gap-4 transition-opacity duration-300" :class="execStep >= idx ? 'opacity-100' : 'opacity-40'">
+                <!-- Line connector -->
+                <div v-if="idx < executionPhases.length - 1" class="absolute left-[11px] top-6 bottom-[-24px] w-[2px] transition-colors duration-500" :class="execStep > idx ? 'bg-indigo-500' : 'bg-slate-100'"></div>
+                
+                <!-- Circle -->
+                <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 transition-all duration-500 bg-white" :class="execStep > idx ? 'bg-indigo-500 border-none text-white shadow-sm shadow-indigo-200' : (execStep === idx ? 'border-2 border-indigo-500 text-indigo-500 bg-indigo-50 animate-pulse' : 'border-2 border-slate-200 text-slate-300')">
+                  <svg v-if="execStep > idx" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span v-else class="text-[10px] font-bold">{{ idx + 1 }}</span>
+                </div>
+                
+                <div>
+                  <h4 class="text-sm font-bold transition-colors duration-300" :class="execStep === idx ? 'text-indigo-600' : 'text-slate-800'">{{ phase.title }}</h4>
+                  <p class="text-xs text-slate-500 mt-1 leading-relaxed">{{ phase.desc }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Side: Logs -->
+            <div class="w-1/2 bg-slate-50/50 p-6 overflow-y-auto font-mono text-[11px] leading-relaxed flex flex-col justify-end custom-scrollbar">
+              <div class="flex flex-col gap-3">
+                <div v-for="(log, i) in execLogs" :key="i" class="animate-slide-up flex items-start gap-2" style="animation-duration: 0.3s">
+                  <span class="text-emerald-500 font-bold shrink-0">→</span>
+                  <span class="text-slate-600">{{ log }}</span>
+                </div>
+                <!-- Typing cursor -->
+                <div v-if="execStep < executionPhases.length" class="flex items-center gap-2 text-slate-400 mt-2">
+                   <span class="w-1.5 h-3 bg-slate-400 animate-pulse"></span> <span class="font-sans text-xs">Traitement en cours...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Success Overlay -->
+            <div v-if="execStep >= executionPhases.length" class="absolute inset-0 bg-white/98 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-6 animate-slide-up" style="animation-duration: 0.5s">
+              
+              <div v-if="!realExecutionResult || !realExecutionResult.isBulk" class="flex flex-col items-center">
+                  <div class="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4 border-4 border-white shadow-lg shadow-emerald-100">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                  </div>
+                  <h2 class="text-2xl font-bold text-slate-800 mb-2">MISSION ACCOMPLIE</h2>
+                  <p class="text-slate-500 text-sm">Le Playbook <span class="font-bold text-slate-700">{{ execPlaybook.name }}</span> est maintenant opérationnel.</p>
+                  <button @click="isExecuting = false; execPlaybook = null" class="mt-6 px-6 py-2.5 bg-slate-800 text-white rounded-xl font-bold">Quitter</button>
+              </div>
+
+              <!-- Résultats Groupés -->
+              <div v-else class="w-full h-full flex flex-col overflow-hidden">
+                  <div class="mb-6">
+                    <h2 class="text-xl font-extrabold text-slate-800">Résultats du Tir Sniper</h2>
+                    <p class="text-xs text-slate-500">{{ realExecutionResult.items.length }} documents générés avec succès.</p>
+                  </div>
+
+                  <div class="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                    <div v-for="item in realExecutionResult.items" :key="item.company" class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group">
+                       <div class="flex items-center gap-4">
+                          <div class="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-indigo-500 shadow-sm">
+                            <DocumentTextIcon class="w-5 h-5"/>
+                          </div>
+                          <div class="text-left">
+                            <p class="text-sm font-bold text-slate-800">Lettre pour {{ item.company }}</p>
+                            <p class="text-[10px] text-slate-400">Basé sur {{ item.news.length }} actualités scannées</p>
+                          </div>
+                       </div>
+                       <button @click="downloadPDF(item)" class="p-2.5 rounded-lg bg-white border border-slate-200 text-indigo-600 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm">
+                          <ArrowDownTrayIcon class="w-5 h-5"/>
+                       </button>
+                    </div>
+                  </div>
+
+                  <!-- Options de Persistance & Chaining -->
+                  <div class="mt-6 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex flex-col gap-3">
+                     <div class="flex items-center justify-between">
+                        <div class="text-left">
+                          <p class="text-xs font-bold text-indigo-900">Garder ce Workflow actif ?</p>
+                          <p class="text-[10px] text-indigo-600">Génération auto à chaque nouvelle offre détectée.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" v-model="execPlaybook.active" class="sr-only peer">
+                          <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                     </div>
+                     <div class="flex items-center justify-between border-t border-indigo-100 pt-3">
+                        <div class="text-left">
+                          <p class="text-xs font-bold text-indigo-900">Brancher à un autre Workflow ?</p>
+                          <p class="text-[10px] text-indigo-600">Action suite après génération.</p>
+                        </div>
+                        <select class="text-[10px] bg-white border border-indigo-200 rounded-lg px-2 py-1 outline-none font-medium text-indigo-700">
+                           <option>Aucun</option>
+                           <option>Ghostbuster (Relance)</option>
+                           <option>Network Ninja (LinkedIn)</option>
+                           <option>Daily Hunt (Cron)</option>
+                        </select>
+                     </div>
+                  </div>
+
+                  <button @click="isExecuting = false; execPlaybook = null" class="mt-6 py-3 w-full bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-200 hover:bg-black transition-all">
+                    Terminer la Session
+                  </button>
+              </div>
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+    </Transition>
+
 
   </div>
 </template>
@@ -873,6 +1195,27 @@ onMounted(fetchDashboardData)
     overflow: hidden;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
 }
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #E5E7EB;
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #D1D5DB;
+}
+
+/* For Firefox */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #E5E7EB transparent;
+}
+
 
 .eff-fill {
     height: 100%;

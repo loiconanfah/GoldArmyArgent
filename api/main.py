@@ -1381,6 +1381,51 @@ async def delete_crm_entry(item_id: str, current_user: dict = Depends(get_curren
         logger.error(f"Erreur delete CRM: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+# --- Workflows Endpoints ---
+class SmartCoverRequest(BaseModel):
+    company_name: str
+    job_title: Optional[str] = "Poste ouvert"
+
+@app.post("/api/workflows/smart-cover")
+async def execute_smart_cover(req: SmartCoverRequest, current_user: dict = Depends(get_current_user)):
+    """Exécute le Playbook 10 (Smart Cover) et retourne le résultat."""
+    from agents.headhunter import headhunter_agent
+    
+    logger.info(f"🧪 Test Smart Cover pour {req.company_name} par {current_user['email']}")
+    result = await headhunter_agent.generate_smart_cover_letter(req.company_name, req.job_title)
+    
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+        
+    return {
+        "status": "success",
+        "data": result
+    }
+
+@app.post("/api/workflows/smart-cover/bulk")
+async def execute_smart_cover_bulk(req: List[SmartCoverRequest], current_user: dict = Depends(get_current_user)):
+    """Exécute le Playbook 10 pour plusieurs entreprises."""
+    from agents.headhunter import headhunter_agent
+    results = []
+    for item in req:
+        logger.info(f"🧪 Bulk Smart Cover pour {item.company_name}")
+        res = await headhunter_agent.generate_smart_cover_letter(item.company_name, item.job_title)
+        results.append({"company": item.company_name, "result": res})
+    
+    return {"status": "success", "data": results}
+
+@app.post("/api/workflows/smart-cover/download")
+async def download_cover_letter(data: dict):
+    """Génère et retourne un PDF de la lettre."""
+    from core.pdf_service import generate_cover_letter_pdf
+    pdf_bytes = generate_cover_letter_pdf(data)
+    from fastapi import Response
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=lettre_motivation_{data.get('company','box')}.pdf"}
+    )
+
 # --- Radar Endpoints (Market Insights) ---
 class RadarRequest(BaseModel):
     company_name: str

@@ -18,7 +18,15 @@ class WorkflowEngine:
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
         self.running_workflows = {}
+        self.playbook_settings = {
+            "10": {"always_active": False, "chain_to": None}
+        }
         logger.info("⚙️ WorkflowEngine initialisé")
+
+    def send_push_notification(self, title: str, message: str):
+        """Mock push notification."""
+        logger.info(f"🔔 PUSH NOTIFICATION: {title} | {message}")
+
 
     def start_scheduler(self):
         if not self.scheduler.running:
@@ -41,6 +49,9 @@ class WorkflowEngine:
         # 1. Sniper-to-Apply
         if event_name == "sniper_to_apply":
             asyncio.create_task(self._sniper_to_apply_workflow(payload))
+            # Auto-trigger Playbook 10 if always active
+            if self.playbook_settings.get("10", {}).get("always_active"):
+                asyncio.create_task(self._smart_cover_letter_workflow(payload))
             
         # 2. Ghostbuster
         elif event_name == "card_stagnant":
@@ -148,6 +159,18 @@ class WorkflowEngine:
         logger.info(f"🗞️ [Playbook 10] Scraping actualités pour {company}")
         await asyncio.sleep(3)
         logger.success(f"🗞️ Lettre de motivation d'actualité générée pour {company}")
+        
+        # Envoi de la notification push
+        self.send_push_notification(
+            "Mission Accomplie 🗞️", 
+            f"Votre lettre de motivation Smart pour {company} est prête à être téléchargée."
+        )
+        
+        # Chaining optionnel
+        chain_to = self.playbook_settings.get("10", {}).get("chain_to")
+        if chain_to:
+            logger.info(f"🔗 Chaining Workflow 10 vers {chain_to}")
+            await self.dispatch_event(chain_to, payload)
 
 
 # Instance globale

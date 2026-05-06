@@ -120,6 +120,48 @@ class HeadhunterAgent(BaseAgent):
                 except Exception:
                     pass
         return []
+    
+    async def generate_smart_cover_letter(self, company_name: str, job_title: str = "Poste ouvert") -> Dict[str, Any]:
+        """
+        Génère une lettre de motivation 'Smart' en scrapant les dernières actus de la boîte.
+        """
+        logger.info(f"🗞️ Génération Smart Cover pour {company_name}")
+        
+        # 1. Rechercher les actualités récentes
+        search_prompt = f"Trouve les 3 dernières actualités majeures (levée de fonds, nouveaux produits, partenariats) concernant l'entreprise '{company_name}'."
+        try:
+            news_text, _ = await self.generate_with_sources(
+                search_prompt,
+                model="gemini-2.0-flash",
+                tools=[{"google_search": {}}],
+                system="Journaliste d'affaires. Trouve des faits réels et récents."
+            )
+        except Exception as e:
+            logger.error(f"Erreur scraping news: {e}")
+            news_text = "Pas d'actualités récentes trouvées."
+
+        # 2. Rédiger la lettre
+        writing_prompt = f"""
+        Rédige une lettre de motivation percutante pour le poste de '{job_title}' chez '{company_name}'.
+        UTILISE les actualités suivantes pour montrer que je suis l'entreprise de près:
+        {news_text}
+        
+        Ton: Professionnel, enthousiaste, tourné vers l'avenir.
+        Format: Markdown.
+        """
+        try:
+            letter, _ = await self.generate_with_sources(
+                writing_prompt,
+                model="gemini-2.0-flash",
+                system="Expert en recrutement et copywriting. Ta mission est de rendre le candidat irrésistible."
+            )
+            return {
+                "news": news_text,
+                "letter": letter
+            }
+        except Exception as e:
+            logger.error(f"Erreur génération lettre: {e}")
+            return {"error": str(e)}
 
 # Instance globale unique
 headhunter_agent = HeadhunterAgent()
