@@ -1613,6 +1613,58 @@ async def ghostbuster_send(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ==========================================
+# Network Ninja Workflow Endpoints (#3)
+# ==========================================
+
+@app.post("/api/workflows/network-ninja/run")
+async def network_ninja_run(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Lance le workflow Network Ninja :
+    - Récupère les 15 dernières candidatures APPLIED/FOLLOW_UP
+    - Recherche les décideurs LinkedIn pour chaque entreprise unique (max 8)
+    - Génère un message d'approche LinkedIn ≤ 180 chars par profil
+    - Persiste et retourne les résultats
+    """
+    try:
+        from agents.network_ninja_agent import network_ninja_agent
+        user_id = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
+
+        logger.info(f"[API] Network Ninja lancé pour user {user_id}")
+        result = await network_ninja_agent.run(user_id=user_id)
+
+        return {"status": "success", "data": result}
+    except Exception as e:
+        logger.error(f"[API] Network Ninja run error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/workflows/network-ninja/results")
+async def network_ninja_results(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Retourne les résultats Network Ninja persistés pour l'utilisateur.
+    Les résultats sont permanents jusqu'au prochain run.
+    """
+    try:
+        from agents.network_ninja_agent import network_ninja_agent
+        user_id = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
+
+        result = await network_ninja_agent.get_results(user_id=user_id)
+        if not result:
+            return {"status": "success", "data": None}
+
+        return {"status": "success", "data": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- Radar Endpoints (Market Insights) ---
 class RadarRequest(BaseModel):
     company_name: str

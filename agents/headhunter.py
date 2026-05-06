@@ -71,7 +71,7 @@ class HeadhunterAgent(BaseAgent):
                             if "/in/" in s:
                                 url = s.split("?")[0].rstrip("/")
                                 break
-                    if url and "linkedin.com/in/" in url:
+                    if url and "linkedin.com/in/" in url and "search" not in url:
                         if not url.startswith("http"):
                             url = "https://www.linkedin.com/in/" + url.split("/in/")[-1]
                         url = url.split("?")[0].strip("',\"<>")
@@ -79,7 +79,8 @@ class HeadhunterAgent(BaseAgent):
                             seen.add(url)
                             out.append({"name": name or "Profil LinkedIn", "role": p.get("role") or "Décideur / RH", "linkedin_url": url, "snippet": f"Identifié pour {company_name}"})
                 return out[:5]
-            except Exception:
+            except Exception as e:
+                logger.warning(f"[_gemini_search] Error: {e}")
                 return []
 
         async def _ddg_search() -> List[Dict[str, Any]]:
@@ -89,12 +90,11 @@ class HeadhunterAgent(BaseAgent):
                 out = []
                 for p in scraped:
                     url = p.get("url", "")
-                    if url and "linkedin.com/in/" in url:
+                    if url and "linkedin.com/in/" in url and "search" not in url:
                         out.append({"name": p.get("name", "Profil LinkedIn"), "role": "RH / Recrutement", "linkedin_url": url.split("?")[0].rstrip("/"), "snippet": p.get("snippet", f"Profil pour {company_name}")})
-                    elif "linkedin.com/search" in url:
-                        out.append({"name": p.get("name", f"Recherche - {company_name}"), "role": "Lien de recherche", "linkedin_url": url, "snippet": "Cliquez pour voir sur LinkedIn."})
                 return out[:5]
-            except Exception:
+            except Exception as e:
+                logger.warning(f"[_ddg_search] Error: {e}")
                 return []
 
         gemini_task = asyncio.create_task(_gemini_search())

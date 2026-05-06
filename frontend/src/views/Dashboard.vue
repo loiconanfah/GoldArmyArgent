@@ -168,6 +168,11 @@ const togglePlaybook = async (pb) => {
         openGhostbusterModal(pb)
         return
     }
+
+    if (pb.id === 3) {
+        window.location.href = '/network?tab=ninja'
+        return
+    }
     
     // Start simulation for others
     execPlaybook.value = pb
