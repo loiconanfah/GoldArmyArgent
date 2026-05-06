@@ -1,48 +1,24 @@
 {
   "searchEntryPoint": {
-    "renderedContent": "<style>\n.container {\n  align-items: center;\n  border-radius: 8px;\n  display: flex;\n  font-family: Google Sans, Roboto, sans-serif;\n  font-size: 14px;\n  line-height: 20px;\n  padding: 8px 12px;\n}\n.chip {\n  display: inline-block;\n  border: solid 1px;\n  border-radius: 16px;\n  min-width: 14px;\n  padding: 5px 16px;\n  text-align: center;\n  user-select: none;\n  margin: 0 8px;\n  -webkit-tap-highlight-color: transparent;\n}\n.carousel {\n  overflow: auto;\n  scrollbar-width: none;\n  white-space: nowrap;\n  margin-right: -12px;\n}\n.headline {\n  display: flex;\n  margin-right: 4px;\n}\n.gradient-container {\n  position: relative;\n}\n.gradient {\n  position: absolute;\n  transform: translate(3px, -9px);\n  height: 36px;\n  width: 9px;\n}\n@media (prefers-color-scheme: light) {\n  .container {\n    background-color: #fafafa;\n    box-shadow: 0 0 0 1px #0000000f;\n  }\n  .headline-label {\n    color: #1f1f1f;\n  }\n  .chip {\n    background-color: #ffffff;\n    border-color: #d2d2d2;\n    color: #5e5e5e;\n    text-decoration: none;\n  }\n  .chip:hover {\n    background-color: #f2f2f2;\n  }\n  .chip:focus {\n    background-color: #f2f2f2;\n  }\n  .chip:active {\n    background-color: #d8d8d8;\n    border-color: #b6b6b6;\n  }\n  .logo-dark {\n    display: none;\n  }\n  .gradient {\n    background: linear-gradient(90deg, #fafafa 15%, #fafafa00 100%);\n  }\n}\n@media (prefers-color-scheme: dark) {\n  .container {\n    background-color: #1f1f1f;\n    box-shadow: 0 0 0 1px #ffffff26;\n  }\n  .headline-label {\n    color: #fff;\n  }\n  .chip {\n    background-color: #2c2c2c;\n    border-color: #3c4043;\n    color: #fff;\n    text-decoration: none;\n  }\n  .chip:hover {\n    background-color: #353536;\n  }\n  .chip:focus {\n    background-color: #353536;\n  }\n  .chip:active {\n    background-color: #464849;\n    border-color: #53575b;\n  }\n  .logo-light {\n    display: none;\n  }\n  .gradient {\n    background: linear-gradient(90deg, #1f1f1f 15%, #1f1f1f00 100%);\n  }\n}\n</style>\n<div class=\"container\">\n  <div class=\"headline\">\n    <svg class=\"logo-light\" width=\"18\" height=\"18\" viewBox=\"9 9 35 35\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n      <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M42.8622 27.0064C42.8622 25.7839 42.7525 24.6084 42.5487 23.4799H26.3109V30.1568H35.5897C35.1821 32.3041 33.9596 34.1222 32.1258 35.3448V39.6864H37.7213C40.9814 36.677 42.8622 32.2571 42.8622 27.0064V27.0064Z\" fill=\"#4285F4\"/>\n      <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M26.3109 43.8555C30.9659 43.8555 34.8687 42.3195 37.7213 39.6863L32.1258 35.3447C30.5898 36.3792 28.6306 37.0061 26.3109 37.0061C21.8282 37.0061 18.0195 33.9811 16.6559 29.906H10.9194V34.3573C13.7563 39.9841 19.5712 43.8555 26.3109 43.8555V43.8555Z\" fill=\"#34A853\"/>\n      <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16.6559 29.8904C16.3111 28.8559 16.1074 27.7588 16.1074 26.6146C16.1074 25.4704 16.3111 24.3733 16.6559 23.3388V18.8875H10.9194C9.74388 21.2072 9.06992 23.8247 9.06992 26.6146C9.06992 29.4045 9.74388 32.022 10.9194 34.3417L15.3864 30.8621L16.6559 29.8904V29.8904Z\" fill=\"#FBBC05\"/>\n      <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M26.3109 16.2386C28.85 16.2386 31.107 17.1164 32.9095 18.8091L37.8466 13.8719C34.853 11.082 30.9659 9.3736 26.3109 9.3736C19.5712 9.3736 13.7563 13.245 10.9194 18.8875L16.6559 23.3388C18.0195 19.2636 21.8282 16.2386 26.3109 16.2386V16.2386Z\" fill=\"#EA4335\"/>\n    </svg>\n    <svg class=\"logo-dark\" width=\"18\" height=\"18\" viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\">\n      <circle cx=\"24\" cy=\"23\" fill=\"#FFF\" r=\"22\"/>\n      <path d=\"M33.76 34.26c2.75-2.56 4.49-6.37 4.49-11.26 0-.89-.08-1.84-.29-3H24.01v5.99h8.03c-.4 2.02-1.5 3.56-3.07 4.56v.75l3.91 2.97h.88z\" fill=\"#4285F4\"/>\n      <path d=\"M15.58 25.77A8.845 8.845 0 0 0 24 31.86c1.92 0 3.62-.46 4.97-1.31l4.79 3.71C31.14 36.7 27.65 38 24 38c-5.93 0-11.01-3.4-13.45-8.36l.17-1.01 4.06-2.85h.8z\" fill=\"#34A853\"/>\n      <path d=\"M15.59 20.21a8.864 8.864 0 0 0 0 5.58l-5.03 3.86c-.98-2-1.53-4.25-1.53-6.64 0-2.39.55-4.64 1.53-6.64l1-.22 3.81 2.98.22 1.08z\" fill=\"#FBBC05\"/>\n      <path d=\"M24 14.14c2.11 0 4.02.75 5.52 1.98l4.36-4.36C31.22 9.43 27.81 8 24 8c-5.93 0-11.01 3.4-13.45 8.36l5.03 3.85A8.86 8.86 0 0 1 24 14.14z\" fill=\"#EA4335\"/>\n    </svg>\n    <div class=\"gradient-container\"><div class=\"gradient\"></div></div>\n  </div>\n  <div class=\"carousel\">\n    <a class=\"chip\" href=\"https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGhtaxNCvkfDSQls-lYA5XhI0rvThszgE_00WiWBE3f28vwH1suT2R6_l_jJ-IgIbo5QK6FOucZv77-q4sw8vv2f8Pc91YUO_qyfJXUCMPr_ts8W3LVSryBhoYB6fi9SHrSXjTT7mkaxY9bTS-h1TNxD54izkdlFI3YKseBYZvUBua-cXcFgTwVdwZKlQykQvtEYlwAIhtoav5rj2skFFiCnjIkNA==\">BambooHR recent news new products</a>\n    <a class=\"chip\" href=\"https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFRkYWAN9JZimggelxvAEH_VZPOvTaQa0JUonSkYA-3-rgIT4u_Dgs635qja9Ots-xFHrLEhrxxMSuOhmgCczf8chGhrSjmdFb3CqtZjGAEU2Ngdq9-qTPQwkS3ssNS4fWD5C011fkGit03Pn4EI_ypYIPi2P8pNfWDN5k_YsA5P96FbOFeT_YKY5PFWfBaooOZ3sLhX2zA-9D0zSoDJrk=\">BambooHR recent news funding</a>\n    <a class=\"chip\" href=\"https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFHw3MzG8b4TQtXzXmxYGUOhnRZ94Wv-a7Wc0RjBThdX1ufCAUVmKS2U6-V4ti3SlVx1AK0ihgXtOARfJst_BPAXtqifMPUD5ur1024JC1ojkUbR5F0Q-Q6NXOQYmmCgotaw7Krr3uqwfEELXlgqx0WB_Ut30NVJ6V15l1uBPoNdiknfq39ogs3qxWHEzoVRsYDIsUCPea2LsT0jjMfnSw5-DbQ\">BambooHR recent news recruitment</a>\n    <a class=\"chip\" href=\"https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEgjX37_ZwrjIMRK6ycBw-ImRIzFfjXgyqBoxL0QhPh1ZdHXSVzapu8KH4c6b3gg14plxClfgbIYB7PvgjnuuXkqxBnyP6QoZiRRtU8p5vOUJNuRwhy6rtIOXPgN0ksokl8UcQ7cd2hQwgdtFR5Hsv1MQm1OL5feZK-LVa5evrSR2f3R3YcT5n_Dik4xQPsz32aINM98pKsstQMMkxy7d_kZzYhlA==\">BambooHR recent news partnerships</a>\n  </div>\n</div>\n"
+    "renderedContent": "<style>\n.container {\n  align-items: center;\n  border-radius: 8px;\n  display: flex;\n  font-family: Google Sans, Roboto, sans-serif;\n  font-size: 14px;\n  line-height: 20px;\n  padding: 8px 12px;\n}\n.chip {\n  display: inline-block;\n  border: solid 1px;\n  border-radius: 16px;\n  min-width: 14px;\n  padding: 5px 16px;\n  text-align: center;\n  user-select: none;\n  margin: 0 8px;\n  -webkit-tap-highlight-color: transparent;\n}\n.carousel {\n  overflow: auto;\n  scrollbar-width: none;\n  white-space: nowrap;\n  margin-right: -12px;\n}\n.headline {\n  display: flex;\n  margin-right: 4px;\n}\n.gradient-container {\n  position: relative;\n}\n.gradient {\n  position: absolute;\n  transform: translate(3px, -9px);\n  height: 36px;\n  width: 9px;\n}\n@media (prefers-color-scheme: light) {\n  .container {\n    background-color: #fafafa;\n    box-shadow: 0 0 0 1px #0000000f;\n  }\n  .headline-label {\n    color: #1f1f1f;\n  }\n  .chip {\n    background-color: #ffffff;\n    border-color: #d2d2d2;\n    color: #5e5e5e;\n    text-decoration: none;\n  }\n  .chip:hover {\n    background-color: #f2f2f2;\n  }\n  .chip:focus {\n    background-color: #f2f2f2;\n  }\n  .chip:active {\n    background-color: #d8d8d8;\n    border-color: #b6b6b6;\n  }\n  .logo-dark {\n    display: none;\n  }\n  .gradient {\n    background: linear-gradient(90deg, #fafafa 15%, #fafafa00 100%);\n  }\n}\n@media (prefers-color-scheme: dark) {\n  .container {\n    background-color: #1f1f1f;\n    box-shadow: 0 0 0 1px #ffffff26;\n  }\n  .headline-label {\n    color: #fff;\n  }\n  .chip {\n    background-color: #2c2c2c;\n    border-color: #3c4043;\n    color: #fff;\n    text-decoration: none;\n  }\n  .chip:hover {\n    background-color: #353536;\n  }\n  .chip:focus {\n    background-color: #353536;\n  }\n  .chip:active {\n    background-color: #464849;\n    border-color: #53575b;\n  }\n  .logo-light {\n    display: none;\n  }\n  .gradient {\n    background: linear-gradient(90deg, #1f1f1f 15%, #1f1f1f00 100%);\n  }\n}\n</style>\n<div class=\"container\">\n  <div class=\"headline\">\n    <svg class=\"logo-light\" width=\"18\" height=\"18\" viewBox=\"9 9 35 35\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n      <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M42.8622 27.0064C42.8622 25.7839 42.7525 24.6084 42.5487 23.4799H26.3109V30.1568H35.5897C35.1821 32.3041 33.9596 34.1222 32.1258 35.3448V39.6864H37.7213C40.9814 36.677 42.8622 32.2571 42.8622 27.0064V27.0064Z\" fill=\"#4285F4\"/>\n      <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M26.3109 43.8555C30.9659 43.8555 34.8687 42.3195 37.7213 39.6863L32.1258 35.3447C30.5898 36.3792 28.6306 37.0061 26.3109 37.0061C21.8282 37.0061 18.0195 33.9811 16.6559 29.906H10.9194V34.3573C13.7563 39.9841 19.5712 43.8555 26.3109 43.8555V43.8555Z\" fill=\"#34A853\"/>\n      <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M16.6559 29.8904C16.3111 28.8559 16.1074 27.7588 16.1074 26.6146C16.1074 25.4704 16.3111 24.3733 16.6559 23.3388V18.8875H10.9194C9.74388 21.2072 9.06992 23.8247 9.06992 26.6146C9.06992 29.4045 9.74388 32.022 10.9194 34.3417L15.3864 30.8621L16.6559 29.8904V29.8904Z\" fill=\"#FBBC05\"/>\n      <path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M26.3109 16.2386C28.85 16.2386 31.107 17.1164 32.9095 18.8091L37.8466 13.8719C34.853 11.082 30.9659 9.3736 26.3109 9.3736C19.5712 9.3736 13.7563 13.245 10.9194 18.8875L16.6559 23.3388C18.0195 19.2636 21.8282 16.2386 26.3109 16.2386V16.2386Z\" fill=\"#EA4335\"/>\n    </svg>\n    <svg class=\"logo-dark\" width=\"18\" height=\"18\" viewBox=\"0 0 48 48\" xmlns=\"http://www.w3.org/2000/svg\">\n      <circle cx=\"24\" cy=\"23\" fill=\"#FFF\" r=\"22\"/>\n      <path d=\"M33.76 34.26c2.75-2.56 4.49-6.37 4.49-11.26 0-.89-.08-1.84-.29-3H24.01v5.99h8.03c-.4 2.02-1.5 3.56-3.07 4.56v.75l3.91 2.97h.88z\" fill=\"#4285F4\"/>\n      <path d=\"M15.58 25.77A8.845 8.845 0 0 0 24 31.86c1.92 0 3.62-.46 4.97-1.31l4.79 3.71C31.14 36.7 27.65 38 24 38c-5.93 0-11.01-3.4-13.45-8.36l.17-1.01 4.06-2.85h.8z\" fill=\"#34A853\"/>\n      <path d=\"M15.59 20.21a8.864 8.864 0 0 0 0 5.58l-5.03 3.86c-.98-2-1.53-4.25-1.53-6.64 0-2.39.55-4.64 1.53-6.64l1-.22 3.81 2.98.22 1.08z\" fill=\"#FBBC05\"/>\n      <path d=\"M24 14.14c2.11 0 4.02.75 5.52 1.98l4.36-4.36C31.22 9.43 27.81 8 24 8c-5.93 0-11.01 3.4-13.45 8.36l5.03 3.85A8.86 8.86 0 0 1 24 14.14z\" fill=\"#EA4335\"/>\n    </svg>\n    <div class=\"gradient-container\"><div class=\"gradient\"></div></div>\n  </div>\n  <div class=\"carousel\">\n    <a class=\"chip\" href=\"https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEADEOKd8ix55gimvh9C_Qq70suc95uUmMagHt-AqTTTCVOfFm9z38ZZ2nozQdP7yN-_SZ45dZIq4g4DKKB2sqnk8jkWn3J880XMyLxihG_o3scv-8rBPOEaLPo1gq-N5lXKT7HLbSfejKmGK_J4mPIZ1irxuw9Meww88J9HysOg-UH9opMN-RgEue-afY49NxL1SltTS_1kN7-f7S0\">BambooHR recent recruitment</a>\n    <a class=\"chip\" href=\"https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHxEnNoXYf0BjyYqHYebfmMDiDCvo3hwmmf79UHa2h4jNhQWPl1pValNBr8-747v522oLvcSr-A3wBcnGAeQlVZuHd6FM7DxbaSnpIeYxg7KHMiG5eZTHkMU-OHFyMH8Z_q1VvtppZUK_gea0jxKyKIYT1I2W2W8yLXG1DMfFG3w1MxpFXM7ZRjHu07j1JwmztS6QIoQzNQZBU=\">BambooHR recent funding</a>\n    <a class=\"chip\" href=\"https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE0sQ05bZKH7-N3kV5A6N6FumOFg7y8Zchdr8vQxEW9l9dvnORlvpVUdXKVHd0xtUgRvhprRQ-U2v5c0VmSayRLbrB6aiIpbHLLsljXi8Zl6rRgJtEN71_s-x3Wk2iNj1HPD0rJRaGnUEQiMIecvn66De9jNrfYUMG3dyN1RU747ejDhKbNt45iMRaIyzrtGapds5Am64qa\">BambooHR new products</a>\n    <a class=\"chip\" href=\"https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE5JkI6zelj5-uNK0HpfGa-iAm2c-95_O23zVxexQCUGCD3cD1zx6WUNe_QR-28ZhyCvH_TCHOdZRkY2rHFiBbupQ0XB_Xga3UXOGUU5_uVWoGItF7bbEjAw4VdNb07-vHjRGhGr80jXvawbVjjTZpSxkpQqcBoksLxb0TI89TxHYqeg-O1pFmzF_YsfL9FQhqlCAYMQsLKshrzOvLEzw==\">BambooHR recent partnerships</a>\n  </div>\n</div>\n"
   },
   "groundingChunks": [
     {
       "web": {
-        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEwFUiuy6bM1FmfHPl-jXuUePwNoUabPp2yPpinW6sv9H4T0KtPlIUqzCouPetaDD8zvoeACHqYwg5qWAU3KBt1S6JvqesujibvAyhg_LirWADD9cfjDAJ0tFkwv4tGDwz0HJ55fNOIdL5x92Xx7dVQbw==",
-        "title": "salestools.io"
-      }
-    },
-    {
-      "web": {
-        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFm6s9DrYYfqXRJsMYd-Ry3O-ZbzB1w-tCclpbfMX3nuPUeROur0T7R0CuSJXqYA-nWyJW7kQAfJTFQkFq8MRrqgR8bmHFt-iVy2D1QqL9Efy65QVx3jB-2YBXyWFVFaphaIZ9Pos6g5poBN4rWMe9GoScnjqIzjgnm2RWv9z9b52oj8MWj-nOG5x6O3EPyj9LRVBZ_JwWyQMtGiNVGAE_MOKo2VVOilhzhI9M=",
-        "title": "techrseries.com"
-      }
-    },
-    {
-      "web": {
-        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGClUuetm1B_z_DfGNIOtuwpQFUlNfyXODa_AtWMybXWq6GNuLUUSdF5okbYceeTQmTKxyHyCGpjLC9M6nVIbLhPhmIxSOZYnbeosliaBrEuqFb89O-qdPrmpNgB0XLA5CUQvZn8-rt0dSkC7JgsfqBQV7LUShrE9XrZW1-h4Ms3bZ3tjwbKIOasT3fnh82xhIecnbsGNhiRcNdtRB6Q4uMr7-jCvTg_mdxtgtG9p-kKAvlvkM5hVHH6_2WFQ910cbAw4c=",
+        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEckHhWKwxXszkciWZGTp9yzVOsYPGOI6BV6aLiXhLyokORKDcrf_dZJefvuY6ytsqP_JA9Soc1DuiUk2deELWV4b2-ShrzolaR22C8ixFkdmy2RKhEJPIJsRJOgVIxAQHi2Gou9dE3kZi60WHFfNt5GeynrD-ISWb3r3l70lMFQlnFZAAeE73t8BI8V-l2_wEvPh-qjuJe7zEC8cZ54AKVda4Wm6x5LtYfQ25JDUUTwEIZ8sANJulSAwfRnOzfmIOvoA==",
         "title": "globenewswire.com"
       }
     },
     {
       "web": {
-        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHyI7PU5SB5D2aQclmcKAMOV9BzmR5IljX6xZO0VZktS5FA0M5DKbwnXJpS6HSu_ntPsSXCTecfkwpGAfKuQZEBSRdKqJSilJyBL-GvA54iB9YeYtvqRQrOfKGufFpKsJognC9KlTxcUtOnX4Kn_vYpaE_e2eu_eCArFcvzp9gdlKyf-lrRQMkFt_fNj-KRAem1br6abGuPYYu4SufTkz54dzRyBCgC-mvpzwpQ0oSdRJHHRb0id5rosIskw3NCqw==",
-        "title": "prnewswire.com"
+        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG8ex8tnu9whZmEIVn_EWM5xI4AeMN1kPHguM8YMM0DObjHPRc41opn1GMmxyM75pV29tSbAfdr89UyBRxCkQPEyXL6w4WdySBfZb_QIBMCjJvWMq5Tp3HWuEQslnhl6Du-1wT2Wq7dZL6dHyrWXRbfOoJbA2jg2tW41g53YJRpWH7ZqQKsKyCqBFs0fMk_1L-UuLZbPXqbb24Jb6m2UXxSF8gFx0JqfAcLew==",
+        "title": "techrseries.com"
       }
     },
     {
       "web": {
-        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEAxpKrXtj6EkGA8TWTjF5H4zY0UtHizcxM7qEGs6sgu79E6OIM8PnQlEAWOyAy96pqtvznrsTg1FG1J9QyJ6xfE9G40UHMxQVNDqim1RtREmhpGwM7vdhhhql4xFbwjlze7rRfRrcbVdTLcn4pBqY=",
-        "title": "bamboohr.com"
-      }
-    },
-    {
-      "web": {
-        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEGK8yUS7eNLf3RYgvxzHMP_Fl9y3sun36mGmjLM05KfYpobUqTaB4azKbZJPb50KoeEWYWndYPmGLVOqv6iu3StyyUZYMqKiJOk8ZKdXCkf6DCBj9Z5yT90HDS__EGoeAWhk69EZOM77bSztNkwzAwBW8a53o9ZDeT0d5mQ2RJCkqTkgRbFDgz2DcLwHgOhal8A0Odbd-BU-Xl3TzTgHBHFSxS6BTAAh1C_G4cxnJjQw86Yui4lInH6QPeQNaLga0mUZiC4g==",
-        "title": "hr-brew.com"
-      }
-    },
-    {
-      "web": {
-        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFm1bk6i_nL9PSdSbCggUeLMp36_DSV2pZ37JRFSDxzLahqhy-y-8tE2OhG-xALAzy-2QwxIgzI9TZOoBGmevOE1Hq7w94qoRUOrHIqqgXsk6hHRaMKlK77xpWKPdy8R8pD0zMQp-8bgjQySm28E2_XYA==",
-        "title": "bamboohr.com"
+        "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHB4-wiyw0-bJKu3JyrFEZVfw4twy3PgbNIxQI6VVWuY7HDyjnC5PJ5R6sS8fh79JEqusElgwxe3xadzk8kLDOU5pYyaNeeVzLtlLDG922e0Qhn5sHj2xMqEB1SirFy5GeAlrAPPemt61SYwDSdqxPo",
+        "title": "salestools.io"
       }
     }
   ],
@@ -50,91 +26,87 @@
     {
       "segment": {
         "startIndex": 71,
-        "endIndex": 260,
-        "text": "**Lev\u00e9e de fonds :** En juillet 2024, BambooHR a lev\u00e9 125 millions de dollars lors d'un tour de table men\u00e9 par Providence Equity, ce qui porte sa valorisation \u00e0 2,5 milliards de dollars"
+        "endIndex": 325,
+        "text": "**Partenariat :** BambooHR a annonc\u00e9 un partenariat pluriannuel avec Turn, une soci\u00e9t\u00e9 d'infrastructure de s\u00e9lection native de l'IA, afin de fournir des v\u00e9rifications des ant\u00e9c\u00e9dents enti\u00e8rement int\u00e9gr\u00e9es directement dans la plateforme BambooHR"
       },
       "groundingChunkIndices": [
         0
       ],
       "confidenceScores": [
-        0.95193183
+        0.949787
       ]
     },
     {
       "segment": {
-        "startIndex": 262,
-        "endIndex": 425,
-        "text": "Ce financement devrait servir \u00e0 d\u00e9velopper ses op\u00e9rations, \u00e0 am\u00e9liorer ses produits, \u00e0 s'\u00e9tendre sur de nouveaux march\u00e9s et \u00e0 investir dans la technologie"
+        "startIndex": 327,
+        "endIndex": 463,
+        "text": "Ce partenariat vise \u00e0 simplifier les processus RH et \u00e0 aider les organisations \u00e0 prendre des d\u00e9cisions d'embauche en toute confiance"
       },
       "groundingChunkIndices": [
         0
       ],
       "confidenceScores": [
-        0.9128998
+        0.8144249
       ]
     },
     {
       "segment": {
-        "startIndex": 431,
-        "endIndex": 665,
-        "text": "**Nouveaux produits :** En mars 2026, BambooHR a lanc\u00e9 \"BambooHR Services\", une offre compl\u00e8te comprenant des services de conseil en RH, des services techniques et l'externalisation des RH, y compris un service de gestion de la paie"
+        "startIndex": 469,
+        "endIndex": 643,
+        "text": "**Nouveaux produits :** BambooHR a lanc\u00e9 BambooHR Services, une offre compl\u00e8te comprenant des services de conseil en RH, des services techniques et l'externalisation des RH"
       },
       "groundingChunkIndices": [
         1
       ],
       "confidenceScores": [
-        0.9388017
+        0.9494402
       ]
     },
     {
       "segment": {
-        "startIndex": 671,
-        "endIndex": 847,
-        "text": "**Partenariats :**\n    *   En avril 2026, BambooHR a annonc\u00e9 un partenariat pluriannuel avec Turn pour int\u00e9grer nativement des v\u00e9rifications d'ant\u00e9c\u00e9dents \u00e0 sa plateforme"
+        "startIndex": 645,
+        "endIndex": 765,
+        "text": "Cela inclut Managed Payroll, qui permet aux experts BambooHR d'ex\u00e9cuter la paie directement dans la plateforme BambooHR"
+      },
+      "groundingChunkIndices": [
+        1
+      ],
+      "confidenceScores": [
+        0.91026086
+      ]
+    },
+    {
+      "segment": {
+        "startIndex": 771,
+        "endIndex": 938,
+        "text": "**Lev\u00e9e de fonds :** BambooHR a lev\u00e9 125 millions de dollars en croissance, avec une valorisation de 2,5 milliards de dollars, sous la direction de Providence Equity"
       },
       "groundingChunkIndices": [
         2
       ],
       "confidenceScores": [
-        0.91411346
+        0.9518183
       ]
     },
     {
       "segment": {
-        "startIndex": 853,
-        "endIndex": 1073,
-        "text": "*   En juin 2025, BambooHR s'est associ\u00e9 \u00e0 Remote pour offrir des capacit\u00e9s d'Employer of Record (EOR) directement int\u00e9gr\u00e9es \u00e0 sa plateforme, facilitant ainsi l'embauche et la gestion d'employ\u00e9s \u00e0 l'international"
+        "startIndex": 940,
+        "endIndex": 1104,
+        "text": "Ce financement devrait \u00eatre utilis\u00e9 pour d\u00e9velopper les op\u00e9rations, d\u00e9velopper les produits, \u00e9tendre le march\u00e9 et investir dans les capacit\u00e9s technologiques"
       },
       "groundingChunkIndices": [
-        3,
-        4
+        2
       ],
       "confidenceScores": [
-        0.93439555,
-        0.95226026
-      ]
-    },
-    {
-      "segment": {
-        "startIndex": 1079,
-        "endIndex": 1265,
-        "text": "*   En d\u00e9cembre 2025, BambooHR a annonc\u00e9 une int\u00e9gration avec Xero Payroll pour simplifier la paie internationale pour ses clients au Royaume-Uni, en Australie et en Nouvelle-Z\u00e9lande"
-      },
-      "groundingChunkIndices": [
-        5,
-        6
-      ],
-      "confidenceScores": [
-        0.869062,
-        0.593862
+        0.8948933
       ]
     }
   ],
   "retrievalMetadata": {},
   "webSearchQueries": [
-    "BambooHR recent news funding",
-    "BambooHR recent news new products",
-    "BambooHR recent news recruitment",
-    "BambooHR recent news partnerships"
+    "BambooHR recent funding",
+    "BambooHR new products",
+    "BambooHR recent recruitment",
+    "BambooHR recent partnerships"
   ]
 }

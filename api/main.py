@@ -1425,13 +1425,18 @@ async def execute_smart_cover_bulk(req: List[SmartCoverRequest], current_user: d
 
 @app.post("/api/workflows/smart-cover/download")
 async def download_cover_letter(data: dict, current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
-    """Génère et retourne un PDF de la lettre avec gestion Premium."""
+    """Génère et retourne un PDF de la lettre avec gestion Premium/Standard."""
     from core.pdf_service import generate_cover_letter_pdf
     
     # Vérification Premium
     user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
     user_data = await db.users.find_one({"id": user_id})
-    is_premium = (user_data.get("tier") == "PRO") if user_data else False
+    
+    # On vérifie si l'utilisateur a un abonnement payant ou est ADMIN
+    user_tier = (user_data.get("subscription_tier") or user_data.get("tier") or user_data.get("plan") or "FREE").upper()
+    is_premium_user = user_tier == "ADMIN" or user_tier not in ["FREE", "BASIC", ""]
+    force_standard = data.get("force_standard", False)
+    is_premium = is_premium_user and not force_standard
     
     # Données pour le PDF
     pdf_data = {

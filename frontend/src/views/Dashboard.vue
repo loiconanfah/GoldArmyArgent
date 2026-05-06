@@ -27,7 +27,10 @@ import {
   MagnifyingGlassIcon, 
   MegaphoneIcon, 
   HandThumbUpIcon, 
-  InformationCircleIcon
+  InformationCircleIcon,
+  StarIcon,
+  ShieldCheckIcon,
+  SparklesIcon
 } from '@heroicons/vue/24/outline'
 
 // Dimensions pour le graphique principal
@@ -102,11 +105,19 @@ const execLogs = ref([])
 const selectedOffers = ref([])
 const isLetterPreviewOpen = ref(false)
 const currentPreviewLetter = ref(null)
+const isPremiumUpgradeModalOpen = ref(false)
+const isDownloadChoiceModalOpen = ref(false)
+const downloadPendingItem = ref(null)
 
 const isPremium = computed(() => {
     try {
         const u = localStorage.getItem('user')
-        if (u) return JSON.parse(u).tier === 'PRO'
+        if (u) {
+            const userObj = JSON.parse(u)
+            const tier = (userObj.subscription_tier || userObj.tier || userObj.plan || '').toUpperCase()
+            // Un admin est considéré comme premium, ainsi que tout tier autre que FREE/BASIC
+            return tier === 'ADMIN' || (tier !== '' && tier !== 'FREE' && tier !== 'BASIC')
+        }
     } catch(e) {}
     return false
 })
@@ -201,30 +212,36 @@ const openLetterPreview = (item) => {
 }
 
 const downloadPDF = async (item) => {
-    try {
-        // Si non premium, on prévient qu'il y aura le branding
-        if (!isPremium.value) {
-            if (!confirm("Vous n'êtes pas abonné Premium. Le PDF contiendra le logo GoldArmy et des informations génériques. Voulez-vous continuer ou passer à l'offre Premium ?")) {
-                // Ici on pourrait rediriger vers la page de prix
-                return;
-            }
-        }
+    downloadPendingItem.value = item
+    if (!isPremium.value) {
+        isPremiumUpgradeModalOpen.value = true
+    } else {
+        isDownloadChoiceModalOpen.value = true
+    }
+}
 
+const triggerDownload = async (isPremiumVersion) => {
+    const item = downloadPendingItem.value
+    if (!item) return
+    
+    isPremiumUpgradeModalOpen.value = false
+    isDownloadChoiceModalOpen.value = false
+    
+    try {
         const response = await authFetch('/api/workflows/smart-cover/download', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                full_name: "Candidat GoldArmy", 
-                email: "contact@goldarmy.com",
+                company: item.company, 
                 letter: item.letter,
-                company: item.company
+                force_standard: !isPremiumVersion
             })
         })
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `lettre_${item.company}.pdf`
+        a.download = `lettre_${item.company}${!isPremiumVersion ? '_standard' : ''}.pdf`
         document.body.appendChild(a)
         a.click()
         a.remove()
@@ -805,6 +822,69 @@ onMounted(fetchDashboardData)
                </button>
              </div>
           </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Modal: Premium Upgrade Prompt (For Non-Premium) -->
+    <Transition name="fade">
+      <div v-if="isPremiumUpgradeModalOpen" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+           <div class="p-8 text-center">
+              <div class="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-amber-500 shadow-sm">
+                <StarIcon class="w-10 h-10 animate-pulse"/>
+              </div>
+              <h3 class="text-2xl font-black text-slate-800 mb-3">Passez au Niveau Supérieur</h3>
+              <p class="text-slate-500 text-sm leading-relaxed mb-8">
+                Vous utilisez actuellement la version <b>Standard</b>. Le PDF contiendra le logo GoldArmy et des informations génériques.
+                <br><br>
+                L'abonnement <b>Premium</b> vous permet d'avoir une lettre 100% propre, sans signature, avec vos vraies coordonnées.
+              </p>
+              
+              <div class="flex flex-col gap-3">
+                 <button @click="triggerDownload(false)" class="w-full py-4 rounded-2xl border-2 border-slate-100 text-slate-500 font-bold hover:bg-slate-50 transition-all">
+                    Continuer avec Branding
+                 </button>
+                 <button @click="isPremiumUpgradeModalOpen = false; $router.push('/settings')" class="w-full py-4 rounded-2xl bg-indigo-600 text-white font-bold shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+                    <SparklesIcon class="w-5 h-5"/> Devenir Premium
+                 </button>
+              </div>
+              <button @click="isPremiumUpgradeModalOpen = false" class="mt-6 text-xs text-slate-400 font-medium hover:text-slate-600">Peut-être plus tard</button>
+           </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Modal: Download Choice (For Premium Users) -->
+    <Transition name="fade">
+      <div v-if="isDownloadChoiceModalOpen" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+           <div class="p-8 text-center">
+              <div class="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-indigo-600 shadow-sm">
+                <ShieldCheckIcon class="w-10 h-10"/>
+              </div>
+              <h3 class="text-2xl font-black text-slate-800 mb-3">Options de Téléchargement</h3>
+              <p class="text-slate-500 text-sm mb-8">En tant que membre <b>Premium</b>, vous avez le choix du format de votre lettre.</p>
+              
+              <div class="grid grid-cols-1 gap-4">
+                 <button @click="triggerDownload(true)" class="p-5 rounded-2xl border-2 border-indigo-100 bg-indigo-50/30 text-left hover:border-indigo-500 transition-all group">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-bold text-indigo-900">Version Professionnelle</span>
+                      <CheckIcon class="w-5 h-5 text-indigo-500"/>
+                    </div>
+                    <p class="text-[10px] text-indigo-600/70 leading-tight">Sans signature GoldArmy, avec vos coordonnées personnelles et logo discret.</p>
+                 </button>
+
+                 <button @click="triggerDownload(false)" class="p-5 rounded-2xl border-2 border-slate-100 text-left hover:border-slate-300 transition-all group">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-bold text-slate-700">Version Standard</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 leading-tight">Inclut le branding GoldArmy et les informations génériques.</p>
+                 </button>
+              </div>
+
+              <button @click="isDownloadChoiceModalOpen = false" class="mt-8 text-sm text-slate-400 hover:text-slate-600">Annuler</button>
+           </div>
         </div>
       </div>
     </Transition>
