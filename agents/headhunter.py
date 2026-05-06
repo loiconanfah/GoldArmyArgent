@@ -37,17 +37,19 @@ class HeadhunterAgent(BaseAgent):
         Gemini + DDG lancés en parallèle → le premier à retourner des résultats gagne.
         """
         company_name = params.get("company_name", "").strip()
+        target_roles = params.get("target_roles", [])
+        roles_str = ", ".join(target_roles) if target_roles else "RH, Recrutement, CEO, CTO"
         if not company_name:
             return []
 
         logger.info(f"🎯 Sniper 7.1 (parallèle) pour: {company_name}")
 
         async def _gemini_search() -> List[Dict[str, Any]]:
-            search_prompt = f"""Utilise Google Search pour trouver 5 profils LinkedIn de décideurs (RH, Recrutement, CEO, CTO) chez '{company_name}'. Retourne UNIQUEMENT un tableau JSON: [{{"name":"","role":"","linkedin_url":"https://linkedin.com/in/..."}}]"""
+            search_prompt = f"""Utilise Google Search pour trouver 5 profils LinkedIn de décideurs ({roles_str}) chez '{company_name}'. Retourne UNIQUEMENT un tableau JSON: [{{"name":"","role":"","linkedin_url":"https://linkedin.com/in/..."}}]"""
             try:
                 json_response, sources = await self.generate_with_sources(
                     search_prompt,
-                    model="gemini-3.1-pro-preview",
+                    model="gemini-2.0-flash",
                     tools=[{"google_search": {}}],
                     json_mode=True,
                     system=f"Expert OSINT LinkedIn. Trouve des profils réels chez {company_name}. Règle: URL complète."
