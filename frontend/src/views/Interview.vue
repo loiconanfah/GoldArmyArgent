@@ -1,12 +1,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { authFetch } from '../utils/auth'
 import { getWsUrl, getApiUrl } from '../config'
 import { MicrophoneIcon, StopIcon, ArrowLeftIcon, SparklesIcon, DocumentTextIcon, BriefcaseIcon, BuildingOfficeIcon, VideoCameraSlashIcon, ChatBubbleLeftRightIcon, XMarkIcon, UserIcon, PhoneIcon, SpeakerWaveIcon, PlayIcon, ChartBarIcon, AcademicCapIcon, CheckCircleIcon, LinkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline'
-import { CheckIcon, UserCircleIcon, StarIcon, VideoCameraIcon } from '@heroicons/vue/24/solid'
+import { CheckIcon, UserCircleIcon, StarIcon, VideoCameraIcon, CpuChipIcon } from '@heroicons/vue/24/solid'
 
 const router = useRouter()
+const route = useRoute()
 
 // Phase states
 const isInterviewStarted = ref(false)
@@ -569,6 +570,11 @@ const stopAudioPulse = () => {
 }
 
 onMounted(() => {
+    // Populate config from query parameters if coming from CRM
+    if (route.query.company) config.value.company = route.query.company;
+    if (route.query.jobTitle) config.value.jobTitle = route.query.jobTitle;
+    if (route.query.jobDetails) config.value.jobDetails = route.query.jobDetails;
+
     // ✅ Cache les voix dès qu'elles sont prêtes (asynchrone sur Chrome)
     if (window.speechSynthesis) {
         const loadVoices = () => {

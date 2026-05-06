@@ -170,8 +170,20 @@ const formatDate = (iso) => { if(!iso) return '?'; const d = new Date(iso); retu
 const getInitial = (n) => n ? n.charAt(0).toUpperCase() : '?'
 
 // ── Actions ──
-const goToInterview = () => router.push('/interview')
-
+const goToInterview = (card) => {
+  if (card) {
+    router.push({
+      path: '/interview',
+      query: {
+        company: card.company_name,
+        jobTitle: card.job_title,
+        jobDetails: card.notes
+      }
+    })
+  } else {
+    router.push('/interview')
+  }
+}
 const generateFollowup = async (card) => {
     followupCard.value = card
     followupEmail.value = ''
@@ -547,7 +559,7 @@ onMounted(() => { fetchCrmData() })
                 </button>
 
                 <!-- INTERVIEW: Go to Interview -->
-                <button v-else-if="col.id === 'INTERVIEW'" @click.stop="goToInterview" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg w-full text-center transition-all flex items-center justify-center gap-1 border hover:opacity-80 bg-white" :class="col.tagStyle">
+                <button v-else-if="col.id === 'INTERVIEW'" @click.stop="goToInterview(card)" class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg w-full text-center transition-all flex items-center justify-center gap-1 border hover:opacity-80 bg-white" :class="col.tagStyle">
                   <CheckBadgeIcon class="w-3 h-3" />Préparer l'Entretien
                 </button>
 
