@@ -581,6 +581,28 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/profile/usage")
+async def get_usage(current_user: dict = Depends(get_current_user)):
+    """Retourne l'utilisation actuelle de chaque feature pour l'utilisateur."""
+    from api.subscription import SUBSCRIPTION_LIMITS, check_subscription_limit
+    user_id = current_user["id"]
+    db = get_db()
+    user = await db.users.find_one({"id": user_id})
+    tier = user.get("subscription_tier", "FREE") if user else "FREE"
+    limits_config = SUBSCRIPTION_LIMITS.get(tier, SUBSCRIPTION_LIMITS["FREE"])
+
+    usage = {}
+    for feature, config in limits_config.items():
+        result = await check_subscription_limit(user_id, feature)
+        usage[feature] = {
+            "current": result.get("current", 0),
+            "limit": config["limit"],
+            "period": config["period"],
+            "allowed": result.get("allowed", True)
+        }
+
+    return {"status": "success", "data": {"tier": tier, "usage": usage}}
+
 @app.post("/api/profile")
 async def update_profile(request: ProfileUpdateRequest, current_user: dict = Depends(get_current_user)):
     """Met à jour les informations du profil utilisateur."""

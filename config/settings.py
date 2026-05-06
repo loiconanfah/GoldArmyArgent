@@ -64,12 +64,13 @@ class Settings(BaseSettings):
     # Monitoring
     sentry_dsn: Optional[str] = Field(default=None, description="Sentry DSN pour monitoring production")
     
-    # SMTP Configuration (Email)
+    # SMTP Configuration (Email fallback)
     smtp_host: str = Field(default="smtp.gmail.com", description="SMTP host")
     smtp_port: int = Field(default=587, description="SMTP port")
     smtp_user: Optional[str] = Field(default=None, description="SMTP user")
     smtp_password: Optional[str] = Field(default=None, description="SMTP password")
     smtp_from: str = Field(default="noreply@goldarmy.com", description="Email expéditeur")
+    resend_api_key: Optional[str] = Field(default=None, description="Clé API Resend.com")
     
     # ChromaDB Configuration
     chroma_persist_dir: Path = Field(default=Path("./storage/chroma_db"), description="ChromaDB persist directory")

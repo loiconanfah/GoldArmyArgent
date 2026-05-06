@@ -49,10 +49,11 @@ pyyaml>=6.0.1
 loguru>=0.7.2
 sentry-sdk[fastapi]>=1.40.0
 psutil>=5.9.0
+resend>=2.0.0
 tenacity>=8.2.3
 jinja2>=3.1.2
 
-# Background & Async (Optional for now)
+# Background & Async
 redis>=5.0.1
 celery>=5.3.4
 websockets>=12.0
