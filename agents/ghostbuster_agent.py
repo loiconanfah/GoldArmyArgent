@@ -107,38 +107,43 @@ class GhostbusterAgent:
         cv_text = user_data.get("cv_text", "")
 
         # Candidatures à statut "envoyée" : APPLIED ou FOLLOW_UP
+        # On ne filtre PAS sur applied_at — beaucoup d'entrées n'ont pas ce champ.
+        # Le fallback vers created_at est géré dans la boucle Python ci-dessous.
         cursor = db.applications.find(
             {
                 "user_id": user_id,
-                "status": {"$in": ["APPLIED", "FOLLOW_UP"]},
-                "applied_at": {"$exists": True, "$ne": None},
+                "status": {"$in": ["APPLIED", "FOLLOW_UP", "SENT"]},
             },
             {"_id": 0},
-        ).sort("applied_at", 1)
+        ).sort("created_at", 1)  # sort par created_at qui est toujours présent
 
-        apps: List[Dict] = await cursor.to_list(length=None)
+        apps: List[Dict] = await cursor.to_list(length=500)  # limite à 500 max
         total_scanned = len(apps)
         eligible = []
 
         for app in apps:
             try:
-                applied_at_raw = app.get("applied_at")
+                # Priorité : applied_at → created_at → skip
+                applied_at_raw = app.get("applied_at") or app.get("created_at")
                 if not applied_at_raw:
-                    # Fallback sur created_at si applied_at absent
-                    applied_at_raw = app.get("created_at")
-                if not applied_at_raw:
+                    logger.debug(f"[Ghostbuster] App {app.get('id')} ignorée : pas de date")
                     continue
 
-                # Normaliser en datetime
-                if isinstance(applied_at_raw, str):
+                # Normaliser en datetime naive UTC
+                if isinstance(applied_at_raw, datetime):
+                    applied_at = applied_at_raw
+                elif isinstance(applied_at_raw, str):
                     try:
                         applied_at = datetime.fromisoformat(applied_at_raw.replace("Z", "+00:00"))
                     except ValueError:
+                        logger.debug(f"[Ghostbuster] App {app.get('id')} : date invalide '{applied_at_raw}'")
                         continue
-                elif isinstance(applied_at_raw, datetime):
-                    applied_at = applied_at_raw
                 else:
-                    continue
+                    # Type inconnu (ex: int timestamp)
+                    try:
+                        applied_at = datetime.utcfromtimestamp(float(applied_at_raw))
+                    except Exception:
+                        continue
 
                 # Retirer le tzinfo pour comparer avec date.today()
                 if applied_at.tzinfo is not None:
