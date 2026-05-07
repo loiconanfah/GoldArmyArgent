@@ -459,11 +459,26 @@ const isSocialSniperModalOpen = ref(false)
 const socialSniperLoading = ref(false)
 const socialSniperResult = ref(null)
 const socialSniperForm = ref({ company: '', job: '' })
+const socialSniperApps = ref([])
 
-const openSocialSniperModal = (pb) => {
+const openSocialSniperModal = async (pb) => {
     execPlaybook.value = pb
     isSocialSniperModalOpen.value = true
     socialSniperResult.value = null
+    socialSniperLoading.value = true
+    try {
+        const r = await authFetch('/api/crm') // Fetch all apps
+        const j = await r.json()
+        if (j.status === 'success') {
+            socialSniperApps.value = j.data.applications.slice(0, 5) // Last 5
+        }
+    } catch (e) {}
+    finally { socialSniperLoading.value = false }
+}
+
+const selectAppForSniper = (app) => {
+    socialSniperForm.value.company = app.company_name
+    socialSniperForm.value.job = app.job_title
 }
 
 const runSocialSniper = async () => {
@@ -513,7 +528,7 @@ const runPostInterview = async () => {
             method: 'POST',
             body: JSON.stringify({
                 app_id: postInterviewSelectedApp.value.id,
-                company: postInterviewSelectedApp.value.company,
+                company: postInterviewSelectedApp.value.company_name,
                 job: postInterviewSelectedApp.value.job_title,
                 debrief: postInterviewDebrief.value
             })
@@ -1101,8 +1116,8 @@ const syncWorkflowStatuses = async () => {
                     >
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="font-bold text-slate-800 text-sm">{{ app.job_title }}</p>
-                                <p class="text-xs text-slate-500">{{ app.company }}</p>
+                                <p class="font-black text-slate-900 text-sm tracking-tight">{{ app.company_name }}</p>
+                                <p class="text-xs text-slate-500 font-medium">{{ app.job_title }}</p>
                             </div>
                             <ChevronRightIcon class="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
                         </div>
@@ -1118,7 +1133,7 @@ const syncWorkflowStatuses = async () => {
                     </button>
                     <div>
                         <p class="text-xs font-bold text-slate-400 uppercase">Debriefing pour :</p>
-                        <p class="text-sm font-black text-slate-800">{{ postInterviewSelectedApp.company }}</p>
+                        <p class="text-sm font-black text-slate-800">{{ postInterviewSelectedApp.company_name }}</p>
                     </div>
                 </div>
 
@@ -1220,6 +1235,21 @@ const syncWorkflowStatuses = async () => {
                         <span class="font-bold">Objectif :</span> Infiltrer le réseau de l'entreprise cible. L'IA génère un kit complet pour vous faire remarquer et obtenir une réponse.
                     </p>
                 </div>
+                <!-- Quick Select -->
+                <div v-if="socialSniperApps.length > 0" class="space-y-2">
+                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Sélection Rapide (depuis votre CRM)</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button 
+                            v-for="app in socialSniperApps" 
+                            :key="app.id"
+                            @click="selectAppForSniper(app)"
+                            class="px-3 py-1.5 rounded-full border border-slate-200 bg-white text-[10px] font-bold text-slate-600 hover:border-rose-500 hover:text-rose-600 transition-all"
+                        >
+                            {{ app.company_name }}
+                        </button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Entreprise Cible</label>
