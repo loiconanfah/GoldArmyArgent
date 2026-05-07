@@ -1,6 +1,6 @@
 <script setup>
 import { authFetch } from '../utils/auth'
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { toastState } from '../store/toastState'
@@ -154,107 +154,104 @@ onMounted(() => {
     loadNinjaResults()
 })
 
-// ── Graph Positioning Helpers ──
-const getCompanyX = (i, total) => {
-    const angle = (i / total) * Math.PI * 2 - Math.PI / 2
-    const radius = 180 // Distance from center
-    return Math.cos(angle) * radius
-}
-const getCompanyY = (i, total) => {
-    const angle = (i / total) * Math.PI * 2 - Math.PI / 2
-    const radius = 180
-    return Math.sin(angle) * radius
-}
-const getProfileX = (ci, pi, cTotal, pTotal) => {
-    const cX = getCompanyX(ci, cTotal)
-    // Angle of company relative to center
-    const baseAngle = (ci / cTotal) * Math.PI * 2 - Math.PI / 2
-    // Spread profiles around company in an arc outwards
-    const spread = Math.PI / 2
-    const startAngle = baseAngle - spread / 2
-    const step = pTotal > 1 ? spread / (pTotal - 1) : 0
-    const angle = startAngle + step * pi
-    const radius = 80 // Distance from company
-    return cX + Math.cos(angle) * radius
-}
-const getProfileY = (ci, pi, cTotal, pTotal) => {
-    const cY = getCompanyY(ci, cTotal)
-    const baseAngle = (ci / cTotal) * Math.PI * 2 - Math.PI / 2
-    const spread = Math.PI / 2
-    const startAngle = baseAngle - spread / 2
-    const step = pTotal > 1 ? spread / (pTotal - 1) : 0
-    const angle = startAngle + step * pi
-    const radius = 80
-    return cY + Math.sin(angle) * radius
-}
 
 
-// ── 3D Parallax & Hover Logic ──
-import gsap from 'gsap'
-const ninjaContainer = ref(null)
-const ninjaEdgesGroup = ref(null)
-const ninjaNodesGroup = ref(null)
-const ninjaSvgWrapper = ref(null)
+
+
+
+
+// ── Ninja SVG Node positioning helpers ──
+const ninjaNodeX = (i, total, radius) => {
+    const angle = (i / total) * Math.PI * 2 - Math.PI / 2
+    return 500 + Math.cos(angle) * radius
+}
+const ninjaNodeY = (i, total, radius) => {
+    const angle = (i / total) * Math.PI * 2 - Math.PI / 2
+    return 340 + Math.sin(angle) * radius
+}
+const ninjaProfileX = (ci, pi, cTotal, pTotal) => {
+    const cx = ninjaNodeX(ci, cTotal, 210)
+    const baseAngle = (ci / cTotal) * Math.PI * 2 - Math.PI / 2
+    const spread = Math.PI / 2.2
+    const step = pTotal > 1 ? spread / (pTotal - 1) : 0
+    const angle = baseAngle - spread / 2 + step * pi
+    return cx + Math.cos(angle) * 95
+}
+const ninjaProfileY = (ci, pi, cTotal, pTotal) => {
+    const cy = ninjaNodeY(ci, cTotal, 210)
+    const baseAngle = (ci / cTotal) * Math.PI * 2 - Math.PI / 2
+    const spread = Math.PI / 2.2
+    const step = pTotal > 1 ? spread / (pTotal - 1) : 0
+    const angle = baseAngle - spread / 2 + step * pi
+    return cy + Math.sin(angle) * 95
+}
 
 const ninjaHoverNode = ref(null)
 const ninjaTooltipX = ref(0)
 const ninjaTooltipY = ref(0)
-
-const onNinjaMouseMove = (e) => {
-    if (!ninjaContainer.value || !ninjaEdgesGroup.value || !ninjaNodesGroup.value) return
-    const rect = ninjaContainer.value.getBoundingClientRect()
-    // Calculate normalized mouse position (-1 to 1)
-    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1
-    const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1
-
-    // Apply parallax with GSAP
-    gsap.to(ninjaEdgesGroup.value, {
-        x: nx * -40,
-        y: ny * -40,
-        rotationY: nx * 10,
-        rotationX: -ny * 10,
-        duration: 1,
-        ease: 'power2.out'
-    })
-    gsap.to(ninjaNodesGroup.value, {
-        x: nx * -80,
-        y: ny * -80,
-        rotationY: nx * 15,
-        rotationX: -ny * 15,
-        duration: 1,
-        ease: 'power2.out'
-    })
-    gsap.to(ninjaSvgWrapper.value, {
-        perspective: 1000,
-        transformStyle: "preserve-3d",
-        duration: 0
-    })
-}
-
-const onNinjaMouseLeave = () => {
-    if (ninjaEdgesGroup.value && ninjaNodesGroup.value) {
-        gsap.to([ninjaEdgesGroup.value, ninjaNodesGroup.value], {
-            x: 0, y: 0, rotationX: 0, rotationY: 0, duration: 1.5, ease: 'power2.out'
-        })
-    }
-}
+let ninjaHideTimer = null
 
 const showNinjaTooltip = (e, profile) => {
+    if (ninjaHideTimer) { clearTimeout(ninjaHideTimer); ninjaHideTimer = null }
     ninjaHoverNode.value = profile
-    // Position tooltip near cursor
-    // Adjust position to not go off-screen
     let x = e.clientX + 20
-    let y = e.clientY - 20
-    if (x + 320 > window.innerWidth) x = e.clientX - 340 // switch to left
-    if (y + 200 > window.innerHeight) y = e.clientY - 220 // switch to top
-    
+    let y = e.clientY - 30
+    if (x + 290 > window.innerWidth) x = e.clientX - 310
+    if (y + 320 > window.innerHeight) y = e.clientY - 320
     ninjaTooltipX.value = x
     ninjaTooltipY.value = y
 }
-
-const hideNinjaTooltip = () => {
-    ninjaHoverNode.value = null
+const scheduleHideTooltip = () => {
+    ninjaHideTimer = setTimeout(() => { ninjaHoverNode.value = null }, 200)
 }
+const cancelHideTooltip = () => {
+    if (ninjaHideTimer) { clearTimeout(ninjaHideTimer); ninjaHideTimer = null }
+}
+
+// ── Ninja Pan/Zoom Navigation ──
+const ninjaSvgEl = ref(null)
+const ninjaPanX = ref(0)
+const ninjaPanY = ref(0)
+const ninjaScale = ref(1)
+const ninjaDragging = ref(false)
+let ninjaDragStart = { x: 0, y: 0, panX: 0, panY: 0 }
+
+const ninjaResetView = () => {
+    ninjaPanX.value = 0
+    ninjaPanY.value = 0
+    ninjaScale.value = 1
+}
+
+const ninjaZoom = (delta) => {
+    ninjaScale.value = Math.min(3, Math.max(0.3, ninjaScale.value + delta))
+}
+
+const ninjaPanStart = (e) => {
+    ninjaDragging.value = true
+    ninjaDragStart = { x: e.clientX, y: e.clientY, panX: ninjaPanX.value, panY: ninjaPanY.value }
+}
+
+const ninjaPanMove = (e) => {
+    if (!ninjaDragging.value) return
+    ninjaPanX.value = ninjaDragStart.panX + (e.clientX - ninjaDragStart.x)
+    ninjaPanY.value = ninjaDragStart.panY + (e.clientY - ninjaDragStart.y)
+}
+
+const ninjaPanEnd = () => { ninjaDragging.value = false }
+
+const ninjaWheel = (e) => {
+    const delta = e.deltaY > 0 ? -0.1 : 0.1
+    ninjaScale.value = Math.min(3, Math.max(0.3, ninjaScale.value + delta))
+}
+
+const ninjaLabelX = (i, total, radius) => {
+    const angle = (i / total) * Math.PI * 2 - Math.PI / 2
+    const cx = 500 + Math.cos(angle) * radius
+    // If node is on the right half, put label to the right; else to the left (with offset)
+    return Math.cos(angle) >= 0 ? cx + 14 : cx - 162
+}
+// ── End Pan/Zoom ──
+// ── End Ninja Helpers ──
 
 const prefillDraft = (companyNameStr) => {
     activeTab.value = 'osint'
@@ -610,8 +607,6 @@ const copyDraftEmail = async () => {
             </div>
         </div>
     </div>
-
-    <!-- Contenu Headhunter -->
     <div v-else-if="activeTab === 'headhunter'" class="space-y-10 animate-fade-in">
         <!-- Headhunter Search Panel -->
         <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 shadow-sm relative overflow-hidden group">
@@ -685,8 +680,6 @@ const copyDraftEmail = async () => {
             </div>
         </div>
     </div>
-
-    <!-- Contenu Carnet d'Adresses -->
     <div v-else-if="activeTab === 'carnet'" class="animate-fade-in pb-20">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
@@ -779,193 +772,247 @@ const copyDraftEmail = async () => {
             </div>
         </div>
     </div>
+    <div v-else-if="activeTab === 'ninja'"
+         class="relative w-full rounded-[2.5rem] overflow-hidden flex flex-col mt-8 shadow-2xl"
+         style="height: 720px; background: #080a0c; border: 1px solid rgba(255,255,255,0.06);">
 
-    <!-- ================================================================
-         NETWORK NINJA TAB — 3D Parallax & Hover Networking
-         ================================================================ -->
-    <div v-else-if="activeTab === 'ninja'" 
-         class="relative w-full h-[750px] rounded-[2.5rem] bg-[#050505] overflow-hidden flex flex-col font-sans animate-fade-in shadow-2xl mt-8 cursor-crosshair"
-         @mousemove="onNinjaMouseMove"
-         @mouseleave="onNinjaMouseLeave"
-         ref="ninjaContainer">
-        
-        <!-- Background Grid / Stars -->
-        <div class="absolute inset-0 ninja-dark-bg pointer-events-none opacity-40"></div>
-        
-        <!-- Header (Internal to canvas) -->
-        <div class="absolute top-6 left-6 z-10 flex items-center gap-4">
-            <div class="flex items-center gap-2 px-4 py-2 bg-neutral-900/80 border border-neutral-800 rounded-2xl backdrop-blur-md text-sm text-neutral-300 font-medium">
-                <span class="text-[#E85D3E] font-black">🥷</span>
+        <!-- Ambient glow -->
+        <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(232,93,62,0.04) 0%, transparent 70%);"></div>
+
+        <!-- Header -->
+        <div class="absolute top-5 left-6 z-20 flex items-center gap-3">
+            <div class="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);">
+                <span style="color:#E85D3E;" class="font-black">🥷</span>
                 <span class="text-white font-bold tracking-wide">Network Ninja</span>
-                <span class="text-neutral-500 ml-2">Scanner 3D Actif</span>
             </div>
-            
-            <div v-if="ninjaTotalProfiles > 0" class="px-3 py-1.5 bg-[#E85D3E]/10 border border-[#E85D3E]/30 rounded-full flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-[#E85D3E] animate-pulse"></span>
-                <span class="text-xs font-bold text-[#E85D3E]">{{ ninjaTotalProfiles }} décideur(s) identifié(s)</span>
+            <div v-if="ninjaTotalProfiles > 0" class="px-3 py-1.5 rounded-full flex items-center gap-2" style="background:rgba(232,93,62,0.1); border:1px solid rgba(232,93,62,0.3);">
+                <span class="w-2 h-2 rounded-full animate-pulse" style="background:#E85D3E;"></span>
+                <span class="text-xs font-bold" style="color:#E85D3E;">{{ ninjaTotalProfiles }} décideur(s)</span>
             </div>
         </div>
 
-        <!-- Run button inside canvas (Optional, to reload) -->
-        <button @click="runNinja" :disabled="ninjaRunning" class="absolute top-6 right-6 z-10 px-4 py-2 bg-neutral-900/80 border border-neutral-800 hover:border-[#E85D3E] text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2 group shadow-lg backdrop-blur-md">
-            <svg v-if="ninjaRunning" class="w-4 h-4 animate-spin text-[#E85D3E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            <svg v-else class="w-4 h-4 text-neutral-400 group-hover:text-[#E85D3E] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            Relancer
-        </button>
+        <!-- Relancer + Recenter -->
+        <div class="absolute top-5 right-6 z-20 flex items-center gap-2">
+            <button @click="ninjaResetView()"
+                title="Recentrer"
+                class="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+                style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:#888;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            </button>
+            <button @click="runNinja" :disabled="ninjaRunning"
+                class="px-4 py-2 text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);">
+                <svg v-if="ninjaRunning" class="w-4 h-4 animate-spin" style="color:#E85D3E;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <svg v-else class="w-4 h-4" style="color:#888;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                {{ ninjaRunning ? 'Scan...' : 'Relancer' }}
+            </button>
+        </div>
 
-        <!-- SVG Mindmap (3D Transform Applied via GSAP or Vue) -->
-        <div class="absolute inset-0 flex items-center justify-center overflow-visible" ref="ninjaSvgWrapper">
-            <!-- Dynamic 3D transformation applied to this SVG container -->
-            <svg class="w-full h-full overflow-visible" viewBox="-500 -400 1000 800">
-                <defs>
-                    <filter id="glow-orange">
-                        <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
-                        <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                    </filter>
-                    <filter id="glow-white">
-                        <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
-                        <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                    </filter>
-                </defs>
+        <!-- Pan/Zoom hint -->
+        <div class="absolute bottom-5 left-6 z-20 flex items-center gap-2" style="color:#333; font-size:11px;">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/></svg>
+            Glisser pour naviguer · Scroll pour zoomer
+        </div>
 
-                <!-- 3D Group: Deeper Parallax for Edges -->
-                <g ref="ninjaEdgesGroup" opacity="0.4">
-                    <template v-for="(company, ci) in ninjaCompanies" :key="'edge-c-'+ci">
-                        <!-- Moi -> Company -->
-                        <line x1="0" y1="0" 
-                              :x2="getCompanyX(ci, ninjaCompanies.length)" 
-                              :y2="getCompanyY(ci, ninjaCompanies.length)"
-                              stroke="#E85D3E" stroke-width="2" class="ninja-anim-edge" />
-                              
-                        <!-- Company -> Profiles -->
-                        <template v-for="(profile, pi) in company.profiles" :key="'edge-p-'+ci+'-'+pi">
-                            <line :x1="getCompanyX(ci, ninjaCompanies.length)" 
-                                  :y1="getCompanyY(ci, ninjaCompanies.length)"
-                                  :x2="getProfileX(ci, pi, ninjaCompanies.length, company.profiles.length)" 
-                                  :y2="getProfileY(ci, pi, ninjaCompanies.length, company.profiles.length)"
-                                  stroke="#a3a3a3" stroke-width="0.8" opacity="0.4" class="ninja-anim-edge" />
+        <!-- Zoom controls -->
+        <div class="absolute bottom-4 right-6 z-20 flex flex-col gap-1.5">
+            <button @click="ninjaZoom(0.15)" class="w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            </button>
+            <button @click="ninjaZoom(-0.15)" class="w-8 h-8 rounded-xl flex items-center justify-center text-white transition-all" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08);">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+            </button>
+        </div>
+
+        <!-- Pan/Zoom SVG -->
+        <svg class="absolute inset-0 w-full h-full select-none"
+             :class="ninjaDragging ? 'cursor-grabbing' : 'cursor-grab'"
+             @mousedown.prevent="ninjaPanStart"
+             @mousemove.prevent="ninjaPanMove"
+             @mouseup="ninjaPanEnd"
+             @mouseleave="ninjaPanEnd"
+             @wheel.prevent="ninjaWheel"
+             ref="ninjaSvgEl">
+
+            <!-- Transformed group (pan + zoom) -->
+            <g :transform="`translate(${ninjaPanX}, ${ninjaPanY}) scale(${ninjaScale})`">
+
+                <!-- Background particle dots -->
+                <circle v-for="i in 50" :key="'bg-'+i"
+                    :cx="((i * 139.5) % 960) - 80"
+                    :cy="((i * 89.1) % 660) - 30"
+                    :r="i % 4 === 0 ? 1.8 : 0.9"
+                    fill="white"
+                    :opacity="0.02 + (i%4)*0.015" />
+
+                <template v-if="ninjaCompanies.length > 0">
+
+                    <!-- Center → Company edges -->
+                    <template v-for="(company, ci) in ninjaCompanies" :key="'ec-'+ci">
+                        <line x1="500" y1="340"
+                            :x2="ninjaNodeX(ci, ninjaCompanies.length, 210)"
+                            :y2="ninjaNodeY(ci, ninjaCompanies.length, 210)"
+                            stroke="#E85D3E" stroke-width="1" opacity="0.45"
+                            stroke-dasharray="6,5" class="ninja-edge-anim" />
+                    </template>
+
+                    <!-- Company → Profile edges -->
+                    <template v-for="(company, ci) in ninjaCompanies" :key="'ep-'+ci">
+                        <template v-for="(prof, pi) in company.profiles" :key="'ep-'+ci+'-'+pi">
+                            <line
+                                :x1="ninjaNodeX(ci, ninjaCompanies.length, 210)"
+                                :y1="ninjaNodeY(ci, ninjaCompanies.length, 210)"
+                                :x2="ninjaProfileX(ci, pi, ninjaCompanies.length, company.profiles.length)"
+                                :y2="ninjaProfileY(ci, pi, ninjaCompanies.length, company.profiles.length)"
+                                stroke="rgba(255,255,255,0.12)" stroke-width="0.7"
+                                stroke-dasharray="3,4" class="ninja-edge-anim-slow" />
                         </template>
                     </template>
-                </g>
 
-                <!-- 3D Group: Closer Parallax for Nodes -->
-                <g ref="ninjaNodesGroup">
-                    <!-- Central Node (Moi) -->
-                    <circle cx="0" cy="0" r="14" fill="#ffffff" filter="url(#glow-white)" class="ninja-anim-node" />
-                    <circle cx="0" cy="0" r="6" fill="#ffffff" />
-                    
-                    <!-- Companies & Profiles -->
-                    <template v-for="(company, ci) in ninjaCompanies" :key="'node-c-'+ci">
-                        <g class="ninja-float" :style="{ animationDelay: ci * 0.3 + 's' }">
-                            <!-- Company Node -->
-                            <circle :cx="getCompanyX(ci, ninjaCompanies.length)" 
-                                    :cy="getCompanyY(ci, ninjaCompanies.length)" 
-                                    r="10" fill="#E85D3E" filter="url(#glow-orange)" class="ninja-anim-node" />
-                            <!-- Company Label -->
-                            <g :transform="`translate(${getCompanyX(ci, ninjaCompanies.length) + 16}, ${getCompanyY(ci, ninjaCompanies.length) - 12})`">
-                                <rect width="140" height="26" rx="13" fill="#121212" stroke="#333333" stroke-width="1.5" />
-                                <text x="14" y="17" fill="#f5f5f5" font-size="11" font-family="sans-serif" font-weight="700">{{ company.company_name.substring(0,18) }}</text>
-                            </g>
+                    <!-- Company nodes -->
+                    <template v-for="(company, ci) in ninjaCompanies" :key="'nc-'+ci">
+                        <!-- Pulse ring -->
+                        <circle :cx="ninjaNodeX(ci, ninjaCompanies.length, 210)"
+                                :cy="ninjaNodeY(ci, ninjaCompanies.length, 210)"
+                                r="20" fill="none"
+                                stroke="#E85D3E" stroke-width="1" opacity="0.25"
+                                class="ninja-pulse-ring"
+                                :style="{ animationDelay: ci * 0.4 + 's' }" />
+                        <!-- Dot -->
+                        <circle :cx="ninjaNodeX(ci, ninjaCompanies.length, 210)"
+                                :cy="ninjaNodeY(ci, ninjaCompanies.length, 210)"
+                                r="9" fill="#E85D3E">
+                            <animate attributeName="r" values="8;10;8" dur="3s" repeatCount="indefinite"
+                                :begin="ci * 0.4 + 's'" />
+                        </circle>
+                        <!-- Glow -->
+                        <circle :cx="ninjaNodeX(ci, ninjaCompanies.length, 210)"
+                                :cy="ninjaNodeY(ci, ninjaCompanies.length, 210)"
+                                r="5" fill="rgba(255,255,255,0.6)" class="pointer-events-none" />
 
-                            <!-- Profile Nodes -->
-                            <template v-for="(profile, pi) in company.profiles" :key="'node-p-'+ci+'-'+pi">
-                                <circle :cx="getProfileX(ci, pi, ninjaCompanies.length, company.profiles.length)" 
-                                        :cy="getProfileY(ci, pi, ninjaCompanies.length, company.profiles.length)" 
-                                        r="6" fill="#a3a3a3" 
-                                        class="cursor-pointer transition-all hover:fill-white hover:r-[9px] hover:filter-glow-white"
-                                        @mouseenter="showNinjaTooltip($event, { ...profile, company_name: company.company_name, key: company.company_name + '_' + pi })" />
-                                        
-                                <!-- We removed @mouseleave from the circle because the tooltip itself is interactive. -->
-                                <!-- Profile Label -->
-                                <g :transform="`translate(${getProfileX(ci, pi, ninjaCompanies.length, company.profiles.length) + 10}, ${getProfileY(ci, pi, ninjaCompanies.length, company.profiles.length) - 12})`" class="pointer-events-none">
-                                    <rect width="110" height="24" rx="12" fill="#121212" stroke="#262626" stroke-width="1" />
-                                    <text x="12" y="16" fill="#d4d4d4" font-size="10" font-family="sans-serif">{{ (profile.name || 'Profil').split(' ')[0] }}</text>
-                                </g>
-                            </template>
-                        </g>
+                        <!-- Company label pill (foreignObject) -->
+                        <foreignObject
+                            :x="ninjaLabelX(ci, ninjaCompanies.length, 210)"
+                            :y="ninjaNodeY(ci, ninjaCompanies.length, 210) - 14"
+                            width="148" height="28" class="pointer-events-none">
+                            <div xmlns="http://www.w3.org/1999/xhtml"
+                                 style="background:rgba(12,14,16,0.9); border:1px solid rgba(232,93,62,0.3); border-radius:14px; padding:4px 11px; font-size:11px; font-weight:700; color:#f0f0f0; font-family:sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; letter-spacing:0.01em;">
+                                {{ company.company_name }}
+                            </div>
+                        </foreignObject>
+
+                        <!-- Profile nodes -->
+                        <template v-for="(prof, pi) in company.profiles" :key="'np-'+ci+'-'+pi">
+                            <!-- Large hover target -->
+                            <circle
+                                :cx="ninjaProfileX(ci, pi, ninjaCompanies.length, company.profiles.length)"
+                                :cy="ninjaProfileY(ci, pi, ninjaCompanies.length, company.profiles.length)"
+                                r="18" fill="transparent" class="cursor-pointer"
+                                @mouseenter.stop="showNinjaTooltip($event, { ...prof, company_name: company.company_name, key: company.company_name+'_'+pi })"
+                                @mouseleave.stop="scheduleHideTooltip()" />
+                            <!-- Visible dot -->
+                            <circle
+                                :cx="ninjaProfileX(ci, pi, ninjaCompanies.length, company.profiles.length)"
+                                :cy="ninjaProfileY(ci, pi, ninjaCompanies.length, company.profiles.length)"
+                                :r="ninjaHoverNode && ninjaHoverNode.key === company.company_name+'_'+pi ? 7 : 5"
+                                :fill="ninjaHoverNode && ninjaHoverNode.key === company.company_name+'_'+pi ? '#ffffff' : 'rgba(255,255,255,0.45)'"
+                                class="pointer-events-none transition-all" />
+                            <!-- Profile name -->
+                            <text
+                                :x="ninjaProfileX(ci, pi, ninjaCompanies.length, company.profiles.length) + 9"
+                                :y="ninjaProfileY(ci, pi, ninjaCompanies.length, company.profiles.length) + 4"
+                                font-size="9" fill="rgba(255,255,255,0.4)"
+                                font-family="sans-serif" class="pointer-events-none">
+                                {{ (prof.name || '').split(' ')[0] }}
+                            </text>
+                        </template>
                     </template>
-                </g>
-            </svg>
-        </div>
 
-        <!-- Floating Tooltip (Shown on Hover) -->
+                    <!-- Central node (always rendered on top) -->
+                    <circle cx="500" cy="340" r="30" fill="rgba(255,255,255,0.04)" />
+                    <circle cx="500" cy="340" r="20" fill="rgba(255,255,255,0.07)">
+                        <animate attributeName="r" values="18;22;18" dur="4s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="500" cy="340" r="10" fill="white" opacity="0.95">
+                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="500" cy="340" r="4" fill="white" />
+
+                </template>
+            </g>
+        </svg>
+
+        <!-- Hover Tooltip Card -->
         <Transition name="fade-scale">
-            <div v-if="ninjaHoverNode" 
-                 @mouseleave="hideNinjaTooltip"
-                 class="fixed z-[100] w-80 bg-[#121212]/95 border border-[#333333] rounded-2xl shadow-2xl p-5 backdrop-blur-xl pointer-events-auto"
+            <div v-if="ninjaHoverNode"
+                 @mouseenter="cancelHideTooltip()"
+                 @mouseleave="scheduleHideTooltip()"
+                 class="fixed z-[200] w-72 rounded-2xl shadow-2xl p-5"
+                 style="background:#0e1012; border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(20px);"
                  :style="{ left: ninjaTooltipX + 'px', top: ninjaTooltipY + 'px' }">
-                 
-                 <!-- Date / Role -->
-                 <p class="text-[#E85D3E] text-xs font-bold mb-3 tracking-wide uppercase">{{ ninjaHoverNode.role }} @ {{ ninjaHoverNode.company_name }}</p>
-                 <h4 class="text-white text-lg font-black mb-4">{{ ninjaHoverNode.name }}</h4>
-                 
-                 <!-- Message Quote -->
-                 <p class="text-neutral-300 text-sm leading-relaxed mb-6 font-serif italic border-l-2 border-[#E85D3E] pl-3">
-                     "{{ ninjaHoverNode.message }}"
-                 </p>
-                 
-                 <p class="text-neutral-500 text-xs mb-2 uppercase tracking-widest font-bold">Mise en relation</p>
-                 
-                 <!-- Action Links -->
-                 <div class="space-y-1">
-                     <a v-if="ninjaHoverNode.linkedin_url" :href="ninjaHoverNode.linkedin_url" target="_blank"
-                        class="flex items-center justify-between p-3 rounded-xl hover:bg-[#1f1f1f] transition-colors group">
-                         <div class="flex items-center gap-3">
-                             <svg class="w-4 h-4 text-[#0A66C2]" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                             <span class="text-sm font-medium text-neutral-200 group-hover:text-white">Ouvrir le profil</span>
-                         </div>
-                         <svg class="w-4 h-4 text-neutral-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                     </a>
-                     
-                     <button @click="copyNinjaMessage(ninjaHoverNode.message, ninjaHoverNode.key)"
-                        class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-[#1f1f1f] transition-colors group border border-transparent hover:border-[#E85D3E]/30">
-                         <div class="flex items-center gap-3">
-                             <svg class="w-4 h-4 text-neutral-400 group-hover:text-[#E85D3E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                             <span class="text-sm font-medium text-neutral-200 group-hover:text-white">Copier ({{ (ninjaHoverNode.message || '').length }} car.)</span>
-                         </div>
-                         <svg v-if="ninjaCopied[ninjaHoverNode.key]" class="w-4 h-4 text-[#E85D3E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                         <svg v-else class="w-4 h-4 text-neutral-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                     </button>
-                 </div>
+
+                <p class="text-xs font-black tracking-widest uppercase mb-1" style="color:#E85D3E;">{{ ninjaHoverNode.role }}</p>
+                <h4 class="text-white text-base font-black mb-0.5">{{ ninjaHoverNode.name }}</h4>
+                <p class="text-xs mb-4" style="color:#444;">@ {{ ninjaHoverNode.company_name }}</p>
+
+                <p class="text-sm leading-relaxed mb-5 italic pl-3" style="color:#bbb; border-left:2px solid #E85D3E;">
+                    "{{ ninjaHoverNode.message }}"
+                </p>
+
+                <p class="text-xs uppercase tracking-widest font-black mb-2" style="color:#333;">Connected actions</p>
+
+                <a v-if="ninjaHoverNode.linkedin_url" :href="ninjaHoverNode.linkedin_url" target="_blank"
+                   class="flex items-center justify-between p-3 rounded-xl mb-1 transition-all"
+                   style="border:1px solid transparent;"
+                   onmouseover="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.06)'"
+                   onmouseout="this.style.background='transparent'; this.style.borderColor='transparent'">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-4 h-4" fill="#0A66C2" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                        <span class="text-sm font-medium" style="color:#ccc;">Voir le profil</span>
+                    </div>
+                    <svg class="w-4 h-4" style="color:#444;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+
+                <button @click="copyNinjaMessage(ninjaHoverNode.message, ninjaHoverNode.key)"
+                    class="w-full flex items-center justify-between p-3 rounded-xl transition-all"
+                    style="border:1px solid transparent;"
+                    onmouseover="this.style.background='rgba(232,93,62,0.06)'; this.style.borderColor='rgba(232,93,62,0.25)'"
+                    onmouseout="this.style.background='transparent'; this.style.borderColor='transparent'">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-4 h-4" style="color:#888;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span class="text-sm font-medium" style="color:#ccc;">Copier ({{ (ninjaHoverNode.message||'').length }} car.)</span>
+                    </div>
+                    <svg v-if="ninjaCopied[ninjaHoverNode.key]" class="w-4 h-4" style="color:#E85D3E;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <svg v-else class="w-4 h-4" style="color:#333;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
             </div>
         </Transition>
 
-        <!-- Bottom Toolbar (UI Decor) -->
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 bg-neutral-900/90 border border-neutral-800 rounded-full backdrop-blur-xl shadow-2xl pointer-events-none">
-            <button class="w-10 h-10 rounded-full flex items-center justify-center text-[#E85D3E] bg-[#E85D3E]/10 border border-[#E85D3E]/30 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-            </button>
-            <div class="w-px h-6 bg-neutral-800"></div>
-            <button class="w-10 h-10 rounded-full flex items-center justify-center text-neutral-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
-            </button>
-            <button class="w-10 h-10 rounded-full flex items-center justify-center text-neutral-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"/></svg>
-            </button>
-        </div>
-        
-        <!-- Empty State Overlay -->
-        <div v-if="!ninjaLoading && ninjaCompanies.length === 0 && !ninjaRunning" class="absolute inset-0 bg-[#050505]/95 backdrop-blur-sm z-40 flex flex-col items-center justify-center text-center">
-            <div class="w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4">
-                <svg class="w-8 h-8 text-[#E85D3E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <!-- Empty state -->
+        <div v-if="!ninjaLoading && !ninjaRunning && ninjaCompanies.length === 0"
+             class="absolute inset-0 flex flex-col items-center justify-center text-center z-20">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                 style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);">
+                <svg class="w-8 h-8" style="color:#E85D3E;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
-            <p class="text-neutral-200 text-xl font-bold mb-2">Aucun réseau identifié</p>
-            <p class="text-neutral-500 text-sm max-w-sm">Lancez le workflow Network Ninja depuis votre Dashboard pour démarrer la cartographie 3D.</p>
+            <p class="text-white text-xl font-bold mb-2">Aucun réseau identifié</p>
+            <p class="text-sm max-w-sm mb-6" style="color:#444;">Lancez le workflow depuis votre Dashboard pour cartographier vos contacts.</p>
+            <button @click="runNinja" class="px-6 py-3 text-white font-bold rounded-2xl" style="background:#E85D3E;">Lancer le scan</button>
         </div>
 
-        <!-- Scanning State Overlay -->
-        <div v-if="ninjaRunning" class="absolute inset-0 bg-[#050505]/95 backdrop-blur-md z-50 flex flex-col items-center justify-center text-center">
+        <!-- Scanning overlay -->
+        <div v-if="ninjaRunning" class="absolute inset-0 flex flex-col items-center justify-center text-center z-50"
+             style="background:rgba(8,10,12,0.94); backdrop-filter:blur(8px);">
             <div class="relative w-28 h-28 mb-8">
-                <div class="absolute inset-0 border-4 border-[#E85D3E]/20 rounded-full"></div>
-                <div class="absolute inset-0 border-4 border-[#E85D3E] border-t-transparent rounded-full animate-spin"></div>
+                <div class="absolute inset-0 rounded-full" style="border:4px solid rgba(232,93,62,0.15);"></div>
+                <div class="absolute inset-0 rounded-full animate-spin" style="border:4px solid #E85D3E; border-top-color:transparent;"></div>
                 <div class="absolute inset-0 flex items-center justify-center text-4xl">🥷</div>
             </div>
-            <p class="text-[#E85D3E] text-xl font-black tracking-[0.3em] uppercase animate-pulse">Cartographie 3D</p>
-            <p class="text-neutral-400 text-sm mt-3 max-w-sm">Analyse sectorielle et génération de stratégies de networking exclusives...</p>
+            <p class="text-xl font-black tracking-widest uppercase animate-pulse" style="color:#E85D3E;">Scan en cours</p>
+            <p class="text-sm mt-3 max-w-sm" style="color:#444;">Identification des décideurs LinkedIn...</p>
         </div>
     </div>
-
-    <!-- Loading Modal for Drafting -->
+\n    <!-- Loading Modal for Drafting -->
 
     <div v-if="isDrafting" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-white/80 backdrop-blur-md animate-fade-in"></div>
@@ -1079,6 +1126,66 @@ const copyDraftEmail = async () => {
 .fade-scale-enter-from, .fade-scale-leave-to {
   opacity: 0;
   transform: scale(0.95);
+}
+
+
+/* ── Ninja SVG Animations ── */
+@keyframes ninja-edge-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -18; }
+}
+.ninja-edge-anim {
+  animation: ninja-edge-flow 2.5s linear infinite;
+}
+.ninja-company-node {
+  animation: ninja-company-pulse 3s ease-in-out infinite alternate;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+@keyframes ninja-company-pulse {
+  from { r: 8; opacity: 0.85; }
+  to   { r: 10; opacity: 1; }
+}
+.ninja-pulse-ring {
+  animation: ninja-ring-expand 3s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+@keyframes ninja-ring-expand {
+  0%   { r: 12; opacity: 0.4; }
+  50%  { r: 22; opacity: 0.1; }
+  100% { r: 12; opacity: 0.4; }
+}
+
+
+/* ── Ninja SVG Animations ── */
+@keyframes ninja-edge-flow {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -22; }
+}
+.ninja-edge-anim {
+  animation: ninja-edge-flow 2s linear infinite;
+}
+.ninja-edge-anim-slow {
+  stroke-dasharray: 3,5;
+  animation: ninja-edge-flow 4s linear infinite;
+}
+.ninja-pulse-ring {
+  animation: ninja-ring-pulse 3s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes ninja-ring-pulse {
+  0%   { opacity: 0.3; transform: scale(0.9); }
+  50%  { opacity: 0.08; transform: scale(1.4); }
+  100% { opacity: 0.3; transform: scale(0.9); }
+}
+.fade-scale-enter-active, .fade-scale-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.fade-scale-enter-from, .fade-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(-4px);
 }
 
 </style>

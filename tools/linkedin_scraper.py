@@ -29,15 +29,24 @@ class LinkedInScraper:
         logger.info(f"🔎 LinkedIn RH pour: {company_name}")
         profiles = []
 
-        # 1. AsyncDDGS en premier (rapide, ~2-4s)
+        # 1. DDGS en premier (rapide, ~2-4s)
         try:
-            from duckduckgo_search import AsyncDDGS
+            from duckduckgo_search import DDGS
             query = f'site:linkedin.com/in/ "{company_name}" recruteur OR RH OR "Talent Acquisition"'
             seen = set()
-            async with AsyncDDGS() as ddgs:
-                async for r in ddgs.text(query, max_results=limit):
-                    href = r.get("href", "")
-                    if "linkedin.com/in/" in href:
+            
+            def _run_ddgs():
+                results = []
+                with DDGS() as ddgs:
+                    for r in ddgs.text(query, max_results=limit):
+                        results.append(r)
+                return results
+                
+            ddg_results = await asyncio.to_thread(_run_ddgs)
+            
+            for r in ddg_results:
+                href = r.get("href", "")
+                if "linkedin.com/in/" in href:
                         href = href.split("?")[0].rstrip("/")
                         if href and href not in seen:
                             seen.add(href)
