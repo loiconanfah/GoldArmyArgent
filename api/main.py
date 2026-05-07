@@ -2152,3 +2152,39 @@ async def admin_resolve_error(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+# ---------------------------------------------------------------------------
+# NETWORK NINJA ROUTES
+# ---------------------------------------------------------------------------
+from agents.network_ninja_agent import network_ninja_agent
+
+@app.post("/api/network/ninja/run")
+async def run_network_ninja(current_user: dict = Depends(get_current_user)):
+    try:
+        user_id = current_user.get("uid")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        result = await network_ninja_agent.run(user_id)
+        return {"status": "success", "data": result}
+    except Exception as e:
+        logger.error(f"Error running network ninja: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/network/ninja/results")
+async def get_network_ninja_results(current_user: dict = Depends(get_current_user)):
+    try:
+        user_id = current_user.get("uid")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        db = get_db()
+        doc = await db.ninja_results.find_one({"user_id": user_id})
+        if not doc:
+            return {"status": "success", "data": {"companies": []}}
+        
+        # Remove mongo _id before returning
+        doc.pop("_id", None)
+        return {"status": "success", "data": doc}
+    except Exception as e:
+        logger.error(f"Error getting network ninja results: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -224,16 +224,15 @@ class NetworkNinjaAgent:
         llm = UnifiedLLMClient()
 
         prompt = (
-            f"Rédige un message LinkedIn professionnel et très ciblé de MAX 200 caractères en français.\n"
-            f"RÈGLE ABSOLUE : Le message DOIT faire 200 caractères maximum. Compte les caractères.\n"
-            f"Pas de salutations longues. Va droit au but, sois mémorable.\n"
-            f"Structure : [Prénom], [phrase ultra-spécifique liant mon profil à {company_name} et au rôle de {person_role}], "
-            f"[question engageante]. Signature : {user_name.split()[0] if user_name else 'Moi'}.\n\n"
+            f"Rédige un message LinkedIn professionnel de mise en relation de MAX 200 caractères en français.\n"
+            f"RÈGLE ABSOLUE : Le message DOIT faire 200 caractères maximum.\n"
+            f"INTERDICTION FORMELLE : Ne mentionne JAMAIS de recherche d'emploi, de candidature ou de poste ouvert. L'objectif est purement le NETWORKING et la mise en relation entre experts d'un même secteur.\n"
+            f"Structure : [Prénom], [1 phrase sur une synergie entre mon domaine et ce que fait {company_name}], "
+            f"[invitation à échanger sur nos enjeux communs]. Signature : {user_name.split()[0] if user_name else 'Moi'}.\n\n"
             f"Contexte :\n"
             f"- Destinataire : {person_name} ({person_role} chez {company_name})\n"
-            f"- Mon poste visé : {job_title}\n"
-            f"- Mon profil (résumé) : {cv_text[:300] if cv_text else 'Professionnel motivé'}\n\n"
-            f"Réponds UNIQUEMENT par le texte du message. Maximum 200 caractères, pas de blabla."
+            f"- Mon profil (secteur/expertise) : {cv_text[:300] if cv_text else 'Professionnel du secteur'}\n\n"
+            f"Réponds UNIQUEMENT par le texte du message. Maximum 200 caractères."
         )
 
         try:
