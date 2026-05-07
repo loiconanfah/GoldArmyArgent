@@ -135,9 +135,8 @@ class GeminiClient:
         payload["tools"] = [{"google_search": {}}]
 
         gen_config = {}
-        # Gemini 3.1 Pro supporte le json_mode avec grounding !
-        if kwargs.get("json_mode"):
-            gen_config["responseMimeType"] = "application/json"
+        # Note: Gemini ne supporte PAS controlled generation (responseMimeType) en même temps que le Search tool.
+        # Le prompt doit demander du JSON brut et on le parse manuellement.
             
         if "max_tokens" in kwargs:
             gen_config["maxOutputTokens"] = kwargs["max_tokens"]
