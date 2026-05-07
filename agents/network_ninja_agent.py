@@ -172,19 +172,37 @@ class NetworkNinjaAgent:
 
         # ── Persistance MongoDB (upsert par user_id) ─────────────────────────
         now = datetime.utcnow()
+        doc = await db.ninja_results.find_one({"user_id": user_id})
+        
+        final_companies = []
+        if doc and "companies" in doc:
+            # Garder les compagnies existantes (OSINT manuelles ou anciennes)
+            final_companies = doc["companies"]
+            # Mettre à jour ou ajouter les nouvelles (venant des applications)
+            for new_c in companies_result:
+                idx = next((i for i, c in enumerate(final_companies) if c["company_name"].lower() == new_c["company_name"].lower()), None)
+                if idx is not None:
+                    final_companies[idx] = new_c
+                else:
+                    final_companies.append(new_c)
+        else:
+            final_companies = companies_result
+
         await db.ninja_results.update_one(
             {"user_id": user_id},
             {
                 "$set": {
                     "user_id":      user_id,
-                    "companies":    companies_result,
-                    "total_profiles": sum(len(c["profiles"]) for c in companies_result),
+                    "companies":    final_companies,
+                    "total_profiles": sum(len(c.get("profiles", [])) for c in final_companies),
                     "generated_at": now,
                     "updated_at":   now,
                 }
             },
             upsert=True,
         )
+
+        companies_result = final_companies
 
         total = sum(len(c["profiles"]) for c in companies_result)
         logger.success(
@@ -256,6 +274,87 @@ class NetworkNinjaAgent:
                 f"Échange possible ? — {user_name.split()[0] if user_name else ''}"
             )
             return fallback[:180]
+
+    async def add_manual_search(self, user_id: str, company_name: str, profiles: list):
+        """
+        Appelé par Headhunter pour ajouter de façon permanente une recherche au graphe Network Ninja.
+        """
+        try:
+            from core.database import get_db
+            db = get_db()
+            # 1. Infos utilisateur
+            user = await db.users.find_one({"id": user_id}) or {}
+            user_name = user.get("name", "") if user else ""
+            cv_text = ""
+            if user and user.get("parsed_resume"):
+                cv_text = str(user.get("parsed_resume"))[:1000]
+
+            # 2. Enrichir les profils avec un message
+            enriched_profiles = []
+            for profile in profiles:
+                msg = await self._generate_linkedin_message(
+                    person_name=profile.get("name", ""),
+                    person_role=profile.get("role", ""),
+                    company_name=company_name,
+                    job_title="Recherche Libre",
+                    user_name=user_name,
+                    cv_text=cv_text,
+                )
+                enriched_profiles.append({
+                    "name": profile.get("name", ""),
+                    "role": profile.get("role", ""),
+                    "linkedin_url": profile.get("linkedin_url", ""),
+                    "snippet": profile.get("snippet", ""),
+                    "message": msg,
+                })
+
+            if not enriched_profiles:
+                return
+
+            # 3. Met à jour ninja_results
+            company_data = {
+                "company_name": company_name,
+                "job_title": "Recherche OSINT",
+                "app_id": "osint_manual",
+                "profiles": enriched_profiles
+            }
+
+            now = datetime.utcnow()
+            doc = await db.ninja_results.find_one({"user_id": user_id})
+
+            if not doc:
+                # Créer le document
+                await db.ninja_results.insert_one({
+                    "user_id": user_id,
+                    "companies": [company_data],
+                    "total_profiles": len(enriched_profiles),
+                    "generated_at": now,
+                    "updated_at": now,
+                })
+            else:
+                # Mettre à jour si la compagnie existe, sinon ajouter
+                companies = doc.get("companies", [])
+                existing_company = next((c for c in companies if c.get("company_name", "").lower() == company_name.lower()), None)
+
+                if existing_company:
+                    # Remplacer les profils de l'entreprise existante
+                    existing_company["profiles"] = enriched_profiles
+                else:
+                    companies.append(company_data)
+
+                await db.ninja_results.update_one(
+                    {"user_id": user_id},
+                    {
+                        "$set": {
+                            "companies": companies,
+                            "total_profiles": sum(len(c.get("profiles", [])) for c in companies),
+                            "updated_at": now,
+                        }
+                    }
+                )
+            logger.success(f"[NetworkNinja] Recherche manuelle '{company_name}' ajoutée pour user {user_id}")
+        except Exception as e:
+            logger.error(f"[NetworkNinja] Erreur add_manual_search: {e}")
 
 
 # Singleton

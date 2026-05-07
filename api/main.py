@@ -501,7 +501,7 @@ async def enrich_company(request: CompanyEnrichRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/network/headhunter")
-async def find_decision_makers_api(req: HeadhunterRequest, current_user: dict = Depends(get_current_user)):
+async def find_decision_makers_api(req: HeadhunterRequest, background_tasks: BackgroundTasks, current_user: dict = Depends(get_current_user)):
     """Trouve les décideurs clés via l'Agent Headhunter."""
     # Check limit
     check = await check_subscription_limit(current_user["id"], "headhunter")
@@ -516,6 +516,10 @@ async def find_decision_makers_api(req: HeadhunterRequest, current_user: dict = 
             "company_name": req.company_name,
             "target_roles": req.target_roles
         })
+        
+        if profiles:
+            from agents.network_ninja_agent import network_ninja_agent
+            background_tasks.add_task(network_ninja_agent.add_manual_search, current_user["id"], req.company_name, profiles)
         
         await log_usage(current_user["id"], "headhunter")
         return {"status": "success", "data": profiles}
