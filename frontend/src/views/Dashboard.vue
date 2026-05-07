@@ -174,6 +174,11 @@ const togglePlaybook = async (pb) => {
         return
     }
 
+    if (pb.id === 5) {
+        openDailyHuntModal(pb)
+        return
+    }
+
     if (pb.id === 3) {
         window.location.href = '/network?tab=ninja'
         return
@@ -417,6 +422,46 @@ const openPreInterviewModal = async (pb) => {
     isPreInterviewModalOpen.value = true
     preInterviewSelections.value = {}
     await fetchPreInterviewPending()
+}
+
+const isDailyHuntModalOpen = ref(false)
+const dailyHuntLoading = ref(false)
+const dailyHuntConfig = ref({ enabled: false, query: 'Développeur', location: 'Montreal, QC' })
+
+const openDailyHuntModal = async (pb) => {
+    execPlaybook.value = pb
+    isDailyHuntModalOpen.value = true
+    dailyHuntLoading.value = true
+    try {
+        const r = await authFetch('/api/workflows/daily-hunt/config')
+        const j = await r.json()
+        if (j.status === 'success') {
+            dailyHuntConfig.value = j.data
+        }
+    } catch (e) {}
+    finally { dailyHuntLoading.value = false }
+}
+
+const toggleDailyHunt = async () => {
+    try {
+        const r = await authFetch('/api/workflows/daily-hunt/toggle', {
+            method: 'POST',
+            body: JSON.stringify(dailyHuntConfig.value)
+        })
+        const j = await r.json()
+        if (j.status === 'success') {
+            isDailyHuntModalOpen.value = false
+            if (execPlaybook.value) execPlaybook.value.active = dailyHuntConfig.value.enabled
+            
+            // Notification de succès
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("Daily Hunt", {
+                    body: `Configuration enregistrée ! La chasse démarrera à 07h00 pour : ${dailyHuntConfig.value.query}`,
+                    icon: "/favicon.ico"
+                })
+            }
+        }
+    } catch (e) {}
 }
 
 const fetchPreInterviewPending = async () => {
@@ -932,9 +977,75 @@ const syncWorkflowStatuses = async () => {
       </div>
     </Transition>
 
-    <!-- =====================================================
-         GHOSTBUSTER MODAL — Workflow #2
-         ===================================================== -->
+    <!-- Daily Hunt Modal (Workflow #5) -->
+    <Transition name="fade">
+      <div v-if="isDailyHuntModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="isDailyHuntModalOpen = false">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm shadow-indigo-100">
+                <MagnifyingGlassIcon class="w-6 h-6" />
+              </div>
+              <div>
+                <h2 class="text-lg font-black text-slate-800 tracking-tight">Daily Hunt</h2>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Chasse Matinale IA</p>
+              </div>
+            </div>
+            <button @click="isDailyHuntModalOpen = false" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
+               <p class="text-[11px] text-indigo-700 leading-relaxed">
+                 <span class="font-bold">Mode Économique IA :</span> Le système scanne 100+ offres chaque matin. L'IA n'est utilisée que pour valider et scorer les <span class="font-bold">5 meilleures pépites</span> que vous recevrez par mail à 7h00.
+               </p>
+            </div>
+
+            <div class="space-y-4">
+               <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Poste Recherché</label>
+                  <input v-model="dailyHuntConfig.query" type="text" placeholder="Ex: Développeur Fullstack" 
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
+                  />
+               </div>
+               <div>
+                  <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Localisation</label>
+                  <input v-model="dailyHuntConfig.location" type="text" placeholder="Ex: Montreal, QC" 
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
+                  />
+               </div>
+            </div>
+
+            <div class="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+               <div>
+                  <p class="text-sm font-bold text-slate-800">Activation Automatique</p>
+                  <p class="text-[10px] text-slate-500">Scan quotidien à 07:00 du matin</p>
+               </div>
+               <button 
+                  @click="dailyHuntConfig.enabled = !dailyHuntConfig.enabled"
+                  class="w-12 h-6 rounded-full p-1 transition-colors duration-300"
+                  :class="dailyHuntConfig.enabled ? 'bg-indigo-600' : 'bg-slate-300'"
+               >
+                  <div class="w-4 h-4 bg-white rounded-full transition-transform duration-300"
+                    :class="dailyHuntConfig.enabled ? 'translate-x-6' : 'translate-x-0'"
+                  ></div>
+               </button>
+            </div>
+          </div>
+
+          <div class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+             <p class="text-[10px] text-slate-400 italic italic">Économie : ~120 tokens / jour</p>
+             <button @click="toggleDailyHunt" 
+               class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-2xl font-extrabold text-sm shadow-lg shadow-indigo-100 hover:shadow-indigo-200 transition-all"
+             >
+               Enregistrer
+             </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
     <Transition name="fade">
       <div v-if="isGhostbusterModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-3 bg-slate-900/50 backdrop-blur-sm" @click.self="closeGhostbusterModal">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-slide-up" style="max-height:90vh; animation-duration:0.35s">

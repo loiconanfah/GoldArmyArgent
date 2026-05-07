@@ -186,6 +186,9 @@ async def startup_event():
             
             from core.pre_interview_scheduler import pre_interview_scheduler
             await pre_interview_scheduler.start()
+
+            from core.daily_hunt_scheduler import daily_hunt_scheduler
+            await daily_hunt_scheduler.start()
         except Exception as e:
             logger.warning(f"Non-critical Ghostbuster scheduler start error: {e}")
 
@@ -2300,9 +2303,12 @@ async def get_workflows_status(
         })
         pre_active = pending_sims > 0
         
-        # 3. Network Ninja (On peut stocker un état simple ou vérifier les derniers résultats)
-        ninja_res = await db.ninja_results.find_one({"user_id": user_id})
-        ninja_active = False # Par défaut, Ninja est un "run once" mais on pourrait le rendre persistant
+        # 3. Network Ninja
+        ninja_active = False 
+
+        # 4. Daily Hunt status
+        dh_config = await db.daily_hunt_config.find_one({"user_id": user_id})
+        dh_active = dh_config.get("enabled", False) if dh_config else False
         
         return {
             "status": "success",
@@ -2314,4 +2320,50 @@ async def get_workflows_status(
         }
     except Exception as e:
         logger.error(f"Error fetching workflows status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==========================================
+# Daily Hunt Workflow Endpoints (#5)
+# ==========================================
+
+class DailyHuntToggleRequest(BaseModel):
+    enabled: bool
+    query: Optional[str] = "Développeur"
+    location: Optional[str] = "Montreal, QC"
+
+@app.get("/api/workflows/daily-hunt/config")
+async def get_daily_hunt_config(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        cfg = await db.daily_hunt_config.find_one({"user_id": user_id}, {"_id": 0})
+        if not cfg:
+            return {"status": "success", "data": {"enabled": False, "query": "Développeur", "location": "Montreal, QC"}}
+        return {"status": "success", "data": cfg}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/workflows/daily-hunt/toggle")
+async def toggle_daily_hunt(
+    req: DailyHuntToggleRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        from datetime import datetime
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        await db.daily_hunt_config.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "enabled": req.enabled,
+                "query": req.query,
+                "location": req.location,
+                "updated_at": datetime.utcnow()
+            }},
+            upsert=True
+        )
+        return {"status": "success", "data": {"enabled": req.enabled}}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

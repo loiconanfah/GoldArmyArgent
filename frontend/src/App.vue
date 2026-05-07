@@ -95,6 +95,44 @@ const navigation = computed(() => [
   { name: t('nav.network'), href: '/network', icon: UserGroupIcon },
   { name: t('nav.profile'), href: '/profile', icon: UserIcon },
 ])
+
+// --- Notification Center ---
+const notifications = ref([])
+const isNotificationsOpen = ref(false)
+const unreadCount = computed(() => notifications.value.filter(n => !n.is_read).length)
+
+const fetchNotifications = async () => {
+    if (!localStorage.getItem('token')) return
+    try {
+        const r = await authFetch('/api/notifications')
+        const j = await r.json()
+        if (Array.isArray(j)) {
+            notifications.value = j
+        }
+    } catch (e) {
+        console.warn('[Notifications] Fetch failed', e)
+    }
+}
+
+const markAllAsRead = async () => {
+    try {
+        await authFetch('/api/notifications/read-all', { method: 'PUT' })
+        notifications.value.forEach(n => n.is_read = true)
+    } catch (e) {}
+}
+
+const toggleNotifications = () => {
+    isNotificationsOpen.value = !isNotificationsOpen.value
+    if (isNotificationsOpen.value) {
+        // Optionnel: on marque tout comme lu quand on ouvre ?
+    }
+}
+
+onMounted(() => {
+    fetchNotifications()
+    const timer = setInterval(fetchNotifications, 60000 * 5) // Toutes les 5 min
+    return () => clearInterval(timer)
+})
 </script>
 
 <template>
@@ -232,10 +270,47 @@ const navigation = computed(() => [
             </button>
 
             <!-- Notifications -->
-            <button class="relative p-2 text-slate-400 hover:text-white rounded-full hover:bg-surface-800 transition-colors">
-                <BellIcon class="w-5 h-5" />
-                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-surface-950"></span>
-            </button>
+            <div class="relative">
+                <button 
+                    @click="toggleNotifications"
+                    class="relative p-2 text-slate-400 hover:text-white rounded-full hover:bg-surface-800 transition-colors"
+                >
+                    <BellIcon class="w-5 h-5" />
+                    <span v-if="unreadCount > 0" class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-surface-950"></span>
+                </button>
+
+                <!-- Notifications Dropdown -->
+                <Transition name="fade">
+                  <div v-if="isNotificationsOpen" class="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 animate-slide-up">
+                     <div class="p-4 border-b border-slate-50 flex items-center justify-between">
+                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-widest">Notifications</h3>
+                        <button @click="markAllAsRead" class="text-[10px] font-bold text-indigo-500 hover:text-indigo-600 uppercase">Tout lire</button>
+                     </div>
+                     <div class="max-h-[400px] overflow-y-auto">
+                        <div v-if="notifications.length === 0" class="p-8 text-center">
+                           <BellIcon class="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                           <p class="text-[10px] text-slate-400">Aucune notification pour le moment.</p>
+                        </div>
+                        <div v-else v-for="n in notifications" :key="n.id" 
+                          class="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer relative"
+                          @click="n.action_url ? (router.push(n.action_url), isNotificationsOpen = false) : null"
+                        >
+                           <div class="flex gap-3">
+                              <div :class="[
+                                'w-2 h-2 rounded-full mt-1.5 shrink-0',
+                                n.is_read ? 'bg-transparent' : 'bg-indigo-500'
+                              ]"></div>
+                              <div class="flex-1">
+                                 <p class="text-xs font-bold text-slate-800">{{ n.title }}</p>
+                                 <p class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{{ n.message }}</p>
+                                 <p class="text-[9px] text-slate-300 mt-1 uppercase font-bold">{{ new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</p>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                </Transition>
+            </div>
             
             <div class="h-6 w-px bg-surface-800 hidden sm:block"></div>
 

@@ -2,7 +2,8 @@ import json
 import re
 from typing import Dict, Any, List
 from loguru import logger
-from llm.unified_client import unified_client
+from llm.unified_client import UnifiedLLMClient
+unified_client = UnifiedLLMClient()
 
 class PreInterviewAgent:
     """Agent chargé de préparer les simulations d'entretien."""
