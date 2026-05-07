@@ -2367,3 +2367,76 @@ async def toggle_daily_hunt(
         return {"status": "success", "data": {"enabled": req.enabled}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/workflows/social-sniper/generate")
+async def generate_social_sniper(
+    req: Dict[str, Any],
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        user = await db.users.find_one({"id": user_id})
+        cv_text = user.get("cv_text", "") if user else ""
+        if not cv_text:
+            raise HTTPException(status_code=400, detail="CV requis.")
+
+        from agents.mentor import MentorAgent
+        mentor = MentorAgent()
+        result = await mentor.think({
+            "action": "social_sniper",
+            "cv_text": cv_text,
+            "company": req.get("company"),
+            "job": req.get("job")
+        })
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/workflows/post-interview/apps")
+async def get_interview_apps(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        apps = await db.applications.find(
+            {"user_id": user_id, "status": "INTERVIEW"},
+            {"_id": 0}
+        ).sort("updated_at", -1).to_list(length=20)
+        return {"status": "success", "data": apps}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/workflows/post-interview/generate")
+async def generate_post_interview(
+    req: Dict[str, Any],
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        from datetime import datetime
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        user = await db.users.find_one({"id": user_id})
+        cv_text = user.get("cv_text", "") if user else ""
+        
+        from agents.mentor import MentorAgent
+        mentor = MentorAgent()
+        result = await mentor.think({
+            "action": "post_interview_analysis",
+            "cv_text": cv_text,
+            "company": req.get("company"),
+            "job": req.get("job"),
+            "debrief": req.get("debrief")
+        })
+        
+        # Optionnel: Mettre à jour le statut dans le CRM
+        if req.get("app_id") and result.get("status") == "success":
+            await db.applications.update_one(
+                {"id": req.get("app_id"), "user_id": user_id},
+                {"$set": {"status": "FOLLOW_UP", "updated_at": datetime.utcnow()}}
+            )
+
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

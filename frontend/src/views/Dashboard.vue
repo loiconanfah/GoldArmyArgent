@@ -30,7 +30,10 @@ import {
   InformationCircleIcon,
   StarIcon,
   ShieldCheckIcon,
-  SparklesIcon
+  SparklesIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  CheckCircleIcon
 } from '@heroicons/vue/24/outline'
 
 // Dimensions pour le graphique principal
@@ -90,7 +93,7 @@ const playbooks = ref([
   { id: 3, name: 'Network Ninja', desc: 'Chasseur de Décideurs', fullDesc: "Cherche et identifie les décideurs clés (RH, CEO, Lead Dev) de l'entreprise sur LinkedIn et prépare un message d'accroche personnalisé.", icon: UsersIcon, active: false },
   { id: 4, name: 'Pre-Interview', desc: 'Entraînement Immersif', fullDesc: "Récupère les détails du poste et de l'entreprise pour préparer un simulateur d'entretien avec des questions probables et des conseils de posture.", icon: LightBulbIcon, active: false },
   { id: 5, name: 'Daily Hunt', desc: 'Chasse Matinale (Cron)', fullDesc: "S'exécute tous les matins à 7h00. Scanne le web pour trouver 5 nouvelles offres d'emploi correspondant exactement à votre profil et les ajoute au CRM.", icon: MagnifyingGlassIcon, active: false },
-  { id: 6, name: 'Elevator Pitch', desc: 'Présentation Instantanée', fullDesc: "Génère un pitch de présentation de 30 secondes (texte + audio) adapté à l'entreprise que vous ciblez.", icon: MegaphoneIcon, active: false },
+  { id: 6, name: 'Social Sniper', desc: 'Kit d\'Approche Multi-Canal', fullDesc: "Génère un arsenal complet pour infiltrer l'entreprise : Accroche LinkedIn, Commentaire expert, Relance et argument massue personnalisé.", icon: MegaphoneIcon, active: false },
   { id: 7, name: 'Post-Interview', desc: 'Debrief & Remerciement', fullDesc: "S'active après un entretien. Génère un email de remerciement stratégique et met à jour le statut de la candidature dans le CRM.", icon: HandThumbUpIcon, active: false },
   { id: 8, name: 'Cold Call', desc: 'Script Téléphonique', fullDesc: "Prépare un script d'appel téléphonique sur mesure pour contacter directement un recruteur ou un manager, avec gestion des objections.", icon: PhoneIcon, active: false },
   { id: 9, name: 'Rejection Pivot', desc: 'Rebond & Alternatives', fullDesc: "Suite à un refus, envoie un email demandant du feedback constructif, et trouve instantanément 3 offres similaires pour rebondir.", icon: ArrowPathIcon, active: false },
@@ -176,6 +179,16 @@ const togglePlaybook = async (pb) => {
 
     if (pb.id === 5) {
         openDailyHuntModal(pb)
+        return
+    }
+
+    if (pb.id === 6) {
+        openSocialSniperModal(pb)
+        return
+    }
+
+    if (pb.id === 7) {
+        openPostInterviewModal(pb)
         return
     }
 
@@ -440,6 +453,77 @@ const openDailyHuntModal = async (pb) => {
         }
     } catch (e) {}
     finally { dailyHuntLoading.value = false }
+}
+
+const isSocialSniperModalOpen = ref(false)
+const socialSniperLoading = ref(false)
+const socialSniperResult = ref(null)
+const socialSniperForm = ref({ company: '', job: '' })
+
+const openSocialSniperModal = (pb) => {
+    execPlaybook.value = pb
+    isSocialSniperModalOpen.value = true
+    socialSniperResult.value = null
+}
+
+const runSocialSniper = async () => {
+    socialSniperLoading.value = true
+    try {
+        const r = await authFetch('/api/workflows/social-sniper/generate', {
+            method: 'POST',
+            body: JSON.stringify(socialSniperForm.value)
+        })
+        const j = await r.json()
+        if (j.status === 'success') {
+            socialSniperResult.value = j.data
+        }
+    } catch (e) {}
+    finally { socialSniperLoading.value = false }
+}
+
+const isPostInterviewModalOpen = ref(false)
+const postInterviewApps = ref([])
+const postInterviewLoading = ref(false)
+const postInterviewGenerating = ref(false)
+const postInterviewSelectedApp = ref(null)
+const postInterviewResult = ref(null)
+const postInterviewDebrief = ref({ feel: 'Neutre', hard_question: '', key_need: '' })
+
+const openPostInterviewModal = async (pb) => {
+    execPlaybook.value = pb
+    isPostInterviewModalOpen.value = true
+    postInterviewLoading.value = true
+    postInterviewResult.value = null
+    postInterviewSelectedApp.value = null
+    try {
+        const r = await authFetch('/api/workflows/post-interview/apps')
+        const j = await r.json()
+        if (j.status === 'success') {
+            postInterviewApps.value = j.data
+        }
+    } catch (e) {}
+    finally { postInterviewLoading.value = false }
+}
+
+const runPostInterview = async () => {
+    if (!postInterviewSelectedApp.value) return
+    postInterviewGenerating.value = true
+    try {
+        const r = await authFetch('/api/workflows/post-interview/generate', {
+            method: 'POST',
+            body: JSON.stringify({
+                app_id: postInterviewSelectedApp.value.id,
+                company: postInterviewSelectedApp.value.company,
+                job: postInterviewSelectedApp.value.job_title,
+                debrief: postInterviewDebrief.value
+            })
+        })
+        const j = await r.json()
+        if (j.status === 'success') {
+            postInterviewResult.value = j.data
+        }
+    } catch (e) {}
+    finally { postInterviewGenerating.value = false }
 }
 
 const toggleDailyHunt = async () => {
@@ -977,7 +1061,235 @@ const syncWorkflowStatuses = async () => {
       </div>
     </Transition>
 
-    <!-- Daily Hunt Modal (Workflow #5) -->
+    <!-- Post-Interview Modal (Workflow #7) -->
+    <Transition name="fade">
+      <div v-if="isPostInterviewModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="isPostInterviewModalOpen = false">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-sm shadow-emerald-100">
+                <HandThumbUpIcon class="w-6 h-6" />
+              </div>
+              <div>
+                <h2 class="text-lg font-black text-slate-800 tracking-tight">Post-Interview</h2>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Debrief & Remerciement Stratégique</p>
+              </div>
+            </div>
+            <button @click="isPostInterviewModalOpen = false" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <!-- Step 1: Select App -->
+            <div v-if="!postInterviewSelectedApp" class="space-y-4">
+                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Sélectionnez l'entretien concerné</label>
+                <div v-if="postInterviewLoading" class="py-12 flex flex-col items-center justify-center gap-4">
+                    <ArrowPathIcon class="w-8 h-8 text-emerald-500 animate-spin" />
+                    <p class="text-sm text-slate-400">Chargement de vos entretiens...</p>
+                </div>
+                <div v-else-if="postInterviewApps.length === 0" class="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <p class="text-sm text-slate-500 mb-2">Aucun entretien en cours détecté dans le CRM.</p>
+                    <p class="text-[10px] text-slate-400 italic">Passez une candidature en statut "Interview" pour l'utiliser ici.</p>
+                </div>
+                <div v-else class="grid grid-cols-1 gap-3">
+                    <button 
+                        v-for="app in postInterviewApps" 
+                        :key="app.id"
+                        @click="postInterviewSelectedApp = app"
+                        class="p-4 rounded-xl border border-slate-100 bg-slate-50 hover:border-emerald-500 hover:bg-emerald-50/30 text-left transition-all group"
+                    >
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm">{{ app.job_title }}</p>
+                                <p class="text-xs text-slate-500">{{ app.company }}</p>
+                            </div>
+                            <ChevronRightIcon class="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Debrief Form -->
+            <div v-else-if="!postInterviewResult" class="space-y-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <button @click="postInterviewSelectedApp = null" class="p-2 rounded-lg hover:bg-slate-100 text-slate-400">
+                        <ChevronLeftIcon class="w-5 h-5" />
+                    </button>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase">Debriefing pour :</p>
+                        <p class="text-sm font-black text-slate-800">{{ postInterviewSelectedApp.company }}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Comment s'est passé l'échange ?</label>
+                        <div class="flex gap-2">
+                            <button 
+                                v-for="mood in ['Excellent', 'Bon', 'Mitigé', 'Difficile']" 
+                                :key="mood"
+                                @click="postInterviewDebrief.feel = mood"
+                                :class="postInterviewDebrief.feel === mood ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'"
+                                class="flex-1 py-2 rounded-lg text-[10px] font-bold transition-all"
+                            >{{ mood }}</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">La question la plus délicate ?</label>
+                        <textarea v-model="postInterviewDebrief.hard_question" rows="2" placeholder="Ex: Pourquoi ce trou de 6 mois dans votre CV ?" 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                        ></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Le besoin n°1 exprimé par le recruteur ?</label>
+                        <input v-model="postInterviewDebrief.key_need" type="text" placeholder="Ex: Quelqu'un capable de scaler l'infra rapidement" 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                        />
+                    </div>
+                </div>
+
+                <button @click="runPostInterview" 
+                    :disabled="postInterviewGenerating"
+                    class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-200 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                >
+                    <ArrowPathIcon v-if="postInterviewGenerating" class="w-5 h-5 animate-spin" />
+                    <span v-if="postInterviewGenerating">Analyse stratégique...</span>
+                    <span v-else>Générer mon Debrief & Email</span>
+                </button>
+            </div>
+
+            <!-- Step 3: Result -->
+            <div v-else class="space-y-6">
+                <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
+                    <h3 class="text-xs font-bold text-emerald-800 uppercase mb-2">Analyse GoldArmy :</h3>
+                    <p class="text-sm text-emerald-900 leading-relaxed">{{ postInterviewResult.analysis }}</p>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center px-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email de Remerciement</label>
+                        <button @click="copyToClipboard(postInterviewResult.thank_you_email)" class="text-[10px] font-black text-emerald-600 hover:underline uppercase">Copier l'email</button>
+                    </div>
+                    <div class="bg-slate-900 rounded-2xl p-6 text-emerald-50/90 text-sm font-medium leading-relaxed font-mono whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar">
+                        {{ postInterviewResult.thank_you_email }}
+                    </div>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex gap-3">
+                    <InformationCircleIcon class="w-5 h-5 text-amber-500 shrink-0" />
+                    <div>
+                        <h4 class="text-[10px] font-bold text-amber-800 uppercase">Plan de Relance</h4>
+                        <p class="text-xs text-amber-900">{{ postInterviewResult.follow_up_plan }}</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button @click="isPostInterviewModalOpen = false" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm transition-all hover:bg-slate-800 shadow-xl shadow-slate-200">
+                        Fermer le Debrief
+                    </button>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+    <Transition name="fade">
+      <div v-if="isSocialSniperModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="isSocialSniperModalOpen = false">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600 shadow-sm shadow-rose-100">
+                <MegaphoneIcon class="w-6 h-6" />
+              </div>
+              <div>
+                <h2 class="text-lg font-black text-slate-800 tracking-tight">Social Sniper</h2>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Arsenal d'Approche Multi-Canal</p>
+              </div>
+            </div>
+            <button @click="isSocialSniperModalOpen = false" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <!-- Form -->
+            <div v-if="!socialSniperResult" class="space-y-6">
+                <div class="bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
+                    <p class="text-[11px] text-rose-700 leading-relaxed">
+                        <span class="font-bold">Objectif :</span> Infiltrer le réseau de l'entreprise cible. L'IA génère un kit complet pour vous faire remarquer et obtenir une réponse.
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Entreprise Cible</label>
+                        <input v-model="socialSniperForm.company" type="text" placeholder="Ex: Google" 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition-all"
+                        />
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Poste Visé</label>
+                        <input v-model="socialSniperForm.job" type="text" placeholder="Ex: Senior Dev" 
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition-all"
+                        />
+                    </div>
+                </div>
+                <button @click="runSocialSniper" 
+                    :disabled="socialSniperLoading || !socialSniperForm.company"
+                    class="w-full py-4 bg-rose-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-rose-200 hover:bg-rose-700 transition-all flex items-center justify-center gap-2"
+                >
+                    <ArrowPathIcon v-if="socialSniperLoading" class="w-5 h-5 animate-spin" />
+                    <span v-if="socialSniperLoading">Analyse de la cible...</span>
+                    <span v-else>Générer mon Kit Sniper</span>
+                </button>
+            </div>
+
+            <!-- Result Kit -->
+            <div v-else class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Hook LinkedIn -->
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 relative group">
+                        <span class="absolute -top-2 left-4 px-2 bg-white text-[9px] font-bold text-rose-600 border border-rose-100 rounded-full">#1 HOOK LINKEDIN</span>
+                        <p class="text-xs text-slate-600 italic mb-3">Demande de connexion (max 300 chars)</p>
+                        <p class="text-sm font-medium text-slate-800 leading-relaxed">{{ socialSniperResult.linkedin_hook }}</p>
+                        <button @click="copyToClipboard(socialSniperResult.linkedin_hook)" class="mt-4 text-[10px] font-bold text-rose-600 hover:underline">COPIER LE HOOK</button>
+                    </div>
+
+                    <!-- Commentaire Expert -->
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 relative group">
+                        <span class="absolute -top-2 left-4 px-2 bg-white text-[9px] font-bold text-blue-600 border border-blue-100 rounded-full">#2 COMMENTAIRE EXPERT</span>
+                        <p class="text-xs text-slate-600 italic mb-3">Sous leur dernier post</p>
+                        <p class="text-sm font-medium text-slate-800 leading-relaxed">{{ socialSniperResult.expert_comment }}</p>
+                        <button @click="copyToClipboard(socialSniperResult.expert_comment)" class="mt-4 text-[10px] font-bold text-blue-600 hover:underline">COPIER LE COMMENTAIRE</button>
+                    </div>
+
+                    <!-- Follow-up -->
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 relative group">
+                        <span class="absolute -top-2 left-4 px-2 bg-white text-[9px] font-bold text-emerald-600 border border-emerald-100 rounded-full">#3 RELANCE STRATÉGIQUE</span>
+                        <p class="text-xs text-slate-600 italic mb-3">S'ils acceptent sans répondre</p>
+                        <p class="text-sm font-medium text-slate-800 leading-relaxed">{{ socialSniperResult.follow_up }}</p>
+                        <button @click="copyToClipboard(socialSniperResult.follow_up)" class="mt-4 text-[10px] font-bold text-emerald-600 hover:underline">COPIER LA RELANCE</button>
+                    </div>
+
+                    <!-- Argument Massue -->
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 relative group">
+                        <span class="absolute -top-2 left-4 px-2 bg-white text-[9px] font-bold text-amber-600 border border-amber-100 rounded-full">#4 ARGUMENT MASSUE</span>
+                        <p class="text-xs text-slate-600 italic mb-3">Ton "Unfair Advantage"</p>
+                        <p class="text-sm font-medium text-slate-800 leading-relaxed">{{ socialSniperResult.power_argument }}</p>
+                        <button @click="copyToClipboard(socialSniperResult.power_argument)" class="mt-4 text-[10px] font-bold text-amber-600 hover:underline">COPIER L'ARGUMENT</button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 rounded-2xl p-4 text-center">
+                    <p class="text-xs text-slate-400">Conseil : Postez le commentaire <span class="text-white font-bold">AVANT</span> d'envoyer la demande de connexion.</p>
+                </div>
+
+                <button @click="socialSniperResult = null" class="w-full text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest">Recommencer pour une autre cible</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
     <Transition name="fade">
       <div v-if="isDailyHuntModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="isDailyHuntModalOpen = false">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">

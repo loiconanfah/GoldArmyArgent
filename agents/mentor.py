@@ -44,6 +44,15 @@ class MentorAgent(BaseAgent):
             
             image_data = user_input.get("image_data")
             return await self._generate_portfolio(cv_text, theme=theme, image_data=image_data)
+        elif action == "social_sniper":
+            company = user_input.get("company", "l'entreprise")
+            job = user_input.get("job", "le poste")
+            return await self._generate_social_sniper_kit(cv_text, company, job)
+        elif action == "post_interview_analysis":
+            company = user_input.get("company", "l'entreprise")
+            job = user_input.get("job", "le poste")
+            debrief = user_input.get("debrief", {})
+            return await self._generate_post_interview_kit(cv_text, company, job, debrief)
         else:
              return {"status": "error", "type": "chat", "content": f"Action inconnue: {action}"}
 
@@ -393,3 +402,82 @@ IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte avant ni après, sans ba
                 "type": "chat",
                 "content": "⚠️ Une erreur est survenue lors de la structuration de ton projet. Réessaie avec une demande plus courte ou contacte le support."
             }
+
+    async def _generate_social_sniper_kit(self, cv_text: str, company: str, job: str) -> Dict[str, Any]:
+        """Génère un kit d'approche complet (Social Sniper)."""
+        logger.info(f"[Mentor] Génération Social Sniper Kit pour {company}...")
+        
+        prompt = f"""Tu es un expert en Networking Stratégique. Génère un kit d'approche pour ce poste.
+ENTREPRISE: {company}
+POSTE: {job}
+MON CV: {cv_text[:3000]}
+
+Génère 4 éléments percutants au format JSON:
+1. "linkedin_hook": Une demande de connexion LinkedIn de moins de 300 caractères.
+2. "expert_comment": Un commentaire intelligent à poster sous une publication de l'entreprise.
+3. "follow_up": Un message de relance si la personne accepte mais ne répond pas.
+4. "power_argument": Un argument massue basé sur une réussite de mon CV pour prouver ma valeur.
+
+Réponds UNIQUEMENT en JSON."""
+
+        try:
+            from llm.unified_client import UnifiedLLMClient
+            llm = UnifiedLLMClient()
+            response = await llm.generate(prompt, json_mode=True)
+            
+            # Nettoyage
+            match = re.search(r'\{.*\}', response, re.DOTALL)
+            clean = match.group(0) if match else response
+            data = json.loads(clean)
+            
+            return {
+                "status": "success",
+                "type": "social_sniper_kit",
+                "data": data
+            }
+        except Exception as e:
+            logger.error(f"[Mentor] Erreur Social Sniper: {e}")
+            return {"status": "error", "content": "Échec de génération du kit."}
+
+    async def _generate_post_interview_kit(self, cv_text: str, company: str, job: str, debrief: Dict[str, Any]) -> Dict[str, Any]:
+        """Génère un email de remerciement stratégique et une analyse de debrief."""
+        logger.info(f"[Mentor] Analyse Post-Interview pour {company}...")
+        
+        feel = debrief.get("feel", "Neutre")
+        hard_question = debrief.get("hard_question", "N/A")
+        key_need = debrief.get("key_need", "N/A")
+
+        prompt = f"""Tu es un Coach en Recrutement Senior. Analyse l'entretien qui vient d'avoir lieu.
+ENTREPRISE: {company}
+POSTE: {job}
+MON CV: {cv_text[:2500]}
+
+DEBRIEF DU CANDIDAT:
+- Ressenti: {feel}
+- Question difficile: {hard_question}
+- Besoin clé identifié: {key_need}
+
+Génère un JSON avec:
+1. "thank_you_email": Un email de remerciement stratégique (pas bateau) qui réaffirme la valeur du candidat par rapport au besoin clé identifié.
+2. "analysis": Une analyse courte des chances de succès et des points à améliorer pour la suite.
+3. "follow_up_plan": Un conseil sur quand relancer si pas de réponse.
+
+Réponds UNIQUEMENT en JSON."""
+
+        try:
+            from llm.unified_client import UnifiedLLMClient
+            llm = UnifiedLLMClient()
+            response = await llm.generate(prompt, json_mode=True)
+            
+            match = re.search(r'\{.*\}', response, re.DOTALL)
+            clean = match.group(0) if match else response
+            data = json.loads(clean)
+            
+            return {
+                "status": "success",
+                "type": "post_interview_kit",
+                "data": data
+            }
+        except Exception as e:
+            logger.error(f"[Mentor] Erreur Post-Interview: {e}")
+            return {"status": "error", "content": "Échec de l'analyse post-entretien."}
