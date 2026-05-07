@@ -183,6 +183,9 @@ async def startup_event():
         try:
             from core.ghostbuster_scheduler import start_ghostbuster_scheduler
             start_ghostbuster_scheduler()
+            
+            from core.pre_interview_scheduler import pre_interview_scheduler
+            await pre_interview_scheduler.start()
         except Exception as e:
             logger.warning(f"Non-critical Ghostbuster scheduler start error: {e}")
 
@@ -2191,4 +2194,124 @@ async def get_network_ninja_results(current_user: dict = Depends(get_current_use
         return {"status": "success", "data": doc}
     except Exception as e:
         logger.error(f"Error getting network ninja results: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==========================================
+# Pre-Interview Workflow Endpoints (#4)
+# ==========================================
+
+class PreInterviewItem(BaseModel):
+    application_id: str
+    simulation_date: str # ISO Format
+    prep_type: str # 'interview', 'star', 'both'
+
+class PreInterviewScheduleRequest(BaseModel):
+    items: List[PreInterviewItem]
+
+@app.get("/api/workflows/pre-interview/pending")
+async def get_pre_interview_pending(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Récupère les candidatures en cours (INTERVIEW ou APPLIED) pour les planifier."""
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        # Find applications with status 'INTERVIEW', 'APPLIED', or 'FOLLOW_UP'
+        cursor = db.applications.find(
+            {"user_id": user_id, "status": {"$in": ["INTERVIEW", "APPLIED", "FOLLOW_UP"]}},
+            {"_id": 0}
+        ).sort("created_at", -1)
+        
+        apps = await cursor.to_list(length=100)
+        return {"status": "success", "data": apps}
+    except Exception as e:
+        logger.error(f"Error fetching pending applications for pre-interview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/workflows/pre-interview/schedule")
+async def schedule_pre_interview(
+    req: PreInterviewScheduleRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Planifie une ou plusieurs simulations d'entretien avec des dates individuelles."""
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        
+        import uuid
+        from datetime import datetime
+        
+        app_ids = [item.application_id for item in req.items]
+        
+        # Récupérer les détails des candidatures pour enrichir les simulations
+        apps_data = await db.applications.find(
+            {"user_id": user_id, "id": {"$in": app_ids}},
+            {"_id": 0}
+        ).to_list(length=None)
+        
+        app_map = {a["id"]: a for a in apps_data}
+            
+        simulations = []
+        for item in req.items:
+            app = app_map.get(item.application_id)
+            if not app: continue
+            
+            sim_date = datetime.fromisoformat(item.simulation_date.replace("Z", "+00:00"))
+            sim_id = str(uuid.uuid4())
+            
+            simulations.append({
+                "id": sim_id,
+                "user_id": user_id,
+                "application_id": item.application_id,
+                "company_name": app.get("company_name", ""),
+                "job_title": app.get("job_title", ""),
+                "simulation_date": sim_date,
+                "prep_type": item.prep_type,
+                "status": "PENDING",
+                "created_at": datetime.utcnow(),
+                "prep_data": None
+            })
+            
+        if simulations:
+            await db.simulations.insert_many(simulations)
+            
+        return {"status": "success", "data": {"scheduled_count": len(simulations)}}
+    except Exception as e:
+        logger.error(f"Error scheduling pre-interview: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/workflows/status")
+async def get_workflows_status(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Retourne l'état d'activité de tous les workflows pour l'utilisateur."""
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        
+        # 1. Ghostbuster status
+        gb_config = await db.ghostbuster_config.find_one({"user_id": user_id})
+        gb_active = gb_config.get("auto_enabled", False) if gb_config else False
+        
+        # 2. Pre-Interview status (Active si des simulations sont prévues)
+        pending_sims = await db.simulations.count_documents({
+            "user_id": user_id,
+            "status": {"$in": ["PENDING", "PREPARED"]}
+        })
+        pre_active = pending_sims > 0
+        
+        # 3. Network Ninja (On peut stocker un état simple ou vérifier les derniers résultats)
+        ninja_res = await db.ninja_results.find_one({"user_id": user_id})
+        ninja_active = False # Par défaut, Ninja est un "run once" mais on pourrait le rendre persistant
+        
+        return {
+            "status": "success",
+            "data": {
+                "2": gb_active,
+                "4": pre_active,
+                "3": ninja_active
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error fetching workflows status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
