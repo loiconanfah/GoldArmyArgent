@@ -53,6 +53,13 @@ class MentorAgent(BaseAgent):
             job = user_input.get("job", "le poste")
             debrief = user_input.get("debrief", {})
             return await self._generate_post_interview_kit(cv_text, company, job, debrief)
+        elif action == "gold_profile_audit":
+            return await self._generate_gold_profile_audit(cv_text)
+        elif action == "gold_profile_plan":
+            return await self._generate_gold_profile_plan(cv_text)
+        elif action == "gold_profile_post":
+            topic = user_input.get("topic")
+            return await self._generate_gold_profile_post(cv_text, topic)
         else:
              return {"status": "error", "type": "chat", "content": f"Action inconnue: {action}"}
 
@@ -481,3 +488,61 @@ Réponds UNIQUEMENT en JSON."""
         except Exception as e:
             logger.error(f"[Mentor] Erreur Post-Interview: {e}")
             return {"status": "error", "content": "Échec de l'analyse post-entretien."}
+
+    async def _generate_gold_profile_audit(self, cv_text: str) -> Dict[str, Any]:
+        """Génère un audit complet du profil LinkedIn."""
+        prompt = f"""Tu es un expert LinkedIn Personal Branding. Analyse mon parcours et génère un kit d'optimisation.
+MON CV: {cv_text[:3000]}
+
+Génère un JSON avec:
+1. "headline": Un titre LinkedIn percutant (moins de 220 chars).
+2. "about": Une section 'À propos' (Sommaire) captivante utilisant le storytelling.
+3. "field_optimizations": [
+    {{"field": "Titre", "current": "...", "suggestion": "..."}},
+    {{"field": "Compétences", "suggestion": "Liste des 5 top skills à mettre en avant"}}
+   ]
+4. "profile_score": Un score sur 100 de l'état actuel.
+
+Réponds UNIQUEMENT en JSON."""
+        return await self._call_llm_json(prompt, "gold_profile_audit")
+
+    async def _generate_gold_profile_plan(self, cv_text: str) -> Dict[str, Any]:
+        """Génère un plan de contenu de 30 jours (titres)."""
+        prompt = f"""Tu es un stratège de contenu LinkedIn. Basé sur mon CV, génère exactement 30 thèmes de publications pour démontrer mon expertise sur un mois complet.
+MON CV: {cv_text[:3000]}
+
+Génère un JSON avec:
+"plan": [
+  {{"day": 1, "topic": "Titre du sujet", "angle": "L'approche à prendre"}},
+  ... jusqu'au jour 30
+]
+
+Consignes: Mixe entre expertise technique, opinion sur le secteur, et retours d'expérience. Réponds UNIQUEMENT en JSON."""
+        return await self._call_llm_json(prompt, "gold_profile_plan")
+
+    async def _generate_gold_profile_post(self, cv_text: str, topic: str) -> Dict[str, Any]:
+        """Génère un post LinkedIn complet pour un sujet donné."""
+        prompt = f"""Rédige un post LinkedIn viral et professionnel sur le sujet : {topic}.
+MON CV: {cv_text[:2000]}
+
+Structure:
+- Accroche forte (Hook)
+- Corps du texte avec sauts de lignes fréquents
+- Call to Action (CTA) à la fin
+- 3 hashtags pertinents.
+
+Réponds UNIQUEMENT en JSON: {{"post_content": "..."}}"""
+        return await self._call_llm_json(prompt, "gold_profile_post")
+
+    async def _call_llm_json(self, prompt: str, action_name: str) -> Dict[str, Any]:
+        try:
+            from llm.unified_client import UnifiedLLMClient
+            llm = UnifiedLLMClient()
+            response = await llm.generate(prompt, json_mode=True)
+            match = re.search(r'\{.*\}', response, re.DOTALL)
+            clean = match.group(0) if match else response
+            data = json.loads(clean)
+            return {"status": "success", "type": action_name, "data": data}
+        except Exception as e:
+            logger.error(f"[Mentor] Erreur {action_name}: {e}")
+            return {"status": "error", "content": f"Échec de l'action {action_name}."}

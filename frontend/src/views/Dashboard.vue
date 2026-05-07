@@ -95,7 +95,7 @@ const playbooks = ref([
   { id: 5, name: 'Daily Hunt', desc: 'Chasse Matinale (Cron)', fullDesc: "S'exécute tous les matins à 7h00. Scanne le web pour trouver 5 nouvelles offres d'emploi correspondant exactement à votre profil et les ajoute au CRM.", icon: MagnifyingGlassIcon, active: false },
   { id: 6, name: 'Social Sniper', desc: 'Kit d\'Approche Multi-Canal', fullDesc: "Génère un arsenal complet pour infiltrer l'entreprise : Accroche LinkedIn, Commentaire expert, Relance et argument massue personnalisé.", icon: MegaphoneIcon, active: false },
   { id: 7, name: 'Post-Interview', desc: 'Debrief & Remerciement', fullDesc: "S'active après un entretien. Génère un email de remerciement stratégique et met à jour le statut de la candidature dans le CRM.", icon: HandThumbUpIcon, active: false },
-  { id: 8, name: 'Cold Call', desc: 'Script Téléphonique', fullDesc: "Prépare un script d'appel téléphonique sur mesure pour contacter directement un recruteur ou un manager, avec gestion des objections.", icon: PhoneIcon, active: false },
+  { id: 8, name: 'Gold Profile', desc: 'Personal Branding LinkedIn', fullDesc: "Optimise votre profil LinkedIn à 100% : Bio, champs clés, et stratégie de contenu. Génère un plan de publication sur 30 jours et vous envoie chaque matin votre post prêt-à-publier par email.", icon: SparklesIcon, active: false },
   { id: 9, name: 'Rejection Pivot', desc: 'Rebond & Alternatives', fullDesc: "Suite à un refus, envoie un email demandant du feedback constructif, et trouve instantanément 3 offres similaires pour rebondir.", icon: ArrowPathIcon, active: false },
   { id: 10, name: 'Smart Cover', desc: 'Lettre d\'Actualité', fullDesc: "Rédige une lettre de motivation dynamique en intégrant la dernière actualité pertinente de l'entreprise ciblée.", icon: DocumentTextIcon, active: false }
 ])
@@ -163,6 +163,17 @@ const togglePlaybook = async (pb) => {
         // Ouvre la sélection pour le Workflow 10
         isSelectionModalOpen.value = true
         execPlaybook.value = pb
+        return
+    }
+
+    if (pb.id === 8) {
+        openGoldProfileModal(pb)
+        return
+    }
+
+    if (pb.id === 9) {
+        // Ghostbuster — vrai workflow
+        openGhostbusterModal(pb)
         return
     }
 
@@ -539,6 +550,60 @@ const runPostInterview = async () => {
         }
     } catch (e) {}
     finally { postInterviewGenerating.value = false }
+}
+
+const isGoldProfileModalOpen = ref(false)
+const goldProfileStep = ref('audit') // 'audit', 'plan', 'post'
+const goldProfileLoading = ref(false)
+const goldProfileAuditData = ref(null)
+const goldProfilePlanData = ref(null)
+const goldProfilePostData = ref(null)
+const goldProfileSelectedTopic = ref(null)
+
+const openGoldProfileModal = async (pb) => {
+    execPlaybook.value = pb
+    isGoldProfileModalOpen.value = true
+    goldProfileStep.value = 'audit'
+    goldProfileLoading.value = true
+    try {
+        const r = await authFetch('/api/workflows/gold-profile/audit')
+        const j = await r.json()
+        if (j.status === 'success') {
+            goldProfileAuditData.value = j.data
+        }
+    } catch (e) {}
+    finally { goldProfileLoading.value = false }
+}
+
+const fetchGoldProfilePlan = async () => {
+    goldProfileStep.value = 'plan'
+    if (goldProfilePlanData.value) return
+    goldProfileLoading.value = true
+    try {
+        const r = await authFetch('/api/workflows/gold-profile/plan')
+        const j = await r.json()
+        if (j.status === 'success') {
+            goldProfilePlanData.value = j.data.plan
+        }
+    } catch (e) {}
+    finally { goldProfileLoading.value = false }
+}
+
+const generateGoldProfilePost = async (topic) => {
+    goldProfileSelectedTopic.value = topic
+    goldProfileStep.value = 'post'
+    goldProfileLoading.value = true
+    try {
+        const r = await authFetch('/api/workflows/gold-profile/post', {
+            method: 'POST',
+            body: JSON.stringify({ topic: topic.topic })
+        })
+        const j = await r.json()
+        if (j.status === 'success') {
+            goldProfilePostData.value = j.data.post_content
+        }
+    } catch (e) {}
+    finally { goldProfileLoading.value = false }
 }
 
 const toggleDailyHunt = async () => {
@@ -1072,6 +1137,189 @@ const syncWorkflowStatuses = async () => {
              </button>
           </div>
 
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Gold Profile Modal (Workflow #8) -->
+    <Transition name="fade">
+      <div v-if="isGoldProfileModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="isGoldProfileModalOpen = false">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+          <!-- Header -->
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                <SparklesIcon class="w-6 h-6" />
+              </div>
+              <div>
+                <h2 class="text-lg font-black text-slate-800 tracking-tight">Gold Profile</h2>
+                <div class="flex items-center gap-2">
+                    <span :class="goldProfileStep === 'audit' ? 'text-indigo-600 font-bold' : 'text-slate-400'" class="text-[10px] uppercase tracking-wider transition-colors">1. Audit</span>
+                    <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                    <span :class="goldProfileStep === 'plan' ? 'text-indigo-600 font-bold' : 'text-slate-400'" class="text-[10px] uppercase tracking-wider transition-colors">2. Stratégie</span>
+                    <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                    <span :class="goldProfileStep === 'post' ? 'text-indigo-600 font-bold' : 'text-slate-400'" class="text-[10px] uppercase tracking-wider transition-colors">3. Publication</span>
+                </div>
+              </div>
+            </div>
+            <button @click="isGoldProfileModalOpen = false" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+              <XMarkIcon class="w-5 h-5" />
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+            
+            <!-- Loading State -->
+            <div v-if="goldProfileLoading" class="py-20 flex flex-col items-center justify-center gap-6">
+                <div class="relative">
+                    <div class="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <SparklesIcon class="w-6 h-6 text-indigo-600 absolute inset-0 m-auto animate-pulse" />
+                </div>
+                <div class="text-center">
+                    <p class="text-slate-800 font-black">L'IA façonne votre influence...</p>
+                    <p class="text-xs text-slate-400 mt-1">Analyse des algorithmes LinkedIn en cours</p>
+                </div>
+            </div>
+
+            <!-- STEP 1: AUDIT & OPTIMIZATION -->
+            <div v-else-if="goldProfileStep === 'audit'" class="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Headline & About -->
+                    <div class="space-y-6">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Titre (Headline) Optimisé</label>
+                            <div class="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl relative group">
+                                <p class="text-sm font-bold text-slate-800 leading-snug">{{ goldProfileAuditData?.headline }}</p>
+                                <button @click="copyToClipboard(goldProfileAuditData?.headline)" class="absolute top-2 right-2 p-2 bg-white rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <DocumentDuplicateIcon class="w-4 h-4 text-indigo-600" />
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Résumé (About) Storytelling</label>
+                            <div class="p-5 bg-slate-900 rounded-2xl relative group">
+                                <p class="text-sm text-indigo-50/90 leading-relaxed whitespace-pre-wrap">{{ goldProfileAuditData?.about }}</p>
+                                <button @click="copyToClipboard(goldProfileAuditData?.about)" class="absolute top-2 right-2 p-2 bg-slate-800 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <DocumentDuplicateIcon class="w-4 h-4 text-white" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Score & Fields -->
+                    <div class="space-y-6">
+                        <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Score de Profil</p>
+                                <p class="text-3xl font-black text-slate-800">{{ goldProfileAuditData?.profile_score }}<span class="text-sm text-slate-300">/100</span></p>
+                            </div>
+                            <div class="w-16 h-16 rounded-full border-8 border-slate-100 border-t-indigo-600 flex items-center justify-center font-black text-indigo-600">
+                                {{ goldProfileAuditData?.profile_score }}%
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Actions Prioritaires</label>
+                            <div v-for="opt in goldProfileAuditData?.field_optimizations" :key="opt.field" class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex gap-4">
+                                <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 shadow-sm shrink-0">
+                                    <CheckCircleIcon class="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p class="text-xs font-black text-slate-800 uppercase">{{ opt.field }}</p>
+                                    <p class="text-xs text-slate-500 mt-1">{{ opt.suggestion }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-10 flex gap-4">
+                    <button @click="fetchGoldProfilePlan" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+                        <span>Établir ma Stratégie de Contenu</span>
+                        <ChevronRightIcon class="w-5 h-5" />
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2: CONTENT PLAN -->
+            <div v-else-if="goldProfileStep === 'plan'" class="animate-in fade-in slide-in-from-right-4 duration-500">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-tight">Votre Plan de Publication (30 Jours)</h3>
+                    <button @click="goldProfileStep = 'audit'" class="text-[10px] font-bold text-indigo-600 uppercase hover:underline flex items-center gap-1">
+                        <ChevronLeftIcon class="w-4 h-4" /> Retour à l'Audit
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-for="item in goldProfilePlanData" :key="item.day" 
+                        @click="generateGoldProfilePost(item)"
+                        class="p-4 bg-white border border-slate-100 rounded-2xl hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group flex items-start gap-4"
+                    >
+                        <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-xs font-black text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                            J{{ item.day }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-black text-slate-800 truncate">{{ item.topic }}</p>
+                            <p class="text-[10px] text-slate-400 font-medium uppercase mt-1">{{ item.angle }}</p>
+                        </div>
+                        <ArrowPathIcon class="w-5 h-5 text-slate-200 group-hover:text-indigo-500 transition-colors" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: POST CONTENT -->
+            <div v-else-if="goldProfileStep === 'post'" class="animate-in fade-in zoom-in-95 duration-500">
+                <div class="max-w-xl mx-auto space-y-6">
+                    <div class="flex items-center justify-between">
+                        <button @click="goldProfileStep = 'plan'" class="text-[10px] font-bold text-slate-400 uppercase hover:text-slate-600 flex items-center gap-1">
+                            <ChevronLeftIcon class="w-4 h-4" /> Retour au Plan
+                        </button>
+                        <div class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase">Prêt à publier</div>
+                    </div>
+
+                    <div class="bg-indigo-50/30 p-4 rounded-2xl border border-indigo-100">
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase mb-1">Sujet du Jour :</p>
+                        <p class="text-sm font-black text-indigo-900">{{ goldProfileSelectedTopic?.topic }}</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-2xl shadow-indigo-100/50">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-black">
+                                    {{ userEmail.charAt(0).toUpperCase() }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-900">{{ userEmail.split('@')[0] }}</p>
+                                    <p class="text-[10px] text-slate-400">Maintenant • Public</p>
+                                </div>
+                            </div>
+                            <div class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap font-medium">
+                                {{ goldProfilePostData }}
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <button @click="copyToClipboard(goldProfilePostData)" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2">
+                                <DocumentDuplicateIcon class="w-5 h-5" />
+                                <span>Copier le Post</span>
+                            </button>
+                            <button @click="isGoldProfileModalOpen = false" class="px-8 py-4 bg-white border border-slate-200 rounded-2xl font-black text-sm text-slate-600 hover:bg-slate-50 transition-all">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+          </div>
+          
+          <!-- Footer info -->
+          <div v-if="goldProfileStep === 'audit'" class="p-6 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+             <div class="flex items-center gap-2">
+                 <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                 Expert Personal Branding actif
+             </div>
+             <p>Optimisé pour l'algorithme LinkedIn 2024</p>
+          </div>
         </div>
       </div>
     </Transition>

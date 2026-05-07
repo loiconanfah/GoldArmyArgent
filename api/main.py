@@ -2440,3 +2440,77 @@ async def generate_post_interview(
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/workflows/gold-profile/audit")
+async def gold_profile_audit(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        user = await db.users.find_one({"id": user_id})
+        cv_text = user.get("cv_text", "")
+        
+        from agents.mentor import MentorAgent
+        mentor = MentorAgent()
+        result = await mentor.think({
+            "action": "gold_profile_audit",
+            "cv_text": cv_text
+        })
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/workflows/gold-profile/plan")
+async def gold_profile_plan(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        # Chercher un plan existant
+        existing = await db.gold_profile_plans.find_one({"user_id": user_id})
+        if existing:
+            return {"status": "success", "data": {"plan": existing["plan"]}}
+            
+        user = await db.users.find_one({"id": user_id})
+        cv_text = user.get("cv_text", "")
+        
+        from agents.mentor import MentorAgent
+        mentor = MentorAgent()
+        result = await mentor.think({
+            "action": "gold_profile_plan",
+            "cv_text": cv_text
+        })
+        
+        if result["status"] == "success":
+            await db.gold_profile_plans.update_one(
+                {"user_id": user_id},
+                {"$set": {"plan": result["data"]["plan"], "updated_at": datetime.utcnow()}},
+                upsert=True
+            )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/workflows/gold-profile/post")
+async def gold_profile_post(
+    req: Dict[str, Any],
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        user = await db.users.find_one({"id": user_id})
+        cv_text = user.get("cv_text", "")
+        
+        from agents.mentor import MentorAgent
+        mentor = MentorAgent()
+        result = await mentor.think({
+            "action": "gold_profile_post",
+            "cv_text": cv_text,
+            "topic": req.get("topic")
+        })
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
