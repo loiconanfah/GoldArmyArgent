@@ -1,6 +1,6 @@
 <script setup>
 import { authFetch } from '../utils/auth'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { 
   PlayIcon, 
@@ -995,35 +995,32 @@ const syncWorkflowStatuses = async () => {
         const j = await r.json()
         if (j.status === 'success') {
             const statusMap = j.data
-            isSyncing = true
             playbooks.value.forEach(pb => {
-                if (statusMap[pb.id] !== undefined) {
-                    pb.active = statusMap[pb.id]
+                // Keys come back as strings from JSON
+                const key = String(pb.id)
+                if (statusMap[key] !== undefined) {
+                    pb.active = statusMap[key]
                 }
             })
-            // Reset sync flag on next tick
-            setTimeout(() => { isSyncing = false }, 100)
         }
     } catch (e) {
         console.warn('[Workflows] Failed to sync statuses', e)
     }
 }
 
-let isSyncing = false;
-
-watch(() => playbooks.value.map(p => ({id: p.id, active: p.active})), async (newVals, oldVals) => {
-    if (!oldVals || isSyncing) return;
-    for (let i = 0; i < newVals.length; i++) {
-        if (newVals[i].active !== oldVals[i].active) {
-            try {
-                await authFetch('/api/workflows/status', {
-                    method: 'POST',
-                    body: JSON.stringify({ workflow_id: newVals[i].id, active: newVals[i].active })
-                })
-            } catch(e) { console.error('Failed to save workflow status', e) }
-        }
+const saveWorkflowStatus = async (pb) => {
+    pb.active = !pb.active
+    try {
+        await authFetch('/api/workflows/status', {
+            method: 'POST',
+            body: JSON.stringify({ workflow_id: pb.id, active: pb.active })
+        })
+    } catch(e) {
+        // Rollback on error
+        pb.active = !pb.active
+        console.error('Failed to save workflow status', e)
     }
-}, { deep: true })
+}
 
 </script>
 
@@ -1064,7 +1061,7 @@ watch(() => playbooks.value.map(p => ({id: p.id, active: p.active})), async (new
           :style="`animation-delay: ${0.05 * index}s;`">
         
         <!-- Active indicator / Toggle -->
-        <div class="absolute top-3 right-3 z-10" @click.stop="pb.active = !pb.active" title="Garder le workflow actif">
+        <div class="absolute top-3 right-3 z-10" @click.stop="saveWorkflowStatus(pb)" title="Garder le workflow actif">
             <div class="w-8 h-4 rounded-full p-0.5 transition-colors duration-300 flex items-center cursor-pointer"
                  :class="pb.active ? 'bg-emerald-500' : 'bg-slate-200 hover:bg-slate-300'">
                 <div class="w-3 h-3 bg-white rounded-full transition-transform duration-300 shadow-sm"
