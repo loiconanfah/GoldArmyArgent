@@ -1,6 +1,7 @@
 <script setup>
 import { authFetch } from '../utils/auth'
 import { ref, computed, onMounted } from 'vue'
+import WorkflowPipelineBuilder from '../components/WorkflowPipelineBuilder.vue'
 import { useI18n } from 'vue-i18n'
 import { 
   PlayIcon, 
@@ -1084,6 +1085,11 @@ const saveWorkflowStatus = async (pb) => {
         <!-- Background subtle glow if active -->
         <div v-if="pb.active" class="absolute -bottom-6 -right-6 w-16 h-16 bg-indigo-50 rounded-full blur-xl -z-10"></div>
       </button>
+    </div>
+
+    <!-- ═══ PIPELINE BUILDER ═══ -->
+    <div class="mt-6 mb-6 animate-slide-up" style="animation-delay: 0.45s;">
+      <WorkflowPipelineBuilder :playbooks="playbooks" />
     </div>
 
     <!-- ANCIENNES CARTES KPI A LA PLACE DES GRAPHIQUES -->
