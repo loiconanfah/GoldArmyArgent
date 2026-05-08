@@ -279,6 +279,9 @@ class TrackEventRequest(BaseModel):
     page_url: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
 
+class RejectionPivotRequest(BaseModel):
+    app_id: str
+
 @app.post("/api/users/push-token")
 async def register_push_token(
     request: PushTokenRequest,
@@ -2283,6 +2286,51 @@ async def schedule_pre_interview(
         logger.error(f"Error scheduling pre-interview: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==========================================
+# Rejection Pivot Workflow Endpoints (#9)
+# ==========================================
+
+@app.get("/api/workflows/rejection-pivot/rejected")
+async def get_rejected_applications(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """Récupère les candidatures avec le statut REJECTED."""
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        cursor = db.applications.find(
+            {"user_id": user_id, "status": "REJECTED"},
+            {"_id": 0}
+        ).sort("updated_at", -1)
+        apps = await cursor.to_list(length=100)
+        return {"status": "success", "data": apps}
+    except Exception as e:
+        logger.error(f"Error fetching rejected applications: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/workflows/rejection-pivot/generate")
+async def generate_rejection_pivot(
+    req: RejectionPivotRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Lance le workflow Rejection Pivot pour une candidature."""
+    try:
+        from agents.rejection_pivot_agent import rejection_pivot_agent
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        
+        await rejection_pivot_agent.initialize()
+        result = await rejection_pivot_agent.run_pivot(user_id, req.app_id)
+        
+        if result.get("status") == "error":
+            raise HTTPException(status_code=400, detail=result.get("message"))
+            
+        return {"status": "success", "data": result}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error running rejection pivot: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/workflows/status")
 async def get_workflows_status(
     current_user: dict = Depends(get_current_user),
@@ -2486,7 +2534,7 @@ async def gold_profile_plan(
         if result["status"] == "success":
             await db.gold_profile_plans.update_one(
                 {"user_id": user_id},
-                {"$set": {"plan": result["data"]["plan"], "updated_at": datetime.utcnow()}},
+                {"$set": {"plan": result["data"]["plan"], "updated_at": datetime.datetime.utcnow()}},
                 upsert=True
             )
         return result

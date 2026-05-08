@@ -126,6 +126,15 @@ const ghostbusterCopied = ref({})             // { app_id_email: true, ... }
 const ghostbusterSent = ref({})               // { app_id: 'email'|'linkedin'|'manual' }
 const ghostbusterChainTo = ref('none')        // 'none' | 'network_ninja' | 'post_interview'
 
+// ── Rejection Pivot state ──
+const isRejectionPivotModalOpen = ref(false)
+const isRejectionPivotRunning = ref(false)
+const rejectionPivotResults = ref(null)
+const rejectedApps = ref([])
+const rejectionPivotLoading = ref(false)
+const rejectionPivotSelectedApp = ref(null)
+const rejectionPivotCopied = ref(false)
+
 const isPremium = computed(() => {
     try {
         const u = localStorage.getItem('user')
@@ -172,8 +181,8 @@ const togglePlaybook = async (pb) => {
     }
 
     if (pb.id === 9) {
-        // Ghostbuster — vrai workflow
-        openGhostbusterModal(pb)
+        // Rejection Pivot — vrai workflow
+        openRejectionPivotModal(pb)
         return
     }
 
@@ -321,6 +330,66 @@ const closeGhostbusterModal = () => {
     ghostbusterExpandedEmail.value = null
     ghostbusterExpandedLinkedin.value = null
     ghostbusterError.value = ''
+}
+
+// ─── Rejection Pivot functions ───
+
+const openRejectionPivotModal = async (pb) => {
+    execPlaybook.value = pb
+    isRejectionPivotModalOpen.value = true
+    rejectionPivotResults.value = null
+    rejectionPivotSelectedApp.value = null
+    await fetchRejectedApps()
+}
+
+const fetchRejectedApps = async () => {
+    rejectionPivotLoading.value = true
+    try {
+        const r = await authFetch('/api/workflows/rejection-pivot/rejected')
+        const j = await r.json()
+        if (j.status === 'success') {
+            rejectedApps.value = j.data
+        }
+    } catch(e) { console.error('[RejectionPivot] Fetch apps failed', e) }
+    finally { rejectionPivotLoading.value = false }
+}
+
+const runRejectionPivot = async (appId) => {
+    if (!appId) return
+    const app = rejectedApps.value.find(a => a.id === appId)
+    rejectionPivotSelectedApp.value = app
+    isRejectionPivotRunning.value = true
+    rejectionPivotResults.value = null
+    
+    try {
+        const r = await authFetch('/api/workflows/rejection-pivot/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ app_id: appId })
+        })
+        const j = await r.json()
+        if (j.status === 'success') {
+            rejectionPivotResults.value = j.data
+            // Marquer le playbook comme actif
+            const pb = playbooks.value.find(p => p.id === 9)
+            if (pb) pb.active = true
+        }
+    } catch(e) { console.error('[RejectionPivot] Execution failed', e) }
+    finally { isRejectionPivotRunning.value = false }
+}
+
+const copyFeedbackEmail = async (text) => {
+    try {
+        await navigator.clipboard.writeText(text)
+        rejectionPivotCopied.value = true
+        setTimeout(() => { rejectionPivotCopied.value = false }, 2500)
+    } catch(e) { console.warn('Clipboard failed', e) }
+}
+
+const closeRejectionPivotModal = () => {
+    isRejectionPivotModalOpen.value = false
+    rejectionPivotResults.value = null
+    rejectionPivotSelectedApp.value = null
 }
 
 const formatRelativeDate = (isoStr) => {
@@ -1181,63 +1250,128 @@ const syncWorkflowStatuses = async () => {
                 </div>
             </div>
 
-            <!-- STEP 1: AUDIT & OPTIMIZATION -->
-            <div v-else-if="goldProfileStep === 'audit'" class="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Headline & About -->
-                    <div class="space-y-6">
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Titre (Headline) Optimisé</label>
-                            <div class="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl relative group">
-                                <p class="text-sm font-bold text-slate-800 leading-snug">{{ goldProfileAuditData?.headline }}</p>
-                                <button @click="copyToClipboard(goldProfileAuditData?.headline)" class="absolute top-2 right-2 p-2 bg-white rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <DocumentDuplicateIcon class="w-4 h-4 text-indigo-600" />
-                                </button>
-                            </div>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Résumé (About) Storytelling</label>
-                            <div class="p-5 bg-slate-900 rounded-2xl relative group">
-                                <p class="text-sm text-indigo-50/90 leading-relaxed whitespace-pre-wrap">{{ goldProfileAuditData?.about }}</p>
-                                <button @click="copyToClipboard(goldProfileAuditData?.about)" class="absolute top-2 right-2 p-2 bg-slate-800 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <DocumentDuplicateIcon class="w-4 h-4 text-white" />
-                                </button>
-                            </div>
+            <!-- STEP 1: AUDIT & OPTIMIZATION (REFONTE TOTALE) -->
+            <div v-else-if="goldProfileStep === 'audit'" class="space-y-12 animate-in fade-in duration-700">
+                
+                <!-- Hero Audit Section -->
+                <div class="flex flex-col md:flex-row gap-8 items-center bg-slate-50/50 rounded-[3rem] p-10 border border-slate-100">
+                    <div class="relative shrink-0">
+                        <svg class="w-32 h-32 transform -rotate-90">
+                            <circle cx="64" cy="64" r="58" stroke="currentColor" stroke-width="8" fill="transparent" class="text-slate-200" />
+                            <circle cx="64" cy="64" r="58" stroke="currentColor" stroke-width="8" fill="transparent" 
+                                :stroke-dasharray="364.4" 
+                                :stroke-dashoffset="364.4 * (1 - (goldProfileAuditData?.profile_score || 0) / 100)" 
+                                class="text-[#E85D3E] transition-all duration-1000 ease-out" 
+                            />
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-3xl font-black text-slate-800">{{ goldProfileAuditData?.profile_score }}</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Score</span>
                         </div>
                     </div>
-
-                    <!-- Score & Fields -->
-                    <div class="space-y-6">
-                        <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Score de Profil</p>
-                                <p class="text-3xl font-black text-slate-800">{{ goldProfileAuditData?.profile_score }}<span class="text-sm text-slate-300">/100</span></p>
-                            </div>
-                            <div class="w-16 h-16 rounded-full border-8 border-slate-100 border-t-indigo-600 flex items-center justify-center font-black text-indigo-600">
-                                {{ goldProfileAuditData?.profile_score }}%
-                            </div>
-                        </div>
-
-                        <div class="space-y-3">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Actions Prioritaires</label>
-                            <div v-for="opt in goldProfileAuditData?.field_optimizations" :key="opt.field" class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex gap-4">
-                                <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-slate-400 shadow-sm shrink-0">
-                                    <CheckCircleIcon class="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <p class="text-xs font-black text-slate-800 uppercase">{{ opt.field }}</p>
-                                    <p class="text-xs text-slate-500 mt-1">{{ opt.suggestion }}</p>
-                                </div>
-                            </div>
+                    <div class="flex-1 text-center md:text-left">
+                        <h3 class="text-2xl font-black text-slate-800 leading-tight">Analyse de Performance</h3>
+                        <p class="text-slate-500 text-sm mt-2 max-w-md">
+                            Votre profil a été audité par l'intelligence artificielle de GoldArmy. 
+                            Voici les ajustements critiques pour maximiser votre visibilité algorithmique.
+                        </p>
+                    </div>
+                    <div class="shrink-0 flex gap-2">
+                        <div class="px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                            <span class="text-[10px] font-black text-slate-600 uppercase">Certifié Expert</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-10 flex gap-4">
-                    <button @click="fetchGoldProfilePlan" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-                        <span>Établir ma Stratégie de Contenu</span>
-                        <ChevronRightIcon class="w-5 h-5" />
-                    </button>
+                <!-- Bento Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Left: Headline Optimization -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
+                            <div class="flex items-center justify-between mb-6">
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Accroche (Headline)</h4>
+                                <button @click="copyToClipboard(goldProfileAuditData?.headline)" class="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                                    <DocumentDuplicateIcon class="w-4 h-4 text-slate-300 group-hover:text-[#E85D3E]" />
+                                </button>
+                            </div>
+                            <p class="text-xl font-bold text-slate-800 leading-snug tracking-tight">
+                                {{ goldProfileAuditData?.headline }}
+                            </p>
+                        </div>
+
+                        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden">
+                             <div class="flex items-center justify-between mb-8">
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Résumé (About) LinkedIn</h4>
+                                <button @click="copyToClipboard(goldProfileAuditData?.about)" class="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black hover:bg-slate-900 hover:text-white transition-all uppercase">
+                                    Copier le résumé
+                                </button>
+                            </div>
+                            <div class="prose prose-slate max-w-none">
+                                <p class="text-base text-slate-600 leading-[1.8] font-medium whitespace-pre-wrap italic opacity-90">
+                                    "{{ goldProfileAuditData?.about }}"
+                                </p>
+                            </div>
+                            <!-- Subtle decoration -->
+                            <div class="absolute bottom-0 right-0 p-4 opacity-[0.03] pointer-events-none">
+                                <ChatBubbleLeftRightIcon class="w-32 h-32" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Field Checklist (REFONTE) -->
+                    <div class="space-y-6">
+                        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
+                            <div class="flex items-center justify-between mb-8">
+                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Checklist d'Impact</h4>
+                                <span class="px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-[8px] font-black uppercase tracking-tighter">Priorité Haute</span>
+                            </div>
+                            
+                            <div class="space-y-8">
+                                <div v-for="(opt, i) in goldProfileAuditData?.field_optimizations" :key="i" class="relative pl-8 group">
+                                    <!-- Vertical Line -->
+                                    <div v-if="i < (goldProfileAuditData?.field_optimizations.length - 1)" class="absolute left-[11px] top-6 w-[2px] h-10 bg-slate-50 group-hover:bg-[#E85D3E]/20 transition-colors"></div>
+                                    
+                                    <!-- Icon/Bullet -->
+                                    <div class="absolute left-0 top-1 w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:border-[#E85D3E] group-hover:bg-[#E85D3E]/5 transition-all">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-[#E85D3E] transition-colors"></div>
+                                    </div>
+
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-[10px] font-black text-slate-800 uppercase tracking-tight">{{ opt.field }}</p>
+                                            <span class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-1.5 rounded-md">+{{ 15 - i * 2 }}% visibilité</span>
+                                        </div>
+                                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">{{ opt.suggestion }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stratégie 30 Jours (REFONTE ÉPURÉE) -->
+                        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm text-center relative group overflow-hidden">
+                            <div class="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-300 group-hover:text-[#E85D3E] group-hover:bg-[#E85D3E]/5 transition-all duration-500">
+                                <CalendarIcon class="w-8 h-8" />
+                            </div>
+                            
+                            <h5 class="text-lg font-black text-slate-800 mb-2">Stratégie 30 Jours</h5>
+                            <p class="text-xs text-slate-400 leading-relaxed max-w-[200px] mx-auto font-medium">
+                                Transformez votre nouveau profil en une machine à attirer des prospects.
+                            </p>
+
+                            <button @click="fetchGoldProfilePlan" 
+                                class="mt-8 w-full py-4 bg-[#E85D3E] text-white rounded-2xl font-black text-[11px] uppercase shadow-xl shadow-[#E85D3E]/20 hover:shadow-[#E85D3E]/40 hover:-translate-y-1 transition-all"
+                            >
+                                Générer mon Calendrier
+                            </button>
+                            
+                            <!-- Small badge -->
+                            <div class="absolute top-4 right-4">
+                                <div class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[8px] font-black uppercase">Plan Ready</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2063,6 +2197,163 @@ const syncWorkflowStatuses = async () => {
 
           </div>
           
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Modal: Rejection Pivot -->
+    <Transition name="fade">
+      <div v-if="isRejectionPivotModalOpen" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+           
+           <!-- Header -->
+           <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
+              <div class="flex items-center gap-4">
+                 <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 shadow-sm">
+                    <ArrowPathIcon class="w-7 h-7"/>
+                 </div>
+                 <div>
+                    <h3 class="text-xl font-black text-slate-800">Rejection Pivot</h3>
+                    <p class="text-xs text-slate-500 font-medium tracking-tight">TRANSFORMER UN REFUS EN OPPORTUNITÉ</p>
+                 </div>
+              </div>
+              <button @click="closeRejectionPivotModal" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                 <XMarkIcon class="w-6 h-6 text-slate-400"/>
+              </button>
+           </div>
+
+           <!-- Body -->
+           <div class="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/30">
+              
+              <!-- State 1: Selection -->
+              <div v-if="!rejectionPivotResults && !isRejectionPivotRunning" class="max-w-2xl mx-auto py-10 text-center">
+                 <h4 class="text-lg font-bold text-slate-800 mb-6">Quelle candidature souhaitez-vous pivoter ?</h4>
+                 
+                 <div v-if="rejectionPivotLoading" class="flex flex-col items-center py-10">
+                    <ArrowPathIcon class="w-10 h-10 text-indigo-500 animate-spin mb-4"/>
+                    <p class="text-sm text-slate-500">Recherche des refus récents...</p>
+                 </div>
+
+                 <div v-else-if="rejectedApps.length === 0" class="p-10 bg-white border border-slate-200 rounded-3xl shadow-sm">
+                    <p class="text-slate-500 mb-6">Aucune candidature marquée "REJECTED" n'a été trouvée dans votre CRM.</p>
+                    <p class="text-xs text-slate-400">Pour utiliser ce workflow, glissez une carte vers la colonne "Refus" dans votre Pipeline.</p>
+                 </div>
+
+                 <div v-else class="space-y-3 text-left">
+                    <div v-for="app in rejectedApps" :key="app.id" 
+                         @click="runRejectionPivot(app.id)"
+                         class="p-4 bg-white border border-slate-200 rounded-2xl hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex items-center justify-between">
+                       <div class="flex items-center gap-4">
+                          <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">
+                             <BriefcaseIcon class="w-5 h-5"/>
+                          </div>
+                          <div>
+                             <p class="font-bold text-slate-800">{{ app.job_title }}</p>
+                             <p class="text-xs text-slate-500">{{ app.company_name }} • {{ formatRelativeDate(app.updated_at) }}</p>
+                          </div>
+                       </div>
+                       <ChevronRightIcon class="w-5 h-5 text-slate-300 group-hover:text-orange-500"/>
+                    </div>
+                 </div>
+              </div>
+
+              <!-- State 2: Running -->
+              <div v-if="isRejectionPivotRunning" class="flex flex-col items-center justify-center py-20 animate-pulse">
+                 <div class="relative mb-8">
+                    <div class="w-20 h-20 bg-orange-100 rounded-full animate-ping absolute inset-0 opacity-20"></div>
+                    <div class="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-white relative shadow-xl">
+                       <SparklesIcon class="w-10 h-10"/>
+                    </div>
+                 </div>
+                 <h4 class="text-xl font-bold text-slate-800 mb-2">Analyse du Pivot en cours</h4>
+                 <p class="text-sm text-slate-500">L'Agent #9 génère votre stratégie de rebond...</p>
+              </div>
+
+              <!-- State 3: Results -->
+              <div v-if="rejectionPivotResults" class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-slide-up">
+                 
+                 <!-- Left: Feedback Email -->
+                 <div class="space-y-6">
+                    <div>
+                       <h5 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">1. DEMANDE DE FEEDBACK</h5>
+                       <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                          <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                             <span class="text-[10px] font-bold text-slate-400">EMAIL DE REBOND</span>
+                             <button @click="copyFeedbackEmail(rejectionPivotResults.feedback_email)" 
+                                     class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold hover:bg-slate-50 transition-colors flex items-center gap-1.5"
+                                     :class="rejectionPivotCopied ? 'text-emerald-600 border-emerald-100 bg-emerald-50' : 'text-slate-600'">
+                                <CheckIcon v-if="rejectionPivotCopied" class="w-3 h-3"/>
+                                <DocumentDuplicateIcon v-else class="w-3 h-3"/>
+                                {{ rejectionPivotCopied ? 'COPIÉ !' : 'COPIER' }}
+                             </button>
+                          </div>
+                          <div class="p-6 text-sm text-slate-600 font-serif leading-relaxed whitespace-pre-wrap max-h-[300px] overflow-y-auto custom-scrollbar">
+                             {{ rejectionPivotResults.feedback_email }}
+                          </div>
+                       </div>
+                    </div>
+
+                    <div>
+                       <h5 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">2. CONSEIL STRATÉGIQUE</h5>
+                       <div class="p-6 bg-orange-50 border border-orange-100 rounded-3xl relative overflow-hidden">
+                          <div class="absolute -right-4 -top-4 opacity-10">
+                             <LightBulbIcon class="w-24 h-24 text-orange-500"/>
+                          </div>
+                          <p class="text-orange-900 font-medium leading-relaxed italic relative z-10">
+                             "{{ rejectionPivotResults.pivot_tip }}"
+                          </p>
+                       </div>
+                    </div>
+                 </div>
+
+                 <!-- Right: Alternative Offers -->
+                 <div>
+                    <h5 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">3. OFFRES DE REBOND IMMÉDIAT</h5>
+                    <div class="space-y-3">
+                       <div v-for="offer in rejectionPivotResults.alternative_offers" :key="offer.id" class="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-indigo-500 transition-all flex items-center justify-between group">
+                          <div class="flex items-center gap-4">
+                             <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                                <BriefcaseIcon class="w-5 h-5"/>
+                             </div>
+                             <div class="max-w-[180px]">
+                                <p class="text-sm font-bold text-slate-800 truncate">{{ offer.title }}</p>
+                                <p class="text-[10px] text-slate-500 truncate">{{ offer.company }} • {{ offer.location }}</p>
+                             </div>
+                          </div>
+                          <a :href="offer.url" target="_blank" class="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-indigo-600 hover:text-white transition-all">
+                             <RocketLaunchIcon class="w-5 h-5"/>
+                          </a>
+                       </div>
+                       
+                       <div v-if="rejectionPivotResults.alternative_offers.length === 0" class="py-10 text-center bg-slate-100/50 rounded-3xl border border-dashed border-slate-200">
+                          <p class="text-xs text-slate-400">Aucune offre similaire trouvée à proximité.</p>
+                       </div>
+                    </div>
+
+                    <div class="mt-8 p-6 bg-slate-900 rounded-3xl text-white">
+                       <h6 class="text-sm font-bold mb-2 flex items-center gap-2">
+                          <TrophyIcon class="w-4 h-4 text-orange-400"/>
+                          Objectif Prochain Essai
+                       </h6>
+                       <p class="text-[11px] text-slate-400 leading-relaxed">
+                          Utilisez le feedback (si reçu) pour adapter votre CV via le <b>Social Sniper</b> et attaquez ces 3 nouvelles cibles dès aujourd'hui.
+                       </p>
+                    </div>
+                 </div>
+              </div>
+
+           </div>
+
+           <!-- Footer -->
+           <div class="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
+              <button @click="closeRejectionPivotModal" class="px-6 py-2.5 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-all">
+                 Fermer
+              </button>
+              <button v-if="rejectionPivotResults" @click="rejectionPivotResults = null" class="px-6 py-2.5 bg-slate-800 text-white rounded-xl font-bold hover:bg-black transition-all">
+                 Autre Pivot
+              </button>
+           </div>
+
         </div>
       </div>
     </Transition>
