@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # Gemini Configuration
     gemini_api_key: Optional[str] = Field(default=None, description="Clé API Gemini")
 
+    # Skyvern Configuration
+    skyvern_api_key: Optional[str] = Field(default=None, description="Clé API Skyvern")
+
     # Stripe Configuration
     stripe_api_key: Optional[str] = Field(default=None, description="Clé API Stripe Live")
     stripe_webhook_secret: Optional[str] = Field(default=None, description="Secret Webhook Stripe")

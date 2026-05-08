@@ -18,8 +18,7 @@ def get_db_client():
             _client = AsyncIOMotorClient(
                 settings.mongodb_uri,
                 serverSelectionTimeoutMS=5000,
-                tz_aware=True,
-                tlsAllowInvalidCertificates=True
+                tz_aware=True
             )
             logger.info("✅ Client MongoDB Atlas initialisé!")
         except Exception as e:

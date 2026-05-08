@@ -2643,8 +2643,13 @@ async def sniper_apply_execute(
         adapter = CVAdapterAgent()
         await adapter.initialize()
         
-        # Clé API Skyvern fournie par l'utilisateur
-        skyvern_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjQ5MjMwNTQ5NzIsInN1YiI6Im9fNTI1NzU0NTQ1NTE4ODc2MjA4In0.pplBLwI9niInf3yTWzLGwVuGoiggQgLKB8r4FzePbIY"
+        # Clé API Skyvern depuis l'environnement
+        from config.settings import settings
+        skyvern_api_key = settings.skyvern_api_key
+        if not skyvern_api_key:
+            # Fallback en mode développement uniquement, ou lever une exception
+            raise HTTPException(status_code=500, detail="La clé d'API Skyvern n'est pas configurée dans l'environnement du serveur.")
+            
         skyvern_api_url = "https://api.skyvern.com/v1/run/tasks"
         
         results = []
