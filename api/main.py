@@ -2700,3 +2700,51 @@ async def sniper_apply_execute(
         import logging
         logging.error(f"Sniper Apply Execute Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class WorkflowStatusUpdate(BaseModel):
+    workflow_id: int
+    active: bool
+
+@app.get("/api/workflows/status")
+async def get_workflow_status(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        user = await db.users.find_one({"id": user_id})
+        active_workflows = user.get("active_workflows", []) if user else []
+        
+        status_map = {wf_id: True for wf_id in active_workflows}
+        
+        # Override with specific config if needed
+        dh = await db.daily_hunt_config.find_one({"user_id": user_id})
+        if dh:
+            status_map[5] = dh.get("enabled", False)
+            
+        gb = await db.ghostbuster_config.find_one({"user_id": user_id})
+        if gb:
+            status_map[2] = gb.get("auto_scan", False)
+            
+        return {"status": "success", "data": status_map}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/workflows/status")
+async def set_workflow_status(
+    req: WorkflowStatusUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    try:
+        user_id = current_user.get("id") or current_user.get("uid") or current_user.get("sub")
+        
+        if req.active:
+            await db.users.update_one({"id": user_id}, {"$addToSet": {"active_workflows": req.workflow_id}})
+        else:
+            await db.users.update_one({"id": user_id}, {"$pull": {"active_workflows": req.workflow_id}})
+            
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

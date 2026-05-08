@@ -159,10 +159,6 @@ const realExecutionResult = ref(null)
 const bulkResults = ref([])
 
 const togglePlaybook = async (pb) => {
-    if (pb.active) {
-        pb.active = false
-        return
-    }
     
     // Reset result
     realExecutionResult.value = null
@@ -1067,10 +1063,13 @@ watch(() => playbooks.value.map(p => ({id: p.id, active: p.active})), async (new
           :class="pb.active ? 'border-indigo-500 shadow-md shadow-indigo-200/50 ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-100 opacity-80 hover:opacity-100'"
           :style="`animation-delay: ${0.05 * index}s;`">
         
-        <!-- Active indicator -->
-        <div class="absolute top-0 right-0 w-8 h-8 flex items-center justify-center">
-            <div v-if="pb.active" class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-            <div v-else class="w-1.5 h-1.5 rounded-full bg-slate-300 transition-colors duration-300 group-hover:bg-indigo-300"></div>
+        <!-- Active indicator / Toggle -->
+        <div class="absolute top-3 right-3 z-10" @click.stop="pb.active = !pb.active" title="Garder le workflow actif">
+            <div class="w-8 h-4 rounded-full p-0.5 transition-colors duration-300 flex items-center cursor-pointer"
+                 :class="pb.active ? 'bg-emerald-500' : 'bg-slate-200 hover:bg-slate-300'">
+                <div class="w-3 h-3 bg-white rounded-full transition-transform duration-300 shadow-sm"
+                     :class="pb.active ? 'translate-x-4' : 'translate-x-0'"></div>
+            </div>
         </div>
 
         <div class="mb-2 p-1.5 rounded-lg transition-transform duration-300 group-hover:scale-110" :class="pb.active ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-500'">
