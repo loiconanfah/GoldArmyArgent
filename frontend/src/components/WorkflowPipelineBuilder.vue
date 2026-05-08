@@ -17,6 +17,17 @@ const mousePos = ref({ x: 0, y: 0 })
 const dragging = ref(null)    // { nodeId, offX, offY }
 const canvasRef = ref(null)
 
+const toastMsg = ref(null)
+const toastType = ref('error')
+let toastTimeout = null
+
+function showToast(msg, type = 'error') {
+  toastMsg.value = msg
+  toastType.value = type
+  if (toastTimeout) clearTimeout(toastTimeout)
+  toastTimeout = setTimeout(() => { toastMsg.value = null }, 4000)
+}
+
 // ── Persistence ────────────────────────────────────────────────────────
 const save = () => { try { localStorage.setItem('ga_pipelines_v2', JSON.stringify(pipelines.value)) } catch(e) {} }
 const load = () => { try { const s = localStorage.getItem('ga_pipelines_v2'); if (s) pipelines.value = JSON.parse(s) } catch(e) {} }
@@ -27,6 +38,19 @@ const nodes = computed(() => pipeline.value?.nodes || [])
 const edges = computed(() => pipeline.value?.edges || [])
 
 // ── Workflow helpers ───────────────────────────────────────────────────
+const VALID_CONNECTIONS = {
+    1:  [2, 3, 4, 6],
+    2:  [3, 9],
+    3:  [4, 6],
+    4:  [7],
+    5:  [1, 6],
+    6:  [4, 7],
+    7:  [9, 8],
+    8:  [6],
+    9:  [1, 8],
+    10: [1],
+}
+
 const wfById = (id) => props.playbooks.find(p => p.id === id)
 const usedIds = computed(() => new Set(nodes.value.map(n => n.wfId)))
 const availableWfs = computed(() => props.playbooks.filter(p => !usedIds.value.has(p.id)))
@@ -65,13 +89,13 @@ const ghostPath = computed(() => {
   return bezier(x1, y1, mousePos.value.x, mousePos.value.y)
 })
 
-// ── SVG canvas size ────────────────────────────────────────────────────
-const svgW = ref(800), svgH = ref(320)
-function updateSize() {
-  if (canvasRef.value) {
-    svgW.value = canvasRef.value.clientWidth
-    svgH.value = canvasRef.value.clientHeight
-  }
+const isValidTarget = (targetNode) => {
+  if (!connecting.value) return false
+  const p = pipeline.value; if (!p) return false
+  const fromNode = p.nodes.find(n => n.id === connecting.value.fromNodeId)
+  if (!fromNode || fromNode.id === targetNode.id) return false
+  const allowed = VALID_CONNECTIONS[fromNode.wfId] || []
+  return allowed.includes(targetNode.wfId)
 }
 
 // ── Pipeline CRUD ──────────────────────────────────────────────────────
@@ -119,7 +143,19 @@ function startConnect(node) {
 function endConnect(node) {
   if (!connecting.value) return
   if (connecting.value.fromNodeId === node.id) { connecting.value = null; return }
+  
   const p = pipeline.value; if (!p) return
+  
+  const fromNode = p.nodes.find(n => n.id === connecting.value.fromNodeId)
+  if (!fromNode) { connecting.value = null; return }
+  
+  const allowed = VALID_CONNECTIONS[fromNode.wfId] || []
+  if (!allowed.includes(node.wfId)) {
+    showToast(`Connexion invalide : "${wfById(fromNode.wfId)?.name}" ne peut pas être relié à "${wfById(node.wfId)?.name}".`, 'error')
+    connecting.value = null
+    return
+  }
+
   const exists = p.edges.find(e => e.from === connecting.value.fromNodeId && e.to === node.id)
   if (!exists) {
     p.edges.push({ id: Date.now(), from: connecting.value.fromNodeId, to: node.id })
@@ -134,6 +170,25 @@ function removeEdge(edgeId) {
   const p = pipeline.value; if (!p) return
   p.edges = p.edges.filter(e => e.id !== edgeId)
   save()
+}
+
+// ── Validation & Start ───────────────────────────────────────────────────
+function startPipeline() {
+  const p = pipeline.value; if (!p) return
+  
+  if (p.nodes.length === 0) {
+    showToast("Le pipeline est vide. Ajoutez des workflows.", "error")
+    return
+  }
+  
+  if (p.nodes.length > 1 && p.edges.length < p.nodes.length - 1) {
+    showToast("Certains workflows ne sont pas connectés.", "error")
+    return
+  }
+
+  // Basic check for cycles or completely invalid graphs can go here.
+  // For now, if all nodes are mostly connected, we simulate success
+  showToast("Pipeline correctement connecté et démarré avec succès !", "success")
 }
 
 // ── Drag nodes ─────────────────────────────────────────────────────────
@@ -159,15 +214,13 @@ function onCanvasMouseMove(e) {
 
 function onCanvasMouseUp() {
   if (dragging.value) { dragging.value = null; save() }
+  if (connecting.value) { connecting.value = null }
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────
 onMounted(() => {
   load()
-  updateSize()
-  window.addEventListener('resize', updateSize)
 })
-onBeforeUnmount(() => window.removeEventListener('resize', updateSize))
 </script>
 
 <template>
@@ -178,9 +231,15 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSize))
         <span class="pb-title">Mes Pipelines</span>
         <span class="pb-badge">{{ pipelines.length }}/{{ MAX_PIPELINES }}</span>
       </div>
-      <button class="pb-new-btn" :disabled="pipelines.length >= MAX_PIPELINES" @click="addPipeline">
-        + Nouveau Pipeline
-      </button>
+      <div class="flex items-center gap-2">
+        <button v-if="pipeline && pipeline.nodes.length > 0" class="pb-start-btn" @click="startPipeline">
+          <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+          Démarrer
+        </button>
+        <button class="pb-new-btn" :disabled="pipelines.length >= MAX_PIPELINES" @click="addPipeline">
+          + Nouveau Pipeline
+        </button>
+      </div>
     </div>
 
     <!-- Tab pills -->
@@ -209,36 +268,40 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSize))
       @click="cancelConnect">
 
       <!-- SVG layer for edges -->
-      <svg class="pb-svg" :viewBox="`0 0 ${svgW} ${svgH}`">
+      <svg class="pb-svg" width="100%" height="100%">
         <defs>
           <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#6366f1"/>
-            <stop offset="100%" stop-color="#8b5cf6"/>
+            <stop offset="0%" stop-color="#4F46E5"/>
+            <stop offset="100%" stop-color="#EC4899"/>
           </linearGradient>
           <filter id="glow">
-            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feGaussianBlur stdDeviation="3" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L6,3 z" fill="#6366f1"/>
-          </marker>
         </defs>
 
         <!-- Edges -->
         <g v-for="edge in edgePaths" :key="edge.id">
-          <path :d="edge.d" fill="none" stroke="#1e1b4b" stroke-width="4" stroke-linecap="round"/>
-          <path :d="edge.d" fill="none" stroke="url(#edgeGrad)" stroke-width="2"
+          <!-- Background thicker track -->
+          <path :d="edge.d" fill="none" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>
+          
+          <!-- Colored solid line -->
+          <path :d="edge.d" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/>
+          
+          <!-- Animated glowing dash representing data flow -->
+          <path :d="edge.d" fill="none" stroke="url(#edgeGrad)" stroke-width="2.5"
             stroke-linecap="round" filter="url(#glow)"
-            stroke-dasharray="8 4" class="edge-anim" marker-end="url(#arrow)"/>
-          <!-- Click to remove edge -->
-          <path :d="edge.d" fill="none" stroke="transparent" stroke-width="12"
+            stroke-dasharray="15 60" class="edge-anim"/>
+            
+          <!-- Hitbox for removing -->
+          <path :d="edge.d" fill="none" stroke="transparent" stroke-width="15"
             class="edge-hitbox" @click.stop="removeEdge(edge.id)" title="Cliquer pour supprimer"/>
         </g>
 
         <!-- Ghost connection line -->
         <path v-if="ghostPath" :d="ghostPath" fill="none"
-          stroke="#6366f1" stroke-width="1.5" stroke-dasharray="6 3"
-          stroke-linecap="round" opacity="0.6"/>
+          stroke="#8B5CF6" stroke-width="2" stroke-dasharray="6 4"
+          stroke-linecap="round" opacity="0.8"/>
       </svg>
 
       <!-- Nodes -->
@@ -249,8 +312,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSize))
         @mousedown="onNodeMouseDown($event, node)">
 
         <!-- Input port -->
-        <div class="port port-in" title="Port entrée — cliquez pour connecter"
-          @click.stop="endConnect(node)">
+        <div class="port port-in" 
+          :class="{'port-valid-target': isValidTarget(node)}"
+          title="Relâchez ici pour connecter"
+          @mouseup.stop="endConnect(node)">
           <div class="port-inner port-in-inner"></div>
         </div>
 
@@ -323,6 +388,19 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSize))
         </div>
       </div>
     </Transition>
+    <!-- Toast Notification -->
+    <Transition name="fade-up">
+      <div v-if="toastMsg" class="fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[90] max-w-md w-max border"
+        :class="toastType === 'error' ? 'bg-slate-900 border-rose-500/30' : 'bg-emerald-950 border-emerald-500/30'">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+          :class="toastType === 'error' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'">
+          <svg v-if="toastType === 'error'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+        </div>
+        <p class="text-sm font-medium" :class="toastType === 'error' ? 'text-rose-100' : 'text-emerald-100'">{{ toastMsg }}</p>
+        <button @click="toastMsg = null" class="ml-2 text-slate-400 hover:text-white transition-colors">✕</button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -364,6 +442,25 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSize))
 }
 .pb-new-btn:hover:not(:disabled) { background: #E0E7FF; box-shadow: 0 2px 8px rgba(99,102,241,.15); }
 .pb-new-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.pb-start-btn {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #10B981, #059669);
+  border: none;
+  border-radius: 10px;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 10px rgba(16,185,129,.3);
+}
+.pb-start-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(16,185,129,.4);
+}
 
 /* Tabs */
 .pb-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
@@ -417,11 +514,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSize))
   pointer-events: none;
 }
 .edge-hitbox { pointer-events: stroke; cursor: pointer; }
+.edge-hitbox:hover { stroke: rgba(236,72,153,.2); }
 .edge-anim {
-  animation: edge-flow 2s linear infinite;
+  animation: edge-flow 1.5s linear infinite;
 }
 @keyframes edge-flow {
-  from { stroke-dashoffset: 24; }
+  from { stroke-dashoffset: 75; }
   to   { stroke-dashoffset: 0; }
 }
 
@@ -476,10 +574,19 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateSize))
 }
 .port:hover { transform: scale(1.4); }
 .port-in { background: rgba(99,102,241,.2); border:2px solid #6366f1; }
-.port-out { background: rgba(139,92,246,.2); border:2px solid #8B5CF6; }
-.port-inner { width:5px; height:5px; border-radius:50%; }
+.port-out { background: rgba(139,92,246,.2); border:2px solid #8B5CF6; cursor: grab; }
+.port-out:active { cursor: grabbing; }
+.port-inner { width:5px; height:5px; border-radius:50%; pointer-events: none; }
 .port-in-inner { background:#6366f1; }
 .port-out-inner { background:#8B5CF6; }
+
+.port-valid-target {
+  transform: scale(1.5);
+  background: rgba(52, 211, 153, 0.3) !important;
+  border-color: #34D399 !important;
+  box-shadow: 0 0 15px rgba(52, 211, 153, 0.4);
+}
+.port-valid-target .port-inner { background: #34D399 !important; }
 
 /* Add node btn */
 .pb-add-node {

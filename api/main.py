@@ -2645,7 +2645,7 @@ async def sniper_apply_execute(
         
         # Clé API Skyvern fournie par l'utilisateur
         skyvern_api_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjQ5MjMwNTQ5NzIsInN1YiI6Im9fNTI1NzU0NTQ1NTE4ODc2MjA4In0.pplBLwI9niInf3yTWzLGwVuGoiggQgLKB8r4FzePbIY"
-        skyvern_api_url = "https://api.skyvern.com/api/v1/tasks"
+        skyvern_api_url = "https://api.skyvern.com/v1/run/tasks"
         
         results = []
         
@@ -2670,14 +2670,17 @@ async def sniper_apply_execute(
                             headers={"x-api-key": skyvern_api_key, "Content-Type": "application/json"},
                             json={
                                 "url": url,
-                                "webhook_callback_url": "",
-                                "navigation_goal": prompt,
-                                "data_extraction_goal": "",
-                                "proxy_location": "US"
+                                "prompt": prompt,
+                                "title": f"Auto-Apply to {company} - {title}",
+                                "proxy_location": "RESIDENTIAL",
+                                "engine": "skyvern-2.0"
                             }
                         )
                         if resp.status_code in [200, 201]:
-                            skyvern_task_id = resp.json().get("task_id")
+                            skyvern_task_id = resp.json().get("run_id") or resp.json().get("task_id")
+                        else:
+                            import logging
+                            logging.warning(f"Skyvern API error: {resp.status_code} - {resp.text}")
                 except Exception as ex:
                     import logging
                     logging.warning(f"Skyvern API call failed for {company}: {ex}")
