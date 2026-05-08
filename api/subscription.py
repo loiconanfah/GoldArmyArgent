@@ -14,6 +14,7 @@ SUBSCRIPTION_LIMITS = {
         'cv_adaptation': {'limit': 3, 'period': 'day'},
         'headhunter': {'limit': 0, 'period': 'total'},
         'address_book': {'limit': 0, 'period': 'total'},
+        'sniper_apply': {'limit': 1, 'period': 'day'},
     },
     'ESSENTIAL': {
         'sniper_search': {'limit': 25, 'period': 'month'},
@@ -23,6 +24,7 @@ SUBSCRIPTION_LIMITS = {
         'cv_adaptation': {'limit': 9999, 'period': 'month'},
         'headhunter': {'limit': 10, 'period': 'month'},
         'address_book': {'limit': 25, 'period': 'total'},
+        'sniper_apply': {'limit': 5, 'period': 'day'},
     },
     'PRO': {
         'sniper_search': {'limit': 99999, 'period': 'month'},
@@ -32,6 +34,7 @@ SUBSCRIPTION_LIMITS = {
         'cv_adaptation': {'limit': 99999, 'period': 'month'},
         'headhunter': {'limit': 99999, 'period': 'month'},
         'address_book': {'limit': 99999, 'period': 'total'},
+        'sniper_apply': {'limit': 10, 'period': 'day'},
     },
     'ADMIN': {
         'sniper_search': {'limit': 999999, 'period': 'month'},
@@ -41,6 +44,7 @@ SUBSCRIPTION_LIMITS = {
         'cv_adaptation': {'limit': 999999, 'period': 'month'},
         'headhunter': {'limit': 999999, 'period': 'month'},
         'address_book': {'limit': 999999, 'period': 'total'},
+        'sniper_apply': {'limit': 999999, 'period': 'day'},
     }
 }
 

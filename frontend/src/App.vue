@@ -187,7 +187,7 @@ onMounted(() => {
           :title="isSidebarCollapsed ? item.name : ''"
         >
           <!-- Active Indicator dot (Orange/Gold) -->
-          <div v-if="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href))" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#E85D3E] rounded-r-full shadow-[0_0_10px_rgba(232,93,62,0.3)]"></div>
+          <div v-if="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href))" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#F59E0B] rounded-r-full shadow-[0_0_10px_rgba(232,93,62,0.3)]"></div>
           
           <component :is="item.icon" class="w-5 h-5 shrink-0" :class="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'" />
           

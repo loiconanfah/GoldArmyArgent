@@ -68,30 +68,30 @@ const submitForm = async () => {
             <div class="space-y-8">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <!-- Contact Unit -->
-                <div class="p-8 rounded-2xl bg-dark border border-gray-800 hover:border-orange-500/50 transition-all">
-                  <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-6">
+                <div class="p-8 rounded-2xl bg-dark border border-gray-800 hover:border-gold-500/50 transition-all">
+                  <div class="w-12 h-12 bg-gold-500 rounded-lg flex items-center justify-center mb-6">
                     <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
                   <h3 class="text-xl font-semibold text-white mb-4">{{ t('support_page.email_title') }}</h3>
-                  <a href="mailto:support@goldarmyai.com" class="text-orange-500 font-bold hover:underline">support@goldarmyai.com</a>
+                  <a href="mailto:support@goldarmyai.com" class="text-gold-500 font-bold hover:underline">support@goldarmyai.com</a>
                 </div>
 
                 <!-- FAQ Unit -->
-                <div class="p-8 rounded-2xl bg-dark border border-gray-800 hover:border-orange-500/50 transition-all">
-                  <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-6">
+                <div class="p-8 rounded-2xl bg-dark border border-gray-800 hover:border-gold-500/50 transition-all">
+                  <div class="w-12 h-12 bg-gold-500 rounded-lg flex items-center justify-center mb-6">
                     <svg class="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <h3 class="text-xl font-semibold text-white mb-4">{{ t('support_page.faq_title') }}</h3>
-                  <router-link to="/#faq" class="text-orange-500 font-bold hover:underline">{{ t('support_page.faq_cta') }}</router-link>
+                  <router-link to="/#faq" class="text-gold-500 font-bold hover:underline">{{ t('support_page.faq_cta') }}</router-link>
                 </div>
               </div>
 
               <!-- Tech Status Box -->
-              <div class="p-8 rounded-2xl bg-dark border border-gray-800 hover:border-orange-500/50 transition-all flex items-center justify-between">
+              <div class="p-8 rounded-2xl bg-dark border border-gray-800 hover:border-gold-500/50 transition-all flex items-center justify-between">
                 <div class="flex items-center gap-6">
                   <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
                     <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
@@ -107,7 +107,7 @@ const submitForm = async () => {
 
             <!-- Right Side: Contact Form -->
             <div class="bg-dark p-10 rounded-3xl border border-gray-800 shadow-2xl relative overflow-hidden group">
-              <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-bl-full blur-2xl"></div>
+              <div class="absolute top-0 right-0 w-32 h-32 bg-gold-500/5 rounded-bl-full blur-2xl"></div>
               
               <h2 class="text-3xl font-bold text-white mb-8">{{ t('support_form.title') }}</h2>
 
@@ -119,7 +119,7 @@ const submitForm = async () => {
                       v-model="form.name" 
                       type="text" 
                       required
-                      class="w-full bg-dark-lighter border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-all"
+                      class="w-full bg-dark-lighter border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold-500 transition-all"
                     />
                   </div>
                   <div>
@@ -128,7 +128,7 @@ const submitForm = async () => {
                       v-model="form.email" 
                       type="email" 
                       required
-                      class="w-full bg-dark-lighter border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-all"
+                      class="w-full bg-dark-lighter border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold-500 transition-all"
                     />
                   </div>
                 </div>
@@ -139,7 +139,7 @@ const submitForm = async () => {
                     v-model="form.subject" 
                     type="text" 
                     required
-                    class="w-full bg-dark-lighter border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-all"
+                    class="w-full bg-dark-lighter border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold-500 transition-all"
                   />
                 </div>
 
@@ -149,14 +149,14 @@ const submitForm = async () => {
                     v-model="form.message" 
                     rows="5" 
                     required
-                    class="w-full bg-dark-lighter border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-orange-500 transition-all resize-none"
+                    class="w-full bg-dark-lighter border border-gray-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-gold-500 transition-all resize-none"
                   ></textarea>
                 </div>
 
                 <button 
                   type="submit" 
                   :disabled="isSending"
-                  class="w-full bg-orange-500 hover:bg-orange-400 disabled:bg-gray-700 text-black font-black py-4 rounded-xl transition-all shadow-lg hover:shadow-orange-500/20 active:scale-95 flex items-center justify-center gap-3"
+                  class="w-full bg-gold-500 hover:bg-gold-400 disabled:bg-gray-700 text-black font-black py-4 rounded-xl transition-all shadow-lg hover:shadow-gold-500/20 active:scale-95 flex items-center justify-center gap-3"
                 >
                   <span v-if="isSending">{{ t('support_form.sending') }}</span>
                   <span v-else>{{ t('support_form.submit_btn') }}</span>

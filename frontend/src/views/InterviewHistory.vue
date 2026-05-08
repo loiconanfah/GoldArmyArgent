@@ -2,21 +2,21 @@
   <div class="interview-history-page min-h-screen relative overflow-hidden font-sans text-slate-900 bg-[#fbfbff]">
     <!-- MOVING BACKGROUND BLOBS (Dribbble/Framer style) -->
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
-      <div class="absolute -top-[10%] -left-[10%] w-[60%] h-[60%] bg-[#E85D3E]/10 rounded-full blur-[120px] animate-blob"></div>
+      <div class="absolute -top-[10%] -left-[10%] w-[60%] h-[60%] bg-[#F59E0B]/10 rounded-full blur-[120px] animate-blob"></div>
       <div class="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-[#6366f1]/10 rounded-full blur-[120px] animate-blob animation-delay-2000"></div>
     </div>
 
     <div class="max-w-7xl mx-auto px-6 py-12 md:py-20 relative z-10">
       <!-- ARTISTIC HEADER -->
       <div class="flex flex-col items-center text-center space-y-6 mb-20">
-        <button @click="router.push('/interview')" class="group flex items-center gap-3 px-6 py-3 bg-white/50 backdrop-blur-xl border border-white/80 rounded-full text-slate-500 hover:text-[#E85D3E] transition-all hover:px-8 shadow-sm">
+        <button @click="router.push('/interview')" class="group flex items-center gap-3 px-6 py-3 bg-white/50 backdrop-blur-xl border border-white/80 rounded-full text-slate-500 hover:text-[#F59E0B] transition-all hover:px-8 shadow-sm">
           <ArrowLeftIcon class="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           <span class="text-xs font-black uppercase tracking-widest">Retour au simulateur</span>
         </button>
         
         <div class="space-y-4">
           <h1 class="text-5xl md:text-7xl font-black tracking-tighter text-slate-900 leading-[0.9]">
-            Votre <span class="text-transparent bg-clip-text bg-gradient-to-br from-[#E85D3E] to-[#FF8C6B]">Progression</span>
+            Votre <span class="text-transparent bg-clip-text bg-gradient-to-br from-[#F59E0B] to-[#FF8C6B]">Progression</span>
           </h1>
           <p class="text-slate-400 font-medium text-lg md:text-xl max-w-2xl mx-auto">
             Retrouvez chaque entretien, analysez vos faiblesses et dominez le marché du travail.
@@ -27,7 +27,7 @@
       <!-- FLOATING STATS GRID -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-20 stagger-item">
         <div v-for="stat in stats" :key="stat.label" class="bg-white/40 backdrop-blur-2xl border border-white/60 p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] hover:shadow-xl transition-all hover:-translate-y-1">
-          <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-sm text-[#E85D3E]">
+          <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-sm text-[#F59E0B]">
             <component :is="stat.icon" class="w-6 h-6" />
           </div>
           <div class="text-3xl font-black text-slate-900 mb-1 tracking-tight">{{ stat.value }}</div>
@@ -37,7 +37,7 @@
 
       <!-- CONTENT -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-20 gap-6">
-        <div class="w-16 h-16 border-4 border-slate-100 border-t-[#E85D3E] rounded-full animate-spin"></div>
+        <div class="w-16 h-16 border-4 border-slate-100 border-t-[#F59E0B] rounded-full animate-spin"></div>
         <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] animate-pulse">Synchronisation God Mode...</p>
       </div>
 
@@ -49,7 +49,7 @@
           <h2 class="text-3xl font-black text-slate-900">Le terrain est vide.</h2>
           <p class="text-slate-400 font-medium">Vos futures victoires n'attendent que votre premier passage devant l'IA.</p>
         </div>
-        <router-link to="/interview" class="inline-flex px-10 py-5 bg-[#E85D3E] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-2xl shadow-[#E85D3E]/30 hover:scale-105 active:scale-95">
+        <router-link to="/interview" class="inline-flex px-10 py-5 bg-[#F59E0B] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-2xl shadow-[#F59E0B]/30 hover:scale-105 active:scale-95">
           Démarrer l'entraînement
         </router-link>
       </div>
@@ -59,11 +59,11 @@
           @click="openDetail(session)"
           class="session-bento-card group relative">
           
-          <div class="absolute inset-0 bg-gradient-to-br from-[#E85D3E]/5 to-[#6366f1]/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem] -z-10 blur-xl"></div>
+          <div class="absolute inset-0 bg-gradient-to-br from-[#F59E0B]/5 to-[#6366f1]/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[3rem] -z-10 blur-xl"></div>
           
           <div class="bg-white/40 backdrop-blur-3xl border border-white/60 rounded-[2.5rem] p-8 h-full shadow-[0_20px_50px_rgba(0,0,0,0.02)] group-hover:shadow-[0_40px_100px_rgba(232,93,62,0.1)] group-hover:-translate-y-2 transition-all duration-700 cursor-pointer flex flex-col relative overflow-hidden">
             <!-- Hover Gradient -->
-            <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-[#E85D3E]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-[#F59E0B]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
             
             <div class="flex justify-between items-start mb-8 relative z-10">
               <div class="w-12 h-12 rounded-2xl bg-white shadow-xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 border border-slate-50">
@@ -75,11 +75,11 @@
             </div>
 
             <div class="space-y-2 mb-8 relative z-10">
-              <h3 class="text-xl font-black text-slate-900 tracking-tighter leading-tight group-hover:text-[#E85D3E] transition-colors line-clamp-2">
+              <h3 class="text-xl font-black text-slate-900 tracking-tighter leading-tight group-hover:text-[#F59E0B] transition-colors line-clamp-2">
                 {{ session.job_title }}
               </h3>
               <div class="flex items-center gap-2">
-                <div class="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-[#E85D3E]/30 transition-colors"></div>
+                <div class="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-[#F59E0B]/30 transition-colors"></div>
                 <p class="text-slate-400 font-bold text-[9px] uppercase tracking-[0.2em]">
                   {{ session.company || 'Confidentiel' }}
                 </p>
@@ -97,7 +97,7 @@
 
               <div class="flex items-center gap-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
                 <div class="flex items-center gap-1.5 group/time">
-                  <ClockIcon class="w-3.5 h-3.5 text-slate-200 group-hover/time:text-[#E85D3E] transition-colors" />
+                  <ClockIcon class="w-3.5 h-3.5 text-slate-200 group-hover/time:text-[#F59E0B] transition-colors" />
                   {{ session.duration_minutes || 0 }}m
                 </div>
                 <ChevronRightIcon class="w-4 h-4 text-slate-200 group-hover:translate-x-1 transition-transform" />
@@ -141,14 +141,14 @@
                   <div class="flex flex-col">
                     <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{{ cat === 'overall' ? 'Global' : cat }}</span>
                     <div class="w-20 h-1 bg-slate-50 rounded-full overflow-hidden">
-                      <div class="h-full bg-[#E85D3E] transition-all duration-1000" :style="{ width: val * 10 + '%' }"></div>
+                      <div class="h-full bg-[#F59E0B] transition-all duration-1000" :style="{ width: val * 10 + '%' }"></div>
                     </div>
                   </div>
                   <div class="text-lg font-black text-slate-900">{{ val }}<span class="text-[9px] text-slate-300">/10</span></div>
                 </div>
               </div>
 
-              <button class="w-full py-3.5 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#E85D3E] transition-all shadow-lg flex items-center justify-center gap-2">
+              <button class="w-full py-3.5 bg-gold-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#F59E0B] transition-all shadow-lg flex items-center justify-center gap-2">
                 <ChatBubbleLeftRightIcon class="w-4 h-4" /> Transcription complète
               </button>
             </div>
@@ -171,7 +171,7 @@
                   {{ selected.job_title }}
                 </h2>
                 <div class="flex items-center gap-2 text-slate-400 font-bold text-xs">
-                  <BuildingOfficeIcon class="w-4 h-4 text-[#E85D3E]/50" /> {{ selected.company || 'Confidentiel' }}
+                  <BuildingOfficeIcon class="w-4 h-4 text-[#F59E0B]/50" /> {{ selected.company || 'Confidentiel' }}
                 </div>
               </div>
 
@@ -205,7 +205,7 @@
               <!-- Verdict -->
               <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 relative overflow-hidden">
                 <div class="relative z-10 space-y-6">
-                  <div class="flex items-center gap-3 text-[#E85D3E]">
+                  <div class="flex items-center gap-3 text-[#F59E0B]">
                     <StarIcon class="w-5 h-5" />
                     <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Verdict GoldArmy AI</span>
                   </div>
@@ -214,10 +214,10 @@
                   </p>
                   <div class="pt-6 border-t border-slate-200/50 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[8px] font-black shadow-lg shadow-slate-900/20">GA</div>
+                      <div class="w-8 h-8 rounded-lg bg-gold-600 text-white flex items-center justify-center text-[8px] font-black shadow-lg shadow-slate-900/20">GA</div>
                       <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Analyse v4.0 Pro</span>
                     </div>
-                    <button class="px-6 py-3 bg-[#E85D3E] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-[#E85D3E]/20">
+                    <button class="px-6 py-3 bg-[#F59E0B] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-[#F59E0B]/20">
                       Améliorer mon score
                     </button>
                   </div>
@@ -261,7 +261,7 @@ const RECRUITERS = {
   ceo: { name: 'Alice', role: 'Fondatrice / CEO', icon: StarIcon, color: 'text-amber-500' }
 }
 
-const getRecruiter = (id) => RECRUITERS[id] || { name: 'IA Expert', role: 'Recruteur GoldArmy', icon: SparklesIcon, color: 'text-[#E85D3E]' }
+const getRecruiter = (id) => RECRUITERS[id] || { name: 'IA Expert', role: 'Recruteur GoldArmy', icon: SparklesIcon, color: 'text-[#F59E0B]' }
 
 // Calculated Stats
 const avgScore = computed(() => {
@@ -411,11 +411,11 @@ onMounted(fetchHistory)
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #E85D3E33;
+  background: #F59E0B33;
   border-radius: 20px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #E85D3E66;
+  background: #F59E0B66;
 }
 
 .line-clamp-2 {

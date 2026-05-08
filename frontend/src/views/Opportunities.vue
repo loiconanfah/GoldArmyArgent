@@ -444,7 +444,7 @@ const addToCrmAndApply = async (job) => {
     <!-- HEADER (Uniform with Dashboard) -->
     <div class="db-header">
        <div class="header-date-box">
-           <div class="date-num flex items-center justify-center bg-[#E85D3E]/10 rounded-lg w-10 h-10"><SignalIcon class="w-6 h-6 text-[#E85D3E]" /></div>
+           <div class="date-num flex items-center justify-center bg-[#F59E0B]/10 rounded-lg w-10 h-10"><SignalIcon class="w-6 h-6 text-[#F59E0B]" /></div>
            <div class="date-str">{{ t('opportunities.tagline') }}</div>
            <div class="date-divider"></div>
            <div class="flex items-center gap-2">
@@ -464,7 +464,7 @@ const addToCrmAndApply = async (job) => {
            <div class="greeting-text">
              <div class="flex items-center gap-3">
                  {{ t('opportunities.title_sniper') }} 
-                 <span class="text-[#E85D3E]">{{ t('opportunities.title_recruitment') }}</span>
+                 <span class="text-[#F59E0B]">{{ t('opportunities.title_recruitment') }}</span>
                  <img src="/logo.png" alt="Logo" class="w-10 h-10 animate-float ml-auto md:ml-4" />
              </div>
              <span class="greeting-sub text-sm md:text-lg block mt-1">{{ t('opportunities.description') }}</span>
@@ -477,12 +477,12 @@ const addToCrmAndApply = async (job) => {
         <div class="relative z-10">
             <div class="flex flex-col lg:flex-row gap-4">
                 <!-- Search Inputs: Keyword + Location -->
-                <div class="flex-1 flex flex-col md:flex-row gap-0 group bg-slate-50 border border-slate-200 rounded-2xl focus-within:border-[#E85D3E]/50 transition-colors relative">
+                <div class="flex-1 flex flex-col md:flex-row gap-0 group bg-slate-50 border border-slate-200 rounded-2xl focus-within:border-[#F59E0B]/50 transition-colors relative">
                     <div class="absolute inset-0 bg-gradient-to-r from-gold-500 to-amber-500 rounded-2xl blur opacity-0 group-focus-within:opacity-20 transition-opacity duration-500 pointer-events-none"></div>
                     
                     <!-- Keyword -->
                     <div class="relative flex-1 flex items-center h-16 w-full border-b md:border-b-0 md:border-r border-slate-200">
-                        <MagnifyingGlassIcon class="absolute left-5 w-6 h-6 text-slate-400 group-focus-within:text-[#E85D3E] transition-colors" />
+                        <MagnifyingGlassIcon class="absolute left-5 w-6 h-6 text-slate-400 group-focus-within:text-[#F59E0B] transition-colors" />
                         <input 
                             v-model="searchQuery"
                             @keyup.enter="performSearch"
@@ -494,7 +494,7 @@ const addToCrmAndApply = async (job) => {
 
                     <!-- Location -->
                     <div class="relative flex-[0.7] flex items-center h-16 w-full">
-                        <MapPinIcon class="absolute left-5 w-6 h-6 text-slate-400 group-focus-within:text-[#E85D3E] transition-colors" />
+                        <MapPinIcon class="absolute left-5 w-6 h-6 text-slate-400 group-focus-within:text-[#F59E0B] transition-colors" />
                         <input 
                             v-model="inputLocation"
                             @keyup.enter="performSearch"
@@ -522,7 +522,7 @@ const addToCrmAndApply = async (job) => {
                     <button 
                         @click="performSearch"
                         :disabled="!searchQuery || isLoading"
-                        class="px-8 h-16 bg-[#E85D3E] hover:opacity-90 disabled:opacity-50 disabled:grayscale text-white font-bold tracking-tight rounded-2xl transition-all shadow-lg shadow-[#E85D3E]/20 flex items-center justify-center min-w-[160px] group/launch"
+                        class="px-8 h-16 bg-[#F59E0B] hover:opacity-90 disabled:opacity-50 disabled:grayscale text-white font-bold tracking-tight rounded-2xl transition-all shadow-lg shadow-[#F59E0B]/20 flex items-center justify-center min-w-[160px] group/launch"
                     >
                         <span v-if="!isLoading" class="flex items-center gap-2">
                             {{ t('opportunities.launch_button') }}
@@ -617,7 +617,7 @@ const addToCrmAndApply = async (job) => {
        <div 
          v-for="(job, index) in filteredJobs" 
          :key="job.id"
-         class="relative bg-white border border-slate-200 p-6 rounded-3xl transition-all hover:border-[#E85D3E] hover:shadow-md group flex flex-col justify-between overflow-hidden"
+         class="relative bg-white border border-slate-200 p-6 rounded-3xl transition-all hover:border-[#F59E0B] hover:shadow-md group flex flex-col justify-between overflow-hidden"
          :style="`animation-delay: ${index * 50}ms`"
          style="animation: fadeInUp 0.5s ease-out forwards; opacity: 0;"
        >
@@ -630,7 +630,7 @@ const addToCrmAndApply = async (job) => {
                   <div class="flex-1 min-w-0">
                       <!-- Tags -->
                       <div class="flex flex-wrap gap-2 mb-4">
-                        <span class="text-[10px] font-black uppercase tracking-wider text-[#E85D3E] bg-[#E85D3E]/10 border border-[#E85D3E]/20 px-3 py-1.5 rounded-xl">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-3 py-1.5 rounded-xl">
                             {{ job.type }}
                         </span>
                         <span class="text-xs font-semibold text-slate-300 bg-surface-800 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
@@ -639,7 +639,7 @@ const addToCrmAndApply = async (job) => {
                         </span>
                       </div>
                       
-                      <h3 class="text-2xl font-display font-black text-slate-900 leading-tight mb-2 truncate group-hover:text-[#E85D3E] transition-colors" :title="job.title">
+                      <h3 class="text-2xl font-display font-black text-slate-900 leading-tight mb-2 truncate group-hover:text-[#F59E0B] transition-colors" :title="job.title">
                           {{ job.title }}
                       </h3>
                       <div class="flex items-center gap-2.5 text-slate-400 font-medium">
@@ -691,8 +691,8 @@ const addToCrmAndApply = async (job) => {
              <!-- AI Adapt CV Button -->
              <button 
                 @click="openAdaptCvModal(job)"
-                class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#E85D3E]/10 to-[#E85D3E]/5 hover:from-[#E85D3E]/20 hover:to-[#E85D3E]/10 text-[#E85D3E] px-4 py-3.5 rounded-xl font-bold text-sm transition-all border border-[#E85D3E]/20 hover:border-[#E85D3E]/40 active:scale-95 outline-none group/adapt">
-                <SparklesIcon class="w-5 h-5 text-[#E85D3E] group-hover/adapt:scale-110 transition-transform" />
+                class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#F59E0B]/10 to-[#F59E0B]/5 hover:from-[#F59E0B]/20 hover:to-[#F59E0B]/10 text-[#F59E0B] px-4 py-3.5 rounded-xl font-bold text-sm transition-all border border-[#F59E0B]/20 hover:border-[#F59E0B]/40 active:scale-95 outline-none group/adapt">
+                <SparklesIcon class="w-5 h-5 text-[#F59E0B] group-hover/adapt:scale-110 transition-transform" />
                 <span class="hidden sm:inline">{{ t('opportunities.adapt_cv') }}</span>
              </button>
              
@@ -701,7 +701,7 @@ const addToCrmAndApply = async (job) => {
                 :disabled="loadingRadarFor === job.id"
                 class="flex items-center justify-center bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 w-12 h-12 rounded-xl transition-colors border border-slate-200 active:scale-95 outline-none group/radar shrink-0">
                 <ArrowPathIcon v-if="loadingRadarFor === job.id" class="w-5 h-5 animate-spin text-gold-400" />
-                <svg v-else class="w-5 h-5 text-slate-400 group-hover/radar:text-[#E85D3E] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <svg v-else class="w-5 h-5 text-slate-400 group-hover/radar:text-[#F59E0B] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
              </button>
           </div>
        </div>

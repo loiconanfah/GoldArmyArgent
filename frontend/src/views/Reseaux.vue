@@ -377,19 +377,19 @@ const copyDraftEmail = async () => {
     
     <!-- Hero Header -->
     <div class="relative mb-12 rounded-[2.5rem] overflow-hidden bg-white border border-slate-100 p-8 md:p-12 shadow-sm">
-        <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#E85D3E]/5 via-[#E85D3E]/2 to-transparent pointer-events-none"></div>
+        <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#F59E0B]/5 via-[#F59E0B]/2 to-transparent pointer-events-none"></div>
         <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none"></div>
         
         <div class="relative z-10 max-w-2xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E85D3E]/10 border border-[#E85D3E]/20 text-[#E85D3E] text-[10px] font-black tracking-[0.2em] uppercase mb-6">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-[#F59E0B] text-[10px] font-black tracking-[0.2em] uppercase mb-6">
                  <span class="flex h-2 w-2 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E85D3E] opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-[#E85D3E]"></span>
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F59E0B] opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-[#F59E0B]"></span>
                  </span>
                  {{ t('network_osint.tagline') }}
             </div>
             <h1 class="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] mb-6">
-                {{ t('network_osint.title_part1') }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#E85D3E] to-rose-400">{{ t('network_osint.title_part2') }}</span>
+                {{ t('network_osint.title_part1') }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#F59E0B] to-rose-400">{{ t('network_osint.title_part2') }}</span>
             </h1>
             <p class="text-slate-500 text-lg font-medium leading-relaxed">
                 {{ t('network_osint.description') }}
@@ -400,7 +400,7 @@ const copyDraftEmail = async () => {
     <div class="flex items-center gap-2 mb-10 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-fit mx-auto md:mx-0 flex-wrap">
         <button 
             @click="activeTab = 'osint'"
-            :class="activeTab === 'osint' ? 'bg-white text-[#E85D3E] shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+            :class="activeTab === 'osint' ? 'bg-white text-[#F59E0B] shadow-sm' : 'text-slate-500 hover:text-slate-700'"
             class="px-6 py-2.5 rounded-xl text-sm font-black transition-all flex items-center gap-2"
         >
             <SparklesIcon class="w-4 h-4" />
@@ -444,27 +444,27 @@ const copyDraftEmail = async () => {
         <!-- OSINT Search Panel -->
         <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 shadow-sm relative overflow-hidden group">
             <div class="flex items-center gap-3 mb-8">
-                <div class="p-2 bg-[#E85D3E]/10 rounded-xl">
-                    <SparklesIcon class="w-5 h-5 text-[#E85D3E]" />
+                <div class="p-2 bg-[#F59E0B]/10 rounded-xl">
+                    <SparklesIcon class="w-5 h-5 text-[#F59E0B]" />
                 </div>
                 <h3 class="text-xl font-bold text-slate-900 tracking-tight">{{ t('network_osint.osint_form.title') }}</h3>
             </div>
             
             <form @submit.prevent="enrichCompany" class="flex flex-col md:flex-row gap-4">
                 <div class="flex-1 relative group/input">
-                    <BuildingOfficeIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within/input:text-[#E85D3E] transition-colors" />
+                    <BuildingOfficeIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within/input:text-[#F59E0B] transition-colors" />
                     <input 
                         v-model="companyName"
                         type="text" 
                         :placeholder="t('network_osint.osint_form.placeholder')" 
-                        class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-[#E85D3E]/20 focus:border-[#E85D3E] outline-none transition-all placeholder:text-slate-400 font-bold"
+                        class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-[#F59E0B]/20 focus:border-[#F59E0B] outline-none transition-all placeholder:text-slate-400 font-bold"
                         required
                     />
                 </div>
                 <button 
                     type="submit" 
                     :disabled="isEnriching"
-                    class="bg-[#E85D3E] hover:bg-[#D44D2D] text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-[#E85D3E]/20 disabled:opacity-50 flex items-center justify-center gap-2 group/btn"
+                    class="bg-[#F59E0B] hover:bg-[#D44D2D] text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-[#F59E0B]/20 disabled:opacity-50 flex items-center justify-center gap-2 group/btn"
                 >
                     <ArrowPathIcon v-if="isEnriching" class="w-5 h-5 animate-spin" />
                     <SparklesIcon v-else class="w-5 h-5 transition-transform group-hover/btn:rotate-12" />
@@ -479,12 +479,12 @@ const copyDraftEmail = async () => {
                         v-for="hr in hrProfiles" 
                         :key="hr.url"
                         @click="selectHr(hr.name)"
-                        :class="selectedHrName === hr.name ? 'border-[#E85D3E] bg-[#E85D3E]/5 ring-1 ring-[#E85D3E]/20' : 'border-slate-200 bg-white hover:border-[#E85D3E]/30'"
+                        :class="selectedHrName === hr.name ? 'border-[#F59E0B] bg-[#F59E0B]/5 ring-1 ring-[#F59E0B]/20' : 'border-slate-200 bg-white hover:border-[#F59E0B]/30'"
                         class="p-4 rounded-2xl border transition-all cursor-pointer group/card flex flex-col relative"
                     >
                         <div class="flex items-start justify-between mb-3">
-                            <div class="p-2 bg-slate-50 rounded-lg border border-slate-100 group-hover/card:bg-[#E85D3E]/10 transition-colors">
-                                <UserGroupIcon class="w-4 h-4 text-[#E85D3E]" />
+                            <div class="p-2 bg-slate-50 rounded-lg border border-slate-100 group-hover/card:bg-[#F59E0B]/10 transition-colors">
+                                <UserGroupIcon class="w-4 h-4 text-[#F59E0B]" />
                             </div>
                             <a 
                                 v-if="hr.url" 
@@ -497,12 +497,12 @@ const copyDraftEmail = async () => {
                                 <LinkIcon class="w-3.5 h-3.5" />
                             </a>
                         </div>
-                        <h5 class="text-sm font-bold text-slate-900 mb-1 group-hover/card:text-[#E85D3E] transition-colors">{{ hr.name }}</h5>
+                        <h5 class="text-sm font-bold text-slate-900 mb-1 group-hover/card:text-[#F59E0B] transition-colors">{{ hr.name }}</h5>
                         <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed h-8">{{ hr.snippet || t('network_osint.osint_snippet_fallback') }}</p>
                         
                         <div v-if="selectedHrName === hr.name" class="absolute top-2 right-2 flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E85D3E] opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-[#E85D3E]"></span>
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F59E0B] opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-[#F59E0B]"></span>
                         </div>
                     </div>
                 </div>
@@ -788,12 +788,12 @@ const copyDraftEmail = async () => {
         <!-- Header -->
         <div class="absolute top-5 left-6 z-20 flex items-center gap-3">
             <div class="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium" style="background:white; border:1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <span style="color:#E85D3E;" class="font-black">🥷</span>
+                <span style="color:#F59E0B;" class="font-black">🥷</span>
                 <span class="text-slate-800 font-bold tracking-wide">Network Ninja</span>
             </div>
             <div v-if="ninjaTotalProfiles > 0" class="px-3 py-1.5 rounded-full flex items-center gap-2" style="background:rgba(232,93,62,0.1); border:1px solid rgba(232,93,62,0.3);">
-                <span class="w-2 h-2 rounded-full animate-pulse" style="background:#E85D3E;"></span>
-                <span class="text-xs font-bold" style="color:#E85D3E;">{{ ninjaTotalProfiles }} décideur(s)</span>
+                <span class="w-2 h-2 rounded-full animate-pulse" style="background:#F59E0B;"></span>
+                <span class="text-xs font-bold" style="color:#F59E0B;">{{ ninjaTotalProfiles }} décideur(s)</span>
             </div>
         </div>
 
@@ -808,7 +808,7 @@ const copyDraftEmail = async () => {
             <button @click="runNinja" :disabled="ninjaRunning"
                 class="px-4 py-2 text-slate-800 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
                 style="background:white; border:1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <svg v-if="ninjaRunning" class="w-4 h-4 animate-spin" style="color:#E85D3E;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <svg v-if="ninjaRunning" class="w-4 h-4 animate-spin" style="color:#F59E0B;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 <svg v-else class="w-4 h-4" style="color:#64748b;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 {{ ninjaRunning ? 'Scan...' : 'Relancer' }}
             </button>
@@ -858,7 +858,7 @@ const copyDraftEmail = async () => {
                         <line x1="500" y1="340"
                             :x2="ninjaNodeX(ci, ninjaCompanies.length, 210)"
                             :y2="ninjaNodeY(ci, ninjaCompanies.length, 210)"
-                            stroke="#E85D3E" stroke-width="1.2" opacity="0.3"
+                            stroke="#F59E0B" stroke-width="1.2" opacity="0.3"
                             stroke-dasharray="6,5" class="ninja-edge-anim" />
                     </template>
 
@@ -881,13 +881,13 @@ const copyDraftEmail = async () => {
                         <circle :cx="ninjaNodeX(ci, ninjaCompanies.length, 210)"
                                 :cy="ninjaNodeY(ci, ninjaCompanies.length, 210)"
                                 r="20" fill="none"
-                                stroke="#E85D3E" stroke-width="1.5" opacity="0.15"
+                                stroke="#F59E0B" stroke-width="1.5" opacity="0.15"
                                 class="ninja-pulse-ring"
                                 :style="{ animationDelay: ci * 0.4 + 's' }" />
                         <!-- Dot -->
                         <circle :cx="ninjaNodeX(ci, ninjaCompanies.length, 210)"
                                 :cy="ninjaNodeY(ci, ninjaCompanies.length, 210)"
-                                r="9" fill="#E85D3E">
+                                r="9" fill="#F59E0B">
                             <animate attributeName="r" values="8;10;8" dur="3s" repeatCount="indefinite"
                                 :begin="ci * 0.4 + 's'" />
                         </circle>
@@ -957,11 +957,11 @@ const copyDraftEmail = async () => {
                  style="background:rgba(255,255,255,0.98); border:1px solid #e2e8f0; backdrop-filter:blur(20px);"
                  :style="{ left: ninjaTooltipX + 'px', top: ninjaTooltipY + 'px' }">
 
-                <p class="text-xs font-black tracking-widest uppercase mb-1" style="color:#E85D3E;">{{ ninjaHoverNode.role }}</p>
+                <p class="text-xs font-black tracking-widest uppercase mb-1" style="color:#F59E0B;">{{ ninjaHoverNode.role }}</p>
                 <h4 class="text-slate-900 text-base font-black mb-0.5">{{ ninjaHoverNode.name }}</h4>
                 <p class="text-xs mb-4 font-medium" style="color:#64748b;">@ {{ ninjaHoverNode.company_name }}</p>
 
-                <p class="text-sm leading-relaxed mb-5 italic pl-3" style="color:#475569; border-left:2px solid #E85D3E;">
+                <p class="text-sm leading-relaxed mb-5 italic pl-3" style="color:#475569; border-left:2px solid #F59E0B;">
                     "{{ ninjaHoverNode.message }}"
                 </p>
 
@@ -988,7 +988,7 @@ const copyDraftEmail = async () => {
                         <svg class="w-4 h-4" style="color:#64748b;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                         <span class="text-sm font-bold text-slate-700">Copier ({{ (ninjaHoverNode.message||'').length }} car.)</span>
                     </div>
-                    <svg v-if="ninjaCopied[ninjaHoverNode.key]" class="w-4 h-4" style="color:#E85D3E;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <svg v-if="ninjaCopied[ninjaHoverNode.key]" class="w-4 h-4" style="color:#F59E0B;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     <svg v-else class="w-4 h-4" style="color:#94a3b8;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </button>
             </div>
@@ -999,11 +999,11 @@ const copyDraftEmail = async () => {
              class="absolute inset-0 flex flex-col items-center justify-center text-center z-20">
             <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4"
                  style="background:white; border:1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-                <svg class="w-8 h-8" style="color:#E85D3E;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <svg class="w-8 h-8" style="color:#F59E0B;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <p class="text-slate-900 text-xl font-bold mb-2">Aucun réseau identifié</p>
             <p class="text-sm max-w-sm mb-6" style="color:#64748b;">Lancez le workflow depuis votre Dashboard pour cartographier vos contacts.</p>
-            <button @click="runNinja" class="px-6 py-3 text-white font-bold rounded-2xl shadow-lg" style="background:#E85D3E;">Lancer le scan</button>
+            <button @click="runNinja" class="px-6 py-3 text-white font-bold rounded-2xl shadow-lg" style="background:#F59E0B;">Lancer le scan</button>
         </div>
 
         <!-- Scanning overlay -->
@@ -1011,10 +1011,10 @@ const copyDraftEmail = async () => {
              style="background:rgba(255,255,255,0.94); backdrop-filter:blur(8px);">
             <div class="relative w-28 h-28 mb-8">
                 <div class="absolute inset-0 rounded-full" style="border:4px solid rgba(232,93,62,0.15);"></div>
-                <div class="absolute inset-0 rounded-full animate-spin" style="border:4px solid #E85D3E; border-top-color:transparent;"></div>
+                <div class="absolute inset-0 rounded-full animate-spin" style="border:4px solid #F59E0B; border-top-color:transparent;"></div>
                 <div class="absolute inset-0 flex items-center justify-center text-4xl">🥷</div>
             </div>
-            <p class="text-xl font-black tracking-widest uppercase animate-pulse" style="color:#E85D3E;">Scan en cours</p>
+            <p class="text-xl font-black tracking-widest uppercase animate-pulse" style="color:#F59E0B;">Scan en cours</p>
             <p class="text-sm mt-3 max-w-sm" style="color:#64748b;">Identification des décideurs LinkedIn...</p>
         </div>
     </div>

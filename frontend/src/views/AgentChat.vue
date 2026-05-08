@@ -46,7 +46,7 @@ const CV_THEMES = computed(() => CV_TEMPLATES.map(tem => ({
   id: tem.id,
   name: tem.label,
   description: tem.description || 'Professional ATS-friendly layout',
-  colors: [tem.accentColor || '#E85D3E', tem.accentColor || '#E85D3E'],
+  colors: [tem.accentColor || '#F59E0B', tem.accentColor || '#F59E0B'],
   build: tem.build,
 })))
 
@@ -577,7 +577,7 @@ const restoreCvFromHistory = (entry) => {
                     <button 
                         v-if="currentUser?.cv_history?.length"
                         @click="showCvHistory = !showCvHistory" 
-                        class="flex items-center gap-1.5 text-[#E85D3E] hover:text-[#C44A2D] text-[10px] font-black uppercase tracking-widest transition-colors"
+                        class="flex items-center gap-1.5 text-[#F59E0B] hover:text-[#C44A2D] text-[10px] font-black uppercase tracking-widest transition-colors"
                     >
                         <ClockIcon class="w-3 h-3" /> {{ t('agent_chat.view_history') }}
                     </button>
@@ -606,7 +606,7 @@ const restoreCvFromHistory = (entry) => {
                             class="w-full text-left p-3 hover:bg-white flex items-center justify-between group transition-colors border-b border-slate-100 last:border-0"
                         >
                             <div class="flex items-center gap-3">
-                                <div class="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-[#E85D3E] transition-colors">
+                                <div class="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-[#F59E0B] transition-colors">
                                     <DocumentTextIcon class="w-4 h-4" />
                                 </div>
                                 <div>
@@ -615,7 +615,7 @@ const restoreCvFromHistory = (entry) => {
                                 </div>
                             </div>
                             <div class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span class="text-[9px] font-black text-[#E85D3E] uppercase tracking-widest">{{ t('agent_chat.cv_history.restore') }}</span>
+                                <span class="text-[9px] font-black text-[#F59E0B] uppercase tracking-widest">{{ t('agent_chat.cv_history.restore') }}</span>
                             </div>
                         </button>
                     </div>
@@ -659,11 +659,11 @@ const restoreCvFromHistory = (entry) => {
         <!-- Assistant Output Rendering -->
         <div v-if="msg.role === 'assistant'" class="flex gap-4 max-w-[95%] md:max-w-[85%]">
           <!-- Avatar -->
-          <div class="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-[#E85D3E] to-[#C44A2D] flex items-center justify-center shadow-lg shadow-[#E85D3E]/20 text-sm mt-1">
+          <div class="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-[#F59E0B] to-[#C44A2D] flex items-center justify-center shadow-lg shadow-[#F59E0B]/20 text-sm mt-1">
              <SparklesIcon class="w-4 h-4 text-white" />
           </div>
           
-          <div class="flex-1 min-w-0 prose prose-slate prose-p:leading-relaxed prose-a:text-[#E85D3E] hover:prose-a:text-gold-300 prose-strong:text-slate-900 prose-headings:text-slate-900 prose-pre:bg-white prose-pre:border prose-pre:border-slate-100 prose-pre:shadow-inner w-full">
+          <div class="flex-1 min-w-0 prose prose-slate prose-p:leading-relaxed prose-a:text-[#F59E0B] hover:prose-a:text-gold-300 prose-strong:text-slate-900 prose-headings:text-slate-900 prose-pre:bg-white prose-pre:border prose-pre:border-slate-100 prose-pre:shadow-inner w-full">
             
             <div v-if="msg.error" class="bg-rose-500/10 border border-rose-500/30 text-rose-200 p-4 rounded-2xl w-full">
                 {{ msg.content }}
@@ -676,11 +676,11 @@ const restoreCvFromHistory = (entry) => {
               <!-- HEADER PREMIUM -->
               <div class="flex flex-col md:flex-row items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2rem] shadow-sm relative overflow-hidden group">
                 <div class="absolute inset-0 bg-gradient-to-r from-slate-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div class="w-16 h-16 rounded-2xl bg-[#F9FAFB] border border-slate-100 flex items-center justify-center text-3xl shadow-inner relative z-10"><IdentificationIcon class="w-8 h-8 text-[#E85D3E]" /></div>
+                <div class="w-16 h-16 rounded-2xl bg-[#F9FAFB] border border-slate-100 flex items-center justify-center text-3xl shadow-inner relative z-10"><IdentificationIcon class="w-8 h-8 text-[#F59E0B]" /></div>
                 <div class="flex-1 text-center md:text-left relative z-10">
                   <h3 class="text-xl font-black text-slate-900 m-0 leading-tight tracking-tight">{{ msg.audit.candidate_name || t('agent_chat.audit.candidate') }}</h3>
                   <div class="flex items-center justify-center md:justify-start gap-2 mt-1">
-                      <span class="px-2 py-0.5 bg-[#E85D3E]/10 text-[#E85D3E] text-[10px] font-black uppercase tracking-wider rounded-md border border-[#E85D3E]/20">
+                      <span class="px-2 py-0.5 bg-[#F59E0B]/10 text-[#F59E0B] text-[10px] font-black uppercase tracking-wider rounded-md border border-[#F59E0B]/20">
                         {{ msg.audit.candidate_title || t('agent_chat.audit.title') }}
                       </span>
                   </div>
@@ -746,7 +746,7 @@ const restoreCvFromHistory = (entry) => {
                       [t('agent_chat.audit.categories.relevance')]: msg.audit.scores?.experience_pertinence
                     }" :key="key" class="space-y-3 group/cat">
                       <div class="flex justify-between items-end">
-                        <span class="text-xs font-bold text-slate-500 group-hover/cat:text-[#E85D3E] transition-colors uppercase tracking-wider">{{ key }}</span>
+                        <span class="text-xs font-bold text-slate-500 group-hover/cat:text-[#F59E0B] transition-colors uppercase tracking-wider">{{ key }}</span>
                         <span class="text-sm font-black text-slate-900">{{ val || 0 }}<span class="text-[10px] text-slate-300 ml-0.5">/100</span></span>
                       </div>
                       <div class="h-2.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100 relative shadow-inner">
@@ -816,7 +816,7 @@ const restoreCvFromHistory = (entry) => {
               <div v-if="msg.audit.correction_mapping && Object.keys(msg.audit.correction_mapping).length" class="space-y-6">
                  <div class="flex items-center justify-between px-2">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E85D3E] to-gold-500 flex items-center justify-center text-white shadow-lg shadow-gold-500/20">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F59E0B] to-gold-500 flex items-center justify-center text-white shadow-lg shadow-gold-500/20">
                             <SparklesIcon class="w-5 h-5" />
                         </div>
                         <div>
@@ -828,9 +828,9 @@ const restoreCvFromHistory = (entry) => {
 
                  <div class="grid grid-cols-1 gap-4">
                     <div v-for="(solution, flaw) in msg.audit.correction_mapping" :key="flaw" 
-                         class="group relative bg-white border border-slate-100 rounded-[2rem] p-6 hover:border-[#E85D3E]/30 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-[#E85D3E]/5 overflow-hidden">
+                         class="group relative bg-white border border-slate-100 rounded-[2rem] p-6 hover:border-[#F59E0B]/30 transition-all duration-500 shadow-sm hover:shadow-xl hover:shadow-[#F59E0B]/5 overflow-hidden">
                         
-                        <div class="absolute top-0 bottom-0 left-0 w-1.5 bg-gradient-to-b from-rose-400 via-[#E85D3E] to-emerald-400 opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="absolute top-0 bottom-0 left-0 w-1.5 bg-gradient-to-b from-rose-400 via-[#F59E0B] to-emerald-400 opacity-20 group-hover:opacity-100 transition-opacity"></div>
                         
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                             <!-- Flaw -->
@@ -843,7 +843,7 @@ const restoreCvFromHistory = (entry) => {
 
                             <!-- Arrow -->
                             <div class="lg:col-span-1 flex items-center justify-center opacity-20 group-hover:opacity-100 group-hover:scale-110 transition-all">
-                                <svg class="w-6 h-6 text-[#E85D3E] transform rotate-90 lg:rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-6 h-6 text-[#F59E0B] transform rotate-90 lg:rotate-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
                                 </svg>
                             </div>
@@ -875,7 +875,7 @@ const restoreCvFromHistory = (entry) => {
                            </div>
                            <div @click="openPreview(msg.content)" class="absolute inset-0 flex items-center justify-center bg-slate-900/5 backdrop-blur-[1px] cursor-pointer hover:bg-slate-900/10 transition-all group/eye">
                            <div class="w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center border border-slate-200 group-hover/eye:scale-110 transition-transform">
-                               <EyeIcon class="w-5 h-5 text-[#E85D3E]" />
+                               <EyeIcon class="w-5 h-5 text-[#F59E0B]" />
                            </div>
                       </div>
                       </div>
@@ -891,7 +891,7 @@ const restoreCvFromHistory = (entry) => {
                               :class="[
                                   'p-4 rounded-2xl border text-left flex flex-col gap-2 transition-all duration-300 relative overflow-hidden',
                                   selectedTheme === theme.id
-                                      ? 'bg-[#E85D3E] border-[#E85D3E] shadow-xl shadow-[#E85D3E]/20 translate-y-[-2px]'
+                                      ? 'bg-[#F59E0B] border-[#F59E0B] shadow-xl shadow-[#F59E0B]/20 translate-y-[-2px]'
                                       : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'
                               ]"
                           >
@@ -910,7 +910,7 @@ const restoreCvFromHistory = (entry) => {
                   <button
                     @click="downloadCvDocx(msg.content)"
                     :disabled="isDownloadingDocx"
-                    class="w-full group flex items-center justify-center gap-3 px-8 py-5 bg-gradient-to-r from-[#E85D3E] to-[#C44A2D] hover:from-[#C44A2D] hover:to-[#E85D3E] text-white rounded-[2rem] font-black transition-all duration-500 shadow-2xl shadow-[#E85D3E]/30 active:scale-[0.98] disabled:opacity-50"
+                    class="w-full group flex items-center justify-center gap-3 px-8 py-5 bg-gradient-to-r from-[#F59E0B] to-[#C44A2D] hover:from-[#C44A2D] hover:to-[#F59E0B] text-white rounded-[2rem] font-black transition-all duration-500 shadow-2xl shadow-[#F59E0B]/30 active:scale-[0.98] disabled:opacity-50"
                   >
                     <ArrowDownTrayIcon v-if="!isDownloadingDocx" class="w-6 h-6 transform group-hover:translate-y-1 transition-transform" />
                     <ArrowPathIcon v-else class="w-6 h-6 animate-spin" />
@@ -973,14 +973,14 @@ const restoreCvFromHistory = (entry) => {
       <!-- Typing Indicator & Analysis Steps -->
       <div v-if="isLoading" class="flex w-full justify-start gap-4 transition-all duration-500">
          <div class="shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-slate-100 text-sm mt-1 animate-pulse shadow-glow shadow-gold-500/10">
-             <CpuChipIcon class="w-5 h-5 text-[#E85D3E]" />
+             <CpuChipIcon class="w-5 h-5 text-[#F59E0B]" />
          </div>
          
          <!-- Loading CV Analysis Steps -->
          <div v-if="cvText" class="w-full max-w-sm bg-white/50 border border-slate-100/50 rounded-2xl p-4 shadow-sm backdrop-blur-sm">
              <div class="flex items-center gap-2 mb-3">
-                 <SparklesIcon class="w-4 h-4 text-[#E85D3E] animate-pulse" />
-                 <span class="text-xs font-bold text-[#E85D3E] uppercase tracking-widest">{{ t('common.processing') || 'Traitement en cours' }}</span>
+                 <SparklesIcon class="w-4 h-4 text-[#F59E0B] animate-pulse" />
+                 <span class="text-xs font-bold text-[#F59E0B] uppercase tracking-widest">{{ t('common.processing') || 'Traitement en cours' }}</span>
              </div>
              <div class="space-y-3">
                  <div v-for="(stepText, index) in loadingStepsTexts" :key="index" 
@@ -990,7 +990,7 @@ const restoreCvFromHistory = (entry) => {
                      <div v-if="loadingStep > index" class="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
                          <CheckCircleIcon class="w-3.5 h-3.5 text-emerald-400" />
                      </div>
-                     <div v-else-if="loadingStep === index" class="w-5 h-5 rounded-full border-2 border-[#E85D3E] border-t-transparent animate-spin shrink-0"></div>
+                     <div v-else-if="loadingStep === index" class="w-5 h-5 rounded-full border-2 border-[#F59E0B] border-t-transparent animate-spin shrink-0"></div>
                      
                      <span class="text-xs font-medium" :class="loadingStep > index ? 'text-slate-400 line-through' : 'text-slate-200'">
                          {{ stepText }}
@@ -1001,9 +1001,9 @@ const restoreCvFromHistory = (entry) => {
          
          <!-- Standard Typing dots (if not CV) -->
          <div v-else class="py-2.5 flex items-center gap-1.5 opacity-50">
-            <div class="w-2 h-2 rounded-full bg-[#E85D3E]/50 animate-bounce" style="animation-delay: 0ms"></div>
-            <div class="w-2 h-2 rounded-full bg-[#E85D3E]/50 animate-bounce" style="animation-delay: 150ms"></div>
-            <div class="w-2 h-2 rounded-full bg-[#E85D3E]/50 animate-bounce" style="animation-delay: 300ms"></div>
+            <div class="w-2 h-2 rounded-full bg-[#F59E0B]/50 animate-bounce" style="animation-delay: 0ms"></div>
+            <div class="w-2 h-2 rounded-full bg-[#F59E0B]/50 animate-bounce" style="animation-delay: 150ms"></div>
+            <div class="w-2 h-2 rounded-full bg-[#F59E0B]/50 animate-bounce" style="animation-delay: 300ms"></div>
          </div>
       </div>
     </div>
@@ -1018,7 +1018,7 @@ const restoreCvFromHistory = (entry) => {
            </div>
             <!-- Image Upload -->
             <div class="flex items-center px-2">
-                <label class="cursor-pointer p-2 hover:bg-white rounded-xl transition-colors text-slate-400 hover:text-[#E85D3E] relative">
+                <label class="cursor-pointer p-2 hover:bg-white rounded-xl transition-colors text-slate-400 hover:text-[#F59E0B] relative">
                     <PhotoIcon class="w-5 h-5" />
                     <input type="file" accept="image/*" class="hidden" @change="e => {
                         const file = e.target.files[0];
@@ -1035,7 +1035,7 @@ const restoreCvFromHistory = (entry) => {
             <!-- Main Message -->
             <textarea v-model="inputQuery" @keydown.enter.exact.prevent="sendMessage" class="w-full bg-transparent border-none focus:ring-0 text-slate-900 resize-none h-12 p-2 text-sm" :placeholder="t('agent_chat.placeholders.message')"></textarea>
            <!-- Send Button -->
-           <button @click="sendMessage" :disabled="isLoading" class="p-3 bg-[#E85D3E] hover:bg-gold-400 text-surface-950 rounded-xl font-bold shrink-0">
+           <button @click="sendMessage" :disabled="isLoading" class="p-3 bg-[#F59E0B] hover:bg-gold-400 text-surface-950 rounded-xl font-bold shrink-0">
               <PaperAirplaneIcon v-if="!isLoading" class="w-5 h-5" />
               <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
            </button>
@@ -1137,8 +1137,8 @@ const restoreCvFromHistory = (entry) => {
             <div v-else-if="activeWorkspaceTab === 'code'" class="h-full bg-[#0d1117] flex flex-col">
                 <!-- File Selector Tabs -->
                 <div class="flex items-center gap-1 p-2 bg-[#F9FAFB] border-b border-slate-200">
-                    <button @click="activeFileTab = 'html'" :class="activeFileTab === 'html' ? 'bg-white text-orange-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> index.html
+                    <button @click="activeFileTab = 'html'" :class="activeFileTab === 'html' ? 'bg-white text-gold-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-gold-500"></span> index.html
                     </button>
                     <button @click="activeFileTab = 'css'" :class="activeFileTab === 'css' ? 'bg-white text-blue-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> style.css
@@ -1248,7 +1248,7 @@ const restoreCvFromHistory = (entry) => {
                 <!-- Header -->
                 <div class="px-8 py-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-[#E85D3E] flex items-center justify-center text-white shadow-lg shadow-[#E85D3E]/20">
+                        <div class="w-10 h-10 rounded-xl bg-[#F59E0B] flex items-center justify-center text-white shadow-lg shadow-[#F59E0B]/20">
                             <EyeIcon class="w-5 h-5" />
                         </div>
                         <div>
@@ -1277,7 +1277,7 @@ const restoreCvFromHistory = (entry) => {
                     <button @click="showPreviewModal = false" class="px-6 py-2.5 bg-white border border-slate-200 text-slate-900 text-xs font-black rounded-xl hover:bg-slate-50 transition-colors uppercase tracking-widest">
                         {{ t('common.close') || 'Fermer' }}
                     </button>
-                    <button @click="downloadCvDocx(previewData)" class="px-8 py-2.5 bg-[#E85D3E] text-white text-xs font-black rounded-xl shadow-lg shadow-[#E85D3E]/20 hover:bg-[#C44A2D] transition-all uppercase tracking-widest flex items-center gap-2">
+                    <button @click="downloadCvDocx(previewData)" class="px-8 py-2.5 bg-[#F59E0B] text-white text-xs font-black rounded-xl shadow-lg shadow-[#F59E0B]/20 hover:bg-[#C44A2D] transition-all uppercase tracking-widest flex items-center gap-2">
                         <ArrowDownTrayIcon class="w-4 h-4" /> {{ t('agent_chat.audit.download_cv') }}
                     </button>
                 </div>

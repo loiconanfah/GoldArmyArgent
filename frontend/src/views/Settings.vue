@@ -326,7 +326,7 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
             <h3 class="text-xl font-bold text-slate-900">{{ profileData.full_name }}</h3>
             <p class="text-sm text-slate-500 mb-4">{{ profileData.email }}</p>
             <div class="flex flex-wrap gap-2 justify-center sm:justify-start">
-              <button @click="router.push('/profile')" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold uppercase rounded-xl hover:bg-indigo-600 transition-colors">
+              <button @click="router.push('/profile')" class="px-4 py-2 bg-gold-600 text-white text-xs font-bold uppercase rounded-xl hover:bg-indigo-600 transition-colors">
                 Modifier le profil
               </button>
               <button class="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold uppercase rounded-xl hover:bg-rose-100 transition-colors">

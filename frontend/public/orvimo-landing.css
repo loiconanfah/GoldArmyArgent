@@ -8955,7 +8955,7 @@ blockquote {
     position: absolute;
     inset: 17% 0 0%;
 }
-.orange-gradient {
+.gold-gradient {
     z-index: 2;
     border-radius: var(--radius--rounded);
     filter: blur(114px);

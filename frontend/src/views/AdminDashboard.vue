@@ -506,7 +506,7 @@ onMounted(fetchAllData)
                                         <p class="text-[10px] text-slate-400 font-bold uppercase">{{ new Date(err.timestamp).toLocaleString() }}</p>
                                     </div>
                                 </div>
-                                <button v-if="!err.resolved" @click="resolveError(err._id)" class="px-4 py-1.5 bg-slate-900 text-white hover:bg-indigo-600 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors">Résoudre</button>
+                                <button v-if="!err.resolved" @click="resolveError(err._id)" class="px-4 py-1.5 bg-gold-600 text-white hover:bg-indigo-600 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors">Résoudre</button>
                             </div>
                             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-600 overflow-x-auto whitespace-pre">
                                 {{ err.message }}
@@ -554,7 +554,7 @@ onMounted(fetchAllData)
                                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Contenu (HTML accepté)</label>
                                 <textarea v-model="emailForm.content" rows="6" placeholder="Rédigez votre message ici..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
                             </div>
-                            <button @click="sendEmail" :disabled="isActionLoading" class="w-full py-4 bg-slate-900 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 disabled:opacity-50">
+                            <button @click="sendEmail" :disabled="isActionLoading" class="w-full py-4 bg-gold-600 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-lg active:scale-95 disabled:opacity-50">
                                 <EnvelopeIcon v-if="!isActionLoading" class="w-5 h-5" />
                                 <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
                                 {{ emailForm.isBroadcast ? 'Diffuser l\'email à tous' : 'Envoyer l\'email à l\'agent' }}
@@ -566,7 +566,7 @@ onMounted(fetchAllData)
                 <!-- Push Broadcast Tool -->
                 <div class="bg-white border border-slate-200 rounded-2xl p-10 shadow-sm space-y-8 opacity-60 hover:opacity-100 transition-opacity">
                     <div class="flex items-center gap-3">
-                        <div class="p-2 bg-slate-900 rounded-xl shadow-lg"><BellAlertIcon class="w-6 h-6 text-white" /></div>
+                        <div class="p-2 bg-gold-600 rounded-xl shadow-lg"><BellAlertIcon class="w-6 h-6 text-white" /></div>
                         <div>
                             <h2 class="text-xl font-bold text-slate-900 uppercase tracking-tight">Push Notification</h2>
                             <p class="text-xs text-slate-500 font-medium">Alerte instantanée sur le terminal agent.</p>

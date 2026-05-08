@@ -12,8 +12,8 @@ export const articles = [
     devToUrl: 'https://dev.to/yvanlloic/how-to-use-ai-to-land-your-first-job-in-a-world-where-bots-sort-resumes-before-humans-4k3g',
     content: `
       <div class="prose lg:prose-xl max-w-none text-slate-800 leading-relaxed">
-        <p class="text-2xl leading-9 text-slate-800 font-bold mb-8 p-6 bg-slate-100 rounded-2xl border border-orange-200 shadow-lg">Tu es étudiant, nouveau diplômé ou en pleine recherche d’emploi, et tu as l’impression de parler dans le vide chaque fois que tu cliques sur « postuler ».</p>
-        <p class="mb-6 text-slate-800">Ce n’est pas forcément ton CV ni ton profil qui sont mauvais : <strong class="text-slate-900 font-bold bg-orange-100 px-2 py-1 rounded">le jeu a changé</strong>.</p>
+        <p class="text-2xl leading-9 text-slate-800 font-bold mb-8 p-6 bg-slate-100 rounded-2xl border border-gold-200 shadow-lg">Tu es étudiant, nouveau diplômé ou en pleine recherche d’emploi, et tu as l’impression de parler dans le vide chaque fois que tu cliques sur « postuler ».</p>
+        <p class="mb-6 text-slate-800">Ce n’est pas forcément ton CV ni ton profil qui sont mauvais : <strong class="text-slate-900 font-bold bg-gold-100 px-2 py-1 rounded">le jeu a changé</strong>.</p>
         <p class="mb-6 text-slate-800">Aujourd’hui, tu te bats souvent contre des algorithmes, des <strong>logiciels ATS</strong> et des recruteurs surchargés avant même d’avoir une chance de prouver ta valeur.</p>
         <p class="mb-6 text-slate-800">Les jeunes profils sont particulièrement touchés, car l’<strong>intelligence artificielle</strong> automatise de plus en plus de tâches juniors et pousse certaines entreprises à réduire leurs recrutements d’entrants.</p>
         
@@ -22,19 +22,19 @@ export const articles = [
           <p class="relative z-10 m-0 text-lg text-slate-800 italic">La bonne nouvelle, c’est que tu peux utiliser cette même intelligence artificielle pour reprendre le contrôle, rendre ton CV visible et augmenter fortement tes chances de décrocher des entretiens pour ton <strong>premier job</strong>.</p>
         </div>
 
-        <h2 class="text-3xl font-bold mt-12 mb-6 text-slate-900 border-b-2 border-orange-400 pb-3 inline-block">1. Pourquoi décrocher un premier job est devenu plus difficile</h2>
+        <h2 class="text-3xl font-bold mt-12 mb-6 text-slate-900 border-b-2 border-gold-400 pb-3 inline-block">1. Pourquoi décrocher un premier job est devenu plus difficile</h2>
         <p class="mb-6">Pendant longtemps, avoir un diplôme, un bon CV et de la motivation suffisait souvent à obtenir un premier poste.</p>
         <p class="mb-6">Aujourd’hui, l’intelligence artificielle et l’automatisation ont commencé à remplacer ou simplifier de nombreuses tâches d’entrée de carrière : <em class="text-slate-700">recherches, analyses, rédaction de contenu simple ou support administratif</em>.</p>
         <p class="mb-6">Dans des secteurs comme la technologie, la finance ou le juridique, certaines entreprises réduisent donc leurs recrutements juniors. En parallèle, les entreprises attendent désormais des jeunes candidats qu’ils soient déjà à l’aise avec les outils d’intelligence artificielle. Ce décalage entre les attentes du marché et les compétences réellement maîtrisées à la sortie des études crée une situation difficile pour beaucoup de nouveaux diplômés.</p>
         
         <p class="font-semibold text-slate-900 mb-4">Résultat :</p>
-        <ul class="list-disc pl-6 mb-8 space-y-2 text-slate-800 marker:text-orange-500">
+        <ul class="list-disc pl-6 mb-8 space-y-2 text-slate-800 marker:text-gold-500">
           <li>Plus de concurrence pertinente</li>
           <li>Moins de postes accessibles</li>
           <li>Et un véritable mur invisible dès que tu envoies ta candidature.</li>
         </ul>
 
-        <h2 class="text-3xl font-bold mt-12 mb-6 text-slate-900 border-b-2 border-orange-400 pb-3 inline-block">2. Ce qui se passe vraiment quand tu cliques sur « postuler »</h2>
+        <h2 class="text-3xl font-bold mt-12 mb-6 text-slate-900 border-b-2 border-gold-400 pb-3 inline-block">2. Ce qui se passe vraiment quand tu cliques sur « postuler »</h2>
         <p class="mb-6">Dans la plupart des moyennes et grandes entreprises, ta candidature est d’abord traitée par un logiciel appelé <strong class="text-indigo-400">ATS (Applicant Tracking System)</strong>.</p>
         <p class="mb-4">Cet outil ne lit pas ton CV comme un humain. Il :</p>
         <ul class="list-none pl-0 mb-8 space-y-3">
@@ -46,14 +46,14 @@ export const articles = [
         </ul>
         <p class="mb-6">Si ce score ATS est trop faible, ta candidature peut être automatiquement rejetée ou reléguée en bas de la pile, parfois sans qu’aucun recruteur ne regarde réellement ton CV.</p>
 
-        <h2 class="text-3xl font-bold mt-12 mb-6 text-slate-900 border-b-2 border-orange-400 pb-3 inline-block">3. L’IA : ennemi ou arme secrète des jeunes candidats ?</h2>
+        <h2 class="text-3xl font-bold mt-12 mb-6 text-slate-900 border-b-2 border-gold-400 pb-3 inline-block">3. L’IA : ennemi ou arme secrète des jeunes candidats ?</h2>
         <p class="mb-6">Beaucoup de chercheurs d’emploi voient l’IA comme une menace. Pourtant, un nombre croissant de candidats l’utilise déjà pour <strong>rédiger leur CV</strong>, écrire leurs lettres de motivation, et préparer leurs entretiens, avec des gains très concrets en qualité et en efficacité.</p>
         
-        <blockquote class="border-l-4 border-orange-500 pl-6 py-2 my-8 italic text-slate-700 bg-slate-100 rounded-r-lg">
+        <blockquote class="border-l-4 border-gold-500 pl-6 py-2 my-8 italic text-slate-700 bg-slate-100 rounded-r-lg">
           La vraie différence se joue entre ceux qui subissent ces outils… et ceux qui savent en tirer parti pour leur recherche d'emploi.
         </blockquote>
 
-        <h2 class="text-3xl font-bold mt-12 mb-8 text-slate-900 border-b-2 border-orange-400 pb-3 inline-block">4. Cinq stratégies concrètes pour utiliser l’IA et passer les ATS</h2>
+        <h2 class="text-3xl font-bold mt-12 mb-8 text-slate-900 border-b-2 border-gold-400 pb-3 inline-block">4. Cinq stratégies concrètes pour utiliser l’IA et passer les ATS</h2>
         
         <div class="space-y-12">
           <section>
@@ -92,7 +92,7 @@ export const articles = [
           </section>
         </div>
 
-        <h2 class="text-3xl font-bold mt-16 mb-6 text-slate-900 border-b-2 border-orange-400 pb-3 inline-block">5. Un exemple concret avec ATS</h2>
+        <h2 class="text-3xl font-bold mt-16 mb-6 text-slate-900 border-b-2 border-gold-400 pb-3 inline-block">5. Un exemple concret avec ATS</h2>
         <p class="mb-6">Imagine deux nouveaux diplômés partageant le même diplôme, les mêmes stages et le même potentiel.</p>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -104,7 +104,7 @@ export const articles = [
               <li>• Profil LinkedIn désuet</li>
             </ul>
           </div>
-          <div class="bg-orange-50 p-6 rounded-2xl border border-indigo-500/30">
+          <div class="bg-gold-50 p-6 rounded-2xl border border-indigo-500/30">
             <h4 class="text-xl font-bold text-indigo-400 mb-4 flex items-center gap-2"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Candidat B</h4>
             <ul class="space-y-3 text-sm text-slate-800">
               <li>• Applique l'adaptation IA contextuelle</li>
@@ -115,7 +115,7 @@ export const articles = [
         </div>
         <p class="text-center font-medium bg-slate-100 py-4 rounded-xl">Le système <strong>ATS attribuera un score algorithmique plus élevé</strong> au candidat B, le rendant instantanément visible pour le recruteur final.</p>
 
-        <h2 class="text-3xl font-bold mt-16 mb-6 text-slate-900 border-b-2 border-orange-400 pb-3 inline-block">6. À mettre en place dès aujourd’hui</h2>
+        <h2 class="text-3xl font-bold mt-16 mb-6 text-slate-900 border-b-2 border-gold-400 pb-3 inline-block">6. À mettre en place dès aujourd’hui</h2>
         <ul class="space-y-4 mb-12">
           <li class="flex items-center gap-4 bg-slate-100 p-4 rounded-xl border border-slate-200 hover:bg-slate-200 transition-colors">
             <div class="w-12 h-12 rounded-full bg-indigo-900/50 text-indigo-400 flex items-center justify-center shrink-0">1</div>
@@ -142,8 +142,8 @@ export const articles = [
         <h3 class="text-xl font-bold mt-16 mb-4 text-slate-400 uppercase tracking-widest text-sm">Sources et références</h3>
         <div class="bg-slate-100 p-6 rounded-2xl text-sm text-slate-800 mb-8 border border-slate-200 shadow-xl">
           <ul class="space-y-4 mb-6">
-            <li><a href="https://www150.statcan.gc.ca/n1/pub/36-28-0001/2026001/article/00001-eng.htm" target="_blank" class="text-indigo-400 hover:text-orange-700 underline underline-offset-4 decoration-indigo-500/30"><strong>Statistique Canada</strong> – Tendances de l'emploi au Canada à l’ère de l’intelligence artificielle, 2026.</a></li>
-            <li><a href="https://economics.td.com/ca-ai-adoption-fr" target="_blank" class="text-indigo-400 hover:text-orange-700 underline underline-offset-4 decoration-indigo-500/30"><strong>TD Economics</strong> – L’impact de l’IA sur le marché de l’emploi sera-t-il le même qu’aux États-Unis ?, 2026.</a></li>
+            <li><a href="https://www150.statcan.gc.ca/n1/pub/36-28-0001/2026001/article/00001-eng.htm" target="_blank" class="text-indigo-400 hover:text-gold-700 underline underline-offset-4 decoration-indigo-500/30"><strong>Statistique Canada</strong> – Tendances de l'emploi au Canada à l’ère de l’intelligence artificielle, 2026.</a></li>
+            <li><a href="https://economics.td.com/ca-ai-adoption-fr" target="_blank" class="text-indigo-400 hover:text-gold-700 underline underline-offset-4 decoration-indigo-500/30"><strong>TD Economics</strong> – L’impact de l’IA sur le marché de l’emploi sera-t-il le même qu’aux États-Unis ?, 2026.</a></li>
             <li class="pl-2 border-l border-slate-300"><strong>Université de Montréal</strong> – Réfléchir aux effets de l’IA sur la formation et l'emploi des jeunes, 2025.</li>
             <li class="pl-2 border-l border-slate-300"><strong>France Travail</strong> – Intelligence artificielle et recherche d'emploi, 2023.</li>
             <li class="pl-2 border-l border-slate-300"><strong>APEC</strong> – Faire de l’IA générative l’alliée de votre recherche d’emploi, 2023.</li>
@@ -152,7 +152,7 @@ export const articles = [
           </ul>
           
           <div class="mt-8 pt-6 border-t border-slate-200 flex items-center gap-4">
-            <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-orange-400 to-amber-500 p-0.5">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-gold-400 to-amber-500 p-0.5">
               <div class="w-full h-full bg-slate-100 rounded-full flex items-center justify-center text-xl font-bold text-slate-900">
                 YN
               </div>

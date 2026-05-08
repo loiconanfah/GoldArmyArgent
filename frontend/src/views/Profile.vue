@@ -191,7 +191,7 @@ const promoteUser = async () => {
             </button>
             <div>
                 <h1 class="text-3xl font-bold text-[#111827] tracking-tight">
-                    {{ t('profile.title').split(' ')[0] }} <span class="text-[#E85D3E]">{{ t('profile.title').split(' ').slice(1).join(' ') }}</span>
+                    {{ t('profile.title').split(' ')[0] }} <span class="text-[#F59E0B]">{{ t('profile.title').split(' ').slice(1).join(' ') }}</span>
                 </h1>
                 <p class="text-[#6B7280] text-sm font-medium mt-1">{{ t('profile.subtitle') }}</p>
             </div>
@@ -210,7 +210,7 @@ const promoteUser = async () => {
             <button 
                 @click="saveProfile"
                 :disabled="isSaving"
-                class="btn-orange"
+                class="btn-gold"
             >
                 <span v-if="!isSaving">{{ t('profile.save_btn') }}</span>
                 <span v-else class="flex items-center gap-2">
@@ -226,7 +226,7 @@ const promoteUser = async () => {
     <input type="file" ref="avatarFileInput" class="hidden" accept="image/*" @change="onAvatarFileChange" />
 
     <div v-if="isLoading" class="flex flex-col items-center justify-center py-32">
-        <div class="w-12 h-12 border-4 border-gray-100 border-t-[#E85D3E] rounded-full animate-spin"></div>
+        <div class="w-12 h-12 border-4 border-gray-100 border-t-[#F59E0B] rounded-full animate-spin"></div>
     </div>
 
     <div v-else class="profile-grid">
@@ -242,7 +242,7 @@ const promoteUser = async () => {
                             <UserIcon v-else class="w-12 h-12 text-[#D1D5DB]" />
                             <!-- Loading Overlay -->
                             <div v-if="isUploadingAvatar" class="absolute inset-0 bg-white/80 flex items-center justify-center">
-                                <svg class="animate-spin h-6 w-6 text-[#E85D3E]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <svg class="animate-spin h-6 w-6 text-[#F59E0B]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             </div>
                         </div>
                         <button 
@@ -270,7 +270,7 @@ const promoteUser = async () => {
                             <span class="text-sm font-medium text-[#4B5563]">{{ profile.cv_text ? t('profile.cv_loaded') : t('profile.cv_empty') }}</span>
                         </div>
                         <div class="info-row">
-                            <LinkIcon class="w-4 h-4" :class="profile.portfolio_url ? 'text-[#E85D3E]' : 'text-gray-300'" />
+                            <LinkIcon class="w-4 h-4" :class="profile.portfolio_url ? 'text-[#F59E0B]' : 'text-gray-300'" />
                             <span class="text-sm font-medium text-[#4B5563]">{{ profile.portfolio_url ? t('profile.portfolio_linked') : t('profile.portfolio_none') }}</span>
                         </div>
                     </div>
@@ -280,13 +280,13 @@ const promoteUser = async () => {
             <!-- Readiness HUD -->
             <div class="profile-card animate-slide-up" style="animation-delay: 0.2s;">
                 <div class="flex items-center gap-3 mb-6">
-                    <SparklesIcon class="w-5 h-5 text-[#E85D3E]" />
+                    <SparklesIcon class="w-5 h-5 text-[#F59E0B]" />
                     <h3 class="font-bold text-[#111827] text-[11px] uppercase tracking-[0.2em]">{{ t('profile.readiness') }}</h3>
                 </div>
                 <div class="space-y-4">
                     <div class="flex justify-between text-[11px] font-bold mb-1">
                         <span class="text-[#9CA3AF]">OPTIMISATION ALPHA</span>
-                        <span class="text-[#E85D3E]">88%</span>
+                        <span class="text-[#F59E0B]">88%</span>
                     </div>
                     <div class="progress-track">
                         <div class="progress-fill" style="width: 88%"></div>
@@ -312,7 +312,7 @@ const promoteUser = async () => {
                         <button 
                             @click="promoteUser"
                             :disabled="isPromoting"
-                            class="btn-orange text-xs py-2 w-full justify-center"
+                            class="btn-gold text-xs py-2 w-full justify-center"
                         >
                             {{ isPromoting ? '...' : t('profile.promote_btn') }}
                         </button>
@@ -327,7 +327,7 @@ const promoteUser = async () => {
             <!-- Personal Details -->
             <div class="profile-card animate-slide-up" style="animation-delay: 0.2s;">
                 <div class="flex items-center gap-3 mb-8">
-                    <PencilSquareIcon class="w-5 h-5 text-[#E85D3E]" />
+                    <PencilSquareIcon class="w-5 h-5 text-[#F59E0B]" />
                     <h3 class="text-xl font-bold text-[#111827] tracking-tight">{{ t('profile.personal_details') }}</h3>
                 </div>
                 
@@ -392,7 +392,7 @@ const promoteUser = async () => {
                     <div class="portfolio-item">
                         <div class="flex items-center gap-4">
                             <div class="icon-box">
-                                <DocumentTextIcon class="w-6 h-6 text-[#E85D3E]" />
+                                <DocumentTextIcon class="w-6 h-6 text-[#F59E0B]" />
                             </div>
                             <div>
                                 <h4 class="font-bold text-[#111827] text-sm">{{ t('profile.portfolio_project') }}</h4>
@@ -426,7 +426,7 @@ const promoteUser = async () => {
                 <button 
                     @click="saveProfile"
                     :disabled="isSaving"
-                    class="btn-orange w-full py-4 text-base shadow-xl"
+                    class="btn-gold w-full py-4 text-base shadow-xl"
                 >
                     {{ t('profile.save_btn') }}
                 </button>
@@ -496,7 +496,7 @@ const promoteUser = async () => {
     bottom: -0.5rem;
     right: -0.5rem;
     padding: 0.6rem;
-    background-color: #E85D3E;
+    background-color: #F59E0B;
     color: white;
     border-radius: 1rem;
     border: 3px solid #FFFFFF;
@@ -541,13 +541,13 @@ const promoteUser = async () => {
 
 .progress-fill {
     height: 100%;
-    background-color: #E85D3E;
+    background-color: #F59E0B;
     border-radius: 9999px;
     transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.btn-orange {
-    background-color: #E85D3E;
+.btn-gold {
+    background-color: #F59E0B;
     color: white;
     padding: 0.75rem 1.5rem;
     border-radius: 1rem;
@@ -560,9 +560,9 @@ const promoteUser = async () => {
     border: none;
     cursor: pointer;
 }
-.btn-orange:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-orange:active { transform: translateY(0); }
-.btn-orange:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-gold:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-gold:active { transform: translateY(0); }
+.btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-secondary {
     background-color: #FFFFFF;
@@ -624,7 +624,7 @@ const promoteUser = async () => {
 }
 .input-clean:focus {
     outline: none;
-    border-color: #E85D3E;
+    border-color: #F59E0B;
     background-color: #FFFFFF;
     box-shadow: 0 0 0 4px rgba(232, 93, 62, 0.05);
 }
@@ -655,7 +655,7 @@ const promoteUser = async () => {
 }
 .cv-textarea:focus {
     outline: none;
-    border-color: #E85D3E;
+    border-color: #F59E0B;
     background-color: #FFFFFF;
 }
 

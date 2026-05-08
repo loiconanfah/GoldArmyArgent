@@ -204,6 +204,8 @@ const togglePlaybook = async (pb) => {
 
     if (pb.id === 6) {
         openSocialSniperModal(pb)
+        } else if (pb.name === 'Sniper-to-Apply') {
+            openSniperApplyModal()
         return
     }
 
@@ -899,6 +901,93 @@ const fetchDashboardData = async () => {
     }
   } catch(e){}
 }
+
+// --- Sniper To Apply State ---
+const isSniperApplyModalOpen = ref(false)
+const sniperApplyStep = ref('search') // search, select, running, summary
+const sniperApplyForm = ref({ job_title: '', location: '', nb_results: 10 })
+const sniperApplyJobs = ref([])
+const sniperApplySelected = ref([])
+const sniperApplyLoading = ref(false)
+const sniperApplyResults = ref([])
+const sniperApplyRemaining = ref(3)
+const sniperApplyMax = ref(3)
+
+const openSniperApplyModal = async () => {
+    isSniperApplyModalOpen.value = true
+    sniperApplyStep.value = 'search'
+    sniperApplyJobs.value = []
+    sniperApplySelected.value = []
+    sniperApplyResults.value = []
+    sniperApplyMax.value = isPremium.value ? 10 : 5
+    sniperApplyRemaining.value = sniperApplyMax.value
+    try {
+        const r = await authFetch('/api/profile/usage')
+        const j = await r.json()
+        if (j.status === 'success') {
+            const usage = j.data.usage.sniper_apply || { limit: sniperApplyMax.value, current: 0 }
+            sniperApplyMax.value = usage.limit
+            sniperApplyRemaining.value = usage.limit - usage.current
+        }
+    } catch(e) {}
+}
+
+const toggleSniperApplyJob = (job) => {
+    const idx = sniperApplySelected.value.findIndex(j => j.url === job.url)
+    if (idx > -1) {
+        sniperApplySelected.value.splice(idx, 1)
+    } else {
+        if (sniperApplySelected.value.length < sniperApplyRemaining.value) {
+            sniperApplySelected.value.push(job)
+        } else {
+            alert(`Vous avez atteint votre limite journalière. Il vous reste ${sniperApplyRemaining.value} offre(s) à sélectionner aujourd'hui.`)
+        }
+    }
+}
+
+const runSniperApplySearch = async () => {
+    sniperApplyLoading.value = true
+    try {
+        const r = await authFetch('/api/workflows/sniper-apply/search', {
+            method: 'POST',
+            body: JSON.stringify(sniperApplyForm.value)
+        })
+        const j = await r.json()
+        if(j.status === 'success') {
+            sniperApplyJobs.value = j.data
+            sniperApplyStep.value = 'select'
+        }
+    } catch(e) { console.error(e) }
+    finally { sniperApplyLoading.value = false }
+}
+
+const runSniperApplyExecute = async () => {
+    if(sniperApplySelected.value.length === 0) return
+    sniperApplyStep.value = 'running'
+    sniperApplyLoading.value = true
+    try {
+        const r = await authFetch('/api/workflows/sniper-apply/execute', {
+            method: 'POST',
+            body: JSON.stringify({ selected_offers: sniperApplySelected.value })
+        })
+        const j = await r.json()
+        if(j.status === 'success') {
+            sniperApplyResults.value = j.data
+            sniperApplyStep.value = 'summary'
+        } else {
+            alert("Erreur lors de l'exécution: " + (j.detail || 'Erreur inconnue'))
+            sniperApplyStep.value = 'select'
+        }
+    } catch(e) { 
+        console.error(e) 
+        sniperApplyStep.value = 'select'
+    }
+    finally { sniperApplyLoading.value = false }
+}
+
+// --- End Sniper To Apply State ---
+
+
 onMounted(async () => {
     await fetchDashboardData()
     await syncWorkflowStatuses()
@@ -931,7 +1020,7 @@ const syncWorkflowStatuses = async () => {
           <div class="date-num">{{ dateNum }}</div>
           <div class="date-str">{{ todayStr }}</div>
           <div class="date-divider"></div>
-          <button @click="$router.push('/crm')" class="btn-orange">{{ t('dashboard.show_tasks') }} &rarr;</button>
+          <button @click="$router.push('/crm')" class="btn-gold">{{ t('dashboard.show_tasks') }} &rarr;</button>
       </div>
       
       <div class="header-greeting">
@@ -1057,10 +1146,10 @@ const syncWorkflowStatuses = async () => {
                     </div>
                 </div>
                 <div class="eff-score-wrap">
-                    <span class="eff-score-txt group-hover:text-[#E85D3E] transition-colors">{{ item.score }}%</span>
+                    <span class="eff-score-txt group-hover:text-[#F59E0B] transition-colors">{{ item.score }}%</span>
                     <div class="eff-track">
                         <!-- Gradient fill for progress -->
-                        <div class="eff-fill group-hover:bg-[#E85D3E] transition-colors" :style="`width: ${item.score}%`"></div>
+                        <div class="eff-fill group-hover:bg-[#F59E0B] transition-colors" :style="`width: ${item.score}%`"></div>
                     </div>
                 </div>
             </div>
@@ -1261,7 +1350,7 @@ const syncWorkflowStatuses = async () => {
                             <circle cx="64" cy="64" r="58" stroke="currentColor" stroke-width="8" fill="transparent" 
                                 :stroke-dasharray="364.4" 
                                 :stroke-dashoffset="364.4 * (1 - (goldProfileAuditData?.profile_score || 0) / 100)" 
-                                class="text-[#E85D3E] transition-all duration-1000 ease-out" 
+                                class="text-[#F59E0B] transition-all duration-1000 ease-out" 
                             />
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
@@ -1293,7 +1382,7 @@ const syncWorkflowStatuses = async () => {
                             <div class="flex items-center justify-between mb-6">
                                 <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Accroche (Headline)</h4>
                                 <button @click="copyToClipboard(goldProfileAuditData?.headline)" class="p-2 hover:bg-slate-50 rounded-xl transition-colors">
-                                    <DocumentDuplicateIcon class="w-4 h-4 text-slate-300 group-hover:text-[#E85D3E]" />
+                                    <DocumentDuplicateIcon class="w-4 h-4 text-slate-300 group-hover:text-[#F59E0B]" />
                                 </button>
                             </div>
                             <p class="text-xl font-bold text-slate-800 leading-snug tracking-tight">
@@ -1304,7 +1393,7 @@ const syncWorkflowStatuses = async () => {
                         <div class="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden">
                              <div class="flex items-center justify-between mb-8">
                                 <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Résumé (About) LinkedIn</h4>
-                                <button @click="copyToClipboard(goldProfileAuditData?.about)" class="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black hover:bg-slate-900 hover:text-white transition-all uppercase">
+                                <button @click="copyToClipboard(goldProfileAuditData?.about)" class="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black hover:bg-gold-600 hover:text-white transition-all uppercase">
                                     Copier le résumé
                                 </button>
                             </div>
@@ -1331,11 +1420,11 @@ const syncWorkflowStatuses = async () => {
                             <div class="space-y-8">
                                 <div v-for="(opt, i) in goldProfileAuditData?.field_optimizations" :key="i" class="relative pl-8 group">
                                     <!-- Vertical Line -->
-                                    <div v-if="i < (goldProfileAuditData?.field_optimizations.length - 1)" class="absolute left-[11px] top-6 w-[2px] h-10 bg-slate-50 group-hover:bg-[#E85D3E]/20 transition-colors"></div>
+                                    <div v-if="i < (goldProfileAuditData?.field_optimizations.length - 1)" class="absolute left-[11px] top-6 w-[2px] h-10 bg-slate-50 group-hover:bg-[#F59E0B]/20 transition-colors"></div>
                                     
                                     <!-- Icon/Bullet -->
-                                    <div class="absolute left-0 top-1 w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:border-[#E85D3E] group-hover:bg-[#E85D3E]/5 transition-all">
-                                        <div class="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-[#E85D3E] transition-colors"></div>
+                                    <div class="absolute left-0 top-1 w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:border-[#F59E0B] group-hover:bg-[#F59E0B]/5 transition-all">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-[#F59E0B] transition-colors"></div>
                                     </div>
 
                                     <div>
@@ -1351,7 +1440,7 @@ const syncWorkflowStatuses = async () => {
 
                         <!-- Stratégie 30 Jours (REFONTE ÉPURÉE) -->
                         <div class="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm text-center relative group overflow-hidden">
-                            <div class="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-300 group-hover:text-[#E85D3E] group-hover:bg-[#E85D3E]/5 transition-all duration-500">
+                            <div class="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-300 group-hover:text-[#F59E0B] group-hover:bg-[#F59E0B]/5 transition-all duration-500">
                                 <CalendarIcon class="w-8 h-8" />
                             </div>
                             
@@ -1361,7 +1450,7 @@ const syncWorkflowStatuses = async () => {
                             </p>
 
                             <button @click="fetchGoldProfilePlan" 
-                                class="mt-8 w-full py-4 bg-[#E85D3E] text-white rounded-2xl font-black text-[11px] uppercase shadow-xl shadow-[#E85D3E]/20 hover:shadow-[#E85D3E]/40 hover:-translate-y-1 transition-all"
+                                class="mt-8 w-full py-4 bg-[#F59E0B] text-white rounded-2xl font-black text-[11px] uppercase shadow-xl shadow-[#F59E0B]/20 hover:shadow-[#F59E0B]/40 hover:-translate-y-1 transition-all"
                             >
                                 Générer mon Calendrier
                             </button>
@@ -1432,7 +1521,7 @@ const syncWorkflowStatuses = async () => {
                             </div>
                         </div>
                         <div class="flex gap-4">
-                            <button @click="copyToClipboard(goldProfilePostData)" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2">
+                            <button @click="copyToClipboard(goldProfilePostData)" class="flex-1 py-4 bg-gold-600 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2">
                                 <DocumentDuplicateIcon class="w-5 h-5" />
                                 <span>Copier le Post</span>
                             </button>
@@ -1582,7 +1671,7 @@ const syncWorkflowStatuses = async () => {
                 </div>
 
                 <div class="flex gap-4">
-                    <button @click="isPostInterviewModalOpen = false" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm transition-all hover:bg-slate-800 shadow-xl shadow-slate-200">
+                    <button @click="isPostInterviewModalOpen = false" class="flex-1 py-4 bg-gold-600 text-white rounded-2xl font-black text-sm transition-all hover:bg-slate-800 shadow-xl shadow-slate-200">
                         Fermer le Debrief
                     </button>
                 </div>
@@ -2004,7 +2093,7 @@ const syncWorkflowStatuses = async () => {
             <p class="text-[10px] text-slate-400">
               Les relances sont générées par IA et sauvegardées dans le CRM.
             </p>
-            <button @click="closeGhostbusterModal" class="px-4 py-2 text-xs font-bold bg-slate-900 text-white rounded-xl hover:bg-black transition-colors shadow-sm">
+            <button @click="closeGhostbusterModal" class="px-4 py-2 text-xs font-bold bg-gold-600 text-white rounded-xl hover:bg-gold-500 transition-colors shadow-sm">
               Fermer
             </button>
           </div>
@@ -2131,7 +2220,7 @@ const syncWorkflowStatuses = async () => {
                   </div>
                   <h2 class="text-2xl font-bold text-slate-800 mb-2">MISSION ACCOMPLIE</h2>
                   <p class="text-slate-500 text-sm">Le Playbook <span class="font-bold text-slate-700">{{ execPlaybook.name }}</span> est maintenant opérationnel.</p>
-                  <button @click="isExecuting = false; execPlaybook = null" class="mt-6 px-6 py-2.5 bg-slate-800 text-white rounded-xl font-bold">Quitter</button>
+                  <button @click="isExecuting = false; execPlaybook = null" class="mt-6 px-6 py-2.5 bg-gold-600 text-white rounded-xl font-bold">Quitter</button>
               </div>
 
               <!-- Résultats Groupés -->
@@ -2189,7 +2278,7 @@ const syncWorkflowStatuses = async () => {
                      </div>
                   </div>
 
-                  <button @click="isExecuting = false; execPlaybook = null" class="mt-6 py-3 w-full bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-200 hover:bg-black transition-all">
+                  <button @click="isExecuting = false; execPlaybook = null" class="mt-6 w-full btn-gold text-center flex justify-center py-3 shadow-lg transition-all">
                     Terminer la Session
                   </button>
               </div>
@@ -2201,6 +2290,163 @@ const syncWorkflowStatuses = async () => {
       </div>
     </Transition>
 
+    
+    <!-- Modal: Sniper To Apply -->
+    <Transition name="fade">
+      <div v-if="isSniperApplyModalOpen" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+           
+           <!-- Header -->
+           <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+              <div class="flex items-center gap-4">
+                 <div class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm">
+                    <RocketLaunchIcon class="w-7 h-7"/>
+                 </div>
+                 <div>
+                    <h3 class="text-xl font-black text-slate-800">Sniper-to-Apply</h3>
+                    <p class="text-xs text-slate-500 font-medium tracking-tight">CANDIDATURE EXPRESS 1-CLIC (VIA SKYVERN)</p>
+                 </div>
+              </div>
+              <button @click="isSniperApplyModalOpen = false" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                 <XMarkIcon class="w-6 h-6 text-slate-400"/>
+              </button>
+           </div>
+
+           <!-- Body -->
+           <div class="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/30">
+              
+              <!-- State 1: Search Form -->
+              <div v-if="sniperApplyStep === 'search'" class="max-w-xl mx-auto py-10">
+                 <h4 class="text-lg font-bold text-slate-800 mb-6 text-center">Trouver des offres ciblées</h4>
+                 <div class="space-y-4">
+                    <div>
+                       <label class="block text-xs font-bold text-slate-700 mb-1">Quel poste recherchez-vous ?</label>
+                       <input v-model="sniperApplyForm.job_title" type="text" placeholder="Ex: Développeur Full-Stack" class="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-800">
+                    </div>
+                    <div>
+                       <label class="block text-xs font-bold text-slate-700 mb-1">Lieu de travail</label>
+                       <input v-model="sniperApplyForm.location" type="text" placeholder="Ex: Montréal, QC ou Télétravail" class="w-full border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all font-medium text-slate-800">
+                    </div>
+                    <button @click="runSniperApplySearch" :disabled="sniperApplyLoading || !sniperApplyForm.job_title" class="w-full mt-4 py-4 rounded-xl font-bold transition-all flex justify-center items-center gap-2" :class="sniperApplyForm.job_title ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-indigo-700' : 'bg-slate-100 text-slate-400'">
+                       <span v-if="sniperApplyLoading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                       <span v-else>Lancer le Scanner</span>
+                    </button>
+                 </div>
+              </div>
+
+              <!-- State 2: Select Offers -->
+              <div v-if="sniperApplyStep === 'select'" class="max-w-3xl mx-auto">
+                 <div class="flex items-center justify-between mb-6">
+                     <h4 class="text-lg font-bold text-slate-800">Sélectionnez vos cibles</h4>
+                     <div class="text-xs font-bold px-3 py-1.5 rounded-lg border" :class="isPremium ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-600 border-slate-200'">
+                         {{ sniperApplySelected.length }} / {{ sniperApplyRemaining }} sélectionné(s) (Quota: {{ sniperApplyMax }}/j)
+                     </div>
+                 </div>
+                 
+                 <div class="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                     <div v-for="job in sniperApplyJobs" :key="job.url" 
+                          @click="toggleSniperApplyJob(job)"
+                          class="p-4 border rounded-2xl cursor-pointer transition-all flex items-start gap-4"
+                          :class="sniperApplySelected.some(j => j.url === job.url) ? 'bg-indigo-50/50 border-indigo-500 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'">
+                          
+                          <div class="mt-1 w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors"
+                               :class="sniperApplySelected.some(j => j.url === job.url) ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'">
+                              <CheckIcon v-if="sniperApplySelected.some(j => j.url === job.url)" class="w-3.5 h-3.5 text-white" />
+                          </div>
+                          
+                          <div class="flex-1 min-w-0">
+                              <h5 class="font-bold text-slate-800 truncate">{{ job.title }}</h5>
+                              <p class="text-xs text-slate-500 truncate mb-1">{{ job.company }} • {{ job.location }}</p>
+                              <div class="text-xs text-slate-400 line-clamp-2 leading-relaxed" v-html="job.description"></div>
+                          </div>
+                     </div>
+                     <div v-if="sniperApplyJobs.length === 0" class="py-10 text-center text-slate-500">
+                         Aucune offre trouvée.
+                     </div>
+                 </div>
+
+                 <div class="mt-8 flex justify-end gap-3">
+                     <button @click="sniperApplyStep = 'search'" class="px-6 py-3 font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all">Retour</button>
+                     <button @click="runSniperApplyExecute" :disabled="sniperApplySelected.length === 0" class="px-8 py-3 font-bold rounded-xl transition-all flex items-center gap-2" :class="sniperApplySelected.length > 0 ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-indigo-700' : 'bg-slate-100 text-slate-400'">
+                         Automatiser les Candidatures <ArrowRightIcon class="w-4 h-4" />
+                     </button>
+                 </div>
+              </div>
+
+              <!-- State 3: Running -->
+              <div v-if="sniperApplyStep === 'running'" class="flex flex-col items-center justify-center py-20 animate-pulse">
+                 <div class="relative mb-8">
+                    <div class="w-20 h-20 bg-indigo-100 rounded-full animate-ping absolute inset-0 opacity-20"></div>
+                    <div class="w-20 h-20 bg-indigo-500 rounded-full flex items-center justify-center text-white relative shadow-xl">
+                       <RocketLaunchIcon class="w-10 h-10"/>
+                    </div>
+                 </div>
+                 <h4 class="text-xl font-bold text-slate-800 mb-2">Opération Sniper en cours</h4>
+                 <p class="text-sm text-slate-500 text-center max-w-sm">
+                     Nos agents analysent chaque offre, <br/>adaptent votre CV sur-mesure, <br/>et délèguent l'envoi à Skyvern...
+                 </p>
+              </div>
+
+              <!-- State 4: Summary -->
+              <div v-if="sniperApplyStep === 'summary'" class="max-w-3xl mx-auto animate-slide-up">
+                 <div class="text-center mb-8">
+                     <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                         <CheckIcon class="w-8 h-8" />
+                     </div>
+                     <h4 class="text-2xl font-black text-slate-800">Mission Accomplie</h4>
+                     <p class="text-slate-500">Candidatures préparées et enregistrées dans votre CRM.</p>
+                 </div>
+
+                 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6">
+                     <div class="p-4 bg-slate-50 border-b border-slate-100">
+                         <h5 class="text-xs font-black text-slate-400 tracking-widest uppercase">Récapitulatif des actions</h5>
+                     </div>
+                     <div class="divide-y divide-slate-100">
+                         <div v-for="res in sniperApplyResults" :key="res.id" class="p-4 flex items-center justify-between">
+                             <div class="flex items-center gap-3">
+                                 <div class="w-8 h-8 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center">
+                                     <BriefcaseIcon class="w-4 h-4" />
+                                 </div>
+                                 <div>
+                                     <p class="text-sm font-bold text-slate-800">{{ res.title }}</p>
+                                     <p class="text-[10px] text-slate-500">{{ res.company }}</p>
+                                 </div>
+                             </div>
+                             <div class="flex items-center gap-2">
+                                 <span class="text-[10px] font-bold px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded">
+                                     CV ADAPTÉ
+                                 </span>
+                                 <span v-if="res.skyvern_task_id" class="text-[10px] font-bold px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded" title="Action déléguée à Skyvern">
+                                     SKYVERN RUN
+                                 </span>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+
+                 <div class="p-5 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center justify-between">
+                     <div>
+                         <p class="font-bold text-indigo-900 text-sm">Chainer avec un Workflow ?</p>
+                         <p class="text-xs text-indigo-600 mt-0.5">Programmez une relance automatique sur ces cibles.</p>
+                     </div>
+                     <button @click="isSniperApplyModalOpen = false; $router.push('/crm')" class="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl shadow-md hover:bg-indigo-700 transition-all">
+                         Activer Ghostbuster
+                     </button>
+                 </div>
+
+                 <div class="mt-8 text-center">
+                     <button @click="isSniperApplyModalOpen = false" class="text-sm font-bold text-slate-500 hover:text-slate-800">
+                         Fermer
+                     </button>
+                 </div>
+              </div>
+
+           </div>
+        </div>
+      </div>
+    </Transition>
+
+
     <!-- Modal: Rejection Pivot -->
     <Transition name="fade">
       <div v-if="isRejectionPivotModalOpen" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
@@ -2209,7 +2455,7 @@ const syncWorkflowStatuses = async () => {
            <!-- Header -->
            <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
               <div class="flex items-center gap-4">
-                 <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 shadow-sm">
+                 <div class="w-12 h-12 bg-gold-50 rounded-2xl flex items-center justify-center text-gold-500 shadow-sm">
                     <ArrowPathIcon class="w-7 h-7"/>
                  </div>
                  <div>
@@ -2242,9 +2488,9 @@ const syncWorkflowStatuses = async () => {
                  <div v-else class="space-y-3 text-left">
                     <div v-for="app in rejectedApps" :key="app.id" 
                          @click="runRejectionPivot(app.id)"
-                         class="p-4 bg-white border border-slate-200 rounded-2xl hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer group flex items-center justify-between">
+                         class="p-4 bg-white border border-slate-200 rounded-2xl hover:border-gold-500 hover:shadow-lg transition-all cursor-pointer group flex items-center justify-between">
                        <div class="flex items-center gap-4">
-                          <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">
+                          <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-gold-50 group-hover:text-gold-500 transition-colors">
                              <BriefcaseIcon class="w-5 h-5"/>
                           </div>
                           <div>
@@ -2252,7 +2498,7 @@ const syncWorkflowStatuses = async () => {
                              <p class="text-xs text-slate-500">{{ app.company_name }} • {{ formatRelativeDate(app.updated_at) }}</p>
                           </div>
                        </div>
-                       <ChevronRightIcon class="w-5 h-5 text-slate-300 group-hover:text-orange-500"/>
+                       <ChevronRightIcon class="w-5 h-5 text-slate-300 group-hover:text-gold-500"/>
                     </div>
                  </div>
               </div>
@@ -2260,8 +2506,8 @@ const syncWorkflowStatuses = async () => {
               <!-- State 2: Running -->
               <div v-if="isRejectionPivotRunning" class="flex flex-col items-center justify-center py-20 animate-pulse">
                  <div class="relative mb-8">
-                    <div class="w-20 h-20 bg-orange-100 rounded-full animate-ping absolute inset-0 opacity-20"></div>
-                    <div class="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center text-white relative shadow-xl">
+                    <div class="w-20 h-20 bg-gold-100 rounded-full animate-ping absolute inset-0 opacity-20"></div>
+                    <div class="w-20 h-20 bg-gold-500 rounded-full flex items-center justify-center text-white relative shadow-xl">
                        <SparklesIcon class="w-10 h-10"/>
                     </div>
                  </div>
@@ -2295,11 +2541,11 @@ const syncWorkflowStatuses = async () => {
 
                     <div>
                        <h5 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">2. CONSEIL STRATÉGIQUE</h5>
-                       <div class="p-6 bg-orange-50 border border-orange-100 rounded-3xl relative overflow-hidden">
+                       <div class="p-6 bg-gold-50 border border-gold-100 rounded-3xl relative overflow-hidden">
                           <div class="absolute -right-4 -top-4 opacity-10">
-                             <LightBulbIcon class="w-24 h-24 text-orange-500"/>
+                             <LightBulbIcon class="w-24 h-24 text-gold-500"/>
                           </div>
-                          <p class="text-orange-900 font-medium leading-relaxed italic relative z-10">
+                          <p class="text-gold-900 font-medium leading-relaxed italic relative z-10">
                              "{{ rejectionPivotResults.pivot_tip }}"
                           </p>
                        </div>
@@ -2330,9 +2576,9 @@ const syncWorkflowStatuses = async () => {
                        </div>
                     </div>
 
-                    <div class="mt-8 p-6 bg-slate-900 rounded-3xl text-white">
+                    <div class="mt-8 p-6 bg-gold-600 rounded-3xl text-white">
                        <h6 class="text-sm font-bold mb-2 flex items-center gap-2">
-                          <TrophyIcon class="w-4 h-4 text-orange-400"/>
+                          <TrophyIcon class="w-4 h-4 text-gold-400"/>
                           Objectif Prochain Essai
                        </h6>
                        <p class="text-[11px] text-slate-400 leading-relaxed">
@@ -2349,7 +2595,7 @@ const syncWorkflowStatuses = async () => {
               <button @click="closeRejectionPivotModal" class="px-6 py-2.5 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-all">
                  Fermer
               </button>
-              <button v-if="rejectionPivotResults" @click="rejectionPivotResults = null" class="px-6 py-2.5 bg-slate-800 text-white rounded-xl font-bold hover:bg-black transition-all">
+              <button v-if="rejectionPivotResults" @click="rejectionPivotResults = null" class="px-6 py-2.5 btn-gold transition-all">
                  Autre Pivot
               </button>
            </div>
@@ -2527,8 +2773,8 @@ const syncWorkflowStatuses = async () => {
     margin: 0 0.5rem;
 }
 
-.btn-orange {
-    background-color: #E85D3E; /* Warm orange/coral from the mockup */
+.btn-gold {
+    background-color: #F59E0B; /* Gold brand color */
     color: white;
     padding: 0.7rem 1.2rem;
     border-radius: 999px;
@@ -2538,7 +2784,7 @@ const syncWorkflowStatuses = async () => {
     cursor: pointer;
     transition: opacity 0.2s;
 }
-.btn-orange:hover { opacity: 0.9; }
+.btn-gold:hover { opacity: 0.9; }
 
 .btn-icon-white {
     width: 40px;

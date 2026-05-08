@@ -63,7 +63,7 @@ const handleFeatureClick = (feature) => {
         </div>
 
         <div class="header-date-box hidden md:flex">
-          <div class="date-num"><AcademicCapIcon class="w-6 h-6 text-[#E85D3E]" /></div>
+          <div class="date-num"><AcademicCapIcon class="w-6 h-6 text-[#F59E0B]" /></div>
           <div class="date-str">MENTOR IA</div>
           <div class="date-divider"></div>
           <div class="date-str text-slate-400">GOLDARMY PLATFORM</div>
@@ -82,7 +82,7 @@ const handleFeatureClick = (feature) => {
           <div v-if="feature.locked" class="card-tag bg-slate-100 text-slate-500">
             {{ $t('mentor.coming_soon_badge') }}
           </div>
-          <div v-else class="card-tag bg-[#E85D3E]/10 text-[#E85D3E]">
+          <div v-else class="card-tag bg-[#F59E0B]/10 text-[#F59E0B]">
             ACTIVE
           </div>
 
@@ -90,14 +90,14 @@ const handleFeatureClick = (feature) => {
             <component :is="feature.icon" :class="['w-6 h-6', feature.textColor]" />
           </div>
 
-          <h3 class="text-xl font-bold text-slate-900 mb-2 group-hover:text-[#E85D3E] transition-colors">{{ $t(feature.titleKey) }}</h3>
+          <h3 class="text-xl font-bold text-slate-900 mb-2 group-hover:text-[#F59E0B] transition-colors">{{ $t(feature.titleKey) }}</h3>
           <p class="text-slate-500 text-sm leading-relaxed mb-8 flex-1">{{ $t(feature.descKey) }}</p>
 
           <div class="pt-6 border-t border-slate-50 flex items-center justify-between">
-            <span class="text-sm font-bold text-slate-400 group-hover:text-[#E85D3E] transition-colors">
+            <span class="text-sm font-bold text-slate-400 group-hover:text-[#F59E0B] transition-colors">
                {{ feature.locked ? $t('mentor.coming_soon_btn') : $t('mentor.launch_tool') }}
             </span>
-            <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-[#E85D3E] transition-all">
+            <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-[#F59E0B] transition-all">
                <svg class="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="9 5l7 7-7 7" />
                </svg>
@@ -160,7 +160,7 @@ const handleFeatureClick = (feature) => {
 .date-num {
   font-weight: 800;
   font-size: 20px;
-  color: #E85D3E;
+  color: #F59E0B;
   margin-right: 12px;
 }
 
@@ -193,7 +193,7 @@ const handleFeatureClick = (feature) => {
 }
 
 .kpi-card:hover {
-  border-color: #E85D3E;
+  border-color: #F59E0B;
   box-shadow: 0 10px 20px rgba(232, 93, 62, 0.05);
   transform: translateY(-2px);
 }

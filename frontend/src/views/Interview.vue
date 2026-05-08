@@ -675,19 +675,19 @@ onUnmounted(() => {
       <!-- NEW PREMIUM HEADER -->
       <div class="flex flex-col md:flex-row items-center justify-between gap-6 pt-10">
         <div class="flex items-center gap-6">
-            <button @click="goBackToDashboard" class="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-[#E85D3E] hover:border-[#E85D3E]/30 transition-all shadow-sm">
+            <button @click="goBackToDashboard" class="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-[#F59E0B] hover:border-[#F59E0B]/30 transition-all shadow-sm">
                 <ArrowLeftIcon class="w-6 h-6" />
             </button>
             <div>
                 <h1 class="text-4xl font-black text-slate-900 tracking-tight leading-none mb-2">Simulateur d'Entretien</h1>
                 <p class="text-slate-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-                    <SparklesIcon class="w-4 h-4 text-[#E85D3E]" /> God Mode Intelligence 3.1
+                    <SparklesIcon class="w-4 h-4 text-[#F59E0B]" /> God Mode Intelligence 3.1
                 </p>
             </div>
         </div>
         
-        <router-link to="/interview/history" class="px-6 py-3 bg-white border border-slate-200 text-slate-900 font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center gap-3 hover:border-[#E85D3E]/30 shadow-sm">
-            <DocumentTextIcon class="w-4 h-4 text-[#E85D3E]" /> Mon Historique
+        <router-link to="/interview/history" class="px-6 py-3 bg-white border border-slate-200 text-slate-900 font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center gap-3 hover:border-[#F59E0B]/30 shadow-sm">
+            <DocumentTextIcon class="w-4 h-4 text-[#F59E0B]" /> Mon Historique
         </router-link>
       </div>
 
@@ -696,17 +696,17 @@ onUnmounted(() => {
          <div class="lg:col-span-7 space-y-6">
              <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
                 <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <BuildingOfficeIcon class="w-4 h-4 text-[#E85D3E]" /> Contexte du Poste
+                    <BuildingOfficeIcon class="w-4 h-4 text-[#F59E0B]" /> Contexte du Poste
                 </h3>
 
-                <div class="mb-8 p-6 bg-[#E85D3E]/5 rounded-2xl border border-[#E85D3E]/10 border-dashed">
-                    <label class="block text-[10px] font-black text-[#E85D3E] uppercase tracking-widest mb-3">Importer depuis une URL (Nouveau)</label>
+                <div class="mb-8 p-6 bg-[#F59E0B]/5 rounded-2xl border border-[#F59E0B]/10 border-dashed">
+                    <label class="block text-[10px] font-black text-[#F59E0B] uppercase tracking-widest mb-3">Importer depuis une URL (Nouveau)</label>
                     <div class="flex gap-3">
                         <div class="relative flex-1">
-                            <LinkIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#E85D3E]/50" />
-                            <input v-model="config.jobUrl" type="text" placeholder="Collez le lien LinkedIn, Indeed, ou site carrière..." class="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 transition-all">
+                            <LinkIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#F59E0B]/50" />
+                            <input v-model="config.jobUrl" type="text" placeholder="Collez le lien LinkedIn, Indeed, ou site carrière..." class="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#F59E0B]/50 transition-all">
                         </div>
-                        <button @click="extractFromUrl" :disabled="isExtractingUrl" class="px-6 py-3 bg-[#E85D3E] text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-[#C44A2D] transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-[#E85D3E]/20">
+                        <button @click="extractFromUrl" :disabled="isExtractingUrl" class="px-6 py-3 bg-[#F59E0B] text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-[#C44A2D] transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-[#F59E0B]/20">
                             <span v-if="isExtractingUrl" class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                             <SparklesIcon v-else class="w-4 h-4" />
                             {{ isExtractingUrl ? 'Analyse...' : 'Extraire' }}
@@ -718,33 +718,33 @@ onUnmounted(() => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
                         <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Entreprise cible</label>
-                        <input v-model="config.company" type="text" placeholder="Ex: Google, Alan, Startup X..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 focus:ring-4 focus:ring-[#E85D3E]/5 transition-all">
+                        <input v-model="config.company" type="text" placeholder="Ex: Google, Alan, Startup X..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#F59E0B]/50 focus:ring-4 focus:ring-[#F59E0B]/5 transition-all">
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Poste visé</label>
-                        <input v-model="config.jobTitle" type="text" placeholder="Ex: Développeur Fullstack..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 focus:ring-4 focus:ring-[#E85D3E]/5 transition-all">
+                        <input v-model="config.jobTitle" type="text" placeholder="Ex: Développeur Fullstack..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#F59E0B]/50 focus:ring-4 focus:ring-[#F59E0B]/5 transition-all">
                     </div>
                 </div>
                 
                 <div>
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Détails de l'offre (Optionnel)</label>
-                    <textarea v-model="config.jobDetails" rows="4" placeholder="Collez ici les missions, la tech stack, ou les prérequis..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 focus:ring-4 focus:ring-[#E85D3E]/5 transition-all resize-none"></textarea>
+                    <textarea v-model="config.jobDetails" rows="4" placeholder="Collez ici les missions, la tech stack, ou les prérequis..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#F59E0B]/50 focus:ring-4 focus:ring-[#F59E0B]/5 transition-all resize-none"></textarea>
                 </div>
              </div>
 
              <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 m-0">
-                        <UserIcon class="w-4 h-4 text-[#E85D3E]" /> Votre Profil / CV
+                        <UserIcon class="w-4 h-4 text-[#F59E0B]" /> Votre Profil / CV
                     </h3>
-                    <button @click="$refs.fileInput.click()" class="px-4 py-2 bg-[#E85D3E]/5 text-[#E85D3E] hover:bg-[#E85D3E]/10 rounded-xl border border-[#E85D3E]/20 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
-                        <span v-if="isUploadingCV" class="w-3 h-3 border-2 border-[#E85D3E] border-t-transparent rounded-full animate-spin"></span>
+                    <button @click="$refs.fileInput.click()" class="px-4 py-2 bg-[#F59E0B]/5 text-[#F59E0B] hover:bg-[#F59E0B]/10 rounded-xl border border-[#F59E0B]/20 text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2">
+                        <span v-if="isUploadingCV" class="w-3 h-3 border-2 border-[#F59E0B] border-t-transparent rounded-full animate-spin"></span>
                         <ArrowUpTrayIcon v-else class="w-4 h-4" />
                         {{ isUploadingCV ? 'Extraction...' : 'Importer PDF' }}
                     </button>
                     <input type="file" accept=".pdf" class="hidden" ref="fileInput" @change="handleFileUpload">
                 </div>
-                <textarea v-model="config.cv" rows="6" placeholder="Collez le texte de votre CV ou importez un PDF..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#E85D3E]/50 focus:ring-4 focus:ring-[#E85D3E]/5 transition-all resize-none"></textarea>
+                <textarea v-model="config.cv" rows="6" placeholder="Collez le texte de votre CV ou importez un PDF..." class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 font-bold text-sm focus:outline-none focus:border-[#F59E0B]/50 focus:ring-4 focus:ring-[#F59E0B]/5 transition-all resize-none"></textarea>
              </div>
          </div>
          
@@ -752,12 +752,12 @@ onUnmounted(() => {
          <div class="lg:col-span-5 space-y-6">
               <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
                   <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <ChatBubbleLeftRightIcon class="w-4 h-4 text-[#E85D3E]" /> Votre Recruteur
+                    <ChatBubbleLeftRightIcon class="w-4 h-4 text-[#F59E0B]" /> Votre Recruteur
                   </h3>
                   <div class="space-y-3">
                       <button v-for="r in recruiters" :key="r.id" 
                          @click="config.recruiterId = r.id" 
-                         :class="config.recruiterId === r.id ? 'bg-[#E85D3E] border-[#E85D3E] shadow-xl shadow-[#E85D3E]/20 translate-y-[-2px]' : 'bg-slate-50 border-slate-100 hover:border-slate-300'"
+                         :class="config.recruiterId === r.id ? 'bg-[#F59E0B] border-[#F59E0B] shadow-xl shadow-[#F59E0B]/20 translate-y-[-2px]' : 'bg-slate-50 border-slate-100 hover:border-slate-300'"
                          class="w-full p-4 border rounded-2xl flex items-center gap-4 transition-all group relative overflow-hidden"
                       >
                          <img :src="r.img" class="w-12 h-12 rounded-xl object-cover border-2 border-white group-hover:scale-105 transition-transform" />
@@ -765,7 +765,7 @@ onUnmounted(() => {
                              <p :class="config.recruiterId === r.id ? 'text-white' : 'text-slate-900'" class="text-sm font-black m-0 leading-tight">{{ r.name }}</p>
                              <p :class="config.recruiterId === r.id ? 'text-white/70' : 'text-slate-400'" class="text-[10px] font-bold uppercase tracking-widest m-0 mt-1">{{ r.role }}</p>
                          </div>
-                         <div v-if="config.recruiterId === r.id" class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[#E85D3E] shadow-sm">
+                         <div v-if="config.recruiterId === r.id" class="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[#F59E0B] shadow-sm">
                              <CheckIcon class="w-4 h-4" />
                          </div>
                       </button>
@@ -774,14 +774,14 @@ onUnmounted(() => {
 
               <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
                   <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <VideoCameraIcon class="w-4 h-4 text-[#E85D3E]" /> Format & Intensité
+                    <VideoCameraIcon class="w-4 h-4 text-[#F59E0B]" /> Format & Intensité
                   </h3>
                   <div class="grid grid-cols-2 gap-3">
-                      <button @click="config.interviewType = 'general'" :class="config.interviewType === 'general' ? 'bg-[#E85D3E] border-[#E85D3E] text-white shadow-xl shadow-[#E85D3E]/20' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'" class="p-6 border rounded-2xl flex flex-col items-center justify-center gap-3 transition-all">
+                      <button @click="config.interviewType = 'general'" :class="config.interviewType === 'general' ? 'bg-[#F59E0B] border-[#F59E0B] text-white shadow-xl shadow-[#F59E0B]/20' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'" class="p-6 border rounded-2xl flex flex-col items-center justify-center gap-3 transition-all">
                          <span class="font-black text-xs uppercase tracking-widest">Général & HR</span>
                          <UserCircleIcon class="w-6 h-6" />
                       </button>
-                      <button @click="config.interviewType = 'technical'" :class="config.interviewType === 'technical' ? 'bg-[#E85D3E] border-[#E85D3E] text-white shadow-xl shadow-[#E85D3E]/20' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'" class="p-6 border rounded-2xl flex flex-col items-center justify-center gap-3 transition-all">
+                      <button @click="config.interviewType = 'technical'" :class="config.interviewType === 'technical' ? 'bg-[#F59E0B] border-[#F59E0B] text-white shadow-xl shadow-[#F59E0B]/20' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'" class="p-6 border rounded-2xl flex flex-col items-center justify-center gap-3 transition-all">
                          <span class="font-black text-xs uppercase tracking-widest">Technique</span>
                          <CpuChipIcon class="w-6 h-6" />
                       </button>
@@ -814,8 +814,8 @@ onUnmounted(() => {
             <!-- FOOTER ACTIONS -->
       <div class="mt-4 pt-10 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">
           <div class="flex items-center gap-6">
-              <button @click="testAudio" class="px-6 py-3 bg-white border border-slate-200 text-slate-900 text-xs font-black rounded-2xl hover:border-[#E85D3E]/30 transition-all flex items-center gap-3 shadow-sm">
-                  <SpeakerWaveIcon class="w-4 h-4 text-[#E85D3E]" />
+              <button @click="testAudio" class="px-6 py-3 bg-white border border-slate-200 text-slate-900 text-xs font-black rounded-2xl hover:border-[#F59E0B]/30 transition-all flex items-center gap-3 shadow-sm">
+                  <SpeakerWaveIcon class="w-4 h-4 text-[#F59E0B]" />
                   Tester le son
               </button>
               <div class="flex flex-col">
@@ -823,7 +823,7 @@ onUnmounted(() => {
                 <span v-if="ttsStatus" class="text-[10px] text-slate-900 font-bold uppercase">{{ ttsStatus }}</span>
               </div>
           </div>
-          <button @click="startInterview" class="w-full md:w-auto px-10 py-5 bg-gradient-to-r from-[#E85D3E] to-[#C44A2D] hover:from-[#C44A2D] hover:to-[#E85D3E] text-white font-black rounded-[2rem] shadow-2xl shadow-[#E85D3E]/30 flex items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-95 text-base uppercase tracking-widest">
+          <button @click="startInterview" class="w-full md:w-auto px-10 py-5 bg-gradient-to-r from-[#F59E0B] to-[#C44A2D] hover:from-[#C44A2D] hover:to-[#F59E0B] text-white font-black rounded-[2rem] shadow-2xl shadow-[#F59E0B]/30 flex items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-95 text-base uppercase tracking-widest">
               Lancer la Visioconférence
               <VideoCameraIcon class="w-6 h-6" />
           </button>
@@ -978,25 +978,25 @@ onUnmounted(() => {
 
                 <!-- NEW PREMIUM CONTROLS -->
         <div class="relative z-20 px-4 pb-8 flex flex-col items-center gap-4">
-          <div v-if="isListening" class="text-[#E85D3E] font-black uppercase tracking-[0.3em] text-[10px] animate-pulse drop-shadow-lg mb-2">
+          <div v-if="isListening" class="text-[#F59E0B] font-black uppercase tracking-[0.3em] text-[10px] animate-pulse drop-shadow-lg mb-2">
               Microphone Actif — Parlez Maintenant
           </div>
           
           <div class="inline-flex items-center gap-2 p-2.5 rounded-[2.5rem] bg-black/60 backdrop-blur-2xl border border-white/10 shadow-2xl">
             <button @click="showChat = !showChat" 
-              :class="showChat ? 'bg-[#E85D3E] text-white shadow-xl shadow-[#E85D3E]/20' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'"
+              :class="showChat ? 'bg-[#F59E0B] text-white shadow-xl shadow-[#F59E0B]/20' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'"
               class="w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300">
               <ChatBubbleLeftRightIcon class="w-5 h-5" />
             </button>
             
-            <button @click="testAudio" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 text-slate-400 hover:text-[#E85D3E] hover:bg-white/10 transition-all">
+            <button @click="testAudio" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/5 text-slate-400 hover:text-[#F59E0B] hover:bg-white/10 transition-all">
               <SpeakerWaveIcon class="w-5 h-5" />
             </button>
             
             <div class="w-px h-8 bg-white/10 mx-1"></div>
             
             <button @click="triggerListen" 
-              :class="isListening ? 'bg-rose-500 text-white scale-110 shadow-xl shadow-rose-500/40' : (isAIThinking ? 'bg-[#E85D3E] text-white scale-105 shadow-xl shadow-[#E85D3E]/20' : 'bg-white/10 text-white hover:bg-white/20')"
+              :class="isListening ? 'bg-rose-500 text-white scale-110 shadow-xl shadow-rose-500/40' : (isAIThinking ? 'bg-[#F59E0B] text-white scale-105 shadow-xl shadow-[#F59E0B]/20' : 'bg-white/10 text-white hover:bg-white/20')"
               class="w-16 h-16 flex items-center justify-center rounded-full transition-all duration-300 mx-1">
               <MicrophoneIcon v-if="!isListening && !isAIThinking" class="w-6 h-6" />
               <StopIcon v-else-if="isListening" class="w-6 h-6" />
@@ -1021,8 +1021,8 @@ onUnmounted(() => {
       <div v-show="showChat" class="interview-room-chat w-full md:w-[400px] lg:w-[440px] shrink-0 flex flex-col bg-[#111113] border-l border-white/[0.05] shadow-2xl relative z-[220]">
         <div class="p-6 border-b border-white/[0.05] flex items-center justify-between bg-black/20">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#E85D3E]/10 flex items-center justify-center">
-              <ChatBubbleLeftRightIcon class="w-5 h-5 text-[#E85D3E]" />
+            <div class="w-10 h-10 rounded-xl bg-[#F59E0B]/10 flex items-center justify-center">
+              <ChatBubbleLeftRightIcon class="w-5 h-5 text-[#F59E0B]" />
             </div>
             <div>
                 <h2 class="text-sm font-black text-white m-0 tracking-tight">Transcription Live</h2>
@@ -1038,10 +1038,10 @@ onUnmounted(() => {
           <div v-for="msg in conversation" :key="msg.id" :class="msg.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'">
             <div :class="msg.role === 'user' 
               ? 'max-w-[90%] rounded-2xl rounded-tr-sm p-4 bg-white/5 border border-white/10 text-white shadow-sm' 
-              : 'max-w-[90%] rounded-2xl rounded-tl-sm p-4 bg-[#E85D3E]/5 border border-[#E85D3E]/10 text-slate-200'">
+              : 'max-w-[90%] rounded-2xl rounded-tl-sm p-4 bg-[#F59E0B]/5 border border-[#F59E0B]/10 text-slate-200'">
               
               <div class="flex items-center gap-2 mb-2">
-                <div v-if="msg.role !== 'user'" class="w-5 h-5 rounded-full overflow-hidden border border-[#E85D3E]/30">
+                <div v-if="msg.role !== 'user'" class="w-5 h-5 rounded-full overflow-hidden border border-[#F59E0B]/30">
                   <img :src="currentRecruiter?.img" class="w-full h-full object-cover" />
                 </div>
                 <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">
@@ -1094,7 +1094,7 @@ onUnmounted(() => {
               <!-- Header -->
               <div class="p-8 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                   <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 rounded-2xl bg-[#E85D3E] flex items-center justify-center shadow-lg shadow-[#E85D3E]/20">
+                      <div class="w-12 h-12 rounded-2xl bg-[#F59E0B] flex items-center justify-center shadow-lg shadow-[#F59E0B]/20">
                           <ChartBarIcon class="w-6 h-6 text-white" />
                       </div>
                       <div>
@@ -1113,7 +1113,7 @@ onUnmounted(() => {
                   <div v-if="isAnalyzing" class="flex flex-col items-center justify-center py-20 gap-8">
                       <div class="relative w-24 h-24">
                           <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-                          <div class="absolute inset-0 border-4 border-[#E85D3E] border-t-transparent rounded-full animate-spin"></div>
+                          <div class="absolute inset-0 border-4 border-[#F59E0B] border-t-transparent rounded-full animate-spin"></div>
                       </div>
                       <div class="text-center">
                         <p class="text-xl font-black text-slate-900 mb-2">Analyse IA en cours...</p>
@@ -1125,7 +1125,7 @@ onUnmounted(() => {
                   <div v-else-if="scorecard" class="space-y-10">
                       <!-- Hero Scores (Bento) -->
                       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div v-for="(val, cat) in scorecard.scores" :key="cat" class="bg-slate-50 border border-slate-100 p-6 rounded-[2rem] flex flex-col items-center gap-4 transition-all hover:border-[#E85D3E]/20">
+                          <div v-for="(val, cat) in scorecard.scores" :key="cat" class="bg-slate-50 border border-slate-100 p-6 rounded-[2rem] flex flex-col items-center gap-4 transition-all hover:border-[#F59E0B]/20">
                               <span class="text-[9px] uppercase font-black tracking-widest text-slate-400">{{ cat === 'technical' ? 'Technique' : cat === 'communication' ? 'Élocution' : cat === 'soft_skills' ? 'Attitude' : 'Global' }}</span>
                               <div class="relative flex items-center justify-center">
                                   <svg class="w-20 h-20 -rotate-90">
@@ -1180,7 +1180,7 @@ onUnmounted(() => {
                           <div class="flex items-center justify-between relative z-10">
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                    <StarIcon class="w-6 h-6 text-[#E85D3E]" />
+                                    <StarIcon class="w-6 h-6 text-[#F59E0B]" />
                                 </div>
                                 <h3 class="text-xl font-black text-white m-0">Verdict du Recruteur</h3>
                             </div>
@@ -1210,7 +1210,7 @@ onUnmounted(() => {
                       Voir l'historique complet
                   </router-link>
                   <div class="flex gap-4">
-                    <button @click="stopInterview" class="px-10 py-4 bg-[#E85D3E] hover:bg-[#C44A2D] text-white font-black rounded-2xl transition-all shadow-xl shadow-[#E85D3E]/20 text-xs uppercase tracking-widest">
+                    <button @click="stopInterview" class="px-10 py-4 bg-[#F59E0B] hover:bg-[#C44A2D] text-white font-black rounded-2xl transition-all shadow-xl shadow-[#F59E0B]/20 text-xs uppercase tracking-widest">
                         Quitter l'entretien
                     </button>
                   </div>
@@ -1219,7 +1219,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Live status text -->
-      <div v-if="isListening" class="absolute bottom-32 left-1/2 -translate-x-1/2 text-[#E85D3E] font-black uppercase tracking-[0.3em] text-xs animate-pulse z-10 drop-shadow-lg">
+      <div v-if="isListening" class="absolute bottom-32 left-1/2 -translate-x-1/2 text-[#F59E0B] font-black uppercase tracking-[0.3em] text-xs animate-pulse z-10 drop-shadow-lg">
           Microphone Actif — Parlez Maintenant
       </div>
     </div>

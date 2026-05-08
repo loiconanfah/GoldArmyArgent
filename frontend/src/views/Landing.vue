@@ -306,7 +306,7 @@ function closeNav() {
               <div class="gradient-wrapper">
                 <div class="yellow-gradient" gradient="true"></div>
                 <div class="blue-gradient" gradient="true"></div>
-                <div class="orange-gradient" gradient="true"></div>
+                <div class="gold-gradient" gradient="true"></div>
                 <div class="light" gradient="true"></div>
       </div>
               <div ref="heroLogoRef" class="hero-logo-wrap hero-logo-wrap--desktop">
