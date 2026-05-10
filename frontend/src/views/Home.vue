@@ -193,7 +193,19 @@ const tutorialSteps = computed(() => [
 const currentStep = computed(() => tutorialSteps.value[tutorialStep.value])
 const isLast = computed(() => tutorialStep.value === tutorialSteps.value.length - 1)
 function startTutorial() { tutorialStep.value = 0; tutorialActive.value = true; scrollTarget() }
-function nextStep() { if (isLast.value) { closeTutorial(); return } tutorialStep.value++; scrollTarget() }
+function nextStep() { 
+  if (isLast.value) { 
+    closeTutorial()
+    // Si c'est la première fois, on redirige vers le Dashboard pour la démo des workflows
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    if (user?.id && !localStorage.getItem(`goldarmy_dashboard_demo_seen_${user.id}`)) {
+      router.push('/dashboard?demo=true')
+    }
+    return 
+  } 
+  tutorialStep.value++; 
+  scrollTarget() 
+}
 function prevStep() { if (tutorialStep.value > 0) { tutorialStep.value--; scrollTarget() } }
 function closeTutorial() {
   tutorialActive.value = false

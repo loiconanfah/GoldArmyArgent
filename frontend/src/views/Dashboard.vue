@@ -1,6 +1,7 @@
 <script setup>
 import { authFetch } from '../utils/auth'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import WorkflowPipelineBuilder from '../components/WorkflowPipelineBuilder.vue'
 import { useI18n } from 'vue-i18n'
 import { 
@@ -148,6 +149,55 @@ const isPremium = computed(() => {
     } catch(e) {}
     return false
 })
+
+const route = useRoute()
+
+// ── Dashboard Demo State ──────────────────────────────────────────────────
+const demoActive = ref(false)
+const demoStep = ref(0)
+const demoSteps = computed(() => playbooks.value.map(pb => ({
+  id: pb.id,
+  title: pb.name,
+  text: pb.fullDesc,
+  icon: pb.icon
+})))
+
+const currentDemoStep = computed(() => demoSteps.value[demoStep.value])
+
+const startDashboardDemo = () => {
+  demoStep.value = 0
+  demoActive.value = true
+  scrollDemoTarget()
+}
+
+const nextDemoStep = () => {
+  if (demoStep.value === demoSteps.value.length - 1) {
+    closeDashboardDemo()
+    return
+  }
+  demoStep.value++
+  scrollDemoTarget()
+}
+
+const prevDemoStep = () => {
+  if (demoStep.value > 0) {
+    demoStep.value--
+    scrollDemoTarget()
+  }
+}
+
+const closeDashboardDemo = () => {
+  demoActive.value = false
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  if (user?.id) localStorage.setItem(`goldarmy_dashboard_demo_seen_${user.id}`, '1')
+}
+
+const scrollDemoTarget = () => {
+  nextTick(() => {
+    const el = document.getElementById(`pb-${currentDemoStep.value.id}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
+}
 
 const executionPhases = [
   { title: "Initialisation", desc: "Connexion aux clusters d'agents GoldArmy..." },
@@ -988,6 +1038,14 @@ const runSniperApplyExecute = async () => {
 onMounted(async () => {
     await fetchDashboardData()
     await syncWorkflowStatuses()
+
+    // Trigger demo if coming from onboarding
+    if (route.query.demo === 'true') {
+        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        if (user?.id && !localStorage.getItem(`goldarmy_dashboard_demo_seen_${user.id}`)) {
+            setTimeout(() => startDashboardDemo(), 1200)
+        }
+    }
 })
 
 const syncWorkflowStatuses = async () => {
@@ -1056,9 +1114,13 @@ const saveWorkflowStatus = async (pb) => {
 
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
       <button v-for="(pb, index) in playbooks" :key="pb.id" 
+          :id="'pb-' + pb.id"
           @click="togglePlaybook(pb)"
           class="relative flex flex-col items-start p-3 rounded-xl border text-left transition-all duration-300 group overflow-hidden bg-white animate-slide-up hover:-translate-y-1 active:scale-95 cursor-pointer"
-          :class="pb.active ? 'border-indigo-500 shadow-md shadow-indigo-200/50 ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-100 opacity-80 hover:opacity-100'"
+          :class="[
+            pb.active ? 'border-indigo-500 shadow-md shadow-indigo-200/50 ring-1 ring-indigo-500/20' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-100 opacity-80 hover:opacity-100',
+            demoActive && currentDemoStep.id === pb.id ? 'ring-4 ring-indigo-500 ring-offset-2 z-[60] relative scale-105' : ''
+          ]"
           :style="`animation-delay: ${0.05 * index}s;`">
         
         <!-- Active indicator / Toggle -->
@@ -2725,6 +2787,62 @@ const saveWorkflowStatus = async (pb) => {
 
               <button @click="isDownloadChoiceModalOpen = false" class="mt-8 text-sm text-slate-400 hover:text-slate-600">Annuler</button>
            </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- ── DASHBOARD DEMO OVERLAY ── -->
+    <Transition name="fade">
+      <div v-if="demoActive" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] pointer-events-none" />
+    </Transition>
+    
+    <Transition name="pop">
+      <div v-if="demoActive" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[70] w-full max-w-lg px-4 pointer-events-auto">
+        <div class="bg-white rounded-[2rem] shadow-2xl border border-indigo-100 overflow-hidden">
+          <!-- Progress bar -->
+          <div class="h-1.5 bg-slate-100 w-full flex">
+            <div v-for="(_, i) in demoSteps" :key="i" 
+                 class="h-full transition-all duration-500"
+                 :class="i <= demoStep ? 'bg-indigo-600' : 'bg-transparent'"
+                 :style="{ width: `${100 / demoSteps.length}%` }">
+            </div>
+          </div>
+
+          <div class="p-8">
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
+                  <component :is="currentDemoStep.icon" class="w-6 h-6" />
+                </div>
+                <div>
+                  <span class="text-[10px] font-black uppercase tracking-widest text-indigo-500">
+                    Workflow {{ demoStep + 1 }}/{{ demoSteps.length }}
+                  </span>
+                  <h3 class="text-xl font-black text-slate-800 tracking-tight">{{ currentDemoStep.title }}</h3>
+                </div>
+              </div>
+              <button @click="closeDashboardDemo" class="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-all">
+                <XMarkIcon class="w-5 h-5" />
+              </button>
+            </div>
+
+            <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100/50 mb-8">
+              <p class="text-sm text-slate-600 leading-relaxed font-medium">
+                {{ currentDemoStep.text }}
+              </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button @click="prevDemoStep" :disabled="demoStep === 0"
+                class="flex-1 py-4 px-6 rounded-2xl border border-slate-200 text-slate-500 font-bold text-sm hover:bg-slate-50 disabled:opacity-30 transition-all">
+                Précédent
+              </button>
+              <button @click="nextDemoStep"
+                class="flex-[2] py-4 px-6 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">
+                {{ demoStep === demoSteps.length - 1 ? 'Terminer la visite' : 'Workflow suivant' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>
