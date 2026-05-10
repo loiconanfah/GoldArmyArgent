@@ -7,8 +7,8 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 echo "--- INSTALLING PLAYWRIGHT BROWSERS ---"
-# Force local install (to prevent Render from discarding cache between build and run)
-export PLAYWRIGHT_BROWSERS_PATH="0"
+# Ensure we use the same path as in api/main.py (persistent directory on Render)
+export PLAYWRIGHT_BROWSERS_PATH=$(pwd)/pw-browsers
 # This command is critical for PDF generation on Render
 playwright install chromium
 

@@ -56,6 +56,7 @@ jinja2>=3.1.2
 # Background & Async
 redis>=5.0.1
 celery>=5.3.4
+schedule>=1.2.1
 websockets>=12.0
 
 # Voice & TTS
