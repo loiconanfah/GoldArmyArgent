@@ -49,7 +49,7 @@ class HeadhunterAgent(BaseAgent):
             try:
                 json_response, sources = await self.generate_with_sources(
                     search_prompt,
-                    model="gemini-2.0-flash",
+                    model="gemini-3.1-pro-preview",
                     tools=[{"google_search": {}}],
                     json_mode=True,
                     system=f"Expert OSINT LinkedIn. Trouve des profils réels chez {company_name}. Règle: URL complète."
@@ -90,8 +90,9 @@ class HeadhunterAgent(BaseAgent):
                 out = []
                 for p in scraped:
                     url = p.get("url", "")
-                    if url and "linkedin.com/in/" in url and "search" not in url:
-                        out.append({"name": p.get("name", "Profil LinkedIn"), "role": "RH / Recrutement", "linkedin_url": url.split("?")[0].rstrip("/"), "snippet": p.get("snippet", f"Profil pour {company_name}")})
+                    if url:
+                        # Allow both direct profile URLs and fallback search URLs
+                        out.append({"name": p.get("name", "Profil LinkedIn"), "role": "RH / Recrutement", "linkedin_url": url.split("?")[0].rstrip("/") if "linkedin.com/in/" in url else url, "snippet": p.get("snippet", f"Profil pour {company_name}")})
                 return out[:5]
             except Exception as e:
                 logger.warning(f"[_ddg_search] Error: {e}")
@@ -99,27 +100,58 @@ class HeadhunterAgent(BaseAgent):
 
         gemini_task = asyncio.create_task(_gemini_search())
         ddg_task = asyncio.create_task(_ddg_search())
-        done, pending = await asyncio.wait([gemini_task, ddg_task], return_when=asyncio.FIRST_COMPLETED, timeout=15)
-        for t in done:
-            try:
-                r = t.result()
-                if r:
-                    for p in pending:
-                        p.cancel()
-                    logger.success(f"💎 Sniper : {len(r)} profils (résultat rapide)")
-                    return r
-            except Exception:
-                pass
-        if pending:
-            done2, _ = await asyncio.wait(pending, timeout=20)
-            for t in done2:
-                try:
-                    r = t.result()
-                    if r:
-                        return r
-                except Exception:
-                    pass
-        return []
+        
+        # Attendre les deux sources (Gemini 3.1 Pro avec Grounding peut prendre 20-60s)
+        done, pending = await asyncio.wait([gemini_task, ddg_task], timeout=80)
+        
+        gemini_results = []
+        ddg_results = []
+        
+        if gemini_task in done:
+            try: 
+                gemini_results = gemini_task.result()
+                logger.info(f"Gemini a trouvé {len(gemini_results)} profils")
+            except Exception as e: 
+                logger.error(f"Erreur Gemini task: {e}")
+        else:
+            logger.warning("Gemini task a timeout (>45s)!")
+
+        if ddg_task in done:
+            try: ddg_results = ddg_task.result()
+            except: pass
+            
+        # Fusionner les résultats en privilégiant les vrais profils
+        final_profiles = []
+        seen_urls = set()
+        
+        # Priorité 1 : Résultats Gemini (Grounding OSINT)
+        for p in gemini_results:
+            url = p.get("linkedin_url")
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                final_profiles.append(p)
+                
+        # Priorité 2 : Résultats DDG (Scraping) — seulement si ce ne sont pas des liens de recherche
+        for p in ddg_results:
+            url = p.get("linkedin_url", "")
+            is_search_link = "linkedin.com/search" in url or "keywords=" in url
+            if url and url not in seen_urls and not is_search_link:
+                seen_urls.add(url)
+                final_profiles.append(p)
+                
+        # Priorité 3 : Si toujours vide, mettre le lien de recherche en dernier recours
+        if not final_profiles:
+            for p in ddg_results:
+                if "linkedin.com/search" in p.get("linkedin_url", "") or "Chercher" in p.get("name", ""):
+                    final_profiles.append(p)
+                    break
+                    
+        # Nettoyage des tâches en cours
+        for t in [gemini_task, ddg_task]:
+            if not t.done(): t.cancel()
+            
+        logger.success(f"💎 Sniper : {len(final_profiles)} profils identifiés.")
+        return final_profiles[:8]
     
     async def generate_smart_cover_letter(self, company_name: str, job_title: str = "Poste ouvert", cv_text: str = "") -> Dict[str, Any]:
         """
@@ -132,7 +164,7 @@ class HeadhunterAgent(BaseAgent):
         try:
             news_text, _ = await self.generate_with_sources(
                 search_prompt,
-                model="gemini-2.0-flash",
+                model="gemini-3.1-pro-preview",
                 tools=[{"google_search": {}}],
                 system="Journaliste d'affaires. Trouve des faits réels et récents."
             )
@@ -166,7 +198,7 @@ class HeadhunterAgent(BaseAgent):
         try:
             letter, _ = await self.generate_with_sources(
                 writing_prompt,
-                model="gemini-2.0-flash",
+                model="gemini-3.1-pro-preview",
                 system="Tu es un expert en copywriting A-List. Tu rédiges des lettres de motivation percutantes, uniques et structurées qui captent l'attention en 5 secondes. Tu fournis uniquement le texte final, prêt à l'emploi."
             )
             return {

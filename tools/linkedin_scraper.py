@@ -31,7 +31,10 @@ class LinkedInScraper:
 
         # 1. DDGS en premier (rapide, ~2-4s)
         try:
-            from duckduckgo_search import DDGS
+            try:
+                from duckduckgo_search import DDGS
+            except ImportError:
+                from ddgs import DDGS
             query = f'site:linkedin.com/in/ "{company_name}" recruteur OR RH OR "Talent Acquisition"'
             seen = set()
             
