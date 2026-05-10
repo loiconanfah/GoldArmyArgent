@@ -95,12 +95,13 @@ class JudgeAgent(BaseAgent):
             cv_section = "\n=== PROFIL CV === Non fourni \u2014 noter sans crit\u00e8re comp\u00e9tences."
             skills_rule = "2. CORRESPONDANCE CV (0-25 pts) : CV non fourni \u2192 attribuer 12 pts par d\u00e9faut."
 
+        target_loc_display = profile.get('target_location', 'Non spécifié')
         prompt = f"""Tu es un recruteur expert. Note chaque offre d'emploi sur 100 selon 4 crit\u00e8res.
 {cv_section}
 
 === RECHERCHE DE L'UTILISATEUR ===
 - M\u00e9tier recherch\u00e9 (CRI\u00c8RE PRINCIPAL) : \"{search_query}\"
-- Localisation cible : \"{profile.get('target_location', 'Non sp\u00e9cifi\u00e9')}\"
+- Localisation cible : \"{target_loc_display}\"
 - Type de contrat : {target_job_type.upper()}
 
 === GRILLE DE NOTATION (total = 100 pts) ===
