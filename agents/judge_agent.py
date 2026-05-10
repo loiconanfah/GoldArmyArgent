@@ -95,6 +95,9 @@ class JudgeAgent(BaseAgent):
             cv_section = "\n=== PROFIL CV === Non fourni \u2014 noter sans crit\u00e8re comp\u00e9tences."
             skills_rule = "2. CORRESPONDANCE CV (0-25 pts) : CV non fourni \u2192 attribuer 12 pts par d\u00e9faut."
 
+        loc_rule = "Offre 'Canada' seule sans province québécoise → 0 pts" if is_quebec else "Autre région → 5 pts"
+        contract_rule = "Stage/intern clairement indiqué → 10 pts. Offre permanente → 0 pts" if "stage" in target_job_type.lower() else "Offre permanente/CDI → 10 pts. Stage uniquement → 0 pts"
+
         target_loc_display = profile.get('target_location', 'Non spécifié')
         prompt = f"""Tu es un recruteur expert. Note chaque offre d'emploi sur 100 selon 4 crit\u00e8res.
 {cv_section}
@@ -115,10 +118,10 @@ class JudgeAgent(BaseAgent):
 3. LOCALISATION (0-15 pts) :
    - Correspond exactement \u2192 15 pts
    - R\u00e9gion proche ou remote \u2192 10 pts
-   - {"Offre 'Canada' seule sans province qu\u00e9b\u00e9coise \u2192 0 pts" if is_quebec else "Autre r\u00e9gion \u2192 5 pts"}
+   - {loc_rule}
 
 4. TYPE DE CONTRAT (0-10 pts) :
-   - {"Stage/intern clairement indiqu\u00e9 \u2192 10 pts. Offre permanente \u2192 0 pts" if "stage" in target_job_type.lower() else "Offre permanente/CDI \u2192 10 pts. Stage uniquement \u2192 0 pts"}
+   - {contract_rule}
 
 === OFFRES \u00c0 NOTER (ID = index 0 \u00e0 N-1) ===
 {job_list_text}
