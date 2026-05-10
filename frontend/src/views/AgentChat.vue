@@ -472,7 +472,8 @@ const downloadCvDocx = async (cvJsonString) => {
 
         // Find the selected template from the mobile-identical TS modules
         const templateId = typeof selectedTheme.value === 'string' ? selectedTheme.value : 'goldarmy'
-        const tpl = CV_THEMES.find(t => t.id === templateId) || CV_THEMES[0]
+        const themes = CV_THEMES.value
+        const tpl = themes.find(t => t.id === templateId) || themes[0]
 
         // Build the HTML fully client-side (mobile-identical rendering)
         const html = tpl.build(cvData, null)
@@ -480,6 +481,7 @@ const downloadCvDocx = async (cvJsonString) => {
         // POST the pre-rendered HTML to the backend which uses Playwright to print to PDF
         const res = await authFetch('/api/generate-cv-pdf-html', {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ html, filename })
         })
         if (!res.ok) {

@@ -244,14 +244,14 @@ onMounted(() => {
 
     <!-- Tab pills -->
     <div v-if="pipelines.length > 0" class="pb-tabs">
-      <button v-for="(pl, i) in pipelines" :key="pl.id"
+      <div v-for="(pl, i) in pipelines" :key="pl.id"
         class="pb-tab" :class="{ 'pb-tab-active': activePipelineIdx === i }"
         @click="activePipelineIdx = i">
         <span class="pb-tab-dot" :class="{ 'pb-tab-dot-active': activePipelineIdx === i }"></span>
         <input v-model="pl.name" @change="save()" @click.stop
           class="pb-tab-input" :class="{ 'pb-tab-input-active': activePipelineIdx === i }" />
         <button class="pb-tab-del" @click.stop="removePipeline(i)">✕</button>
-      </button>
+      </div>
     </div>
 
     <!-- Empty state -->

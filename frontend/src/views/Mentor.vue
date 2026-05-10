@@ -99,7 +99,7 @@ const handleFeatureClick = (feature) => {
             </span>
             <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-[#F59E0B] transition-all">
                <svg class="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="9 5l7 7-7 7" />
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                </svg>
             </div>
           </div>
