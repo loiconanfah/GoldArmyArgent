@@ -413,16 +413,24 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
         try:
             def _generate_pdf_sync(html: str) -> bytes:
                 from playwright.sync_api import sync_playwright
-                with sync_playwright() as pw:
-                    browser = pw.chromium.launch()
-                    page = browser.new_page()
-                    page.set_content(html, wait_until="networkidle")
-                    p_bytes = page.pdf(
-                        format="A4", print_background=True,
-                        margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
-                    )
-                    browser.close()
-                    return p_bytes
+                try:
+                    with sync_playwright() as pw:
+                        # Add sandbox flags for better compatibility in various environments
+                        browser = pw.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox"])
+                        page = browser.new_page()
+                        # Use 'load' instead of 'networkidle' to avoid hanging on slow external assets
+                        # and set a reasonable timeout.
+                        page.set_content(html, wait_until="load", timeout=20000)
+                        p_bytes = page.pdf(
+                            format="A4", print_background=True,
+                            margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
+                        )
+                        browser.close()
+                        return p_bytes
+                except Exception as e:
+                    import logging
+                    logging.error(f"[Playwright] Critical PDF generation error: {str(e)}")
+                    raise e
 
             import asyncio
             # Run playwright isolated in its own synchronous thread avoiding asyncio Windows NotImplementedError
@@ -470,16 +478,23 @@ async def generate_cv_pdf_from_html(raw_request: Request):
 
         def _generate_pdf_sync(html: str) -> bytes:
             from playwright.sync_api import sync_playwright
-            with sync_playwright() as pw:
-                browser = pw.chromium.launch()
-                page = browser.new_page()
-                page.set_content(html, wait_until="networkidle")
-                p_bytes = page.pdf(
-                    format="A4", print_background=True,
-                    margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
-                )
-                browser.close()
-                return p_bytes
+            try:
+                with sync_playwright() as pw:
+                    # Add sandbox flags for better compatibility
+                    browser = pw.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox"])
+                    page = browser.new_page()
+                    # Use 'load' + timeout to prevent hanging on external fonts/assets
+                    page.set_content(html, wait_until="load", timeout=20000)
+                    p_bytes = page.pdf(
+                        format="A4", print_background=True,
+                        margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
+                    )
+                    browser.close()
+                    return p_bytes
+            except Exception as e:
+                import logging
+                logging.error(f"[Playwright-HTML] Critical PDF generation error: {str(e)}")
+                raise e
 
         pdf_bytes = await asyncio.to_thread(_generate_pdf_sync, html_content)
 
