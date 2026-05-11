@@ -52,7 +52,8 @@ const CV_THEMES = computed(() => CV_TEMPLATES.map(tem => ({
 
 const selectedTheme = ref('goldarmy')
 const hoveredTheme = ref(null)
-const isDownloadingDocx = ref(false)
+const isDownloadingPdf = ref(false)
+const isDownloadingWord = ref(false)
 
 const inputQuery = ref('')
 const inputLocation = ref('')
@@ -460,46 +461,57 @@ const downloadZip = async () => {
 
 
 
-const downloadCvDocx = async (cvJsonString) => {
-    isDownloadingDocx.value = true
+const downloadCv = async (format, cvJsonString) => {
+    if (format === 'pdf') isDownloadingPdf.value = true
+    else isDownloadingWord.value = true
+    
     try {
         let cvData = {}
-        let filename = 'CV_ATS_Optimise'
+        let filename = 'CV_Optimise'
         try {
             cvData = typeof cvJsonString === 'string' ? JSON.parse(cvJsonString) : cvJsonString
             if (cvData.full_name) filename = `CV_${cvData.full_name.replace(/\s+/g, '_')}_ATS`
         } catch {}
 
-        // Find the selected template from the mobile-identical TS modules
-        const templateId = typeof selectedTheme.value === 'string' ? selectedTheme.value : 'goldarmy'
-        const themes = CV_THEMES.value
-        const tpl = themes.find(t => t.id === templateId) || themes[0]
+        if (format === 'pdf') {
+            const templateId = typeof selectedTheme.value === 'string' ? selectedTheme.value : 'goldarmy'
+            const themes = CV_THEMES.value
+            const tpl = themes.find(t => t.id === templateId) || themes[0]
+            const html = tpl.build(cvData, null)
 
-        // Build the HTML fully client-side (mobile-identical rendering)
-        const html = tpl.build(cvData, null)
-
-        // POST the pre-rendered HTML to the backend which uses Playwright to print to PDF
-        const res = await authFetch('/api/generate-cv-pdf-html', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ html, filename })
-        })
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}))
-            toastState.addToast(`Erreur: ${err.detail || 'Impossible de générer le CV'}`, 'error')
-            return
+            const res = await authFetch('/api/generate-cv-pdf-html', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ html, filename })
+            })
+            if (!res.ok) throw new Error('Erreur génération PDF')
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = filename + '.pdf'
+            a.click()
+            URL.revokeObjectURL(url)
+        } else {
+            const res = await authFetch('/api/generate-cv-word', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cv_json: cvData, filename })
+            })
+            if (!res.ok) throw new Error('Erreur génération Word')
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = filename + '.docx'
+            a.click()
+            URL.revokeObjectURL(url)
         }
-        const blob = await res.blob()
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename + '.pdf'
-        a.click()
-        URL.revokeObjectURL(url)
     } catch (e) {
         toastState.addToast('Erreur lors du téléchargement du CV.', 'error')
     } finally {
-        isDownloadingDocx.value = false
+        if (format === 'pdf') isDownloadingPdf.value = false
+        else isDownloadingWord.value = false
     }
 }
 const openInWorkspace = (msg) => {
@@ -909,17 +921,27 @@ const restoreCvFromHistory = (entry) => {
 
               <!-- ACTIONS -->
               <div class="flex flex-col gap-3">
-                  <button
-                    @click="downloadCvDocx(msg.content)"
-                    :disabled="isDownloadingDocx"
-                    class="w-full group flex items-center justify-center gap-3 px-8 py-5 bg-gradient-to-r from-[#F59E0B] to-[#C44A2D] hover:from-[#C44A2D] hover:to-[#F59E0B] text-white rounded-[2rem] font-black transition-all duration-500 shadow-2xl shadow-[#F59E0B]/30 active:scale-[0.98] disabled:opacity-50"
-                  >
-                    <ArrowDownTrayIcon v-if="!isDownloadingDocx" class="w-6 h-6 transform group-hover:translate-y-1 transition-transform" />
-                    <ArrowPathIcon v-else class="w-6 h-6 animate-spin" />
-                    <span class="text-base uppercase tracking-widest">
-                        {{ isDownloadingDocx ? t('agent_chat.audit.generating_file') : t('agent_chat.audit.download_cv_rewritten') }}
-                    </span>
-                  </button>
+                  <div class="flex gap-2 w-full">
+                    <button
+                      @click="downloadCv('pdf', msg.content)"
+                      :disabled="isDownloadingPdf || isDownloadingWord"
+                      class="flex-1 group flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r from-[#F59E0B] to-[#C44A2D] hover:from-[#C44A2D] hover:to-[#F59E0B] text-white rounded-2xl font-black transition-all shadow-xl active:scale-[0.98] disabled:opacity-50"
+                    >
+                      <ArrowDownTrayIcon v-if="!isDownloadingPdf" class="w-5 h-5 transform group-hover:translate-y-1 transition-transform" />
+                      <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
+                      <span class="text-sm tracking-widest">PDF</span>
+                    </button>
+                    
+                    <button
+                      @click="downloadCv('word', msg.content)"
+                      :disabled="isDownloadingPdf || isDownloadingWord"
+                      class="flex-1 group flex items-center justify-center gap-2 px-4 py-4 bg-white border-2 border-[#F59E0B] hover:bg-[#F59E0B]/5 text-[#F59E0B] rounded-2xl font-black transition-all shadow-xl active:scale-[0.98] disabled:opacity-50"
+                    >
+                      <DocumentTextIcon v-if="!isDownloadingWord" class="w-5 h-5 transform group-hover:translate-y-1 transition-transform" />
+                      <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
+                      <span class="text-sm tracking-widest">WORD</span>
+                    </button>
+                  </div>
                   <p class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-widest flex items-center justify-center gap-2">
                       <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                       {{ t('agent_chat.audit.ats_friendly') }}
@@ -931,12 +953,20 @@ const restoreCvFromHistory = (entry) => {
              <!-- Fallback audit si format non-structuré (chaîne texte) -->
              <div v-else-if="msg.is_audit_rewrite && msg.audit && typeof msg.audit === 'string'" class="space-y-4 w-full">
                <div class="whitespace-pre-wrap text-slate-300 pb-4 border-b border-slate-100" v-html="msg.audit.replace(/\n/g, '<br/>')"></div>
-               <button @click="downloadCvDocx(msg.content)" :disabled="isDownloadingDocx"
-                 class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-indigo-500 hover:bg-indigo-400 text-slate-900 rounded-xl font-bold transition-all">
-                 <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
-                 <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
-                 {{ isDownloadingDocx ? (t('common.generating') || 'Génération...') : t('agent_chat.audit.download_cv') }}
-               </button>
+               <div class="flex gap-2">
+                  <button @click="downloadCv('pdf', msg.content)" :disabled="isDownloadingPdf || isDownloadingWord"
+                    class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl font-bold transition-all">
+                    <ArrowUpTrayIcon v-if="!isDownloadingPdf" class="w-4 h-4 rotate-180" />
+                    <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
+                    {{ isDownloadingPdf ? 'Génération...' : 'PDF' }}
+                  </button>
+                  <button @click="downloadCv('word', msg.content)" :disabled="isDownloadingPdf || isDownloadingWord"
+                    class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-[#F59E0B] hover:bg-[#F59E0B]/5 text-[#F59E0B] rounded-xl font-bold transition-all">
+                    <DocumentTextIcon v-if="!isDownloadingWord" class="w-4 h-4" />
+                    <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
+                    {{ isDownloadingWord ? 'Génération...' : 'Word' }}
+                  </button>
+                </div>
              </div>
  
              <!-- ══════════ CV REWRITE (sans audit dashboard) ══════════ -->
@@ -948,15 +978,26 @@ const restoreCvFromHistory = (entry) => {
                    <p class="text-slate-400 text-xs m-0">{{ t('agent_chat.audit.rewrite_desc') }}</p>
                  </div>
                </div>
-               <button
-                 @click="downloadCvDocx(msg.content)"
-                 :disabled="isDownloadingDocx"
-                 class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:from-surface-700 disabled:to-surface-700 disabled:text-slate-500 text-slate-900 rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
-               >
-                 <ArrowUpTrayIcon v-if="!isDownloadingDocx" class="w-4 h-4 rotate-180" />
-                 <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
-                 {{ isDownloadingDocx ? t('agent_chat.audit.generating_file') : t('agent_chat.audit.download_cv_rewritten') }}
-               </button>
+               <div class="flex gap-2 w-full">
+                  <button
+                    @click="downloadCv('pdf', msg.content)"
+                    :disabled="isDownloadingPdf || isDownloadingWord"
+                    class="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 disabled:opacity-50 text-white rounded-xl font-bold transition-all shadow-lg text-sm"
+                  >
+                    <ArrowUpTrayIcon v-if="!isDownloadingPdf" class="w-4 h-4 rotate-180" />
+                    <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
+                    {{ isDownloadingPdf ? 'Génération...' : 'PDF' }}
+                  </button>
+                  <button
+                    @click="downloadCv('word', msg.content)"
+                    :disabled="isDownloadingPdf || isDownloadingWord"
+                    class="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 bg-white border-2 border-[#F59E0B] hover:bg-[#F59E0B]/5 disabled:opacity-50 text-[#F59E0B] rounded-xl font-bold transition-all shadow-lg text-sm"
+                  >
+                    <DocumentTextIcon v-if="!isDownloadingWord" class="w-4 h-4" />
+                    <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
+                    {{ isDownloadingWord ? 'Génération...' : 'Word' }}
+                  </button>
+                </div>
                <p class="text-[10px] text-slate-500 text-center">{{ t('agent_chat.audit.ats_friendly') }}</p>
              </div>
 
@@ -1279,8 +1320,11 @@ const restoreCvFromHistory = (entry) => {
                     <button @click="showPreviewModal = false" class="px-6 py-2.5 bg-white border border-slate-200 text-slate-900 text-xs font-black rounded-xl hover:bg-slate-50 transition-colors uppercase tracking-widest">
                         {{ t('common.close') || 'Fermer' }}
                     </button>
-                    <button @click="downloadCvDocx(previewData)" class="px-8 py-2.5 bg-[#F59E0B] text-white text-xs font-black rounded-xl shadow-lg shadow-[#F59E0B]/20 hover:bg-[#C44A2D] transition-all uppercase tracking-widest flex items-center gap-2">
-                        <ArrowDownTrayIcon class="w-4 h-4" /> {{ t('agent_chat.audit.download_cv') }}
+                    <button @click="downloadCv('pdf', previewData)" class="px-8 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-black rounded-xl shadow-lg hover:opacity-90 transition-all uppercase tracking-widest flex items-center gap-2">
+                        <ArrowDownTrayIcon class="w-4 h-4" /> PDF
+                    </button>
+                    <button @click="downloadCv('word', previewData)" class="px-8 py-2.5 bg-white border-2 border-[#F59E0B] text-[#F59E0B] text-xs font-black rounded-xl shadow-lg hover:bg-[#F59E0B]/5 transition-all uppercase tracking-widest flex items-center gap-2">
+                        <DocumentTextIcon class="w-4 h-4" /> Word
                     </button>
                 </div>
             </div>

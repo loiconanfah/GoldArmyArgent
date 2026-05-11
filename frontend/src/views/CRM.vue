@@ -60,6 +60,7 @@ const adaptCvFileInput = ref(null)
 const showDownloadCvModal = ref(false)
 const selectedCvTheme = ref('goldarmy')
 const isDownloadingPdf = ref(false)
+const isDownloadingWord = ref(false)
 import { CV_TEMPLATES } from '../utils/cvTemplates/index'
 
 const CV_THEMES = CV_TEMPLATES.map(t => ({
@@ -331,6 +332,56 @@ const buildCvJsonFromMarkdown = (markdown) => {
     experiences: [{ title: 'Expérience professionnelle', company: '', start_date: '', end_date: '', bullets: lines }],
     skills: {},
     education: []
+  }
+}
+
+const downloadAdaptedWord = async () => {
+  if (!adaptedData.value?.markdown && !adaptedData.value?.cv_json) return
+  isDownloadingWord.value = true
+  try {
+    let cvJson = null;
+    if (adaptedData.value.cv_json) {
+        if (typeof adaptedData.value.cv_json === 'object') {
+            cvJson = adaptedData.value.cv_json;
+        } else if (typeof adaptedData.value.cv_json === 'string') {
+            try {
+                cvJson = JSON.parse(adaptedData.value.cv_json);
+            } catch (e) {
+                console.warn("Failed to parse cv_json string, falling back to markdown", e);
+            }
+        }
+    }
+    
+    if (!cvJson) {
+        cvJson = buildCvJsonFromMarkdown(adaptedData.value.markdown || '');
+    }
+
+    const filename = `CV_Adapte_${(adaptCvCard.value?.job_title || 'offre').replace(/\s+/g, '_').slice(0, 30)}`
+
+    const res = await authFetch('/api/generate-cv-word', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cv_json: cvJson, filename })
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      toastState.addToast(err.detail || 'Erreur génération Word', 'error')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename + '.docx'
+    a.click()
+    URL.revokeObjectURL(url)
+    toastState.addToast('CV Word téléchargé.', 'success')
+    showDownloadCvModal.value = false
+    adaptedData.value = null
+  } catch (e) {
+    toastState.addToast('Erreur lors du téléchargement Word.', 'error')
+  } finally {
+    isDownloadingWord.value = false
   }
 }
 
@@ -709,11 +760,18 @@ onMounted(() => { fetchCrmData() })
             </div>
             <p class="text-[11px] text-slate-500 mt-2">{{ CV_THEMES.find(th => th.id === selectedCvTheme)?.name }}</p>
           </div>
-          <button @click="downloadAdaptedPdf" :disabled="isDownloadingPdf"
+          <button @click="downloadAdaptedPdf" :disabled="isDownloadingPdf || isDownloadingWord"
             class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-60 text-white font-bold rounded-xl shadow-lg transition-all">
             <ArrowUpTrayIcon v-if="!isDownloadingPdf" class="w-5 h-5 rotate-180" />
             <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
-            {{ isDownloadingPdf ? 'Génération…' : 'Télécharger le PDF' }}
+            {{ isDownloadingPdf ? 'Génération…' : 'Télécharger en PDF' }}
+          </button>
+          
+          <button @click="downloadAdaptedWord" :disabled="isDownloadingWord || isDownloadingPdf"
+            class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-white border-2 border-amber-500 hover:bg-amber-50 disabled:opacity-60 text-amber-600 font-bold rounded-xl shadow-sm transition-all mt-3">
+            <DocumentTextIcon v-if="!isDownloadingWord" class="w-5 h-5" />
+            <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
+            {{ isDownloadingWord ? 'Génération…' : 'Télécharger en Word (.docx)' }}
           </button>
         </div>
       </div>

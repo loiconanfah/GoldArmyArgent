@@ -514,6 +514,45 @@ async def generate_cv_pdf_from_html(raw_request: Request):
         logging.exception("Erreur generation PDF depuis HTML")
         raise HTTPException(status_code=500, detail=f"Erreur génération PDF: {str(e)}")
 
+@app.post("/api/generate-cv-word")
+async def generate_cv_word_endpoint(raw_request: Request):
+    """
+    Accepte le cv_json et génère un document Word (.docx) ATS-friendly.
+    Body: { cv_json: dict, filename?: string }
+    """
+    import logging
+    try:
+        body = await raw_request.json()
+        cv_data = body.get("cv_json")
+        filename = (body.get("filename") or "CV_Optimise").replace(" ", "_").strip()
+        
+        if not cv_data:
+            raise HTTPException(status_code=400, detail="cv_json manquant dans la requête")
+            
+        from core.cv_word_generator import generate_cv_word
+        
+        # Génération du Word de manière asynchrone pour ne pas bloquer
+        docx_bytes = await asyncio.to_thread(generate_cv_word, cv_data)
+        
+        if not filename.endswith(".docx"):
+            filename += ".docx"
+            
+        headers = {
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+        }
+        
+        from fastapi.responses import StreamingResponse
+        import io
+        return StreamingResponse(
+            io.BytesIO(docx_bytes),
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers=headers
+        )
+    except Exception as e:
+        logging.exception("Erreur generation Word")
+        raise HTTPException(status_code=500, detail=f"Erreur génération Word: {str(e)}")
+
 @app.post("/api/network/enrich")
 async def enrich_company(request: CompanyEnrichRequest):
     """Cherche les profils RH LinkedIn pour une entreprise."""
