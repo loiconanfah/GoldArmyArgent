@@ -525,6 +525,7 @@ async def generate_cv_word_endpoint(raw_request: Request):
         body = await raw_request.json()
         cv_data = body.get("cv_json")
         filename = (body.get("filename") or "CV_Optimise").replace(" ", "_").strip()
+        theme_id = body.get("theme_id", "goldarmy")
         
         if not cv_data:
             raise HTTPException(status_code=400, detail="cv_json manquant dans la requête")
@@ -532,7 +533,7 @@ async def generate_cv_word_endpoint(raw_request: Request):
         from core.cv_word_generator import generate_cv_word
         
         # Génération du Word de manière asynchrone pour ne pas bloquer
-        docx_bytes = await asyncio.to_thread(generate_cv_word, cv_data)
+        docx_bytes = await asyncio.to_thread(generate_cv_word, cv_data, theme_id)
         
         if not filename.endswith(".docx"):
             filename += ".docx"

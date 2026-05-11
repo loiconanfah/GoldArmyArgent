@@ -30,12 +30,12 @@ import {
   IdentificationIcon,
   AcademicCapIcon,
 } from '@heroicons/vue/24/solid'
-import {    
-    SparklesIcon,
+import {     SparklesIcon,
     CloudArrowDownIcon,
     CheckCircleIcon
 } from '@heroicons/vue/24/outline'
 import {     CV_TEMPLATES } from '../utils/cvTemplates/index'
+import CvEditorModal from '../components/CvEditorModal.vue'
 
 const route = useRoute()
 
@@ -53,7 +53,31 @@ const CV_THEMES = computed(() => CV_TEMPLATES.map(tem => ({
 const selectedTheme = ref('goldarmy')
 const hoveredTheme = ref(null)
 const isDownloadingPdf = ref(false)
-const isDownloadingWord = ref(false)
+
+const showCvEditor = ref(false)
+const cvDataToEdit = ref(null)
+const msgIdBeingEdited = ref(null)
+
+const openCvEditor = (msg) => {
+    try {
+        cvDataToEdit.value = typeof msg.content === 'string' ? JSON.parse(msg.content) : msg.content
+        msgIdBeingEdited.value = msg.id
+        showCvEditor.value = true
+    } catch (e) {
+        toastState.addToast("Erreur d'ouverture de l'éditeur", 'error')
+    }
+}
+
+const saveCvEditor = (newData) => {
+    const msg = messages.value.find(m => m.id === msgIdBeingEdited.value)
+    if (msg) {
+        msg.content = JSON.stringify(newData)
+        toastState.addToast("CV mis à jour avec succès !", 'success')
+    }
+    showCvEditor.value = false
+    cvDataToEdit.value = null
+    msgIdBeingEdited.value = null
+}
 
 const inputQuery = ref('')
 const inputLocation = ref('')
@@ -493,10 +517,11 @@ const downloadCv = async (format, cvJsonString) => {
             a.click()
             URL.revokeObjectURL(url)
         } else {
+            const templateId = typeof selectedTheme.value === 'string' ? selectedTheme.value : 'goldarmy'
             const res = await authFetch('/api/generate-cv-word', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cv_json: cvData, filename })
+                body: JSON.stringify({ cv_json: cvData, filename, theme_id: templateId })
             })
             if (!res.ok) throw new Error('Erreur génération Word')
             const blob = await res.blob()
@@ -933,13 +958,11 @@ const restoreCvFromHistory = (entry) => {
                     </button>
                     
                     <button
-                      @click="downloadCv('word', msg.content)"
-                      :disabled="isDownloadingPdf || isDownloadingWord"
-                      class="flex-1 group flex items-center justify-center gap-2 px-4 py-4 bg-white border-2 border-[#F59E0B] hover:bg-[#F59E0B]/5 text-[#F59E0B] rounded-2xl font-black transition-all shadow-xl active:scale-[0.98] disabled:opacity-50"
+                      @click="openCvEditor(msg)"
+                      class="flex-1 group flex items-center justify-center gap-2 px-4 py-4 bg-white border-2 border-slate-200 hover:border-[#F59E0B] hover:bg-[#F59E0B]/5 text-slate-700 hover:text-[#F59E0B] rounded-2xl font-black transition-all shadow-xl active:scale-[0.98]"
                     >
-                      <DocumentTextIcon v-if="!isDownloadingWord" class="w-5 h-5 transform group-hover:translate-y-1 transition-transform" />
-                      <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
-                      <span class="text-sm tracking-widest">WORD</span>
+                      <DocumentTextIcon class="w-5 h-5 transform group-hover:translate-y-1 transition-transform" />
+                      <span class="text-sm tracking-widest">ÉDITER</span>
                     </button>
                   </div>
                   <p class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-widest flex items-center justify-center gap-2">
@@ -960,11 +983,10 @@ const restoreCvFromHistory = (entry) => {
                     <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
                     {{ isDownloadingPdf ? 'Génération...' : 'PDF' }}
                   </button>
-                  <button @click="downloadCv('word', msg.content)" :disabled="isDownloadingPdf || isDownloadingWord"
-                    class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-[#F59E0B] hover:bg-[#F59E0B]/5 text-[#F59E0B] rounded-xl font-bold transition-all">
-                    <DocumentTextIcon v-if="!isDownloadingWord" class="w-4 h-4" />
-                    <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
-                    {{ isDownloadingWord ? 'Génération...' : 'Word' }}
+                  <button @click="openCvEditor(msg)"
+                    class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-slate-200 hover:border-[#F59E0B] hover:bg-[#F59E0B]/5 text-slate-700 hover:text-[#F59E0B] rounded-xl font-bold transition-all">
+                    <DocumentTextIcon class="w-4 h-4" />
+                    Éditer
                   </button>
                 </div>
              </div>
@@ -989,13 +1011,11 @@ const restoreCvFromHistory = (entry) => {
                     {{ isDownloadingPdf ? 'Génération...' : 'PDF' }}
                   </button>
                   <button
-                    @click="downloadCv('word', msg.content)"
-                    :disabled="isDownloadingPdf || isDownloadingWord"
-                    class="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 bg-white border-2 border-[#F59E0B] hover:bg-[#F59E0B]/5 disabled:opacity-50 text-[#F59E0B] rounded-xl font-bold transition-all shadow-lg text-sm"
+                    @click="openCvEditor(msg)"
+                    class="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 bg-white border-2 border-slate-200 hover:border-[#F59E0B] hover:bg-[#F59E0B]/5 text-slate-700 hover:text-[#F59E0B] rounded-xl font-bold transition-all shadow-lg text-sm"
                   >
-                    <DocumentTextIcon v-if="!isDownloadingWord" class="w-4 h-4" />
-                    <ArrowPathIcon v-else class="w-4 h-4 animate-spin" />
-                    {{ isDownloadingWord ? 'Génération...' : 'Word' }}
+                    <DocumentTextIcon class="w-4 h-4" />
+                    Éditer
                   </button>
                 </div>
                <p class="text-[10px] text-slate-500 text-center">{{ t('agent_chat.audit.ats_friendly') }}</p>
@@ -1054,11 +1074,6 @@ const restoreCvFromHistory = (entry) => {
       <!-- Input Bar (in-flow, not absolute) -->
       <div class="shrink-0 pt-3 bg-[#F9FAFB]/90 backdrop-blur-md">
         <div class="bg-white border border-slate-100 p-2 rounded-2xl shadow-lg flex flex-col sm:flex-row items-end sm:items-center gap-2">
-           <!-- Location Field -->
-           <div class="w-full sm:w-1/3 flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-100">
-               <MapPinIcon class="w-4 h-4 text-slate-400" />
-               <input v-model="inputLocation" type="text" :placeholder="t('agent_chat.placeholders.location')" class="w-full bg-transparent border-none focus:ring-0 text-slate-900 text-xs"/>
-           </div>
             <!-- Image Upload -->
             <div class="flex items-center px-2">
                 <label class="cursor-pointer p-2 hover:bg-white rounded-xl transition-colors text-slate-400 hover:text-[#F59E0B] relative">
@@ -1323,13 +1338,17 @@ const restoreCvFromHistory = (entry) => {
                     <button @click="downloadCv('pdf', previewData)" class="px-8 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-black rounded-xl shadow-lg hover:opacity-90 transition-all uppercase tracking-widest flex items-center gap-2">
                         <ArrowDownTrayIcon class="w-4 h-4" /> PDF
                     </button>
-                    <button @click="downloadCv('word', previewData)" class="px-8 py-2.5 bg-white border-2 border-[#F59E0B] text-[#F59E0B] text-xs font-black rounded-xl shadow-lg hover:bg-[#F59E0B]/5 transition-all uppercase tracking-widest flex items-center gap-2">
-                        <DocumentTextIcon class="w-4 h-4" /> Word
-                    </button>
                 </div>
             </div>
         </div>
     </transition>
+    
+    <CvEditorModal
+      :show="showCvEditor"
+      :cv-data="cvDataToEdit"
+      @close="showCvEditor = false"
+      @save="saveCvEditor"
+    />
   </div>
 </template>
 

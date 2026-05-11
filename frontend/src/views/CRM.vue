@@ -60,8 +60,8 @@ const adaptCvFileInput = ref(null)
 const showDownloadCvModal = ref(false)
 const selectedCvTheme = ref('goldarmy')
 const isDownloadingPdf = ref(false)
-const isDownloadingWord = ref(false)
 import { CV_TEMPLATES } from '../utils/cvTemplates/index'
+import CvEditorModal from '../components/CvEditorModal.vue'
 
 const CV_THEMES = CV_TEMPLATES.map(t => ({
   id: t.id,
@@ -335,10 +335,12 @@ const buildCvJsonFromMarkdown = (markdown) => {
   }
 }
 
-const downloadAdaptedWord = async () => {
-  if (!adaptedData.value?.markdown && !adaptedData.value?.cv_json) return
-  isDownloadingWord.value = true
-  try {
+const showCrmEditor = ref(false)
+const crmEditorData = ref(null)
+
+const openCrmEditor = () => {
+    if (!adaptedData.value?.cv_json && !adaptedData.value?.markdown) return
+    
     let cvJson = null;
     if (adaptedData.value.cv_json) {
         if (typeof adaptedData.value.cv_json === 'object') {
@@ -347,7 +349,7 @@ const downloadAdaptedWord = async () => {
             try {
                 cvJson = JSON.parse(adaptedData.value.cv_json);
             } catch (e) {
-                console.warn("Failed to parse cv_json string, falling back to markdown", e);
+                console.warn("Failed to parse cv_json string", e);
             }
         }
     }
@@ -356,33 +358,18 @@ const downloadAdaptedWord = async () => {
         cvJson = buildCvJsonFromMarkdown(adaptedData.value.markdown || '');
     }
 
-    const filename = `CV_Adapte_${(adaptCvCard.value?.job_title || 'offre').replace(/\s+/g, '_').slice(0, 30)}`
+    crmEditorData.value = cvJson
+    showCrmEditor.value = true
+}
 
-    const res = await authFetch('/api/generate-cv-word', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cv_json: cvJson, filename })
-    })
-    if (!res.ok) {
-      const err = await res.json()
-      toastState.addToast(err.detail || 'Erreur génération Word', 'error')
-      return
+const saveCrmEditor = (newData) => {
+    adaptedData.value.cv_json = newData
+    if (adaptCvCard.value) {
+        adaptCvCard.value.adapted_cv = newData
     }
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename + '.docx'
-    a.click()
-    URL.revokeObjectURL(url)
-    toastState.addToast('CV Word téléchargé.', 'success')
-    showDownloadCvModal.value = false
-    adaptedData.value = null
-  } catch (e) {
-    toastState.addToast('Erreur lors du téléchargement Word.', 'error')
-  } finally {
-    isDownloadingWord.value = false
-  }
+    showCrmEditor.value = false
+    crmEditorData.value = null
+    toastState.addToast("Modifications sauvegardées avec succès", 'success')
 }
 
 const downloadAdaptedPdf = async () => {
@@ -760,18 +747,17 @@ onMounted(() => { fetchCrmData() })
             </div>
             <p class="text-[11px] text-slate-500 mt-2">{{ CV_THEMES.find(th => th.id === selectedCvTheme)?.name }}</p>
           </div>
-          <button @click="downloadAdaptedPdf" :disabled="isDownloadingPdf || isDownloadingWord"
+          <button @click="downloadAdaptedPdf" :disabled="isDownloadingPdf"
             class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-60 text-white font-bold rounded-xl shadow-lg transition-all">
             <ArrowUpTrayIcon v-if="!isDownloadingPdf" class="w-5 h-5 rotate-180" />
             <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
             {{ isDownloadingPdf ? 'Génération…' : 'Télécharger en PDF' }}
           </button>
           
-          <button @click="downloadAdaptedWord" :disabled="isDownloadingWord || isDownloadingPdf"
-            class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-white border-2 border-amber-500 hover:bg-amber-50 disabled:opacity-60 text-amber-600 font-bold rounded-xl shadow-sm transition-all mt-3">
-            <DocumentTextIcon v-if="!isDownloadingWord" class="w-5 h-5" />
-            <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
-            {{ isDownloadingWord ? 'Génération…' : 'Télécharger en Word (.docx)' }}
+          <button @click="openCrmEditor"
+            class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-white border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50 text-slate-700 hover:text-amber-600 font-bold rounded-xl shadow-sm transition-all mt-3">
+            <DocumentTextIcon class="w-5 h-5" />
+            Éditer le CV
           </button>
         </div>
       </div>
@@ -798,6 +784,12 @@ onMounted(() => { fetchCrmData() })
       </div>
     </div>
 
+    <CvEditorModal
+      :show="showCrmEditor"
+      :cv-data="crmEditorData"
+      @close="showCrmEditor = false"
+      @save="saveCrmEditor"
+    />
   </div>
 </template>
 
