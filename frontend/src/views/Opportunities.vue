@@ -17,9 +17,12 @@ import {
     SparklesIcon,
     SignalIcon,
     ArrowUpTrayIcon,
-    XMarkIcon
+    XMarkIcon,
+    GlobeAltIcon,
+    EyeIcon
 } from '@heroicons/vue/24/outline'
 import { CV_TEMPLATES } from '../utils/cvTemplates/index'
+import CvEditorModal from '../components/CvEditorModal.vue'
 
 const {
     filter, searchQuery, inputLocation, cvText, isUploading, isLoading, isParsingPdf, 
@@ -216,7 +219,8 @@ const performSearch = async () => {
              type: job.type || t('opportunities.job_stage') || 'Emploi / Stage',
              posted: job.posted_date || t('opportunities.recent') || 'Récent',
              desc: job.description || job.snippet || t('opportunities.no_desc') || 'Aucune description fournie.',
-             rawUrl: job.url || ''
+             rawUrl: job.url || '',
+             source: job.source || job.platform || job.site || ''
         }))
         
         console.log(`[GoldArmy Search] ${jobs.value.length} offres reçues.`)
@@ -388,6 +392,51 @@ const downloadAdaptedPdf = async () => {
 const closeDownloadCvModal = () => {
   showDownloadCvModal.value = false
   adaptedData.value = null
+}
+
+const showOpportunitiesEditor = ref(false)
+const opportunitiesEditorData = ref(null)
+
+const openOpportunitiesEditor = () => {
+    if (!adaptedData.value?.cv_json && !adaptedData.value?.markdown) return
+    let cvJson = null;
+    if (adaptedData.value.cv_json) {
+        if (typeof adaptedData.value.cv_json === 'object') cvJson = adaptedData.value.cv_json;
+        else if (typeof adaptedData.value.cv_json === 'string') {
+            try { cvJson = JSON.parse(adaptedData.value.cv_json); } catch (e) {}
+        }
+    }
+    if (!cvJson) cvJson = buildCvJsonFromMarkdown(adaptedData.value.markdown || '');
+    
+    opportunitiesEditorData.value = cvJson
+    showOpportunitiesEditor.value = true
+}
+
+const saveOpportunitiesEditor = (newData) => {
+    adaptedData.value.cv_json = newData
+    if (adaptCvCard.value) adaptCvCard.value.adapted_cv = newData
+    showOpportunitiesEditor.value = false
+    opportunitiesEditorData.value = null
+    toastState.addToast("Modifications sauvegardées avec succès", 'success')
+}
+
+const showPreviewModal = ref(false)
+const previewSrcdoc = ref('')
+
+const openPreview = () => {
+    let cvJson = null;
+    if (adaptedData.value?.cv_json) {
+        if (typeof adaptedData.value.cv_json === 'object') cvJson = adaptedData.value.cv_json;
+        else if (typeof adaptedData.value.cv_json === 'string') {
+            try { cvJson = JSON.parse(adaptedData.value.cv_json); } catch (e) {}
+        }
+    }
+    if (!cvJson) cvJson = buildCvJsonFromMarkdown(adaptedData.value?.markdown || '');
+    
+    const tpl = CV_THEMES.find(t => t.id === selectedCvTheme.value) || CV_THEMES[0]
+    const html = tpl.build(cvJson, null)
+    previewSrcdoc.value = html
+    showPreviewModal.value = true
 }
 
 const runRadar = async (job) => {
@@ -633,8 +682,16 @@ const addToCrmAndApply = async (job) => {
                         <span class="text-[10px] font-black uppercase tracking-wider text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-3 py-1.5 rounded-xl">
                             {{ job.type }}
                         </span>
-                        <span class="text-xs font-semibold text-slate-300 bg-surface-800 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                            <MapPinIcon class="w-3.5 h-3.5 text-slate-500" />
+                        <span v-if="job.source && job.source.toLowerCase().includes('linkedin')" class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#0A66C2] bg-[#0A66C2]/10 border border-[#0A66C2]/20 px-3 py-1.5 rounded-xl">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                            LinkedIn
+                        </span>
+                        <span v-else-if="job.source" class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-500 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl">
+                            <GlobeAltIcon class="w-3.5 h-3.5" />
+                            {{ job.source }}
+                        </span>
+                        <span class="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                            <MapPinIcon class="w-3.5 h-3.5 text-slate-400" />
                             {{ job.location }}
                         </span>
                       </div>
@@ -681,8 +738,8 @@ const addToCrmAndApply = async (job) => {
              <button 
                 v-if="job.rawUrl" 
                 @click="addToCrmAndApply(job)"
-                class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-emerald-600/20 active:scale-95 outline-none">
-                {{ t('opportunities.apply') }}
+                class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-slate-900 px-4 py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-amber-500/20 active:scale-95 outline-none">
+                Voir & Enregistrer
              </button>
              <button disabled class="flex-1 bg-surface-800 text-slate-500 px-4 py-3.5 rounded-xl font-bold text-sm cursor-not-allowed" v-else>
                  {{ t('opportunities.dead_link') }}
@@ -696,13 +753,7 @@ const addToCrmAndApply = async (job) => {
                 <span class="hidden sm:inline">{{ t('opportunities.adapt_cv') }}</span>
              </button>
              
-             <button 
-                @click="runRadar(job)"
-                :disabled="loadingRadarFor === job.id"
-                class="flex items-center justify-center bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 w-12 h-12 rounded-xl transition-colors border border-slate-200 active:scale-95 outline-none group/radar shrink-0">
-                <ArrowPathIcon v-if="loadingRadarFor === job.id" class="w-5 h-5 animate-spin text-gold-400" />
-                <svg v-else class="w-5 h-5 text-slate-400 group-hover/radar:text-[#F59E0B] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-             </button>
+             <!-- Radar Button Removed -->
           </div>
        </div>
     </div>
@@ -783,10 +834,81 @@ const addToCrmAndApply = async (job) => {
             <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
             {{ isDownloadingPdf ? 'Génération…' : 'Télécharger le PDF' }}
           </button>
+          
+          <div class="flex gap-3 mt-3">
+            <button @click="openOpportunitiesEditor"
+              class="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-white border-2 border-slate-200 hover:border-amber-500 hover:bg-amber-50 text-slate-700 hover:text-amber-600 font-bold rounded-xl shadow-sm transition-all">
+              <DocumentTextIcon class="w-5 h-5" />
+              Éditer le CV
+            </button>
+            <button @click="openPreview"
+              class="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 bg-white border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-slate-700 hover:text-blue-600 font-bold rounded-xl shadow-sm transition-all">
+              <EyeIcon class="w-5 h-5" />
+              Aperçu
+            </button>
+          </div>
         </div>
       </div>
     </div>
     
+
+    <CvEditorModal
+      :show="showOpportunitiesEditor"
+      :cv-data="opportunitiesEditorData"
+      @close="showOpportunitiesEditor = false"
+      @save="saveOpportunitiesEditor"
+    />
+
+    <!-- MODAL: PREVIEW CV -->
+    <transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        enter-to-class="opacity-100 scale-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="opacity-100 scale-100"
+        leave-to-class="opacity-0 scale-95"
+    >
+        <div v-if="showPreviewModal" class="fixed inset-0 z-[400] flex items-center justify-center p-4 md:p-8 bg-slate-900/80 backdrop-blur-sm">
+            <div class="bg-white w-full max-w-5xl h-full max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative border border-white/20">
+                <!-- Header -->
+                <div class="px-8 py-4 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-[#F59E0B] flex items-center justify-center text-white shadow-lg shadow-[#F59E0B]/20">
+                            <EyeIcon class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-black text-slate-900 m-0">Aperçu du CV</h3>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{{ CV_THEMES.find(t => t.id === selectedCvTheme)?.name }} Template</p>
+                        </div>
+                    </div>
+                    <button @click="showPreviewModal = false" class="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                        <XMarkIcon class="w-6 h-6 text-slate-400" />
+                    </button>
+                </div>
+                
+                <!-- Content (Iframe) -->
+                <div class="flex-1 bg-slate-50 p-4 md:p-8 overflow-hidden flex justify-center">
+                    <div class="w-full max-w-[800px] h-full bg-white shadow-2xl rounded-sm overflow-hidden">
+                        <iframe 
+                            :srcdoc="previewSrcdoc" 
+                            class="w-full h-full border-none"
+                            sandbox="allow-scripts"
+                        ></iframe>
+                    </div>
+                </div>
+                
+                <!-- Footer Actions -->
+                <div class="px-8 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-center gap-4 shrink-0">
+                    <button @click="showPreviewModal = false" class="px-6 py-2.5 bg-white border border-slate-200 text-slate-900 text-xs font-black rounded-xl hover:bg-slate-50 transition-colors uppercase tracking-widest">
+                        Fermer
+                    </button>
+                    <button @click="downloadAdaptedPdf" class="px-8 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-black rounded-xl shadow-lg hover:opacity-90 transition-all uppercase tracking-widest flex items-center gap-2">
+                        <ArrowDownTrayIcon class="w-4 h-4" /> PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </transition>
   </div>
 </template>
 
