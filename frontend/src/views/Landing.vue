@@ -329,44 +329,28 @@ function closeNav() {
                 <h1 class="hero-heading">{{ t('landing.hero.title_1') }} <span class="tertiary-color-emphasis">{{ t('landing.hero.title_2') }}</span> {{ t('landing.hero.title_3') }}</h1>
                 <p class="hero-paragraph">{{ t('landing.hero.description') }}</p>
         </div>
-              <router-link to="/register" class="button-arrow w-inline-block" aria-label="CTA">
-                <div class="btn-bg-arrow">
-                  <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon"><path :d="arrowPath" fill="currentColor"/></svg>
-                  <svg viewBox="0 0 14 13" fill="none" width="14" height="6" class="btn-icon" btn-arrow-left=""><path :d="arrowPath" fill="currentColor"/></svg>
-      </div>
-                <div class="btn-text-mask">
-                  <div class="button-arrow-text">{{ t('landing.hero.cta_main') }}</div>
-                  <div class="button-arrow-text">{{ t('landing.hero.cta_main') }}</div>
-        </div>
-          </router-link>
-        </div>
+              <!-- BOUTON D'APPEL À L'ACTION (Nettoyé et unifié) -->
+              <router-link to="/register" class="hero-cta-button" aria-label="Débloquer l'accès IA">
+                <span>{{ t('landing.hero.cta_main') }}</span>
+                <svg viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 ml-2"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+              </router-link>
+            </div>
+            
+            <!-- Arrière-plan épuré de la section (sans image cassée) -->
             <div class="hero1-background">
               <div class="gradient-wrapper">
                 <div class="yellow-gradient" gradient="true"></div>
                 <div class="blue-gradient" gradient="true"></div>
                 <div class="gold-gradient" gradient="true"></div>
                 <div class="light" gradient="true"></div>
-      </div>
-              <div ref="heroLogoRef" class="hero-logo-wrap hero-logo-wrap--desktop">
-        <img
-          src="/images/logosansfond.png"
-          alt="GoldArmy AI — Moteur de recherche d'emploi et coaching propulsé par l'IA"
-          class="hero__logo-img"
-          width="180"
-          height="180"
-          fetchpriority="high"
-        />      </div>
+              </div>
             </div>
           </div>
-      </div>
-    </section>
+        </div>
+      </section>
 
       <!-- SLIDESHOW - App capture GoldArmy -->
-      <section class="section slideshow">
-        <div class="offset-separator">
-          <div class="offset-top"></div>
-          <div class="offset-bottom"></div>
-            </div>
+      <section class="section slideshow" style="padding-top: 1rem;">
         <div class="w-layout-blockcontainer container slideshow w-container">
           <h2 class="fsize-m">{{ t('landing.slideshow.title') }}<br /><span class="tertiary-color-emphasis">{{ t('landing.slideshow.title_emphasis') }}</span></h2>
           <div class="slideshow-wrapper">
@@ -1326,4 +1310,24 @@ function closeNav() {
     min-width: min(320px, 85vw);
   }
 }
+.hero-cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ff9a5c, #ff6f00);
+  color: #000;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 1rem 2.25rem;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 10px 25px rgba(255, 111, 0, 0.35);
+  margin-top: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.hero-cta-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(255, 111, 0, 0.45);
+}
+.hero-cta-button svg { width: 1.25rem; height: 1.25rem; margin-left: 0.5rem; }
 </style>
