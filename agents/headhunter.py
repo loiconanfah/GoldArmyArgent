@@ -45,41 +45,109 @@ class HeadhunterAgent(BaseAgent):
         logger.info(f"🎯 Sniper 7.1 (parallèle) pour: {company_name}")
 
         async def _gemini_search() -> List[Dict[str, Any]]:
-            search_prompt = f"""Utilise Google Search pour trouver 5 profils LinkedIn de décideurs ({roles_str}) chez '{company_name}'. Retourne UNIQUEMENT un tableau JSON: [{{"name":"","role":"","linkedin_url":"https://linkedin.com/in/..."}}]"""
+            search_prompt = f"""Fais une recherche web approfondie via Google Search pour identifier au moins 5 à 8 vrais profils LinkedIn de décideurs majeurs (RH, Recrutement, CEO, CTO, COO, Directeurs, Talent Acquisition) actuels travaillant chez '{company_name}'.
+Tu dois OBLIGATOIREMENT fournir l'URL directe de leur profil LinkedIn (commençant par https://www.linkedin.com/in/). Ne mets pas de liens de recherche.
+Retourne ta réponse UNIQUEMENT sous la forme d'un tableau JSON brut, sans wrapper:
+[
+  {{"name": "Nom Prénom", "role": "Titre exact", "linkedin_url": "https://www.linkedin.com/in/..."}}
+]"""
             try:
                 json_response, sources = await self.generate_with_sources(
                     search_prompt,
                     model="gemini-2.0-flash",
                     tools=[{"google_search": {}}],
-                    system=f"Expert OSINT LinkedIn. Trouve des profils réels chez {company_name}. Règle: URL complète."
+                    system=f"Expert OSINT LinkedIn. Trouve au moins 5 à 8 décideurs réels chez {company_name}. Règle absolue: URL directe du profil."
                 )
                 raw = re.sub(r"^[^{\[\]]*", "", json_response.strip())
                 raw = re.sub(r"[^{\[\]]*$", "", raw)
-                profiles = json.loads(raw) if raw else []
-                if not isinstance(profiles, list):
-                    profiles = [profiles] if isinstance(profiles, dict) else []
+                logger.debug(f"[_gemini_search] raw JSON extracted: {raw[:300]}")
+                try:
+                    profiles = json.loads(raw) if raw else []
+                except Exception as je:
+                    logger.error(f"[_gemini_search] JSON parse error: {je}")
+                    profiles = []
+                    
+                # Unwrap si le JSON est un objet contenant une liste (ex: {"decision_makers": [...]})
+                if isinstance(profiles, dict):
+                    for v in profiles.values():
+                        if isinstance(v, list):
+                            profiles = v
+                            break
+                    if isinstance(profiles, dict):
+                        profiles = [profiles]
+                elif not isinstance(profiles, list):
+                    profiles = []
+                    
                 seen = set()
                 out = []
                 used_sources = set()
                 import urllib.parse
-                for p in profiles:
-                    if not isinstance(p, dict):
-                        continue
-                    url = (p.get("linkedin_url") or p.get("url") or "").strip()
-                    name = (p.get("name") or "").strip()
-                    if not name:
-                        continue
+                
+                async def _find_profile_url(person_name: str) -> Optional[str]:
+                    try:
+                        import urllib.request, urllib.parse, ssl
+                        from bs4 import BeautifulSoup
+                        ctx = ssl._create_unverified_context()
+                        headers = {
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                            "Accept-Language": "fr,fr-FR;q=0.8,en;q=0.5,en-US;q=0.3"
+                        }
+                        q = f'site:linkedin.com/in/ "{person_name}" "{company_name}"'
+                        encoded = urllib.parse.quote_plus(q)
+                        req = urllib.request.Request(f"https://lite.duckduckgo.com/lite/?q={encoded}", headers=headers)
+                        loop = asyncio.get_event_loop()
+                        html = await asyncio.wait_for(
+                            loop.run_in_executor(None, lambda: urllib.request.urlopen(req, context=ctx, timeout=5).read().decode()),
+                            timeout=7
+                        )
+                        soup = BeautifulSoup(html, "html.parser")
+                        for a in soup.find_all("a", href=True):
+                            href = a.get("href", "")
+                            if "uddg=" in href:
+                                try: href = urllib.parse.unquote(href.split("uddg=")[-1].split("&")[0])
+                                except: pass
+                            if "linkedin.com/in/" in href and "search" not in href and "dir/" not in href:
+                                clean = href.split("?")[0].rstrip("/")
+                                if not clean.startswith("http"):
+                                    clean = "https://www.linkedin.com/in/" + clean.split("/in/")[-1]
+                                return clean
+                    except Exception as le:
+                        logger.debug(f"[_find_profile_url] Failed for {person_name}: {le}")
+                    return None
                     
-                    # Tenter d'assigner une source directe si l'URL manque
-                    if sources and (not url or "linkedin.com/in/" not in url):
+                valid_candidates = []
+                for p in profiles:
+                    if not isinstance(p, dict): continue
+                    name = (p.get("name") or "").strip()
+                    if not name or name.lower() in ["nom prénom", "inconnu", "non spécifié"]: continue
+                    url = (p.get("linkedin_url") or p.get("url") or "").strip()
+                    valid_candidates.append((name, p.get("role"), url))
+                    
+                async def _resolve_candidate(name: str, role: str, url: str) -> Dict[str, Any]:
+                    is_direct = url and "linkedin.com/in/" in url and "search" not in url
+                    
+                    # 1. Correspondance sur les sources de Grounding
+                    if sources and not is_direct:
+                        name_slugs = [part.lower() for part in name.split() if len(part) > 2]
                         for s in sources:
-                            if "/in/" in s and s not in used_sources:
-                                url = s.split("?")[0].rstrip("/")
-                                used_sources.add(s)
-                                break
-                                
-                    # Valider l'URL ou utiliser un lien de recherche direct par nom
-                    if url and "linkedin.com/in/" in url and "search" not in url:
+                            if "/in/" in s and "search" not in s and s not in used_sources:
+                                s_clean = s.split("?")[0].rstrip("/")
+                                if any(slug in s_clean.lower() for slug in name_slugs):
+                                    url = s_clean
+                                    used_sources.add(s)
+                                    is_direct = True
+                                    break
+                                    
+                    # 2. Recherche web instantanée du lien direct si toujours manquant
+                    if not is_direct:
+                        direct_url = await _find_profile_url(name)
+                        if direct_url:
+                            url = direct_url
+                            is_direct = True
+                            
+                    # 3. Validation de l'URL directe ou fallback sur lien ciblé
+                    if is_direct:
                         if not url.startswith("http"):
                             url = "https://www.linkedin.com/in/" + url.split("/in/")[-1]
                         url = url.split("?")[0].strip("',\"<>")
@@ -87,15 +155,22 @@ class HeadhunterAgent(BaseAgent):
                         safe_query = urllib.parse.quote_plus(f"{name} {company_name}")
                         url = f"https://www.linkedin.com/search/results/people/?keywords={safe_query}"
                         
-                    if url not in seen:
-                        seen.add(url)
-                        out.append({
-                            "name": name or "Profil LinkedIn",
-                            "role": p.get("role") or "Décideur / RH",
-                            "linkedin_url": url,
-                            "snippet": f"Identifié pour {company_name}"
-                        })
-                return out[:5]
+                    return {
+                        "name": name,
+                        "role": role or "Décideur / RH",
+                        "linkedin_url": url,
+                        "snippet": f"Identifié pour {company_name}"
+                    }
+                    
+                resolved = await asyncio.gather(*[_resolve_candidate(n, r, u) for n, r, u in valid_candidates])
+                
+                for res in resolved:
+                    u = res["linkedin_url"]
+                    if u not in seen:
+                        seen.add(u)
+                        out.append(res)
+                        
+                return out[:8]
             except Exception as e:
                 logger.warning(f"[_gemini_search] Error: {e}")
                 return []
@@ -166,6 +241,9 @@ class HeadhunterAgent(BaseAgent):
         # Nettoyage des tâches en cours
         for t in [gemini_task, ddg_task]:
             if not t.done(): t.cancel()
+            
+        # Priorité absolue d'affichage : les liens directs LinkedIn en tête de liste
+        final_profiles.sort(key=lambda x: 0 if "linkedin.com/in/" in x.get("linkedin_url", "") and "search" not in x.get("linkedin_url", "") else 1)
             
         logger.success(f"💎 Sniper : {len(final_profiles)} profils identifiés.")
         return final_profiles[:8]

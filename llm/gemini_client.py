@@ -162,6 +162,11 @@ class GeminiClient:
                 async with session.post(url, json=payload, ssl=False) as response:
                     text = await response.text()
                     
+                    try:
+                        with open("debug_grounding_raw.json", "w", encoding="utf-8") as raw_f:
+                            raw_f.write(text)
+                    except: pass
+                    
                     if response.status != 200:
                         logger.error(f"❌ Gemini Grounding Error {response.status}: {text[:500]}")
                         # On dump pour analyse car le grounding est complexe
