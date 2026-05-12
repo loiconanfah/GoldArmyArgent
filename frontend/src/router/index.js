@@ -155,11 +155,16 @@ const history = typeof window !== 'undefined' ? createWebHistory() : createMemor
 const router = createRouter({
     history,
     routes,
-    scrollBehavior(to) {
+    scrollBehavior(to, from, savedPosition) {
         if (to.hash) {
             return { el: to.hash, behavior: 'smooth', top: 80 }
         }
-        return { top: 0 }
+        // Always scroll to top immediately, disabling saved scroll restoration
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve({ top: 0, left: 0, behavior: 'instant' })
+            }, 10)
+        })
     }
 })
 
@@ -185,6 +190,11 @@ router.beforeEach((to, from, next) => {
 
 router.afterEach((to) => {
     if (typeof window !== 'undefined') {
+        // Double security lock: force window view to absolute top after rendering ticks
+        setTimeout(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+        }, 50)
+        
         import('../utils/analytics').then(({ trackEvent }) => {
             trackEvent('page_view', { name: to.name, path: to.path })
         })

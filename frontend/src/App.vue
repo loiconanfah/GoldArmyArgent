@@ -31,7 +31,12 @@ const route = useRoute()
 const router = useRouter()
 const currentRoute = computed(() => route.path)
 const isPublicRoute = computed(() => {
-  return ['/', '/login', '/register', '/blog', '/free-cv-roast', '/free-interview', '/support', '/privacy'].includes(route.path) || route.path.startsWith('/blog/')
+  const publicPaths = [
+    '/', '/login', '/register', '/blog', '/free-cv-roast', '/free-interview', 
+    '/support', '/privacy', '/sniper-search', '/mentor-ia', 
+    '/simulation-entretien', '/crm-emploi', '/tarifs'
+  ]
+  return publicPaths.includes(route.path) || route.path.startsWith('/blog/')
 })
 const isImmersive = computed(() => route.path === '/interview')
 const isMobileMenuOpen = ref(false)

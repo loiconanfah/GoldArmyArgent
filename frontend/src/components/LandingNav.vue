@@ -2,6 +2,17 @@
 import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { 
+  MapIcon, 
+  SparklesIcon, 
+  MicrophoneIcon, 
+  BriefcaseIcon, 
+  DocumentCheckIcon, 
+  CreditCardIcon, 
+  DocumentTextIcon, 
+  StarIcon, 
+  LifebuoyIcon 
+} from '@heroicons/vue/24/outline'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -55,28 +66,28 @@ function goToSection(hash) {
             </button>
             <div class="nav-dropdown__content" role="menu">
               <router-link to="/sniper-search" class="nav-dropdown__item" role="menuitem" @click="closeNav">
-                <span class="nav-dropdown__icon">🎯</span>
+                <span class="nav-dropdown__icon"><MapIcon class="nav-icon" /></span>
                 <div>
                   <strong>Sniper Search</strong>
                   <p>Détecteur d'offres cachées</p>
                 </div>
               </router-link>
               <router-link to="/mentor-ia" class="nav-dropdown__item" role="menuitem" @click="closeNav">
-                <span class="nav-dropdown__icon">🧠</span>
+                <span class="nav-dropdown__icon"><SparklesIcon class="nav-icon" /></span>
                 <div>
                   <strong>Mentor IA</strong>
                   <p>Coaching &amp; Lettres sur mesure</p>
                 </div>
               </router-link>
               <router-link to="/simulation-entretien" class="nav-dropdown__item" role="menuitem" @click="closeNav">
-                <span class="nav-dropdown__icon">🎤</span>
+                <span class="nav-dropdown__icon"><MicrophoneIcon class="nav-icon" /></span>
                 <div>
                   <strong>Simulation Entretien</strong>
                   <p>Entraînement visio vocal IA</p>
                 </div>
               </router-link>
               <router-link to="/crm-emploi" class="nav-dropdown__item" role="menuitem" @click="closeNav">
-                <span class="nav-dropdown__icon">📋</span>
+                <span class="nav-dropdown__icon"><BriefcaseIcon class="nav-icon" /></span>
                 <div>
                   <strong>CRM Emploi</strong>
                   <p>Kanban &amp; Relances automatiques</p>
@@ -122,17 +133,35 @@ function goToSection(hash) {
       <div v-show="navOpen" class="nav-modern__backdrop" @click="closeNav">
         <nav class="nav-modern__drawer" @click.stop aria-label="Menu mobile">
           <p class="nav-modern__drawer-title">Outils GoldArmy AI</p>
-          <router-link to="/sniper-search" class="nav-modern__drawer-link" @click="closeNav">🎯 Sniper Search</router-link>
-          <router-link to="/mentor-ia" class="nav-modern__drawer-link" @click="closeNav">🧠 Mentor IA Carrière</router-link>
-          <router-link to="/simulation-entretien" class="nav-modern__drawer-link" @click="closeNav">🎤 Simulation Entretien IA</router-link>
-          <router-link to="/crm-emploi" class="nav-modern__drawer-link" @click="closeNav">📋 CRM Emploi IA</router-link>
-          <router-link to="/free-cv-roast" class="nav-modern__drawer-link" @click="closeNav">📄 Audit CV Gratuit</router-link>
+          <router-link to="/sniper-search" class="nav-modern__drawer-link" @click="closeNav">
+            <MapIcon class="nav-icon-inline" /> Sniper Search
+          </router-link>
+          <router-link to="/mentor-ia" class="nav-modern__drawer-link" @click="closeNav">
+            <SparklesIcon class="nav-icon-inline" /> Mentor IA Carrière
+          </router-link>
+          <router-link to="/simulation-entretien" class="nav-modern__drawer-link" @click="closeNav">
+            <MicrophoneIcon class="nav-icon-inline" /> Simulation Entretien IA
+          </router-link>
+          <router-link to="/crm-emploi" class="nav-modern__drawer-link" @click="closeNav">
+            <BriefcaseIcon class="nav-icon-inline" /> CRM Emploi IA
+          </router-link>
+          <router-link to="/free-cv-roast" class="nav-modern__drawer-link" @click="closeNav">
+            <DocumentCheckIcon class="nav-icon-inline" /> Audit CV Gratuit
+          </router-link>
 
           <p class="nav-modern__drawer-title mt-4">Navigation</p>
-          <router-link to="/tarifs" class="nav-modern__drawer-link" @click="closeNav">💳 Tarifs &amp; Forfaits</router-link>
-          <router-link to="/blog" class="nav-modern__drawer-link" @click="closeNav">📝 Blog &amp; Astuces</router-link>
-          <a href="#avis" class="nav-modern__drawer-link" @click.prevent="goToSection('avis')">⭐ Avis Candidats</a>
-          <router-link to="/support" class="nav-modern__drawer-link" @click="closeNav">🎧 Support Client</router-link>
+          <router-link to="/tarifs" class="nav-modern__drawer-link" @click="closeNav">
+            <CreditCardIcon class="nav-icon-inline" /> Tarifs &amp; Forfaits
+          </router-link>
+          <router-link to="/blog" class="nav-modern__drawer-link" @click="closeNav">
+            <DocumentTextIcon class="nav-icon-inline" /> Blog &amp; Astuces
+          </router-link>
+          <a href="#avis" class="nav-modern__drawer-link" @click.prevent="goToSection('avis')">
+            <StarIcon class="nav-icon-inline" /> Avis Candidats
+          </a>
+          <router-link to="/support" class="nav-modern__drawer-link" @click="closeNav">
+            <LifebuoyIcon class="nav-icon-inline" /> Support Client
+          </router-link>
 
           <div class="nav-modern__drawer-actions">
             <div class="nav-modern__lang nav-modern__lang--drawer" role="group" aria-label="Changer la langue">
@@ -280,10 +309,29 @@ function goToSection(hash) {
   background: rgba(255, 111, 0, 0.12);
 }
 .nav-dropdown__icon {
-  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   background: rgba(255, 255, 255, 0.05);
-  padding: 0.4rem;
   border-radius: 8px;
+  color: #ff8c42;
+  flex-shrink: 0;
+}
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+.nav-icon-inline {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  vertical-align: -3px;
+  margin-right: 0.4rem;
+  color: #ff8c42;
+  stroke-width: 2;
 }
 .nav-dropdown__item strong {
   display: block;
@@ -420,6 +468,8 @@ function goToSection(hash) {
 }
 .mt-4 { margin-top: 1rem; }
 .nav-modern__drawer-link {
+  display: flex;
+  align-items: center;
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
   font-weight: 600;
