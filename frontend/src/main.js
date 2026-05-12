@@ -1,29 +1,56 @@
-import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
-import router from './router'
-import { inject } from '@vercel/analytics'
-import { injectSpeedInsights } from '@vercel/speed-insights'
-import './utils/firebase' // Initialize Firebase Analytics
-
-// PostHog removed — us.i.posthog.com is blocked in China / Russia / Iran
-// and caused the app to fail loading in those regions.
-
-import { createHead } from '@unhead/vue/client'
+import { ViteSSG } from 'vite-ssg'
 import i18n from './i18n'
-import Clarity from '@microsoft/clarity'
+import { routes } from './router'
 
-// Vercel Observability — lightweight, non-blocking
-inject()
-injectSpeedInsights()
+export const createApp = ViteSSG(
+  App,
+  { routes, base: '/' },
+  ({ app, router, isClient }) => {
+    app.use(i18n)
 
-// Microsoft Clarity — behavior analytics
-Clarity.init('vqnc1r3lwk')
+    // ── Router guards ──────────────────────────────────────────────────────────
+    router.beforeEach((to, from, next) => {
+      const isAuthenticated = typeof localStorage !== 'undefined'
+        ? !!localStorage.getItem('token')
+        : false
 
-const app = createApp(App)
-const head = createHead()
+      if (to.meta.requiresAuth && !isAuthenticated) {
+        next('/login')
+      } else if (
+        (to.name === 'Login' || to.name === 'Register' || to.name === 'Landing') &&
+        isAuthenticated
+      ) {
+        next('/home')
+      } else if (to.meta.requiresAdmin) {
+        const user = typeof localStorage !== 'undefined'
+          ? JSON.parse(localStorage.getItem('user') || '{}')
+          : {}
+        if (user.subscription_tier === 'ADMIN') {
+          next()
+        } else {
+          next('/dashboard')
+        }
+      } else {
+        next()
+      }
+    })
 
-app.use(router)
-app.use(head)
-app.use(i18n)
-app.mount('#app')
+    router.afterEach((to) => {
+      if (typeof window !== 'undefined') {
+        import('./utils/analytics').then(({ trackEvent }) => {
+          trackEvent('page_view', { name: to.name, path: to.path })
+        })
+      }
+    })
+
+    // ── Client-only initializations ────────────────────────────────────────────
+    if (isClient) {
+      import('@vercel/analytics').then(({ inject }) => inject())
+      import('@vercel/speed-insights').then(({ injectSpeedInsights }) => injectSpeedInsights())
+      import('@microsoft/clarity').then(({ default: Clarity }) => Clarity.init('vqnc1r3lwk'))
+      import('./utils/firebase')
+    }
+  }
+)

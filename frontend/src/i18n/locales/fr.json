@@ -415,11 +415,11 @@
     },
     "seo": {
         "landing": {
-            "title": "GoldArmy - Trouvez votre job de rêve avec l'IA",
-            "description": "GoldArmy automatise votre recherche d'emploi. Sniper IA, Mentor CV et simulation d'entretien pour booster votre carrière."
+            "title": "GoldArmy AI — Trouvez votre emploi 10x plus vite avec l'IA",
+            "description": "Trouvez votre job de rêve 10x plus vite avec GoldArmy AI — Sniper Search, Simulation d'entretien IA, Mentor IA & CRM emploi. Essai gratuit sans carte bancaire."
         },
         "home": {
-            "title": "Accueil | GoldArmy",
+            "title": "Accueil | GoldArmy AI",
             "description": "Votre tableau de bord personnel pour gérer vos outils IA et votre recherche d'emploi."
         },
         "free_cv": {
@@ -435,8 +435,28 @@
             "og_description": "Ne découvrez pas vos faiblesses le jour J. Passez un faux entretien en visio avec notre Recruteur IA ultra-exigeant."
         },
         "blog": {
-            "title": "Blog — Astuces IA & Carrière | GoldArmy AI",
-            "description": "Découvrez comment l'intelligence artificielle révolutionne la recherche d'emploi, le recrutement et l'optimisation de carrière."
+            "title": "Blog emploi & IA — Conseils carrière | GoldArmy AI",
+            "description": "Stratégies, guides et conseils pour booster votre recherche d'emploi grâce à l'intelligence artificielle. Par l'équipe GoldArmy AI."
+        },
+        "sniper_search": {
+            "title": "Sniper Search — Trouvez les offres cachées grâce à l'IA | GoldArmy AI",
+            "description": "Découvrez les offres d'emploi cachées que les autres candidats ne voient pas. Le Sniper Search IA de GoldArmy scanne 50+ sources en temps réel pour vous."
+        },
+        "mentor_ia": {
+            "title": "Mentor IA Carrière — Coaching emploi 24h/24 | GoldArmy AI",
+            "description": "Votre mentor carrière IA personnel. Audit CV en 30s, lettres de motivation sur mesure, coaching et simulation d'entretien. Disponible 24h/24."
+        },
+        "simulation_entretien": {
+            "title": "Simulation d'Entretien IA — Préparez-vous comme un pro | GoldArmy AI",
+            "description": "Simulez votre entretien d'embauche avec une IA ultra-réaliste. Questions techniques, comportementales, débriefing instantané. Disponible gratuitement."
+        },
+        "crm_emploi": {
+            "title": "CRM Emploi IA — Organisez votre recherche d'emploi | GoldArmy AI",
+            "description": "Suivez toutes vos candidatures en Kanban intelligent. Relances automatiques, scoring IA et pipeline de recherche d'emploi. Par GoldArmy AI."
+        },
+        "tarifs": {
+            "title": "Tarifs GoldArmy AI — Gratuit et Premium | Plans & Prix",
+            "description": "Découvrez les tarifs de GoldArmy AI. Version gratuite disponible. Passez à Premium pour débloquer toutes les fonctionnalités IA de recherche d'emploi."
         }
     },
     "free_cv": {

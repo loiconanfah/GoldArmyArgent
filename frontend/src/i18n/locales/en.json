@@ -462,28 +462,48 @@
     },
     "seo": {
         "landing": {
-            "title": "GoldArmy - Find your dream job with AI",
-            "description": "GoldArmy automates your job search. AI Sniper, CV Mentor and interview simulation to boost your career."
+            "title": "GoldArmy AI — Find Your Dream Job 10x Faster with AI",
+            "description": "Find your dream job 10x faster with GoldArmy AI — Sniper Search, AI Interview Simulation, Mentor AI & Job CRM. Free trial with no credit card required."
         },
         "home": {
-            "title": "Home | GoldArmy",
-            "description": "Your personal dashboard to manage your AI tools and your job search."
+            "title": "Dashboard | GoldArmy AI",
+            "description": "Your personal command center to manage AI agents and supercharge your job search pipeline."
         },
         "free_cv": {
-            "title": "Free AI CV Audit | ATS Optimization | GoldArmy",
-            "description": "Scan your CV for free with GoldArmy AI. Instantly find out if your PDF is invisible to recruiters and ATS software.",
-            "og_title": "ATS Scanner & AI CV Audit | GoldArmy",
-            "og_description": "Pass the ATS test. Upload your CV as a PDF and get a score out of 100 and the fatal error blocking your applications."
+            "title": "Free AI Resume Scanner | ATS Optimization | GoldArmy AI",
+            "description": "Scan your resume for free with GoldArmy AI. Instantly find out if your PDF is readable by recruiters and automated ATS tracking systems.",
+            "og_title": "ATS Checker & AI Resume Scanner | GoldArmy AI",
+            "og_description": "Pass the ATS test. Upload your PDF resume to get a score out of 100 and discover the fatal mistake blocking your interviews."
         },
         "free_interview": {
-            "title": "AI Interview Simulator | Free Voice Practice | GoldArmy",
-            "description": "Practice job interviews for free with our voice AI. The simulator generates custom trick questions for your profession.",
-            "og_title": "AI Job Interview Simulator | GoldArmy",
-            "og_description": "Don't discover your weaknesses on D-day. Have a fake video interview with our ultra-demanding AI Recruiter."
+            "title": "AI Interview Simulator | Free Voice Practice | GoldArmy AI",
+            "description": "Practice job interviews for free with our voice AI. The simulator generates tailored behavioral and technical questions for your specific target role.",
+            "og_title": "AI Job Interview Voice Simulator | GoldArmy AI",
+            "og_description": "Don't discover your weaknesses on the big day. Take a mock video interview with our highly demanding AI Recruiter."
         },
         "blog": {
-            "title": "Blog — AI & Career Insights | GoldArmy AI",
-            "description": "Discover how artificial intelligence is revolutionizing job search, recruitment, and career optimization."
+            "title": "AI & Job Search Blog — Career Advice | GoldArmy AI",
+            "description": "Strategies, actionable guides, and insights to supercharge your job search with artificial intelligence. By the GoldArmy AI team."
+        },
+        "sniper_search": {
+            "title": "Sniper Search — Find Hidden Jobs with AI | GoldArmy AI",
+            "description": "Discover hidden job opportunities that other candidates miss. GoldArmy's AI Sniper Search scans 50+ real-time sources to put you first."
+        },
+        "mentor_ia": {
+            "title": "Career Mentor AI — 24/7 Job Coaching | GoldArmy AI",
+            "description": "Your personal AI career mentor. Get instant resume reviews, tailored cover letters, and strategic career guidance available 24/7."
+        },
+        "simulation_entretien": {
+            "title": "AI Interview Simulation — Practice Like a Pro | GoldArmy AI",
+            "description": "Simulate your job interview with an ultra-realistic voice AI. Technical questions, behavioral testing, and instant critical feedback. Try for free."
+        },
+        "crm_emploi": {
+            "title": "Job Search CRM — Organize Your Applications | GoldArmy AI",
+            "description": "Track all your job applications on a smart Kanban board. Get automated follow-up reminders, AI predictive scoring, and stay organized."
+        },
+        "tarifs": {
+            "title": "GoldArmy AI Pricing — Free and Premium Plans",
+            "description": "Explore GoldArmy AI pricing plans. Start for free. Upgrade to Premium to unlock unlimited AI searching, smart follow-ups, and networking."
         }
     },
     "free_cv": {

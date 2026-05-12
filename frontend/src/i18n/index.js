@@ -7,13 +7,18 @@ const messages = {
     en
 }
 
-// Get initial locale from localStorage or browser settings
+// Get initial locale from localStorage or browser settings safely for SSR
 const getInitialLocale = () => {
-    const saved = localStorage.getItem('language')
-    if (saved) return saved
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('language')
+        if (saved) return saved
 
-    const browserLang = navigator.language.split('-')[0]
-    return languages[browserLang] ? browserLang : 'fr'
+        if (typeof navigator !== 'undefined') {
+            const browserLang = navigator.language.split('-')[0]
+            return languages[browserLang] ? browserLang : 'fr'
+        }
+    }
+    return 'fr'
 }
 
 const languages = {

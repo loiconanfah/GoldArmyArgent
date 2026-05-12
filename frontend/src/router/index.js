@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createMemoryHistory } from 'vue-router'
 import Interview from '../views/Interview.vue'
 
 const routes = [
@@ -36,6 +36,32 @@ const routes = [
         path: '/blog/:id',
         name: 'Article',
         component: () => import('../views/Article.vue')
+    },
+    // ── Pages SEO publiques ────────────────────────────────────────────────────
+    {
+        path: '/sniper-search',
+        name: 'SniperSearch',
+        component: () => import('../views/SniperSearch.vue')
+    },
+    {
+        path: '/mentor-ia',
+        name: 'MentorIA',
+        component: () => import('../views/MentorIA.vue')
+    },
+    {
+        path: '/simulation-entretien',
+        name: 'SimulationEntretien',
+        component: () => import('../views/SimulationEntretien.vue')
+    },
+    {
+        path: '/crm-emploi',
+        name: 'CrmEmploi',
+        component: () => import('../views/CrmEmploi.vue')
+    },
+    {
+        path: '/tarifs',
+        name: 'Tarifs',
+        component: () => import('../views/Tarifs.vue')
     },
     // ── Accueil (post-login home page) ────────────────────────────────────
     {
@@ -122,8 +148,12 @@ const routes = [
     }
 ]
 
+export { routes }
+
+const history = typeof window !== 'undefined' ? createWebHistory() : createMemoryHistory()
+
 const router = createRouter({
-    history: createWebHistory(),
+    history,
     routes,
     scrollBehavior(to) {
         if (to.hash) {
@@ -133,21 +163,20 @@ const router = createRouter({
     }
 })
 
-import { trackEvent } from '../utils/analytics'
-
 router.beforeEach((to, from, next) => {
-    const isAuthenticated = !!localStorage.getItem('token')
+    const isAuthenticated = typeof localStorage !== 'undefined' ? !!localStorage.getItem('token') : false
     if (to.meta.requiresAuth && !isAuthenticated) {
         next('/login')
     } else if ((to.name === 'Login' || to.name === 'Register' || to.name === 'Landing') && isAuthenticated) {
-        // Redirect authenticated users to home page instead of dashboard
         next('/home')
     } else if (to.meta.requiresAdmin) {
-        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        const user = typeof localStorage !== 'undefined'
+            ? JSON.parse(localStorage.getItem('user') || '{}')
+            : {}
         if (user.subscription_tier === 'ADMIN') {
             next()
         } else {
-            next('/dashboard') // Redirect non-admins to dashboard
+            next('/dashboard')
         }
     } else {
         next()
@@ -155,8 +184,11 @@ router.beforeEach((to, from, next) => {
 })
 
 router.afterEach((to) => {
-    // Track page view
-    trackEvent('page_view', { name: to.name, path: to.path })
+    if (typeof window !== 'undefined') {
+        import('../utils/analytics').then(({ trackEvent }) => {
+            trackEvent('page_view', { name: to.name, path: to.path })
+        })
+    }
 })
 
 export default router

@@ -7,6 +7,7 @@ import { articles } from '@/data/articles'
 import { ArrowLeftIcon, ArrowRightIcon, LinkIcon } from '@heroicons/vue/24/outline'
 import LandingNav from '@/components/LandingNav.vue'
 import Footer from '@/components/Footer.vue'
+import RelatedArticles from '@/components/RelatedArticles.vue'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -14,12 +15,66 @@ const router = useRouter()
 
 const article = computed(() => articles.find(a => a.id === route.params.id))
 
+const BASE = 'https://www.goldarmyai.com'
+
 useHead({
-  title: computed(() => article.value ? `${article.value.title} | GoldArmy Blog` : 'Blog | GoldArmy'),
+  title: computed(() => article.value ? `${article.value.title} | GoldArmy AI` : 'Blog | GoldArmy AI'),
   meta: [
+    { name: 'description', content: computed(() => article.value?.description ?? t('seo.blog.description')) },
+    { name: 'robots', content: 'index, follow' },
+    { property: 'og:type', content: 'article' },
+    { property: 'og:title', content: computed(() => article.value?.title ?? 'Blog | GoldArmy AI') },
+    { property: 'og:description', content: computed(() => article.value?.description ?? '') },
+    { property: 'og:url', content: computed(() => `${BASE}/blog/${article.value?.id ?? ''}`) },
+    { property: 'og:image', content: computed(() => article.value?.image?.startsWith('http') ? article.value.image : `${BASE}${article.value?.image ?? '/og-banner.png'}`) },
+    { property: 'og:image:width', content: '1200' },
+    { property: 'og:image:height', content: '630' },
+    { property: 'og:site_name', content: 'GoldArmy AI' },
+    { property: 'og:locale', content: 'fr_FR' },
+    { property: 'article:published_time', content: computed(() => article.value?.date ?? '') },
+    { property: 'article:author', content: computed(() => article.value?.author ?? 'GoldArmy AI') },
+    { property: 'article:section', content: 'Emploi & Carrière' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: computed(() => article.value?.title ?? 'Blog | GoldArmy AI') },
+    { name: 'twitter:description', content: computed(() => article.value?.description ?? '') },
+    { name: 'twitter:image', content: computed(() => article.value?.image?.startsWith('http') ? article.value.image : `${BASE}${article.value?.image ?? '/og-banner.png'}`) },
+  ],
+  link: [
+    { rel: 'canonical', href: computed(() => `${BASE}/blog/${article.value?.id ?? ''}`) },
+    { rel: 'alternate', hreflang: 'fr', href: computed(() => `${BASE}/blog/${article.value?.id ?? ''}?lang=fr`) },
+    { rel: 'alternate', hreflang: 'en', href: computed(() => `${BASE}/blog/${article.value?.id ?? ''}?lang=en`) },
+  ],
+  script: [
     {
-      name: 'description',
-      content: computed(() => article.value?.description ?? t('seo.blog.description'))
+      type: 'application/ld+json',
+      innerHTML: computed(() => JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        'headline': article.value?.title ?? '',
+        'description': article.value?.description ?? '',
+        'image': article.value?.image?.startsWith('http') ? article.value.image : `${BASE}${article.value?.image ?? '/og-banner.png'}`,
+        'datePublished': article.value?.date ?? '',
+        'dateModified': article.value?.date ?? '',
+        'author': { '@type': 'Organization', 'name': 'GoldArmy AI', 'url': BASE },
+        'publisher': {
+          '@type': 'Organization',
+          'name': 'GoldArmy AI',
+          'logo': { '@type': 'ImageObject', 'url': `${BASE}/images/logosansfond.png` }
+        },
+        'mainEntityOfPage': { '@type': 'WebPage', '@id': `${BASE}/blog/${article.value?.id ?? ''}` }
+      }))
+    },
+    {
+      type: 'application/ld+json',
+      innerHTML: computed(() => JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        'itemListElement': [
+          { '@type': 'ListItem', 'position': 1, 'name': 'Accueil', 'item': `${BASE}/` },
+          { '@type': 'ListItem', 'position': 2, 'name': 'Blog', 'item': `${BASE}/blog` },
+          { '@type': 'ListItem', 'position': 3, 'name': article.value?.title ?? '', 'item': `${BASE}/blog/${article.value?.id ?? ''}` },
+        ]
+      }))
     }
   ]
 })
@@ -141,6 +196,7 @@ onUnmounted(() => {
       </aside>
     </main>
 
+    <RelatedArticles v-if="article" :current-id="article.id" />
     <Footer />
   </div>
 </template>

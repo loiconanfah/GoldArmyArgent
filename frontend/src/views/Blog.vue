@@ -31,7 +31,39 @@ onUnmounted(() => {
 useHead({
   title: computed(() => t('seo.blog.title')),
   meta: [
-    { name: 'description', content: computed(() => t('seo.blog.description')) }
+    { name: 'description', content: computed(() => t('seo.blog.description')) },
+    { name: 'robots', content: 'index, follow' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:title', content: computed(() => t('seo.blog.title')) },
+    { property: 'og:description', content: computed(() => t('seo.blog.description')) },
+    { property: 'og:url', content: 'https://www.goldarmyai.com/blog' },
+    { property: 'og:image', content: 'https://www.goldarmyai.com/og-banner.png' },
+    { property: 'og:image:width', content: '1200' },
+    { property: 'og:image:height', content: '630' },
+    { property: 'og:site_name', content: 'GoldArmy AI' },
+    { property: 'og:locale', content: 'fr_FR' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: computed(() => t('seo.blog.title')) },
+    { name: 'twitter:description', content: computed(() => t('seo.blog.description')) },
+    { name: 'twitter:image', content: 'https://www.goldarmyai.com/og-banner.png' },
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://www.goldarmyai.com/blog' },
+    { rel: 'alternate', hreflang: 'fr', href: 'https://www.goldarmyai.com/blog?lang=fr' },
+    { rel: 'alternate', hreflang: 'en', href: 'https://www.goldarmyai.com/blog?lang=en' },
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        'itemListElement': [
+          { '@type': 'ListItem', 'position': 1, 'name': 'Accueil', 'item': 'https://www.goldarmyai.com/' },
+          { '@type': 'ListItem', 'position': 2, 'name': 'Blog', 'item': 'https://www.goldarmyai.com/blog' },
+        ]
+      })
+    }
   ]
 })
 
@@ -44,7 +76,8 @@ function goToArticle(id) {
   <div class="page-wrapper page-wrapper--blog">
     <LandingNav />
     <main class="main dark-secondary">
-      <!-- Featured Posts -->
+      <!-- H1 SEO optimisé -->
+      <h1 class="sr-only">Blog emploi &amp; IA — Conseils carrière | GoldArmy AI</h1>
       <section class="section blog-featured">
         <div class="blog-featured__container">
           <div class="blog-featured__grid">

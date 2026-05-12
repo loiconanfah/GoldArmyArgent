@@ -1,19 +1,41 @@
 User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /dashboard
+# Autoriser l'exploration des dossiers statiques et des ressources de design
+Allow: /images/
+Allow: /assets/
+Allow: /src/assets/
+Allow: /public/
+
+# Autoriser explicitement toutes les pages SEO publiques
+Allow: /$
+Allow: /blog
+Allow: /blog/*
+Allow: /free-cv-roast
+Allow: /free-interview
+Allow: /sniper-search
+Allow: /mentor-ia
+Allow: /simulation-entretien
+Allow: /crm-emploi
+Allow: /tarifs
+Allow: /support
+Allow: /privacy
+
+# Bloquer l'indexation des espaces connectés et de la console d'administration
+Disallow: /admin-goldarmy
 Disallow: /home
+Disallow: /dashboard
+Disallow: /chat
 Disallow: /opportunities
 Disallow: /mentor
+Disallow: /crm
+Disallow: /network
 Disallow: /interview
+Disallow: /interview/*
 Disallow: /profile
 Disallow: /settings
-Disallow: /crm
-Disallow: /reseaux
 
-# Pages publiques indexables
-Allow: /
-Allow: /login
-Allow: /register
+# Bloquer les routes d'authentification directes pour éviter les duplicatas de contenu
+Disallow: /login
+Disallow: /register
 
+# Indication claire de l'emplacement du plan du site pour les robots
 Sitemap: https://www.goldarmyai.com/sitemap.xml

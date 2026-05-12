@@ -35,10 +35,10 @@ useHead({
     lang: computed(() => locale.value)
   },
   link: [
-    { rel: 'canonical', href: canonicalUrl },
-    { rel: 'alternate', hreflang: 'fr', href: computed(() => `${typeof window !== 'undefined' ? window.location.origin : 'https://www.goldarmyai.com'}/?lang=fr`) },
-    { rel: 'alternate', hreflang: 'en', href: computed(() => `${typeof window !== 'undefined' ? window.location.origin : 'https://www.goldarmyai.com'}/?lang=en`) },
-    { rel: 'alternate', hreflang: 'x-default', href: computed(() => `${typeof window !== 'undefined' ? window.location.origin : 'https://www.goldarmyai.com'}/`) }
+    { rel: 'canonical', href: 'https://www.goldarmyai.com/' },
+    { rel: 'alternate', hreflang: 'fr', href: 'https://www.goldarmyai.com/?lang=fr' },
+    { rel: 'alternate', hreflang: 'en', href: 'https://www.goldarmyai.com/?lang=en' },
+    { rel: 'alternate', hreflang: 'x-default', href: 'https://www.goldarmyai.com/' }
   ],
   meta: [
     { name: 'description', content: computed(() => t('seo.landing.description')) },
@@ -46,15 +46,53 @@ useHead({
     { property: 'og:type', content: 'website' },
     { property: 'og:title', content: computed(() => t('seo.landing.title')) },
     { property: 'og:description', content: computed(() => t('seo.landing.description')) },
-    { property: 'og:image', content: logoUrl },
-    { property: 'og:image:alt', content: 'GoldArmy — Co-pilote de carrière propulsé par l\'IA' },
-    { property: 'og:url', content: canonicalUrl },
-    { property: 'og:site_name', content: 'GoldArmy' },
+    { property: 'og:image', content: 'https://www.goldarmyai.com/og-banner.png' },
+    { property: 'og:image:width', content: '1200' },
+    { property: 'og:image:height', content: '630' },
+    { property: 'og:image:alt', content: 'GoldArmy AI — Co-pilote de carrière propulsé par l\'IA' },
+    { property: 'og:url', content: 'https://www.goldarmyai.com/' },
+    { property: 'og:site_name', content: 'GoldArmy AI' },
     { property: 'og:locale', content: computed(() => locale.value === 'fr' ? 'fr_FR' : 'en_GB') },
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:title', content: computed(() => t('seo.landing.title')) },
     { name: 'twitter:description', content: computed(() => t('seo.landing.description')) },
-    { name: 'twitter:image', content: logoUrl }
+    { name: 'twitter:image', content: 'https://www.goldarmyai.com/og-banner.png' }
+  ],
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        'mainEntity': [
+          {
+            '@type': 'Question',
+            'name': 'Comment fonctionne GoldArmy AI ?',
+            'acceptedAnswer': { '@type': 'Answer', 'text': 'GoldArmy AI est un co-pilote de carrière qui utilise l\'intelligence artificielle pour accélérer votre recherche d\'emploi via 4 outils : Sniper Search (détection d\'offres cachées), Mentor IA (coaching personnalisé), Simulation d\'entretien (préparation IA) et CRM emploi (suivi des candidatures).' }
+          },
+          {
+            '@type': 'Question',
+            'name': 'GoldArmy AI est-il gratuit ?',
+            'acceptedAnswer': { '@type': 'Answer', 'text': 'Oui, GoldArmy AI propose une version gratuite sans carte bancaire. Une version premium avec fonctionnalités avancées est également disponible à partir de 9,99€/mois.' }
+          },
+          {
+            '@type': 'Question',
+            'name': 'Qu\'est-ce que le Sniper Search ?',
+            'acceptedAnswer': { '@type': 'Answer', 'text': 'Le Sniper Search est une fonctionnalité exclusive de GoldArmy AI qui utilise l\'IA pour détecter les offres d\'emploi cachées et non publiées, correspondant exactement à votre profil parmi 50+ sources.' }
+          },
+          {
+            '@type': 'Question',
+            'name': 'Combien de temps faut-il pour trouver un emploi avec GoldArmy AI ?',
+            'acceptedAnswer': { '@type': 'Answer', 'text': 'Les utilisateurs de GoldArmy AI trouvent en moyenne leur emploi 10 fois plus vite qu\'avec une recherche traditionnelle, grâce à l\'automatisation et à la personnalisation de l\'IA.' }
+          },
+          {
+            '@type': 'Question',
+            'name': 'Puis-je tester GoldArmy AI sans carte bancaire ?',
+            'acceptedAnswer': { '@type': 'Answer', 'text': 'Oui, la version gratuite est accessible immédiatement sans carte bancaire. Vous avez accès au Sniper Search, Mentor IA et aux outils essentiels pour commencer votre recherche d\'emploi.' }
+          }
+        ]
+      })
+    }
   ]
 })
 
@@ -273,7 +311,7 @@ function closeNav() {
         <!-- Mobile-first hero (visible only < 992px) -->
         <div class="hero-mobile">
           <div class="hero-mobile__logo-wrap">
-            <img src="/images/logosansfond.png" alt="GoldArmy" class="hero-mobile__logo" />
+            <img src="/images/logosansfond.png" alt="Logo de GoldArmy AI" class="hero-mobile__logo" />
           </div>
           <span class="hero-mobile__badge">{{ t('landing.hero.badge') }}</span>
           <h1 class="hero-mobile__title">{{ t('landing.hero.title_1') }} <span class="hero-mobile__title-accent">{{ t('landing.hero.title_2') }}</span> {{ t('landing.hero.title_3') }}</h1>
@@ -310,8 +348,14 @@ function closeNav() {
                 <div class="light" gradient="true"></div>
       </div>
               <div ref="heroLogoRef" class="hero-logo-wrap hero-logo-wrap--desktop">
-                <img src="/images/logosansfond.png" alt="GoldArmy" class="hero-logo" />
-              </div>
+        <img
+          src="/images/logosansfond.png"
+          alt="GoldArmy AI — Moteur de recherche d'emploi et coaching propulsé par l'IA"
+          class="hero__logo-img"
+          width="180"
+          height="180"
+          fetchpriority="high"
+        />      </div>
             </div>
           </div>
       </div>
