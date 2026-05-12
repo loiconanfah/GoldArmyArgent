@@ -956,7 +956,7 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         )
         follow_up_count = updated.get("follow_up_count", 1) if updated else 1
 
-        # Email de relance avec gemini-3.1-pro-preview (même modèle que Sniper / reste de l'app)
+        # Email de relance avec gemini-2.0-flash (même modèle que Sniper / reste de l'app)
         from llm.unified_client import UnifiedLLMClient
         llm = UnifiedLLMClient()
 
@@ -976,7 +976,7 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         messages = [{"role": "user", "content": prompt}]
         email_text = await llm.chat(
             messages,
-            model="gemini-3.1-pro-preview",
+            model="gemini-2.0-flash",
             max_tokens=2048,
             temperature=0.7,
             timeout=120,

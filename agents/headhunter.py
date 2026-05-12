@@ -49,9 +49,8 @@ class HeadhunterAgent(BaseAgent):
             try:
                 json_response, sources = await self.generate_with_sources(
                     search_prompt,
-                    model="gemini-3.1-pro-preview",
+                    model="gemini-2.0-flash",
                     tools=[{"google_search": {}}],
-                    json_mode=True,
                     system=f"Expert OSINT LinkedIn. Trouve des profils réels chez {company_name}. Règle: URL complète."
                 )
                 raw = re.sub(r"^[^{\[\]]*", "", json_response.strip())
@@ -61,23 +60,41 @@ class HeadhunterAgent(BaseAgent):
                     profiles = [profiles] if isinstance(profiles, dict) else []
                 seen = set()
                 out = []
+                used_sources = set()
+                import urllib.parse
                 for p in profiles:
                     if not isinstance(p, dict):
                         continue
                     url = (p.get("linkedin_url") or p.get("url") or "").strip()
                     name = (p.get("name") or "").strip()
+                    if not name:
+                        continue
+                    
+                    # Tenter d'assigner une source directe si l'URL manque
                     if sources and (not url or "linkedin.com/in/" not in url):
                         for s in sources:
-                            if "/in/" in s:
+                            if "/in/" in s and s not in used_sources:
                                 url = s.split("?")[0].rstrip("/")
+                                used_sources.add(s)
                                 break
+                                
+                    # Valider l'URL ou utiliser un lien de recherche direct par nom
                     if url and "linkedin.com/in/" in url and "search" not in url:
                         if not url.startswith("http"):
                             url = "https://www.linkedin.com/in/" + url.split("/in/")[-1]
                         url = url.split("?")[0].strip("',\"<>")
-                        if url not in seen:
-                            seen.add(url)
-                            out.append({"name": name or "Profil LinkedIn", "role": p.get("role") or "Décideur / RH", "linkedin_url": url, "snippet": f"Identifié pour {company_name}"})
+                    else:
+                        safe_query = urllib.parse.quote_plus(f"{name} {company_name}")
+                        url = f"https://www.linkedin.com/search/results/people/?keywords={safe_query}"
+                        
+                    if url not in seen:
+                        seen.add(url)
+                        out.append({
+                            "name": name or "Profil LinkedIn",
+                            "role": p.get("role") or "Décideur / RH",
+                            "linkedin_url": url,
+                            "snippet": f"Identifié pour {company_name}"
+                        })
                 return out[:5]
             except Exception as e:
                 logger.warning(f"[_gemini_search] Error: {e}")
@@ -164,7 +181,7 @@ class HeadhunterAgent(BaseAgent):
         try:
             news_text, _ = await self.generate_with_sources(
                 search_prompt,
-                model="gemini-3.1-pro-preview",
+                model="gemini-2.0-flash",
                 tools=[{"google_search": {}}],
                 system="Journaliste d'affaires. Trouve des faits réels et récents."
             )
@@ -198,7 +215,7 @@ class HeadhunterAgent(BaseAgent):
         try:
             letter, _ = await self.generate_with_sources(
                 writing_prompt,
-                model="gemini-3.1-pro-preview",
+                model="gemini-2.0-flash",
                 system="Tu es un expert en copywriting A-List. Tu rédiges des lettres de motivation percutantes, uniques et structurées qui captent l'attention en 5 secondes. Tu fournis uniquement le texte final, prêt à l'emploi."
             )
             return {

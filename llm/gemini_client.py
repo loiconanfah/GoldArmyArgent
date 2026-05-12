@@ -16,13 +16,15 @@ class GeminiClient:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY non configurée")
             
-        # SNIPER 7.1 : Gemini 3.1 Pro Preview par défaut pour une précision maximale
-        self.default_model = "gemini-3.1-pro-preview"
+        # Mappé vers gemini-2.0-flash pour un fonctionnement stable et support du Grounding
+        self.default_model = "gemini-2.0-flash"
         logger.debug(f"GeminiClient Sniper 7.1 initialized ({self.default_model})")
         
     async def generate(self, prompt: str, system: str = None, **kwargs) -> str:
         """Génère une réponse texte via Google Gemini REST API."""
         model = kwargs.get("model") or self.default_model
+        if model in ["gemini-3.1-pro-preview", "gemini-3.0-pro-preview", "gemini-1.5-flash"]:
+            model = "gemini-2.0-flash"
         
         payload = {
             "contents": [{"parts": [{"text": prompt}]}]
@@ -46,11 +48,15 @@ class GeminiClient:
             payload["systemInstruction"] = {"parts": [{"text": system}]}
             
         # Nettoyage des tools pour éviter les conflits d'API
+        has_search_tool = False
         if "tools" in kwargs:
             payload["tools"] = kwargs["tools"]
+            for t in kwargs["tools"]:
+                if "google_search" in t or "googleSearch" in t:
+                    has_search_tool = True
             
         gen_config = {}
-        if kwargs.get("json_mode"):
+        if kwargs.get("json_mode") and not has_search_tool:
             gen_config["responseMimeType"] = "application/json"
             
         if "temperature" in kwargs:
@@ -124,6 +130,8 @@ class GeminiClient:
     async def generate_with_sources(self, prompt: str, system: str = None, **kwargs) -> tuple:
         """Génère une réponse et retourne les sources de grounding (Gemini 2.0)."""
         model = kwargs.get("model", self.default_model)
+        if model in ["gemini-3.1-pro-preview", "gemini-3.0-pro-preview", "gemini-1.5-flash"]:
+            model = "gemini-2.0-flash"
         
         payload = {
             "contents": [{"parts": [{"text": prompt}]}]
@@ -213,6 +221,8 @@ class GeminiClient:
     async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
         """Simulation mode chat. Supports model, max_tokens, temperature for faster/short replies."""
         model = kwargs.get("model", self.default_model)
+        if model in ["gemini-3.1-pro-preview", "gemini-3.0-pro-preview", "gemini-1.5-flash"]:
+            model = "gemini-2.0-flash"
         contents = [{"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]} for m in messages if m["role"] != "system"]
         system_text = next((m["content"] for m in messages if m["role"] == "system"), None)
         
