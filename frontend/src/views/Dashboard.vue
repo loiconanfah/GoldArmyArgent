@@ -114,6 +114,7 @@ const isPremiumUpgradeModalOpen = ref(false)
 const isDownloadChoiceModalOpen = ref(false)
 const downloadPendingItem = ref(null)
 
+
 // ── Ghostbuster state ──
 const isGhostbusterModalOpen = ref(false)
 const isGhostbusterScanning = ref(false)
@@ -122,13 +123,76 @@ const ghostbusterTotalScanned = ref(0)
 const ghostbusterAutoEnabled = ref(false)
 const ghostbusterLastRun = ref(null)
 const ghostbusterError = ref('')
-const ghostbusterExpandedEmail = ref(null)   // app_id expanded
-const ghostbusterExpandedLinkedin = ref(null)
-const ghostbusterCopied = ref({})             // { app_id_email: true, ... }
-const ghostbusterSent = ref({})               // { app_id: 'email'|'linkedin'|'manual' }
-const ghostbusterChainTo = ref('none')        // 'none' | 'network_ninja' | 'post_interview'
+const ghostbusterExpandedEmail = ref(null)
+const ghostbusterCopied = ref({})
+const ghostbusterSent = ref({})
 
-// ── Rejection Pivot state ──
+const fetchGhostbusterStatus = async () => {
+    try {
+        const r = await authFetch('/api/workflows/ghostbuster/status')
+        const j = await r.json()
+        if (j.status === 'success') {
+            ghostbusterAutoEnabled.value = j.data.auto_enabled
+            ghostbusterLastRun.value = j.data.last_run_at
+        }
+    } catch(e) {}
+}
+const runGhostbusterScan = async (force = false) => {
+    isGhostbusterScanning.value = true
+    ghostbusterError.value = ''
+    ghostbusterResults.value = []
+    try {
+        const r = await authFetch('/api/workflows/ghostbuster/scan', {
+            method: 'POST',
+            body: JSON.stringify({ force_regenerate: force })
+        })
+        const j = await r.json()
+        if (j.status === 'success') {
+            ghostbusterResults.value = j.data.eligible || []
+            ghostbusterTotalScanned.value = j.data.total_scanned || 0
+        } else {
+            ghostbusterError.value = 'Erreur lors du scan.'
+        }
+    } catch(e) { ghostbusterError.value = 'Erreur réseau.' }
+    finally { isGhostbusterScanning.value = false }
+}
+const toggleGhostbusterAuto = async () => {
+    const n = !ghostbusterAutoEnabled.value
+    try {
+        const r = await authFetch('/api/workflows/ghostbuster/toggle', {
+            method: 'POST',
+            body: JSON.stringify({ auto_enabled: n })
+        })
+        const j = await r.json()
+        if (j.status === 'success') ghostbusterAutoEnabled.value = n
+    } catch(e) {}
+}
+const copyGhostbusterText = async (text, key) => {
+    try {
+        await navigator.clipboard.writeText(text)
+        ghostbusterCopied.value = { ...ghostbusterCopied.value, [key]: true }
+        setTimeout(() => { ghostbusterCopied.value = { ...ghostbusterCopied.value, [key]: false } }, 2000)
+    } catch(e) {}
+}
+const markGhostbusterSent = async (appId, via = 'manual') => {
+    try {
+        const r = await authFetch('/api/workflows/ghostbuster/send', {
+            method: 'POST',
+            body: JSON.stringify({ app_id: appId, sent_via: via })
+        })
+        const j = await r.json()
+        if (j.status === 'success') ghostbusterSent.value = { ...ghostbusterSent.value, [appId]: via }
+    } catch(e) {}
+}
+
+const openGhostbusterModal = async () => {
+    isGhostbusterModalOpen.value = true
+    if (ghostbusterResults.value.length === 0) {
+        await fetchGhostbusterStatus()
+        await runGhostbusterScan()
+    }
+}
+
 const isRejectionPivotModalOpen = ref(false)
 const isRejectionPivotRunning = ref(false)
 const rejectionPivotResults = ref(null)
@@ -223,7 +287,7 @@ const togglePlaybook = async (pb) => {
     }
 
     if (pb.id === 8) {
-        openGoldProfileModal(pb)
+        $router.push('/reseaux')
         return
     }
 
@@ -234,8 +298,7 @@ const togglePlaybook = async (pb) => {
     }
 
     if (pb.id === 2) {
-        // Ghostbuster — vrai workflow
-        openGhostbusterModal(pb)
+        openGhostbusterModal()
         return
     }
 
@@ -277,108 +340,6 @@ const togglePlaybook = async (pb) => {
     setTimeout(() => advanceStep(3, `[00:05] Agent en action. Traitement en cours...`), 5500)
     setTimeout(() => advanceStep(4, `[00:07] Contrôle qualité validé. Mission accomplie.`), 7500)
     setTimeout(() => finishExecution(), 9000)
-}
-
-// ─── Ghostbuster functions ───
-
-const openGhostbusterModal = async (pb) => {
-    execPlaybook.value = pb
-    isGhostbusterModalOpen.value = true
-    ghostbusterError.value = ''
-    // Charger le statut auto
-    await fetchGhostbusterStatus()
-    // Lancer le scan automatiquement
-    await runGhostbusterScan()
-}
-
-const fetchGhostbusterStatus = async () => {
-    try {
-        const r = await authFetch('/api/workflows/ghostbuster/status')
-        const j = await r.json()
-        if (j.status === 'success') {
-            ghostbusterAutoEnabled.value = j.data.auto_enabled
-            ghostbusterLastRun.value = j.data.last_run_at
-        }
-    } catch(e) { console.warn('[Ghostbuster] Status fetch failed', e) }
-}
-
-const runGhostbusterScan = async (forceRegenerate = false) => {
-    isGhostbusterScanning.value = true
-    ghostbusterError.value = ''
-    ghostbusterResults.value = []
-    try {
-        const r = await authFetch('/api/workflows/ghostbuster/scan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                force_regenerate: forceRegenerate,
-                chain_to: ghostbusterChainTo.value === 'none' ? null : ghostbusterChainTo.value
-            })
-        })
-        const j = await r.json()
-        if (j.status === 'success') {
-            ghostbusterResults.value = j.data.eligible || []
-            ghostbusterTotalScanned.value = j.data.total_scanned || 0
-            // Marquer le playbook comme actif si des relances ont été trouvées
-            if (ghostbusterResults.value.length > 0) {
-                const pb = playbooks.value.find(p => p.id === 2)
-                if (pb) pb.active = true
-            }
-        } else {
-            ghostbusterError.value = 'Erreur lors du scan. Réessayez.'
-        }
-    } catch(e) {
-        ghostbusterError.value = 'Erreur réseau. Vérifiez votre connexion.'
-    } finally {
-        isGhostbusterScanning.value = false
-    }
-}
-
-const toggleGhostbusterAuto = async () => {
-    const newState = !ghostbusterAutoEnabled.value
-    try {
-        const r = await authFetch('/api/workflows/ghostbuster/toggle', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ enabled: newState })
-        })
-        const j = await r.json()
-        if (j.status === 'success') {
-            ghostbusterAutoEnabled.value = newState
-        }
-    } catch(e) { console.warn('[Ghostbuster] Toggle failed', e) }
-}
-
-const copyGhostbusterText = async (text, key) => {
-    try {
-        await navigator.clipboard.writeText(text)
-        ghostbusterCopied.value = { ...ghostbusterCopied.value, [key]: true }
-        setTimeout(() => {
-            ghostbusterCopied.value = { ...ghostbusterCopied.value, [key]: false }
-        }, 2500)
-    } catch(e) { console.warn('Clipboard failed', e) }
-}
-
-const markGhostbusterSent = async (appId, via = 'manual') => {
-    try {
-        const r = await authFetch('/api/workflows/ghostbuster/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ app_id: appId, via })
-        })
-        const j = await r.json()
-        if (j.status === 'success') {
-            ghostbusterSent.value = { ...ghostbusterSent.value, [appId]: via }
-        }
-    } catch(e) { console.warn('[Ghostbuster] Mark sent failed', e) }
-}
-
-const closeGhostbusterModal = () => {
-    isGhostbusterModalOpen.value = false
-    ghostbusterResults.value = []
-    ghostbusterExpandedEmail.value = null
-    ghostbusterExpandedLinkedin.value = null
-    ghostbusterError.value = ''
 }
 
 // ─── Rejection Pivot functions ───
@@ -670,59 +631,6 @@ const runPostInterview = async () => {
     finally { postInterviewGenerating.value = false }
 }
 
-const isGoldProfileModalOpen = ref(false)
-const goldProfileStep = ref('audit') // 'audit', 'plan', 'post'
-const goldProfileLoading = ref(false)
-const goldProfileAuditData = ref(null)
-const goldProfilePlanData = ref(null)
-const goldProfilePostData = ref(null)
-const goldProfileSelectedTopic = ref(null)
-
-const openGoldProfileModal = async (pb) => {
-    execPlaybook.value = pb
-    isGoldProfileModalOpen.value = true
-    goldProfileStep.value = 'audit'
-    goldProfileLoading.value = true
-    try {
-        const r = await authFetch('/api/workflows/gold-profile/audit')
-        const j = await r.json()
-        if (j.status === 'success') {
-            goldProfileAuditData.value = j.data
-        }
-    } catch (e) {}
-    finally { goldProfileLoading.value = false }
-}
-
-const fetchGoldProfilePlan = async () => {
-    goldProfileStep.value = 'plan'
-    if (goldProfilePlanData.value) return
-    goldProfileLoading.value = true
-    try {
-        const r = await authFetch('/api/workflows/gold-profile/plan')
-        const j = await r.json()
-        if (j.status === 'success') {
-            goldProfilePlanData.value = j.data.plan
-        }
-    } catch (e) {}
-    finally { goldProfileLoading.value = false }
-}
-
-const generateGoldProfilePost = async (topic) => {
-    goldProfileSelectedTopic.value = topic
-    goldProfileStep.value = 'post'
-    goldProfileLoading.value = true
-    try {
-        const r = await authFetch('/api/workflows/gold-profile/post', {
-            method: 'POST',
-            body: JSON.stringify({ topic: topic.topic })
-        })
-        const j = await r.json()
-        if (j.status === 'success') {
-            goldProfilePostData.value = j.data.post_content
-        }
-    } catch (e) {}
-    finally { goldProfileLoading.value = false }
-}
 
 const toggleDailyHunt = async () => {
     try {
@@ -1241,6 +1149,108 @@ const saveWorkflowStatus = async (pb) => {
       </div>
     </div>
       
+    <!-- Ghostbuster Modal (Workflow #2) -->
+    <Transition name="fade">
+      <div v-if="isGhostbusterModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="isGhostbusterModalOpen = false">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden animate-slide-up flex flex-col max-h-[85vh]">
+          <!-- Header -->
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center">
+                <EnvelopeIcon class="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <h2 class="text-lg font-black text-slate-800 tracking-tight">👻 Ghostbuster</h2>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Relances Anti-Fantôme</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span v-if="ghostbusterLastRun" class="text-[10px] text-slate-400">{{ formatRelativeDate(ghostbusterLastRun) }}</span>
+              <button @click="runGhostbusterScan(true)" :disabled="isGhostbusterScanning" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-50" title="Rafraîchir">
+                <ArrowPathIcon class="w-4 h-4 text-slate-500" :class="isGhostbusterScanning ? 'animate-spin' : ''" />
+              </button>
+              <label class="relative inline-flex items-center cursor-pointer" title="Scan automatique">
+                <input type="checkbox" :checked="ghostbusterAutoEnabled" @change="toggleGhostbusterAuto" class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+              <button @click="isGhostbusterModalOpen = false" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                <XMarkIcon class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <div v-if="isGhostbusterScanning" class="flex flex-col items-center justify-center py-16 gap-4">
+              <div class="w-12 h-12 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
+              <p class="text-sm font-semibold text-slate-500">Analyse de vos candidatures en cours...</p>
+              <p class="text-xs text-slate-400">Détection des fantômes (sans réponse +15j)</p>
+            </div>
+            <div v-else-if="ghostbusterError" class="flex flex-col items-center py-10 gap-3 text-center px-6">
+              <p class="text-sm font-bold text-rose-600">{{ ghostbusterError }}</p>
+              <button @click="runGhostbusterScan()" class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl">Réessayer</button>
+            </div>
+            <div v-else-if="ghostbusterResults.length === 0" class="flex flex-col items-center py-14 gap-3 text-center px-6">
+              <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center">
+                <CheckCircleIcon class="w-8 h-8 text-emerald-400" />
+              </div>
+              <p class="text-base font-bold text-slate-700">Aucune relance urgente !</p>
+              <p class="text-xs text-slate-400">{{ ghostbusterTotalScanned }} candidature(s) scannée(s) — Tout est à jour.</p>
+            </div>
+            <div v-else class="divide-y divide-slate-100">
+              <div v-for="item in ghostbusterResults" :key="item.app_id"
+                   class="p-5 hover:bg-slate-50 transition-colors"
+                   :class="ghostbusterSent[item.app_id] ? 'bg-emerald-50/40' : ''">
+                <div class="flex items-start justify-between mb-3">
+                  <div>
+                    <p class="font-bold text-slate-800">{{ item.company_name || item.company }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ item.job_title }}</p>
+                  </div>
+                  <span class="text-[10px] px-2.5 py-1 rounded-full font-bold"
+                        :class="(item.working_days_elapsed||item.days_waiting||0)>=30 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-700'">
+                    {{ item.working_days_elapsed || item.days_waiting }}j sans réponse
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <button @click="ghostbusterExpandedEmail = ghostbusterExpandedEmail === item.app_id ? null : item.app_id"
+                          class="flex-1 py-2 text-[10px] font-bold border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 flex items-center justify-center gap-1.5">
+                    <EnvelopeIcon class="w-3.5 h-3.5" />
+                    {{ ghostbusterExpandedEmail === item.app_id ? 'Masquer' : 'Voir email' }}
+                  </button>
+                  <button @click="copyGhostbusterText(item.relance_email, item.app_id+'_e')"
+                          class="px-3 py-2 text-[10px] font-bold rounded-xl transition-colors"
+                          :class="ghostbusterCopied[item.app_id+'_e'] ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-600'">
+                    <CheckIcon v-if="ghostbusterCopied[item.app_id+'_e']" class="w-3.5 h-3.5" />
+                    <span v-else>Copier</span>
+                  </button>
+                  <button v-if="!ghostbusterSent[item.app_id]"
+                          @click="markGhostbusterSent(item.app_id, 'email')"
+                          class="px-3 py-2 text-[10px] font-bold border border-emerald-200 text-emerald-600 rounded-xl hover:bg-emerald-50">
+                    ✓ Envoyé
+                  </button>
+                  <span v-else class="px-3 py-2 text-[10px] font-bold text-emerald-600 bg-emerald-50 rounded-xl">
+                    ✓ Envoyé {{ ghostbusterSent[item.app_id] === 'email' ? 'par email' : 'sur LinkedIn' }}
+                  </span>
+                </div>
+                <div v-if="ghostbusterExpandedEmail === item.app_id"
+                     class="mt-3 p-4 bg-slate-50 rounded-2xl text-xs text-slate-600 whitespace-pre-wrap border border-slate-100 leading-relaxed">
+                  {{ item.relance_email }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
+            <p class="text-[10px] text-slate-400">
+              {{ ghostbusterResults.length }} relance(s) à envoyer · {{ ghostbusterTotalScanned }} scannée(s)
+            </p>
+            <button @click="isGhostbusterModalOpen = false" class="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Fermer</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Info Modal -->
     <Transition name="fade">
       <div v-if="selectedPlaybookInfo" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" @click="closeInfo">
@@ -1379,254 +1389,6 @@ const saveWorkflowStatus = async (pb) => {
              </button>
           </div>
 
-        </div>
-      </div>
-    </Transition>
-
-    <!-- Gold Profile Modal (Workflow #8) -->
-    <Transition name="fade">
-      <div v-if="isGoldProfileModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" @click.self="isGoldProfileModalOpen = false">
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
-          <!-- Header -->
-          <div class="p-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-                <SparklesIcon class="w-6 h-6" />
-              </div>
-              <div>
-                <h2 class="text-lg font-black text-slate-800 tracking-tight">Gold Profile</h2>
-                <div class="flex items-center gap-2">
-                    <span :class="goldProfileStep === 'audit' ? 'text-indigo-600 font-bold' : 'text-slate-400'" class="text-[10px] uppercase tracking-wider transition-colors">1. Audit</span>
-                    <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                    <span :class="goldProfileStep === 'plan' ? 'text-indigo-600 font-bold' : 'text-slate-400'" class="text-[10px] uppercase tracking-wider transition-colors">2. Stratégie</span>
-                    <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                    <span :class="goldProfileStep === 'post' ? 'text-indigo-600 font-bold' : 'text-slate-400'" class="text-[10px] uppercase tracking-wider transition-colors">3. Publication</span>
-                </div>
-              </div>
-            </div>
-            <button @click="isGoldProfileModalOpen = false" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-              <XMarkIcon class="w-5 h-5" />
-            </button>
-          </div>
-
-          <div class="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-            
-            <!-- Loading State -->
-            <div v-if="goldProfileLoading" class="py-20 flex flex-col items-center justify-center gap-6">
-                <div class="relative">
-                    <div class="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                    <SparklesIcon class="w-6 h-6 text-indigo-600 absolute inset-0 m-auto animate-pulse" />
-                </div>
-                <div class="text-center">
-                    <p class="text-slate-800 font-black">L'IA façonne votre influence...</p>
-                    <p class="text-xs text-slate-400 mt-1">Analyse des algorithmes LinkedIn en cours</p>
-                </div>
-            </div>
-
-            <!-- STEP 1: AUDIT & OPTIMIZATION (REFONTE TOTALE) -->
-            <div v-else-if="goldProfileStep === 'audit'" class="space-y-12 animate-in fade-in duration-700">
-                
-                <!-- Hero Audit Section -->
-                <div class="flex flex-col md:flex-row gap-8 items-center bg-slate-50/50 rounded-[3rem] p-10 border border-slate-100">
-                    <div class="relative shrink-0">
-                        <svg class="w-32 h-32 transform -rotate-90">
-                            <circle cx="64" cy="64" r="58" stroke="currentColor" stroke-width="8" fill="transparent" class="text-slate-200" />
-                            <circle cx="64" cy="64" r="58" stroke="currentColor" stroke-width="8" fill="transparent" 
-                                :stroke-dasharray="364.4" 
-                                :stroke-dashoffset="364.4 * (1 - (goldProfileAuditData?.profile_score || 0) / 100)" 
-                                class="text-[#F59E0B] transition-all duration-1000 ease-out" 
-                            />
-                        </svg>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <span class="text-3xl font-black text-slate-800">{{ goldProfileAuditData?.profile_score }}</span>
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Score</span>
-                        </div>
-                    </div>
-                    <div class="flex-1 text-center md:text-left">
-                        <h3 class="text-2xl font-black text-slate-800 leading-tight">Analyse de Performance</h3>
-                        <p class="text-slate-500 text-sm mt-2 max-w-md">
-                            Votre profil a été audité par l'intelligence artificielle de GoldArmy. 
-                            Voici les ajustements critiques pour maximiser votre visibilité algorithmique.
-                        </p>
-                    </div>
-                    <div class="shrink-0 flex gap-2">
-                        <div class="px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-                            <span class="text-[10px] font-black text-slate-600 uppercase">Certifié Expert</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bento Content Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    <!-- Left: Headline Optimization -->
-                    <div class="lg:col-span-2 space-y-6">
-                        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
-                            <div class="flex items-center justify-between mb-6">
-                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Accroche (Headline)</h4>
-                                <button @click="copyToClipboard(goldProfileAuditData?.headline)" class="p-2 hover:bg-slate-50 rounded-xl transition-colors">
-                                    <DocumentDuplicateIcon class="w-4 h-4 text-slate-300 group-hover:text-[#F59E0B]" />
-                                </button>
-                            </div>
-                            <p class="text-xl font-bold text-slate-800 leading-snug tracking-tight">
-                                {{ goldProfileAuditData?.headline }}
-                            </p>
-                        </div>
-
-                        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden">
-                             <div class="flex items-center justify-between mb-8">
-                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Résumé (About) LinkedIn</h4>
-                                <button @click="copyToClipboard(goldProfileAuditData?.about)" class="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black hover:bg-gold-600 hover:text-white transition-all uppercase">
-                                    Copier le résumé
-                                </button>
-                            </div>
-                            <div class="prose prose-slate max-w-none">
-                                <p class="text-base text-slate-600 leading-[1.8] font-medium whitespace-pre-wrap italic opacity-90">
-                                    "{{ goldProfileAuditData?.about }}"
-                                </p>
-                            </div>
-                            <!-- Subtle decoration -->
-                            <div class="absolute bottom-0 right-0 p-4 opacity-[0.03] pointer-events-none">
-                                <ChatBubbleLeftRightIcon class="w-32 h-32" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Field Checklist (REFONTE) -->
-                    <div class="space-y-6">
-                        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
-                            <div class="flex items-center justify-between mb-8">
-                                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Checklist d'Impact</h4>
-                                <span class="px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-[8px] font-black uppercase tracking-tighter">Priorité Haute</span>
-                            </div>
-                            
-                            <div class="space-y-8">
-                                <div v-for="(opt, i) in goldProfileAuditData?.field_optimizations" :key="i" class="relative pl-8 group">
-                                    <!-- Vertical Line -->
-                                    <div v-if="i < (goldProfileAuditData?.field_optimizations.length - 1)" class="absolute left-[11px] top-6 w-[2px] h-10 bg-slate-50 group-hover:bg-[#F59E0B]/20 transition-colors"></div>
-                                    
-                                    <!-- Icon/Bullet -->
-                                    <div class="absolute left-0 top-1 w-6 h-6 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:border-[#F59E0B] group-hover:bg-[#F59E0B]/5 transition-all">
-                                        <div class="w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-[#F59E0B] transition-colors"></div>
-                                    </div>
-
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <p class="text-[10px] font-black text-slate-800 uppercase tracking-tight">{{ opt.field }}</p>
-                                            <span class="text-[8px] font-bold text-emerald-500 bg-emerald-50 px-1.5 rounded-md">+{{ 15 - i * 2 }}% visibilité</span>
-                                        </div>
-                                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">{{ opt.suggestion }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Stratégie 30 Jours (REFONTE ÉPURÉE) -->
-                        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm text-center relative group overflow-hidden">
-                            <div class="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-300 group-hover:text-[#F59E0B] group-hover:bg-[#F59E0B]/5 transition-all duration-500">
-                                <CalendarIcon class="w-8 h-8" />
-                            </div>
-                            
-                            <h5 class="text-lg font-black text-slate-800 mb-2">Stratégie 30 Jours</h5>
-                            <p class="text-xs text-slate-400 leading-relaxed max-w-[200px] mx-auto font-medium">
-                                Transformez votre nouveau profil en une machine à attirer des prospects.
-                            </p>
-
-                            <button @click="fetchGoldProfilePlan" 
-                                class="mt-8 w-full py-4 bg-[#F59E0B] text-white rounded-2xl font-black text-[11px] uppercase shadow-xl shadow-[#F59E0B]/20 hover:shadow-[#F59E0B]/40 hover:-translate-y-1 transition-all"
-                            >
-                                Générer mon Calendrier
-                            </button>
-                            
-                            <!-- Small badge -->
-                            <div class="absolute top-4 right-4">
-                                <div class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[8px] font-black uppercase">Plan Ready</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- STEP 2: CONTENT PLAN -->
-            <div v-else-if="goldProfileStep === 'plan'" class="animate-in fade-in slide-in-from-right-4 duration-500">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-tight">Votre Plan de Publication (30 Jours)</h3>
-                    <button @click="goldProfileStep = 'audit'" class="text-[10px] font-bold text-indigo-600 uppercase hover:underline flex items-center gap-1">
-                        <ChevronLeftIcon class="w-4 h-4" /> Retour à l'Audit
-                    </button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div v-for="item in goldProfilePlanData" :key="item.day" 
-                        @click="generateGoldProfilePost(item)"
-                        class="p-4 bg-white border border-slate-100 rounded-2xl hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group flex items-start gap-4"
-                    >
-                        <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-xs font-black text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                            J{{ item.day }}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-black text-slate-800 truncate">{{ item.topic }}</p>
-                            <p class="text-[10px] text-slate-400 font-medium uppercase mt-1">{{ item.angle }}</p>
-                        </div>
-                        <ArrowPathIcon class="w-5 h-5 text-slate-200 group-hover:text-indigo-500 transition-colors" />
-                    </div>
-                </div>
-            </div>
-
-            <!-- STEP 3: POST CONTENT -->
-            <div v-else-if="goldProfileStep === 'post'" class="animate-in fade-in zoom-in-95 duration-500">
-                <div class="max-w-xl mx-auto space-y-6">
-                    <div class="flex items-center justify-between">
-                        <button @click="goldProfileStep = 'plan'" class="text-[10px] font-bold text-slate-400 uppercase hover:text-slate-600 flex items-center gap-1">
-                            <ChevronLeftIcon class="w-4 h-4" /> Retour au Plan
-                        </button>
-                        <div class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase">Prêt à publier</div>
-                    </div>
-
-                    <div class="bg-indigo-50/30 p-4 rounded-2xl border border-indigo-100">
-                        <p class="text-[10px] font-bold text-indigo-600 uppercase mb-1">Sujet du Jour :</p>
-                        <p class="text-sm font-black text-indigo-900">{{ goldProfileSelectedTopic?.topic }}</p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <div class="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-2xl shadow-indigo-100/50">
-                            <div class="flex items-center gap-3 mb-6">
-                                <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-black">
-                                    {{ userEmail.charAt(0).toUpperCase() }}
-                                </div>
-                                <div>
-                                    <p class="text-sm font-bold text-slate-900">{{ userEmail.split('@')[0] }}</p>
-                                    <p class="text-[10px] text-slate-400">Maintenant • Public</p>
-                                </div>
-                            </div>
-                            <div class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap font-medium">
-                                {{ goldProfilePostData }}
-                            </div>
-                        </div>
-                        <div class="flex gap-4">
-                            <button @click="copyToClipboard(goldProfilePostData)" class="flex-1 py-4 bg-gold-600 text-white rounded-2xl font-black text-sm hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-2">
-                                <DocumentDuplicateIcon class="w-5 h-5" />
-                                <span>Copier le Post</span>
-                            </button>
-                            <button @click="isGoldProfileModalOpen = false" class="px-8 py-4 bg-white border border-slate-200 rounded-2xl font-black text-sm text-slate-600 hover:bg-slate-50 transition-all">
-                                Fermer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-          </div>
-          
-          <!-- Footer info -->
-          <div v-if="goldProfileStep === 'audit'" class="p-6 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between text-[10px] text-slate-400 font-medium">
-             <div class="flex items-center gap-2">
-                 <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                 Expert Personal Branding actif
-             </div>
-             <p>Optimisé pour l'algorithme LinkedIn 2024</p>
-          </div>
         </div>
       </div>
     </Transition>
@@ -1940,248 +1702,6 @@ const saveWorkflowStatus = async (pb) => {
                Enregistrer
              </button>
           </div>
-        </div>
-      </div>
-    </Transition>
-    <Transition name="fade">
-      <div v-if="isGhostbusterModalOpen" class="fixed inset-0 z-[65] flex items-center justify-center p-3 bg-slate-900/50 backdrop-blur-sm" @click.self="closeGhostbusterModal">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden animate-slide-up" style="max-height:90vh; animation-duration:0.35s">
-
-          <!-- Header -->
-          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50/30 shrink-0">
-            <div class="flex items-center gap-3">
-              <div class="p-2 rounded-xl bg-indigo-100 text-indigo-600 shadow-inner">
-                <EnvelopeIcon class="w-5 h-5" />
-              </div>
-              <div>
-                <h2 class="font-extrabold text-slate-800 text-base leading-tight tracking-tight">👻 Ghostbuster — Relances Anti-Fantôme</h2>
-                <p class="text-[11px] text-slate-500 mt-0.5">Candidatures sans réponse depuis &gt; 15 jours ouvrables</p>
-              </div>
-            </div>
-            <button @click="closeGhostbusterModal" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-              <XMarkIcon class="w-5 h-5" />
-            </button>
-          </div>
-
-          <!-- Controls Bar -->
-          <div class="px-5 py-3 border-b border-slate-100 bg-white flex items-center justify-between gap-3 shrink-0 flex-wrap">
-            <!-- Stats -->
-            <div class="flex items-center gap-3">
-              <span class="text-xs text-slate-500 font-medium">
-                <span class="font-bold text-slate-800">{{ ghostbusterTotalScanned }}</span> candidatures scannées
-              </span>
-              <span v-if="ghostbusterResults.length > 0" class="text-xs px-2 py-0.5 bg-amber-50 text-amber-700 font-bold rounded-full border border-amber-200">
-                {{ ghostbusterResults.length }} relance(s) à envoyer
-              </span>
-              <span v-if="ghostbusterLastRun" class="text-[10px] text-slate-400">
-                Dernier scan : {{ formatRelativeDate(ghostbusterLastRun) }}
-              </span>
-            </div>
-            <!-- Actions -->
-            <div class="flex items-center gap-2">
-              <!-- Refresh / Force regenerate -->
-              <button @click="runGhostbusterScan(true)" :disabled="isGhostbusterScanning"
-                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-all disabled:opacity-50">
-                <ArrowPathIcon class="w-3.5 h-3.5" :class="isGhostbusterScanning ? 'animate-spin' : ''" />
-                Re-générer
-              </button>
-              <!-- Chain to workflow -->
-              <select v-model="ghostbusterChainTo" class="text-[10px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none font-semibold text-slate-600 cursor-pointer hover:border-indigo-300 transition-colors">
-                <option value="none">Aucun chaînage</option>
-                <option value="network_ninja">→ Network Ninja (LinkedIn)</option>
-                <option value="post_interview">→ Post-Interview (Merci)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Mode Auto Toggle Bar -->
-          <div class="px-5 py-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-purple-50/30 flex items-center justify-between shrink-0">
-            <div class="flex items-center gap-2">
-              <div class="w-1.5 h-1.5 rounded-full animate-pulse" :class="ghostbusterAutoEnabled ? 'bg-emerald-500' : 'bg-slate-300'"></div>
-              <span class="text-xs font-semibold text-slate-700">Mode Auto (48h)</span>
-              <span class="text-[10px] text-slate-500">— Scan automatique toutes les 48h pour tous tes comptes actifs</span>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" :checked="ghostbusterAutoEnabled" @change="toggleGhostbusterAuto" class="sr-only peer">
-              <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 transition-colors"></div>
-            </label>
-          </div>
-
-          <!-- Body -->
-          <div class="flex-1 overflow-y-auto custom-scrollbar">
-
-            <!-- Loading State -->
-            <div v-if="isGhostbusterScanning" class="flex flex-col items-center justify-center py-16 gap-4">
-              <div class="relative">
-                <div class="w-14 h-14 rounded-full border-4 border-indigo-100 border-t-indigo-500 animate-spin"></div>
-                <div class="absolute inset-0 flex items-center justify-center text-xl">👻</div>
-              </div>
-              <p class="text-sm font-semibold text-slate-600">Scan des candidatures en cours...</p>
-              <p class="text-xs text-slate-400">Calcul des jours ouvrables · Génération LLM</p>
-            </div>
-
-            <!-- Error State -->
-            <div v-else-if="ghostbusterError" class="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
-              <div class="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-2xl">⚠️</div>
-              <p class="text-sm font-bold text-rose-600">{{ ghostbusterError }}</p>
-              <button @click="runGhostbusterScan()" class="mt-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
-                Réessayer
-              </button>
-            </div>
-
-            <!-- Empty State -->
-            <div v-else-if="!isGhostbusterScanning && ghostbusterResults.length === 0" class="flex flex-col items-center justify-center py-14 gap-3 text-center px-6">
-              <div class="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center text-3xl shadow-inner">✅</div>
-              <h3 class="text-base font-bold text-slate-800">Aucun fantôme détecté !</h3>
-              <p class="text-xs text-slate-500 leading-relaxed max-w-xs">
-                Toutes tes candidatures ont reçu une réponse, ou sont envoyées depuis moins de 15 jours ouvrables.
-                <br>Scannées : <strong>{{ ghostbusterTotalScanned }}</strong>
-              </p>
-              <div v-if="ghostbusterTotalScanned === 0" class="mt-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-medium">
-                💡 Ajoute des candidatures dans le CRM avec le statut <strong>APPLIED</strong> pour les suivre ici.
-              </div>
-            </div>
-
-            <!-- Results List -->
-            <div v-else class="p-4 space-y-3">
-              <div v-for="item in ghostbusterResults" :key="item.app_id"
-                class="rounded-2xl border overflow-hidden transition-all duration-300"
-                :class="ghostbusterSent[item.app_id] ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 bg-white hover:border-indigo-200'">
-
-                <!-- Item Header -->
-                <div class="flex items-center justify-between px-4 py-3">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
-                      {{ (item.company_name || '?').charAt(0).toUpperCase() }}
-                    </div>
-                    <div class="min-w-0">
-                      <p class="font-bold text-slate-800 text-sm truncate">{{ item.company_name }}</p>
-                      <p class="text-xs text-slate-500 truncate">{{ item.job_title }}</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2 shrink-0">
-                    <!-- Days badge -->
-                    <span class="text-[10px] px-2 py-1 rounded-full font-bold"
-                      :class="item.working_days_elapsed >= 30 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-700'">
-                      {{ item.working_days_elapsed }}j ouv.
-                    </span>
-                    <!-- Sent badge -->
-                    <span v-if="ghostbusterSent[item.app_id]" class="text-[10px] px-2 py-1 bg-emerald-100 text-emerald-700 font-bold rounded-full">
-                      ✓ Envoyé
-                    </span>
-                    <!-- Already generated badge -->
-                    <span v-else-if="item.already_generated" class="text-[10px] px-2 py-1 bg-slate-100 text-slate-500 font-medium rounded-full">
-                      Existante
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Applied date info -->
-                <div class="px-4 pb-2 flex items-center gap-2 text-[10px] text-slate-400">
-                  <span>Candidature envoyée le {{ formatRelativeDate(item.applied_at) }}</span>
-                </div>
-
-                <!-- Expandable Sections -->
-                <div class="border-t border-slate-100 divide-y divide-slate-100">
-
-                  <!-- Email Section -->
-                  <div>
-                    <button @click="ghostbusterExpandedEmail = ghostbusterExpandedEmail === item.app_id ? null : item.app_id"
-                      class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors text-left">
-                      <div class="flex items-center gap-2">
-                        <EnvelopeIcon class="w-4 h-4 text-indigo-500" />
-                        <span class="text-xs font-semibold text-slate-700">Email de relance</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <button @click.stop="copyGhostbusterText(item.relance_email, item.app_id + '_email')"
-                          class="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all"
-                          :class="ghostbusterCopied[item.app_id + '_email'] ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'">
-                          <CheckIcon v-if="ghostbusterCopied[item.app_id + '_email']" class="w-3 h-3" />
-                          <DocumentDuplicateIcon v-else class="w-3 h-3" />
-                          {{ ghostbusterCopied[item.app_id + '_email'] ? 'Copié !' : 'Copier' }}
-                        </button>
-                        <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200"
-                          :class="ghostbusterExpandedEmail === item.app_id ? 'rotate-180' : ''"
-                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                      </div>
-                    </button>
-                    <Transition name="slide-down">
-                      <div v-if="ghostbusterExpandedEmail === item.app_id" class="px-4 pb-3">
-                        <pre class="text-[11px] leading-relaxed text-slate-600 bg-slate-50 rounded-xl p-3 whitespace-pre-wrap font-sans border border-slate-100 max-h-48 overflow-y-auto custom-scrollbar">{{ item.relance_email }}</pre>
-                      </div>
-                    </Transition>
-                  </div>
-
-                  <!-- LinkedIn Section -->
-                  <div>
-                    <button @click="ghostbusterExpandedLinkedin = ghostbusterExpandedLinkedin === item.app_id ? null : item.app_id"
-                      class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 transition-colors text-left">
-                      <div class="flex items-center gap-2">
-                        <!-- LinkedIn icon (inline SVG) -->
-                        <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                        </svg>
-                        <span class="text-xs font-semibold text-slate-700">Message LinkedIn</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <button @click.stop="copyGhostbusterText(item.relance_linkedin, item.app_id + '_linkedin')"
-                          class="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all"
-                          :class="ghostbusterCopied[item.app_id + '_linkedin'] ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'">
-                          <CheckIcon v-if="ghostbusterCopied[item.app_id + '_linkedin']" class="w-3 h-3" />
-                          <DocumentDuplicateIcon v-else class="w-3 h-3" />
-                          {{ ghostbusterCopied[item.app_id + '_linkedin'] ? 'Copié !' : 'Copier' }}
-                        </button>
-                        <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200"
-                          :class="ghostbusterExpandedLinkedin === item.app_id ? 'rotate-180' : ''"
-                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                      </div>
-                    </button>
-                    <Transition name="slide-down">
-                      <div v-if="ghostbusterExpandedLinkedin === item.app_id" class="px-4 pb-3">
-                        <pre class="text-[11px] leading-relaxed text-slate-600 bg-blue-50/50 rounded-xl p-3 whitespace-pre-wrap font-sans border border-blue-100 max-h-36 overflow-y-auto custom-scrollbar">{{ item.relance_linkedin }}</pre>
-                      </div>
-                    </Transition>
-                  </div>
-
-                  <!-- Mark as Sent -->
-                  <div class="px-4 py-2.5 flex items-center justify-between bg-slate-50/50">
-                    <span class="text-[10px] text-slate-400">Après envoi, marquer comme :</span>
-                    <div class="flex items-center gap-1.5">
-                      <button v-if="!ghostbusterSent[item.app_id]"
-                        @click="markGhostbusterSent(item.app_id, 'email')"
-                        class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-semibold text-slate-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
-                        ✉️ Email envoyé
-                      </button>
-                      <button v-if="!ghostbusterSent[item.app_id]"
-                        @click="markGhostbusterSent(item.app_id, 'linkedin')"
-                        class="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all">
-                        💼 LinkedIn envoyé
-                      </button>
-                      <span v-else class="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-                        <CheckIcon class="w-3.5 h-3.5" /> Relance confirmée
-                      </span>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="px-5 py-3.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
-            <p class="text-[10px] text-slate-400">
-              Les relances sont générées par IA et sauvegardées dans le CRM.
-            </p>
-            <button @click="closeGhostbusterModal" class="px-4 py-2 text-xs font-bold bg-gold-600 text-white rounded-xl hover:bg-gold-500 transition-colors shadow-sm">
-              Fermer
-            </button>
-          </div>
-
         </div>
       </div>
     </Transition>

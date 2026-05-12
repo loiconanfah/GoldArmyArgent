@@ -604,6 +604,67 @@ async def draft_network_email(request: EmailDraftRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class GoldProfileTopicRequest(BaseModel):
+    topic: str
+
+@app.post("/api/network/gold-profile/audit")
+async def gold_profile_audit(current_user: dict = Depends(get_current_user)):
+    from agents.mentor import MentorAgent
+    from core.database import get_db
+    
+    db = get_db()
+    user = await db.users.find_one({"id": current_user["id"]})
+    cv_text = user.get("cv_text", "")
+    
+    if not cv_text:
+        raise HTTPException(status_code=400, detail="Veuillez d'abord uploader un CV dans votre profil pour utiliser Gold Profile.")
+        
+    mentor = MentorAgent()
+    await mentor.initialize()
+    result = await mentor.think({"action": "gold_profile_audit", "cv_text": cv_text})
+    
+    if result.get("status") == "error":
+        raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de l'audit."))
+        
+    return {"status": "success", "data": result.get("data")}
+
+@app.post("/api/network/gold-profile/plan")
+async def gold_profile_plan(current_user: dict = Depends(get_current_user)):
+    from agents.mentor import MentorAgent
+    from core.database import get_db
+    
+    db = get_db()
+    user = await db.users.find_one({"id": current_user["id"]})
+    cv_text = user.get("cv_text", "")
+    
+    mentor = MentorAgent()
+    await mentor.initialize()
+    result = await mentor.think({"action": "gold_profile_plan", "cv_text": cv_text})
+    
+    if result.get("status") == "error":
+        raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de la planification."))
+        
+    return {"status": "success", "data": result.get("data")}
+
+@app.post("/api/network/gold-profile/post")
+async def gold_profile_post(req: GoldProfileTopicRequest, current_user: dict = Depends(get_current_user)):
+    from agents.mentor import MentorAgent
+    from core.database import get_db
+    
+    db = get_db()
+    user = await db.users.find_one({"id": current_user["id"]})
+    cv_text = user.get("cv_text", "")
+    
+    mentor = MentorAgent()
+    await mentor.initialize()
+    result = await mentor.think({"action": "gold_profile_post", "cv_text": cv_text, "topic": req.topic})
+    
+    if result.get("status") == "error":
+        raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de la génération du post."))
+        
+    return {"status": "success", "data": result.get("data")}
+
+
 @app.get("/api/network/contacts")
 async def get_network_contacts(current_user: dict = Depends(get_current_user)):
     """Récupère tout le carnet d'adresses réseau."""

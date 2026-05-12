@@ -1,41 +1,15 @@
 <script setup>
 import { authFetch } from '../utils/auth'
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import { toastState } from '../store/toastState'
-import { 
-  BuildingOfficeIcon, 
-  UserGroupIcon, 
-  EnvelopeIcon, 
-  SparklesIcon,
-  CheckBadgeIcon,
-  LinkIcon,
-  DocumentTextIcon,
-  ArrowPathIcon,
-  BookOpenIcon,
-  GlobeAltIcon,
-  MagnifyingGlassIcon,
-  ClipboardIcon,
-  CheckCircleIcon,
-  PencilSquareIcon,
-  UserIcon
+import {
+  BuildingOfficeIcon, UserGroupIcon, EnvelopeIcon, SparklesIcon,
+  CheckBadgeIcon, LinkIcon, ArrowPathIcon, ClipboardIcon,
+  CheckCircleIcon, PencilSquareIcon, UserIcon, DocumentDuplicateIcon, CheckIcon
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
-const route = useRoute()
-const activeTab = ref('osint')
-
-// Watch ?tab= query param for deep-link from Dashboard
-watch(() => route.query.tab, (tab) => {
-    if (tab === 'ninja') activeTab.value = 'ninja'
-}, { immediate: true })
-
-watch(activeTab, (newVal) => {
-    if (newVal === 'ninja') {
-        loadNinjaResults()
-    }
-})
 
 // Profile Data (for real CV)
 const profile = ref({ cv_text: '' })
@@ -73,26 +47,9 @@ const draftResult = ref(null)
 const draftError = ref('')
 const draftCopied = ref(false)
 
-// Carnet d'adresses
-const savedContacts = ref([])
-const isLoadingContacts = ref(false)
-
-const loadContacts = async () => {
-    isLoadingContacts.value = true
-    try {
-        const res = await authFetch('/api/network/contacts')
-        const json = await res.json()
-        if (json.status === 'success') {
-            savedContacts.value = json.data || []
-        }
-    } catch(e) {
-        console.error("Erreur Chargement Carnet:", e)
-    } finally {
-        isLoadingContacts.value = false
-    }
-}
 
 // ── Network Ninja State ──
+
 const ninjaCompanies   = ref([])       // [{company_name, job_title, profiles:[...]}]
 const ninjaRunning     = ref(false)
 const ninjaLoading     = ref(false)    // chargement initial des résultats persistés
@@ -155,15 +112,9 @@ const formatNinjaDate = (iso) => {
 }
 
 onMounted(() => {
-    loadContacts()
     fetchProfile()
     loadNinjaResults()
 })
-
-
-
-
-
 
 
 // ── Ninja SVG Node positioning helpers ──
@@ -260,9 +211,7 @@ const ninjaLabelX = (i, total, radius) => {
 // ── End Ninja Helpers ──
 
 const prefillDraft = (companyNameStr) => {
-    activeTab.value = 'osint'
     companyName.value = companyNameStr
-    draftCompanyName.value = companyNameStr  // Also fill the draft form
 }
 
 const enrichCompany = async () => {
@@ -320,6 +269,75 @@ const selectHr = (name) => {
     selectedHrName.value = name
 }
 
+// ── Gold Profile Logic ──
+const goldProfileStep = ref('audit')
+const goldProfileLoading = ref(false)
+const goldProfileAuditData = ref(null)
+const goldProfilePlanData = ref([])
+const goldProfilePostData = ref('')
+const goldProfileSelectedTopic = ref(null)
+
+const fetchGoldProfileAudit = async () => {
+    goldProfileLoading.value = true
+    try {
+        const res = await authFetch('/api/network/gold-profile/audit', { method: 'POST' })
+        const json = await res.json()
+        if (json.status === 'success') {
+            goldProfileAuditData.value = json.data
+            goldProfileStep.value = 'audit'
+            toastState.addToast("Audit LinkedIn terminé !", "success")
+        } else {
+            toastState.addToast(json.detail || json.content || "Erreur d'audit", "error")
+        }
+    } catch(e) {
+        toastState.addToast("Erreur d'audit LinkedIn", "error")
+    } finally {
+        goldProfileLoading.value = false
+    }
+}
+
+const fetchGoldProfilePlan = async () => {
+    goldProfileLoading.value = true
+    try {
+        const res = await authFetch('/api/network/gold-profile/plan', { method: 'POST' })
+        const json = await res.json()
+        if (json.status === 'success') {
+            goldProfilePlanData.value = json.data.plan || json.data
+            goldProfileStep.value = 'plan'
+        } else {
+            toastState.addToast(json.detail || json.content || "Erreur de planification", "error")
+        }
+    } catch(e) {
+        toastState.addToast("Erreur lors de la création du plan", "error")
+    } finally {
+        goldProfileLoading.value = false
+    }
+}
+
+const generateGoldProfilePost = async (topic) => {
+    goldProfileLoading.value = true
+    goldProfileSelectedTopic.value = topic
+    try {
+        const res = await authFetch('/api/network/gold-profile/post', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic: topic.topic })
+        })
+        const json = await res.json()
+        if (json.status === 'success') {
+            goldProfilePostData.value = json.data.post_content || json.data
+            goldProfileStep.value = 'post'
+        } else {
+            toastState.addToast(json.detail || json.content || "Erreur de génération", "error")
+        }
+    } catch(e) {
+        toastState.addToast("Erreur de génération de post", "error")
+    } finally {
+        goldProfileLoading.value = false
+    }
+}
+// ────────────────────────
+
 const draftEmail = async () => {
     if (!companyName.value) {
         draftError.value = t('network_osint.company_required')
@@ -364,12 +382,14 @@ const draftEmail = async () => {
 const copyDraftEmail = async () => {
     if (!draftResult.value) return
     const text = `Objet: ${draftResult.value.subject}\n\n${draftResult.value.body}`
-    try {
-        await navigator.clipboard.writeText(text)
-        draftCopied.value = true
-        setTimeout(() => draftCopied.value = false, 2500)
-    } catch(e) {}
+    try { await navigator.clipboard.writeText(text); draftCopied.value = true; setTimeout(() => draftCopied.value = false, 2500) } catch(e) {}
 }
+
+const copyToClipboard = async (text) => {
+    try { await navigator.clipboard.writeText(text); toastState.addToast('Copié !') } catch(e) {}
+}
+
+
 </script>
 
 <template>
@@ -396,394 +416,223 @@ const copyDraftEmail = async () => {
             </p>
         </div>
     </div>
-    <!-- Enhanced Tabs -->
-    <div class="flex items-center gap-2 mb-10 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-fit mx-auto md:mx-0 flex-wrap">
-        <button 
-            @click="activeTab = 'osint'"
-            :class="activeTab === 'osint' ? 'bg-white text-[#F59E0B] shadow-sm' : 'text-slate-500 hover:text-slate-700'"
-            class="px-6 py-2.5 rounded-xl text-sm font-black transition-all flex items-center gap-2"
-        >
-            <SparklesIcon class="w-4 h-4" />
-            {{ t('network_osint.tabs.osint') }}
-        </button>
-        <button 
-            @click="activeTab = 'headhunter'"
-            :class="activeTab === 'headhunter' ? 'bg-white text-indigo-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
-            class="px-6 py-2.5 rounded-xl text-sm font-black transition-all flex items-center gap-2"
-        >
-            <MagnifyingGlassIcon class="w-4 h-4" />
-            {{ t('network_osint.tabs.headhunter') }}
-        </button>
-        <button 
-            @click="activeTab = 'carnet'"
-            :class="activeTab === 'carnet' ? 'bg-white text-emerald-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
-            class="px-6 py-2.5 rounded-xl text-sm font-black transition-all flex items-center gap-2"
-        >
-            <BookOpenIcon class="w-4 h-4" />
-            {{ t('network_osint.tabs.contacts') }}
-        </button>
-        <!-- Network Ninja tab -->
-        <button 
-            @click="activeTab = 'ninja'"
-            :class="activeTab === 'ninja' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
-            class="px-6 py-2.5 rounded-xl text-sm font-black transition-all flex items-center gap-2 relative"
-        >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            Network Ninja
-            <span v-if="ninjaTotalProfiles > 0"
-              class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-purple-600 text-white text-[9px] font-black rounded-full flex items-center justify-center">
-              {{ ninjaTotalProfiles }}
-            </span>
-        </button>
-    </div>
-    <!-- Tab Content -->
-    <div v-if="activeTab === 'osint'" class="space-y-12 animate-fade-in">
-        <!-- OSINT Search Panel -->
-        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 shadow-sm relative overflow-hidden group">
-            <div class="flex items-center gap-3 mb-8">
-                <div class="p-2 bg-[#F59E0B]/10 rounded-xl">
-                    <SparklesIcon class="w-5 h-5 text-[#F59E0B]" />
-                </div>
-                <h3 class="text-xl font-bold text-slate-900 tracking-tight">{{ t('network_osint.osint_form.title') }}</h3>
-            </div>
-            
-            <form @submit.prevent="enrichCompany" class="flex flex-col md:flex-row gap-4">
-                <div class="flex-1 relative group/input">
-                    <BuildingOfficeIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within/input:text-[#F59E0B] transition-colors" />
-                    <input 
-                        v-model="companyName"
-                        type="text" 
-                        :placeholder="t('network_osint.osint_form.placeholder')" 
-                        class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-[#F59E0B]/20 focus:border-[#F59E0B] outline-none transition-all placeholder:text-slate-400 font-bold"
-                        required
-                    />
-                </div>
-                <button 
-                    type="submit" 
-                    :disabled="isEnriching"
-                    class="bg-[#F59E0B] hover:bg-[#D44D2D] text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-[#F59E0B]/20 disabled:opacity-50 flex items-center justify-center gap-2 group/btn"
-                >
-                    <ArrowPathIcon v-if="isEnriching" class="w-5 h-5 animate-spin" />
-                    <SparklesIcon v-else class="w-5 h-5 transition-transform group-hover/btn:rotate-12" />
-                    {{ t('network_osint.osint_form.button') }}
-                </button>
-            </form>
+    <!-- ── Bento Grid: Headhunter + Gold Profile ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
-            <div v-if="hasEnriched && hrProfiles.length > 0" class="mt-8 pt-8 border-t border-slate-100">
-                <h4 class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">{{ t('network_osint.osint_identified') }}</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div 
-                        v-for="hr in hrProfiles" 
-                        :key="hr.url"
-                        @click="selectHr(hr.name)"
-                        :class="selectedHrName === hr.name ? 'border-[#F59E0B] bg-[#F59E0B]/5 ring-1 ring-[#F59E0B]/20' : 'border-slate-200 bg-white hover:border-[#F59E0B]/30'"
-                        class="p-4 rounded-2xl border transition-all cursor-pointer group/card flex flex-col relative"
-                    >
-                        <div class="flex items-start justify-between mb-3">
-                            <div class="p-2 bg-slate-50 rounded-lg border border-slate-100 group-hover/card:bg-[#F59E0B]/10 transition-colors">
-                                <UserGroupIcon class="w-4 h-4 text-[#F59E0B]" />
-                            </div>
-                            <a 
-                                v-if="hr.url" 
-                                :href="hr.url" 
-                                target="_blank" 
-                                @click.stop
-                                class="p-1.5 text-slate-400 hover:text-blue-500 bg-slate-50 rounded-lg border border-slate-100 hover:border-blue-500/30 transition-all"
-                                title="Voir sur LinkedIn"
-                            >
-                                <LinkIcon class="w-3.5 h-3.5" />
-                            </a>
-                        </div>
-                        <h5 class="text-sm font-bold text-slate-900 mb-1 group-hover/card:text-[#F59E0B] transition-colors">{{ hr.name }}</h5>
-                        <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed h-8">{{ hr.snippet || t('network_osint.osint_snippet_fallback') }}</p>
-                        
-                        <div v-if="selectedHrName === hr.name" class="absolute top-2 right-2 flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F59E0B] opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-[#F59E0B]"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div v-else-if="hasEnriched && hrProfiles.length === 0" class="mt-8 pt-8 border-t border-slate-100 text-center">
-                <p class="text-sm text-slate-400 italic">{{ t('network_osint.osint_empty') }}</p>
-            </div>
-        </div>
-
-        <!-- Drafting Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
-            <!-- Parameters -->
-            <div class="lg:col-span-5 space-y-6">
-                <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-sm">
-                    <h3 class="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                        <PencilSquareIcon class="w-5 h-5 text-indigo-500" />
-                        Paramètres de l'IA
-                    </h3>
-                    
-                    <div class="space-y-5">
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{{ t('network_osint.draft_panel.type_label') }}</label>
-                            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-xl border border-slate-100">
-                                <button @click="requestType='emploi'" :class="requestType==='emploi' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200' : 'text-slate-500'" class="py-2.5 rounded-lg text-xs font-black transition-all">{{ t('network_osint.draft_panel.job_request') }}</button>
-                                <button @click="requestType='stage'" :class="requestType==='stage' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200' : 'text-slate-500'" class="py-2.5 rounded-lg text-xs font-black transition-all">{{ t('network_osint.draft_panel.partnership') }}</button>
-                            </div>
-                        </div>
-
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{{ t('nav_admin.status') }}</label>
-                            <div class="relative group/input">
-                                <UserIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
-                                <input v-model="selectedHrName" type="text" :placeholder="t('network_osint.draft_panel.name_placeholder').includes('placeholder') ? 'ex: Jean Dupont (RH)' : t('network_osint.draft_panel.name_placeholder')" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-indigo-500 transition-all font-bold outline-none" />
-                            </div>
-                        </div>
-
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{{ t('network_osint.draft_panel.target_label') }}</label>
-                            <input v-model="targetDomain" type="text" :placeholder="t('network_osint.draft_panel.target_placeholder')" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 transition-all font-bold outline-none" />
-                        </div>
-
-                        <button 
-                            @click="draftEmail"
-                            :disabled="isDrafting"
-                            class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
-                        >
-                            <SparklesIcon v-if="!isDrafting" class="w-5 h-5" />
-                            <ArrowPathIcon v-else class="w-5 h-5 animate-spin" />
-                            {{ t('network_osint.draft_panel.button').toUpperCase() }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Result -->
-            <div class="lg:col-span-7">
-                <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 shadow-sm h-full flex flex-col min-h-[500px] relative overflow-hidden group/result">
-                    <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.02] to-transparent pointer-events-none"></div>
-                    
-                    <div v-if="!draftResult && !isDrafting" class="flex-1 flex flex-col items-center justify-center text-center opacity-60 group-hover/result:opacity-80 transition-opacity">
-                        <div class="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mb-6">
-                            <EnvelopeIcon class="w-10 h-10 text-slate-400" />
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-500">{{ t('network_osint.draft_panel.waiting') }}</h3>
-                        <p class="text-sm text-slate-400 max-w-xs mt-2">{{ t('network_osint.draft_panel.waiting_desc') }}</p>
-                    </div>
-
-                    <div v-else-if="isDrafting" class="flex-1 flex flex-col items-center justify-center text-center">
-                        <div class="relative w-16 h-16 mb-6">
-                            <div class="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
-                            <div class="absolute inset-0 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-900 animate-pulse">{{ t('network_osint.draft_panel.drafting') }}</h3>
-                        <p class="text-sm text-slate-500 mt-2">{{ t('network_osint.draft_panel.customizing') }}</p>
-                    </div>
-
-                    <div v-else-if="draftResult" class="flex flex-col h-full animate-fade-in">
-                        <div class="flex items-center justify-between mb-8">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center border border-indigo-100">
-                                    <CheckBadgeIcon class="w-6 h-6 text-indigo-500" />
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-slate-900 tracking-tight leading-none mb-1">{{ t('network_osint.draft_panel.success_title') }}</h3>
-                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">GEMINI 2.0 FLASH // ULTRA-PERSONALIZED</p>
-                                </div>
-                            </div>
-                            <button @click="copyDraftEmail" :class="draftCopied ? 'bg-indigo-500 text-white' : 'bg-slate-50 text-slate-600 hover:text-slate-900'" class="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-sm border border-slate-200">
-                                <CheckCircleIcon v-if="draftCopied" class="w-4 h-4" />
-                                <ClipboardIcon v-else class="w-4 h-4" />
-                                {{ draftCopied ? t('common.copied') : t('common.copy') }}
-                            </button>
-                        </div>
-
-                        <div class="flex-1 space-y-4">
-                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1.5 opacity-70">Objet :</p>
-                                <p class="text-sm font-bold text-slate-900">{{ draftResult.subject }}</p>
-                            </div>
-                            <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex-1 font-medium italic text-slate-700 relative">
-                                <p class="whitespace-pre-wrap leading-relaxed text-[15px]">{{ draftResult.body }}</p>
-                                <!-- HUD element -->
-                                <div class="absolute bottom-4 right-6 text-[10px] font-mono text-slate-400 opacity-50 select-none">GOLDARMY_AI_DRAFT_SYSTEM_V2</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div v-else-if="activeTab === 'headhunter'" class="space-y-10 animate-fade-in">
-        <!-- Headhunter Search Panel -->
-        <div class="bg-white border border-slate-100 rounded-[2.5rem] p-8 md:p-10 shadow-sm relative overflow-hidden group">
-            <div class="flex items-center gap-3 mb-8">
-                <div class="p-2 bg-indigo-500/10 rounded-xl">
-                    <MagnifyingGlassIcon class="w-5 h-5 text-indigo-500" />
-                </div>
-                <h3 class="text-xl font-bold text-slate-900 tracking-tight">{{ t('network_osint.hh_form.title') }}</h3>
-            </div>
-            
-            <form @submit.prevent="findDecisionMakers" class="flex flex-col md:flex-row gap-4">
-                <div class="flex-1 relative group/input">
-                    <BuildingOfficeIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
-                    <input 
-                        v-model="hhCompanyName"
-                        type="text" 
-                        :placeholder="t('network_osint.hh_form.placeholder')" 
-                        class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-4 py-4 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400 font-bold"
-                        required
-                    />
-                </div>
-                <button 
-                    type="submit" 
-                    :disabled="isHunting"
-                    class="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 flex items-center justify-center gap-2 group/btn"
-                >
-                    <ArrowPathIcon v-if="isHunting" class="w-5 h-5 animate-spin" />
-                    <MagnifyingGlassIcon v-else class="w-5 h-5 transition-transform group-hover/btn:scale-110" />
-                    {{ t('network_osint.hh_form.button').toUpperCase() }}
-                </button>
-            </form>
-        </div>
-
-        <!-- Headhunter Results Grid -->
-        <div v-if="hasHunted" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-            <div v-if="decisionMakers.length === 0" class="col-span-full text-center text-slate-400 py-12 bg-slate-50 rounded-2xl border border-slate-200 border-dashed">
-                {{ t('network_osint.hh_form.empty') }}
-            </div>
-            
-            <div 
-                v-for="(maker, idx) in decisionMakers" 
-                :key="idx"
-                class="bg-white border border-slate-200 rounded-3xl p-6 hover:border-indigo-500/50 transition-all flex flex-col group shadow-sm hover:translate-y-[-4px]"
-            >
-                <div class="flex items-start justify-between mb-4">
-                    <div class="w-12 h-12 rounded-[1.2rem] bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 flex items-center justify-center shrink-0">
-                        <span class="text-lg font-black text-indigo-500">{{ maker.name.charAt(0) }}</span>
-                    </div>
-                    <a 
-                        v-if="maker.linkedin_url" 
-                        :href="maker.linkedin_url" 
-                        target="_blank" 
-                        class="text-slate-400 hover:text-blue-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100 transition-colors shadow-inner"
-                        title="Voir sur LinkedIn"
-                    >
-                        <LinkIcon class="w-4 h-4" />
-                    </a>
-                </div>
-                
-                <h3 class="text-lg font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors tracking-tight">{{ maker.name }}</h3>
-                <p class="text-xs font-bold text-indigo-500/70 mb-2 uppercase tracking-tight">{{ maker.role }}</p>
-                <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed h-8 mb-6 italic">{{ maker.snippet || t('network_osint.osint_snippet_fallback') }}</p>
-                
-                <button 
-                    @click="activeTab='osint'; companyName=hhCompanyName; selectedHrName=maker.name; requestType='emploi';"
-                    class="w-full bg-slate-50 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 font-black py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
-                >
-                    <EnvelopeIcon class="w-4 h-4" />
-                    {{ t('network_osint.hh_form.prepare_cta') }}
-                </button>
-            </div>
-        </div>
-    </div>
-    <div v-else-if="activeTab === 'carnet'" class="animate-fade-in pb-20">
+      <!-- ── Card 1: Agent Headhunter ── -->
+      <div class="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-8">
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-slate-50">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-sm shadow-indigo-200">
+              <MagnifyingGlassIcon class="w-5 h-5 text-white" />
+            </div>
             <div>
-                <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ t('network_osint.contacts_title_prefix') }} <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-cyan-500">{{ t('network_osint.tabs.contacts') }}</span></h2>
-                <p class="text-slate-500 text-sm mt-0.5 font-medium">{{ savedContacts.length }} {{ t('network_osint.companies_collected') }}</p>
+              <h3 class="font-black text-slate-800">{{ t('network_osint.hh_form.title') }}</h3>
+              <p class="text-[10px] text-slate-400 uppercase tracking-wider">Décideurs LinkedIn · Ciblage IA</p>
             </div>
-            <button @click="loadContacts" class="flex items-center gap-2 px-6 py-3 text-sm font-black text-slate-500 hover:text-slate-900 bg-white rounded-2xl border border-slate-200 hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-                <ArrowPathIcon :class="isLoadingContacts ? 'animate-spin' : ''" class="w-4 h-4" />
-                {{ t('common.refresh').toUpperCase() }}
-            </button>
+          </div>
         </div>
-        
-        <!-- Empty State -->
-        <div v-if="savedContacts.length === 0" class="bg-white border border-slate-100 rounded-[3rem] p-20 text-center relative overflow-hidden shadow-sm">
-            <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/[0.02] to-transparent pointer-events-none"></div>
-            <div class="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center mx-auto mb-6 shadow-inner border border-slate-100">
-                <BookOpenIcon class="w-10 h-10 text-slate-400" />
+
+        <!-- Body -->
+        <div class="p-6 flex flex-col flex-1">
+          <!-- Search form -->
+          <form @submit.prevent="findDecisionMakers" class="flex gap-3 mb-6">
+            <div class="flex-1 relative">
+              <BuildingOfficeIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                v-model="hhCompanyName"
+                type="text"
+                :placeholder="t('network_osint.hh_form.placeholder')"
+                class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-bold"
+                required
+              />
             </div>
-            <h3 class="text-xl font-bold text-slate-900 mb-2">{{ t('network_osint.empty_contacts') }}</h3>
-            <p class="text-slate-500 max-w-sm mx-auto text-sm leading-relaxed font-medium">
-                {{ t('network_osint.empty_contacts_desc') }}
-            </p>
-        </div>
-        
-        <!-- Contact Cards Grid -->
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <div 
-                v-for="contact in savedContacts" 
-                :key="contact.id"
-                class="bg-white border border-slate-200 rounded-[2rem] p-6 hover:border-emerald-500/30 transition-all flex flex-col group shadow-sm hover:translate-y-[-4px]"
+            <button
+              type="submit"
+              :disabled="isHunting"
+              class="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-5 py-3 rounded-xl transition-all shadow-md shadow-indigo-200 disabled:opacity-50 flex items-center gap-2 text-sm"
             >
-                <!-- Card Header -->
-                <div class="flex items-start gap-4 mb-5">
-                    <div class="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-emerald-50 group-hover:border-emerald-200 transition-colors shadow-inner">
-                        <BuildingOfficeIcon class="w-6 h-6 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h3 class="font-bold text-slate-900 text-lg truncate leading-tight group-hover:text-emerald-600 transition-colors">{{ contact.company_name }}</h3>
-                        <p class="text-[11px] font-black text-slate-400 mt-1 uppercase tracking-widest">
-                            Sync: {{ new Date(contact.last_updated).toLocaleDateString(t('locale') === 'locale' ? 'en-US' : (t('common.save') === 'Enregistrer' ? 'fr-FR' : 'en-US')) }}
-                        </p>
-                    </div>
-                </div>
+              <ArrowPathIcon v-if="isHunting" class="w-4 h-4 animate-spin" />
+              <MagnifyingGlassIcon v-else class="w-4 h-4" />
+              {{ t('network_osint.hh_form.button') }}
+            </button>
+          </form>
 
-                <!-- Badge Row -->
-                <div class="flex items-center gap-2 flex-wrap mb-5">
-                    <span v-if="contact.category && contact.category !== 'Non catégorisée'" class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 border border-indigo-100">
-                        {{ contact.category }}
-                    </span>
-                    <span v-if="contact.emails && contact.emails.length > 0" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
-                        <EnvelopeIcon class="w-3.5 h-3.5" />
-                        {{ contact.emails.length }} email{{ contact.emails.length > 1 ? 's' : '' }}
-                    </span>
-                    <span v-if="contact.phone" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100">
-                        📞 Tel
-                    </span>
-                </div>
-
-                <!-- Contact Details -->
-                <div class="space-y-2.5 flex-1 mb-6">
-                    <a v-if="contact.site_url" :href="contact.site_url" target="_blank"
-                        class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-500/30 transition-all group/link shadow-inner">
-                        <GlobeAltIcon class="w-4 h-4 text-blue-500 shrink-0" />
-                        <span class="text-[13px] font-bold text-blue-500 group-hover/link:text-blue-600 truncate">
-                            {{ contact.site_url.replace(/https?:\/\//, '').replace(/\/$/, '') }}
-                        </span>
-                    </a>
-
-                    <div v-if="contact.phone" class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 shadow-inner">
-                        <span class="text-sm">📞</span>
-                        <span class="text-[13px] font-bold text-emerald-600 select-all">{{ contact.phone }}</span>
-                    </div>
-
-                    <div v-for="email in (contact.emails || [])" :key="email"
-                        @click="navigator.clipboard?.writeText(email)"
-                        class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-500/30 cursor-pointer transition-all group/email shadow-inner">
-                        <EnvelopeIcon class="w-4 h-4 text-slate-400 group-hover/email:text-emerald-500 transition-colors shrink-0" />
-                        <span class="text-[13px] font-bold text-slate-600 group-hover/email:text-slate-900 truncate select-all">{{ email }}</span>
-                    </div>
-                </div>
-                
-                <button 
-                    @click="prefillDraft(contact.company_name)"
-                    class="w-full bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 font-black py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-[11px] uppercase tracking-[0.2em]"
-                >
-                    <SparklesIcon class="w-4 h-4" />
-                    {{ t('network_osint.draft_panel.button') }}
-                </button>
+          <!-- Results -->
+          <div class="flex-1 overflow-y-auto" style="max-height: 420px;">
+            <!-- Scanning -->
+            <div v-if="isHunting" class="flex flex-col items-center justify-center py-12 gap-3">
+              <div class="w-10 h-10 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
+              <p class="text-xs font-semibold text-slate-500">Chasse aux décideurs en cours...</p>
             </div>
+            <!-- Empty state -->
+            <div v-else-if="!hasHunted" class="flex flex-col items-center justify-center py-12 gap-3 text-center">
+              <div class="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center">
+                <UsersIcon class="w-7 h-7 text-indigo-300" />
+              </div>
+              <p class="text-sm font-bold text-slate-600">Entrez un nom d'entreprise</p>
+              <p class="text-xs text-slate-400">L'IA identifiera les décideurs clés (RH, CEO, Lead Dev…)</p>
+            </div>
+            <!-- No results -->
+            <div v-else-if="decisionMakers.length === 0" class="flex flex-col items-center py-10 gap-2 text-center">
+              <p class="text-sm text-slate-400 italic">{{ t('network_osint.hh_form.empty') }}</p>
+            </div>
+            <!-- Decision makers list -->
+            <div v-else class="grid grid-cols-1 gap-3">
+              <div
+                v-for="(maker, idx) in decisionMakers"
+                :key="idx"
+                class="flex items-start gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-indigo-300 hover:bg-indigo-50/30 transition-all group"
+              >
+                <!-- Avatar -->
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 border border-indigo-200 flex items-center justify-center shrink-0">
+                  <span class="text-base font-black text-indigo-600">{{ maker.name.charAt(0) }}</span>
+                </div>
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-slate-800 text-sm truncate">{{ maker.name }}</p>
+                  <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-tight truncate">{{ maker.role }}</p>
+                  <p class="text-[11px] text-slate-400 line-clamp-1 mt-0.5 italic">{{ maker.snippet || t('network_osint.osint_snippet_fallback') }}</p>
+                </div>
+                <!-- Actions -->
+                <div class="flex flex-col gap-1 shrink-0">
+                  <a v-if="maker.linkedin_url" :href="maker.linkedin_url" target="_blank"
+                     class="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-500 hover:border-blue-300 transition-colors">
+                    <LinkIcon class="w-3.5 h-3.5" />
+                  </a>
+                  <button @click="companyName=hhCompanyName; selectedHrName=maker.name; requestType='emploi';"
+                          class="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-indigo-500 hover:border-indigo-300 transition-colors"
+                          :title="t('network_osint.hh_form.prepare_cta')">
+                    <EnvelopeIcon class="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- ── Card 2: Gold Profile ── -->
+      <div class="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center shadow-sm shadow-amber-200">
+              <SparklesIcon class="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 class="font-black text-slate-800">✨ Gold Profile</h3>
+              <p class="text-[10px] text-slate-500 uppercase tracking-wider">Audit IA · Plan 30 jours · Posts viraux</p>
+            </div>
+          </div>
+          <button @click="fetchGoldProfileAudit" :disabled="goldProfileLoading"
+                  class="px-4 py-2 text-xs font-black bg-amber-400 text-white rounded-xl hover:bg-amber-500 disabled:opacity-50 shadow-sm shadow-amber-200 transition-all">
+            {{ goldProfileLoading ? 'Analyse...' : 'Auditer mon profil' }}
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 flex-1 flex flex-col" style="min-height: 420px;">
+          <!-- Loading -->
+          <div v-if="goldProfileLoading" class="flex-1 flex flex-col items-center justify-center gap-3">
+            <div class="w-10 h-10 border-4 border-amber-100 border-t-amber-400 rounded-full animate-spin"></div>
+            <p class="text-xs font-semibold text-slate-500">L'IA analyse votre profil LinkedIn...</p>
+          </div>
+
+          <!-- Empty / CTA -->
+          <div v-else-if="!goldProfileAuditData && goldProfileStep==='audit'" class="flex-1 flex flex-col items-center justify-center gap-4 text-center py-6">
+            <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center border border-amber-100">
+              <SparklesIcon class="w-8 h-8 text-amber-400" />
+            </div>
+            <div>
+              <p class="text-sm font-bold text-slate-700 mb-1">Audit LinkedIn IA</p>
+              <p class="text-xs text-slate-400 max-w-[260px]">Obtenez votre score, un headline optimisé et un plan de contenu 30 jours personnalisé.</p>
+            </div>
+            <button @click="fetchGoldProfileAudit" class="px-5 py-2.5 bg-amber-400 text-white text-xs font-black rounded-xl hover:bg-amber-500 transition-all shadow-md shadow-amber-100">
+              Lancer l'audit →
+            </button>
+          </div>
+
+          <!-- Audit results -->
+          <div v-else-if="goldProfileStep==='audit' && goldProfileAuditData" class="flex-1 flex flex-col gap-5">
+            <!-- Score + headline -->
+            <div class="flex items-center gap-4 p-4 bg-amber-50/50 rounded-2xl border border-amber-100">
+              <div class="w-16 h-16 relative shrink-0">
+                <svg class="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="28" stroke="#fef3c7" stroke-width="6" fill="none"/>
+                  <circle cx="32" cy="32" r="28" stroke="#F59E0B" stroke-width="6" fill="none" stroke-linecap="round"
+                    :stroke-dasharray="175.9" :stroke-dashoffset="175.9*(1-(goldProfileAuditData.profile_score||0)/100)" class="transition-all duration-1000"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span class="text-base font-black text-slate-800">{{ goldProfileAuditData.profile_score }}</span>
+                </div>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Score LinkedIn</p>
+                <p class="font-bold text-slate-800 text-sm leading-snug">{{ goldProfileAuditData.headline }}</p>
+                <button @click="copyToClipboard(goldProfileAuditData.headline)" class="mt-1 text-[10px] text-amber-600 font-bold hover:underline">
+                  Copier le headline →
+                </button>
+              </div>
+            </div>
+            <!-- Optimizations -->
+            <div class="space-y-2 flex-1 overflow-y-auto">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Optimisations recommandées</p>
+              <div v-for="opt in (goldProfileAuditData.field_optimizations||[]).slice(0,4)" :key="opt.field"
+                   class="flex items-start gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <CheckBadgeIcon class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <div>
+                  <p class="text-xs font-black text-slate-700">{{ opt.field }}</p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">{{ opt.recommendation || opt.suggestion }}</p>
+                </div>
+              </div>
+            </div>
+            <button @click="fetchGoldProfilePlan" class="w-full py-3 bg-slate-900 text-white text-xs font-black rounded-2xl hover:bg-slate-800 transition-colors">
+              Voir la stratégie 30 jours →
+            </button>
+          </div>
+
+          <!-- Plan 30 jours -->
+          <div v-else-if="goldProfileStep==='plan'" class="flex-1 flex flex-col">
+            <div class="flex items-center gap-2 mb-4">
+              <button @click="goldProfileStep='audit'" class="text-xs text-indigo-600 font-bold">← Audit</button>
+              <p class="text-xs font-black text-slate-700 uppercase tracking-wider">Plan 30 Jours</p>
+            </div>
+            <div class="grid grid-cols-3 gap-2 flex-1 overflow-y-auto content-start" style="max-height:380px;">
+              <div v-for="item in goldProfilePlanData" :key="item.day"
+                   @click="generateGoldProfilePost(item)"
+                   class="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-amber-400 cursor-pointer group transition-all">
+                <span class="text-[10px] font-black text-amber-500 uppercase">Jour {{ item.day }}</span>
+                <p class="text-[11px] font-bold text-slate-700 mt-1 group-hover:text-amber-600 transition-colors line-clamp-2">{{ item.topic }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Post généré -->
+          <div v-else-if="goldProfileStep==='post'" class="flex-1 flex flex-col">
+            <div class="flex items-center gap-2 mb-4">
+              <button @click="goldProfileStep='plan'" class="text-xs text-indigo-600 font-bold">← Plan</button>
+              <p class="text-xs font-black text-slate-700 uppercase tracking-wider truncate">{{ goldProfileSelectedTopic?.topic }}</p>
+            </div>
+            <div class="flex-1 bg-indigo-50 rounded-2xl p-4 text-sm text-slate-700 whitespace-pre-wrap font-medium leading-relaxed overflow-y-auto mb-4" style="max-height:300px;">
+              {{ goldProfilePostData }}
+            </div>
+            <button @click="copyToClipboard(goldProfilePostData)"
+                    class="w-full py-3 bg-amber-400 text-white text-xs font-black rounded-2xl hover:bg-amber-500 transition-colors flex items-center justify-center gap-2">
+              <DocumentDuplicateIcon class="w-4 h-4" /> Copier le post
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
-    <div v-else-if="activeTab === 'ninja'"
-         class="relative w-full rounded-[2.5rem] overflow-hidden flex flex-col mt-8 shadow-2xl"
+
+
+    <!-- ── Section: Network Ninja ── -->
+    <div class="relative w-full rounded-[2.5rem] overflow-hidden flex flex-col mb-12 shadow-2xl"
          style="height: 720px; background: #f8fafc; border: 1px solid #e2e8f0;">
 
-        <!-- Ambient glow -->
-        <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(232,93,62,0.03) 0%, transparent 70%);"></div>
 
         <!-- Header -->
         <div class="absolute top-5 left-6 z-20 flex items-center gap-3">
@@ -1018,8 +867,8 @@ const copyDraftEmail = async () => {
             <p class="text-sm mt-3 max-w-sm" style="color:#64748b;">Identification des décideurs LinkedIn...</p>
         </div>
     </div>
-\n    <!-- Loading Modal for Drafting -->
 
+    <!-- Loading Modal for Drafting -->
     <div v-if="isDrafting" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-white/80 backdrop-blur-md animate-fade-in"></div>
         <div class="relative bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-2xl max-w-sm w-full text-center animate-fade-in-up">
@@ -1031,9 +880,7 @@ const copyDraftEmail = async () => {
                 </div>
             </div>
             <h3 class="text-2xl font-black text-slate-900 mb-3">{{ t('network_osint.loading_title') }}</h3>
-            <p class="text-slate-500 font-medium leading-relaxed">
-                {{ t('network_osint.loading_desc') }}
-            </p>
+            <p class="text-slate-500 font-medium leading-relaxed">{{ t('network_osint.loading_desc') }}</p>
             <div class="mt-8 flex items-center justify-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0ms"></span>
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 150ms"></span>
