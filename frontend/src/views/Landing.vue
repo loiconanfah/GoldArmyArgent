@@ -373,8 +373,8 @@ function closeNav() {
             <div class="slider w-slider">
               <div class="mask w-slider-mask">
                 <div class="slide w-slide">
-                  <img src="/images/capture%20app.png" loading="lazy" :alt="t('landing.slideshow.title')" class="slide-img" />
-        </div>
+                  <img src="@/assets/dasboardimg.png" loading="lazy" :alt="t('landing.slideshow.title')" class="slide-img" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);" />
+                </div>
     </div>
               <div class="slide-nav w-slider-nav"></div>
             </div>
