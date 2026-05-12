@@ -444,7 +444,7 @@ function closeNav() {
                   <h3 line-split="true" class="fsize-s">{{ t('landing.sticky.card1_title') }}</h3>
                   <p line-split="true">{{ t('landing.sticky.card1_desc') }}</p>
                   <router-link
-                    to="/opportunities"
+                    to="/sniper-search"
                     button-arrow=""
                     aria-label="view more"
                     data-wf--arrow-button--variant="light"
@@ -469,7 +469,7 @@ function closeNav() {
                   <h3 line-split="true" class="fsize-s">{{ t('landing.sticky.card2_title') }}</h3>
                   <p line-split="true">{{ t('landing.sticky.card2_desc') }}</p>
                   <router-link
-                    to="/mentor"
+                    to="/simulation-entretien"
                     button-arrow=""
                     aria-label="view more"
                     data-wf--arrow-button--variant="dark"
@@ -494,7 +494,7 @@ function closeNav() {
                   <h3 line-split="true" class="fsize-s">{{ t('landing.sticky.card3_title') }}</h3>
                   <p line-split="true">{{ t('landing.sticky.card3_desc') }}</p>
                   <router-link
-                    to="/crm"
+                    to="/crm-emploi"
                     button-arrow=""
                     aria-label="view more"
                     data-wf--arrow-button--variant="light"
@@ -737,19 +737,19 @@ function closeNav() {
           <div class="heading-wrapper">
             <h2 class="header-title">{{ t('landing.blog.header_title') }}</h2>
             <h2 class="header-subtitle">{{ t('landing.blog.header_subtitle') }}</h2>
-                        </div>
+          </div>
           <div class="blog-list-featured">
             <div class="blog-item-featured featured">
-              <a href="#" class="blog-list-img-wrapper blog-v1 featured w-inline-block">
-                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/693934e70995d1778cf1edbd_jimmy-chang-ACt8ycSzpdE-unsplash.avif" loading="lazy" alt="" class="blog-img" />
-              </a>
+              <router-link to="/blog/ia-recherche-emploi-guide" class="blog-list-img-wrapper blog-v1 featured w-inline-block">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/693934e70995d1778cf1edbd_jimmy-chang-ACt8ycSzpdE-unsplash.avif" loading="lazy" alt="Guide complet IA recherche emploi" class="blog-img" />
+              </router-link>
               <div class="blog-list-content">
                 <div class="blog-category-wrapper">
                   <div class="blog-category-title featured">{{ t('landing.blog.featured_category') }}</div>
-                    </div>
-                <a href="#" class="blog-title-wrapper w-inline-block">
+                </div>
+                <router-link to="/blog/ia-recherche-emploi-guide" class="blog-title-wrapper w-inline-block">
                   <div class="blog-title-text featured">{{ t('landing.blog.featured_title') }}</div>
-                </a>
+                </router-link>
                 <div class="summary-wrapper">
                   <p class="summary-text featured">{{ t('landing.blog.featured_summary') }}</p>
                 </div>
@@ -762,41 +762,41 @@ function closeNav() {
           </div>
           <div class="blog-list-home1">
             <div class="blog-item">
-              <a href="#" class="blog-list-img-wrapper blog-v1 w-inline-block">
-                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/693939b6497441ceb33405f3_daniil-komov-WhcfAUy8uKg-unsplash.avif" loading="lazy" alt="" class="blog-img" />
-              </a>
+              <router-link to="/blog/ia-decrocher-premier-job-guide" class="blog-list-img-wrapper blog-v1 w-inline-block">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/693939b6497441ceb33405f3_daniil-komov-WhcfAUy8uKg-unsplash.avif" loading="lazy" alt="Décrocher premier emploi avec IA" class="blog-img" />
+              </router-link>
               <div class="blog-list-content">
                 <div class="blog-category-wrapper"><div class="blog-category-title">{{ t('landing.blog.item1_category') }}</div></div>
-                <a href="#" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item1_title') }}</div></a>
+                <router-link to="/blog/ia-decrocher-premier-job-guide" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item1_title') }}</div></router-link>
                 <div class="summary-wrapper"><p class="summary-text">{{ t('landing.blog.item1_summary') }}</p></div>
                 <div class="date-wrapper"><div class="date">—</div><div class="date">{{ t('landing.blog.item_date') }}</div></div>
               </div>
             </div>
             <div class="blog-item">
-              <a href="#" class="blog-list-img-wrapper blog-v1 w-inline-block">
-                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/69393a447db46aaa909fe6d4_homa-appliances-pWUyHVJgLhg-unsplash.avif" loading="lazy" alt="" class="blog-img" />
-              </a>
+              <router-link to="/blog/impact-ia-marche-travail" class="blog-list-img-wrapper blog-v1 w-inline-block">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/69393a447db46aaa909fe6d4_homa-appliances-pWUyHVJgLhg-unsplash.avif" loading="lazy" alt="Impact intelligence artificielle marché du travail" class="blog-img" />
+              </router-link>
               <div class="blog-list-content">
                 <div class="blog-category-wrapper"><div class="blog-category-title">{{ t('landing.blog.item2_category') }}</div></div>
-                <a href="#" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item2_title') }}</div></a>
+                <router-link to="/blog/impact-ia-marche-travail" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item2_title') }}</div></router-link>
                 <div class="summary-wrapper"><p class="summary-text">{{ t('landing.blog.item2_summary') }}</p></div>
                 <div class="date-wrapper"><div class="date">—</div><div class="date">{{ t('landing.blog.item_date') }}</div></div>
               </div>
             </div>
             <div class="blog-item">
-              <a href="#" class="blog-list-img-wrapper blog-v1 w-inline-block">
-                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/693939f6f6dda0fc21949f22_olena-bohovyk-3BlVILvh9hM-unsplash.avif" loading="lazy" alt="" class="blog-img" />
-              </a>
+              <router-link to="/blog/pourquoi-choisir-goldarmy" class="blog-list-img-wrapper blog-v1 w-inline-block">
+                <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a56e/693939f6f6dda0fc21949f22_olena-bohovyk-3BlVILvh9hM-unsplash.avif" loading="lazy" alt="Choisir GoldArmy AI" class="blog-img" />
+              </router-link>
               <div class="blog-list-content">
                 <div class="blog-category-wrapper"><div class="blog-category-title">{{ t('landing.blog.item3_category') }}</div></div>
-                <a href="#" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item3_title') }}</div></a>
+                <router-link to="/blog/pourquoi-choisir-goldarmy" class="blog-title-wrapper w-inline-block"><div class="blog-title-text">{{ t('landing.blog.item3_title') }}</div></router-link>
                 <div class="summary-wrapper"><p class="summary-text">{{ t('landing.blog.item3_summary') }}</p></div>
                 <div class="date-wrapper"><div class="date">—</div><div class="date">{{ t('landing.blog.item_date') }}</div></div>
-                    </div>
-                </div>
+              </div>
             </div>
+          </div>
         </div>
-    </section>
+      </section>
 
       <!-- PRICING - GoldArmy: Free, 9.99, 19.99 -->
       <section id="pricing" class="section home1-pricing">

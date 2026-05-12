@@ -19,16 +19,18 @@ function setLocale(lang) {
 }
 
 watch(navOpen, (open) => {
-  document.body.style.overflow = open ? 'hidden' : ''
-  document.body.style.touchAction = open ? 'none' : ''
+  if (typeof document !== 'undefined') {
+    document.body.style.overflow = open ? 'hidden' : ''
+    document.body.style.touchAction = open ? 'none' : ''
+  }
 })
 
 function goToSection(hash) {
   closeNav()
   if (route.path === '/') {
-    const el = document.getElementById(hash)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById(hash)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   } else {
     router.push({ path: '/', hash: `#${hash}` })
@@ -40,20 +42,54 @@ function goToSection(hash) {
   <header class="nav-modern" role="banner">
     <div class="nav-modern__bar">
       <div class="nav-modern__container">
-        <router-link to="/" class="nav-modern__brand" @click="closeNav" aria-label="GoldArmy">
-          <img src="/logo.png" alt="" class="nav-modern__logo" width="40" height="40" />
+        <router-link to="/" class="nav-modern__brand" @click="closeNav" aria-label="GoldArmy AI Accueil">
+          <img src="/logo.png" alt="Logo de GoldArmy AI" class="nav-modern__logo" width="40" height="40" />
           <span class="nav-modern__name">GoldArmy</span>
         </router-link>
 
         <nav class="nav-modern__links" aria-label="Navigation principale">
-          <a href="#agents" class="nav-modern__link" @click.prevent="goToSection('agents')">{{ t('landing.nav.features') }}</a>
-          <a href="#agents" class="nav-modern__link" @click.prevent="goToSection('agents')">{{ t('landing.nav.agents') }}</a>
-          <a href="#pricing" class="nav-modern__link" @click.prevent="goToSection('pricing')">{{ t('landing.nav.pricing') }}</a>
-          <a href="#avis" class="nav-modern__link" @click.prevent="goToSection('avis')">{{ t('landing.nav.reviews') }}</a>
-          <router-link to="/free-cv-roast" class="nav-modern__link" @click="closeNav">{{ t('landing.nav.cv_audit') }}</router-link>
-          <router-link to="/free-interview" class="nav-modern__link" @click="closeNav">{{ t('landing.nav.simulation') }}</router-link>
-          <router-link to="/blog" class="nav-modern__link" @click="closeNav">{{ t('landing.nav.blog') }}</router-link>
-          <router-link to="/support" class="nav-modern__link" @click="closeNav">{{ t('landing.nav.support') }}</router-link>
+          <!-- Dropdown Outils IA -->
+          <div class="nav-dropdown">
+            <button type="button" class="nav-modern__link nav-dropdown__trigger" aria-haspopup="true" aria-expanded="false">
+              Outils IA <span class="nav-dropdown__arrow">▾</span>
+            </button>
+            <div class="nav-dropdown__content" role="menu">
+              <router-link to="/sniper-search" class="nav-dropdown__item" role="menuitem" @click="closeNav">
+                <span class="nav-dropdown__icon">🎯</span>
+                <div>
+                  <strong>Sniper Search</strong>
+                  <p>Détecteur d'offres cachées</p>
+                </div>
+              </router-link>
+              <router-link to="/mentor-ia" class="nav-dropdown__item" role="menuitem" @click="closeNav">
+                <span class="nav-dropdown__icon">🧠</span>
+                <div>
+                  <strong>Mentor IA</strong>
+                  <p>Coaching &amp; Lettres sur mesure</p>
+                </div>
+              </router-link>
+              <router-link to="/simulation-entretien" class="nav-dropdown__item" role="menuitem" @click="closeNav">
+                <span class="nav-dropdown__icon">🎤</span>
+                <div>
+                  <strong>Simulation Entretien</strong>
+                  <p>Entraînement visio vocal IA</p>
+                </div>
+              </router-link>
+              <router-link to="/crm-emploi" class="nav-dropdown__item" role="menuitem" @click="closeNav">
+                <span class="nav-dropdown__icon">📋</span>
+                <div>
+                  <strong>CRM Emploi</strong>
+                  <p>Kanban &amp; Relances automatiques</p>
+                </div>
+              </router-link>
+            </div>
+          </div>
+
+          <!-- Liens directs -->
+          <router-link to="/free-cv-roast" class="nav-modern__link" @click="closeNav">Audit CV Gratuit</router-link>
+          <router-link to="/tarifs" class="nav-modern__link" @click="closeNav">Tarifs</router-link>
+          <router-link to="/blog" class="nav-modern__link" @click="closeNav">Blog</router-link>
+          <a href="#avis" class="nav-modern__link" @click.prevent="goToSection('avis')">Avis</a>
         </nav>
 
         <div class="nav-modern__actions">
@@ -81,17 +117,23 @@ function goToSection(hash) {
       </div>
     </div>
 
+    <!-- Tiroir Mobile (Drawer) -->
     <Transition name="nav-drawer">
       <div v-show="navOpen" class="nav-modern__backdrop" @click="closeNav">
-        <nav class="nav-modern__drawer" @click.stop>
-          <a href="#agents" class="nav-modern__drawer-link" @click.prevent="goToSection('agents')">{{ t('landing.nav.features') }}</a>
-          <a href="#agents" class="nav-modern__drawer-link" @click.prevent="goToSection('agents')">{{ t('landing.nav.agents') }}</a>
-          <a href="#pricing" class="nav-modern__drawer-link" @click.prevent="goToSection('pricing')">{{ t('landing.nav.pricing') }}</a>
-          <a href="#avis" class="nav-modern__drawer-link" @click.prevent="goToSection('avis')">{{ t('landing.nav.reviews') }}</a>
-          <router-link to="/free-cv-roast" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.cv_audit') }}</router-link>
-          <router-link to="/free-interview" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.simulation') }}</router-link>
-          <router-link to="/blog" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.blog') }}</router-link>
-          <router-link to="/support" class="nav-modern__drawer-link" @click="closeNav">{{ t('landing.nav.support') }}</router-link>
+        <nav class="nav-modern__drawer" @click.stop aria-label="Menu mobile">
+          <p class="nav-modern__drawer-title">Outils GoldArmy AI</p>
+          <router-link to="/sniper-search" class="nav-modern__drawer-link" @click="closeNav">🎯 Sniper Search</router-link>
+          <router-link to="/mentor-ia" class="nav-modern__drawer-link" @click="closeNav">🧠 Mentor IA Carrière</router-link>
+          <router-link to="/simulation-entretien" class="nav-modern__drawer-link" @click="closeNav">🎤 Simulation Entretien IA</router-link>
+          <router-link to="/crm-emploi" class="nav-modern__drawer-link" @click="closeNav">📋 CRM Emploi IA</router-link>
+          <router-link to="/free-cv-roast" class="nav-modern__drawer-link" @click="closeNav">📄 Audit CV Gratuit</router-link>
+
+          <p class="nav-modern__drawer-title mt-4">Navigation</p>
+          <router-link to="/tarifs" class="nav-modern__drawer-link" @click="closeNav">💳 Tarifs &amp; Forfaits</router-link>
+          <router-link to="/blog" class="nav-modern__drawer-link" @click="closeNav">📝 Blog &amp; Astuces</router-link>
+          <a href="#avis" class="nav-modern__drawer-link" @click.prevent="goToSection('avis')">⭐ Avis Candidats</a>
+          <router-link to="/support" class="nav-modern__drawer-link" @click="closeNav">🎧 Support Client</router-link>
+
           <div class="nav-modern__drawer-actions">
             <div class="nav-modern__lang nav-modern__lang--drawer" role="group" aria-label="Changer la langue">
               <button type="button" :class="['nav-modern__lang-btn', { 'nav-modern__lang-btn--active': locale === 'fr' }]" @click="setLocale('fr')">FR</button>
@@ -114,16 +156,16 @@ function goToSection(hash) {
   z-index: 1000;
 }
 .nav-modern__bar {
-  background: rgba(10, 10, 18, 0.92);
+  background: rgba(10, 10, 18, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
 }
 .nav-modern__container {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0.875rem 1.5rem;
+  padding: 0.75rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -147,188 +189,243 @@ function goToSection(hash) {
 .nav-modern__logo {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 10px;
   object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 .nav-modern__name {
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: linear-gradient(90deg, #fff, #cbd5e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .nav-modern__links {
   display: none;
   align-items: center;
-  gap: 0.125rem;
+  gap: 0.25rem;
 }
-@media (min-width: 992px) {
-  .nav-modern__links {
-    display: flex;
-  }
+@media (min-width: 1024px) {
+  .nav-modern__links { display: flex; }
 }
 .nav-modern__link {
-  padding: 0.5rem 0.875rem;
-  font-size: 0.8125rem;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.88);
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
-  border-radius: 10px;
-  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
 }
 .nav-modern__link:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 .nav-modern__link.router-link-active {
   color: #ff8c42;
-  background: rgba(255, 111, 0, 0.1);
+  background: rgba(255, 111, 0, 0.12);
 }
+
+/* Dropdown Outils IA */
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.nav-dropdown__arrow {
+  font-size: 0.75rem;
+  margin-left: 0.2rem;
+  transition: transform 0.2s;
+}
+.nav-dropdown:hover .nav-dropdown__arrow {
+  transform: rotate(180deg);
+}
+.nav-dropdown__content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: rgba(15, 15, 26, 0.95);
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.75rem;
+  min-width: 310px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  z-index: 1001;
+}
+.nav-dropdown:hover .nav-dropdown__content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.nav-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.65rem 0.85rem;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.nav-dropdown__item:hover {
+  background: rgba(255, 111, 0, 0.12);
+}
+.nav-dropdown__icon {
+  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.4rem;
+  border-radius: 8px;
+}
+.nav-dropdown__item strong {
+  display: block;
+  font-size: 0.875rem;
+  color: #fff;
+  font-weight: 700;
+  margin-bottom: 0.1rem;
+}
+.nav-dropdown__item p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* Actions de droite */
 .nav-modern__actions {
   display: none;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
-@media (min-width: 992px) {
-  .nav-modern__actions {
-    display: flex;
-  }
+@media (min-width: 1024px) {
+  .nav-modern__actions { display: flex; }
 }
 .nav-modern__btn {
   padding: 0.55rem 1.1rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-decoration: none;
-  border-radius: 10px;
-  transition: color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
+  border-radius: 8px;
+  transition: all 0.2s;
 }
 .nav-modern__btn--ghost {
   color: rgba(255, 255, 255, 0.75);
-  background: transparent;
 }
 .nav-modern__btn--ghost:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 .nav-modern__btn--cta {
-  color: #0a0a12;
-  background: linear-gradient(135deg, #ff9a5c 0%, #ff6f00 100%);
-  border: none;
-  box-shadow: 0 2px 12px rgba(255, 111, 0, 0.35);
+  color: #000;
+  background: linear-gradient(135deg, #ff9a5c, #ff6f00);
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(255, 111, 0, 0.35);
 }
 .nav-modern__btn--cta:hover {
-  color: #0a0a12;
-  box-shadow: 0 4px 20px rgba(255, 111, 0, 0.45);
   transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 111, 0, 0.5);
 }
-.nav-modern__btn--cta:active {
-  transform: translateY(0);
-}
+
+/* Sélecteur de langue */
 .nav-modern__lang {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 .nav-modern__lang-btn {
-  padding: 0.35rem 0.5rem;
+  padding: 0.25rem 0.45rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.4);
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: color 0.2s, background 0.2s;
+  transition: color 0.2s;
 }
-.nav-modern__lang-btn:hover {
-  color: rgba(255, 255, 255, 0.9);
-}
+.nav-modern__lang-btn:hover { color: #fff; }
 .nav-modern__lang-btn--active {
   color: #ff8c42;
   background: rgba(255, 111, 0, 0.15);
 }
 .nav-modern__lang-sep {
-  color: rgba(255, 255, 255, 0.25);
-  font-size: 0.7rem;
-  user-select: none;
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 0.75rem;
 }
-.nav-modern__lang--drawer {
-  justify-content: center;
-  margin-bottom: 0.5rem;
-}
-.nav-modern__lang--drawer .nav-modern__lang-btn {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-}
+
+/* Burger Mobile */
 .nav-modern__burger {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 5px;
-  width: 48px;
-  height: 48px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
 }
-@media (min-width: 992px) {
-  .nav-modern__burger {
-    display: none;
-  }
-}
-.nav-modern__burger:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
+@media (min-width: 1024px) {
+  .nav-modern__burger { display: none; }
 }
 .nav-modern__burger-line {
   display: block;
-  width: 20px;
+  width: 18px;
   height: 2px;
   background: #fff;
   border-radius: 1px;
-  transition: transform 0.25s ease, opacity 0.25s ease;
+  transition: transform 0.25s, opacity 0.25s;
 }
-.nav-modern__burger--open .nav-modern__burger-line:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-.nav-modern__burger--open .nav-modern__burger-line:nth-child(2) {
-  opacity: 0;
-}
-.nav-modern__burger--open .nav-modern__burger-line:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
-}
+.nav-modern__burger--open .nav-modern__burger-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-modern__burger--open .nav-modern__burger-line:nth-child(2) { opacity: 0; }
+.nav-modern__burger--open .nav-modern__burger-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+/* Tiroir Mobile (Drawer) */
 .nav-modern__backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
   z-index: 999;
   display: flex;
   justify-content: flex-end;
 }
 .nav-modern__drawer {
-  width: min(300px, 85vw);
-  background: linear-gradient(180deg, #14141c 0%, #0c0c12 100%);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 5.5rem 1.25rem 2rem;
+  width: min(320px, 85vw);
+  background: #0b0b12;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 5.5rem 1.5rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+  gap: 0.35rem;
+  overflow-y: auto;
 }
+.nav-modern__drawer-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  margin: 0.75rem 0 0.25rem;
+}
+.mt-4 { margin-top: 1rem; }
 .nav-modern__drawer-link {
-  padding: 0.85rem 1rem;
-  font-size: 0.9375rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.85);
   text-decoration: none;
-  border-radius: 10px;
+  border-radius: 8px;
   transition: background 0.2s, color 0.2s;
 }
 .nav-modern__drawer-link:hover {
@@ -336,33 +433,18 @@ function goToSection(hash) {
   color: #ff8c42;
 }
 .nav-modern__drawer-actions {
-  margin-top: 1.25rem;
-  padding-top: 1.25rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
-.nav-modern__drawer-actions .nav-modern__btn {
-  justify-content: center;
-  text-align: center;
-  padding: 0.75rem 1rem;
-}
+.nav-modern__drawer-actions .nav-modern__btn { text-align: center; padding: 0.85rem; }
+.nav-modern__lang--drawer { justify-content: center; margin-bottom: 0.5rem; }
 
-.nav-drawer-enter-active,
-.nav-drawer-leave-active {
-  transition: opacity 0.2s ease;
-}
-.nav-drawer-enter-from,
-.nav-drawer-leave-to {
-  opacity: 0;
-}
-.nav-drawer-enter-active .nav-modern__drawer,
-.nav-drawer-leave-active .nav-modern__drawer {
-  transition: transform 0.25s ease;
-}
-.nav-drawer-enter-from .nav-modern__drawer,
-.nav-drawer-leave-to .nav-modern__drawer {
-  transform: translateX(100%);
-}
+.nav-drawer-enter-active, .nav-drawer-leave-active { transition: opacity 0.2s; }
+.nav-drawer-enter-from, .nav-drawer-leave-to { opacity: 0; }
+.nav-drawer-enter-active .nav-modern__drawer, .nav-drawer-leave-active .nav-modern__drawer { transition: transform 0.25s; }
+.nav-drawer-enter-from .nav-modern__drawer, .nav-drawer-leave-to .nav-modern__drawer { transform: translateX(100%); }
 </style>

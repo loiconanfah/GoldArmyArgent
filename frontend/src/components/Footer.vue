@@ -33,19 +33,21 @@ function goToSection(hash) {
         <div class="footer-tech__col">
           <span class="footer-tech__heading">{{ t('footer_global.product_title') }}</span>
           <ul class="footer-tech__list">
-            <li><a href="#" @click.prevent="goToSection('agents')" class="footer-tech__link">{{ t('landing.nav.features') }}</a></li>
-            <li><a href="#" @click.prevent="goToSection('agents')" class="footer-tech__link">{{ t('landing.nav.agents') }}</a></li>
-            <li><a href="#" @click.prevent="goToSection('pricing')" class="footer-tech__link">{{ t('landing.nav.pricing') }}</a></li>
-            <li><a href="#" @click.prevent="goToSection('avis')" class="footer-tech__link">{{ t('landing.nav.reviews') }}</a></li>
-            <li><router-link to="/blog" class="footer-tech__link">{{ t('landing.nav.blog') }}</router-link></li>
+            <li><router-link to="/sniper-search" class="footer-tech__link">Sniper Search</router-link></li>
+            <li><router-link to="/mentor-ia" class="footer-tech__link">Mentor IA Carrière</router-link></li>
+            <li><router-link to="/simulation-entretien" class="footer-tech__link">Simulation Entretien</router-link></li>
+            <li><router-link to="/crm-emploi" class="footer-tech__link">CRM Candidatures</router-link></li>
+            <li><router-link to="/tarifs" class="footer-tech__link">Tarifs &amp; Forfaits</router-link></li>
           </ul>
         </div>
 
         <div class="footer-tech__col">
           <span class="footer-tech__heading">{{ t('footer_global.tools_title') }}</span>
           <ul class="footer-tech__list">
-            <li><router-link to="/free-cv-roast" class="footer-tech__link">{{ t('landing.nav.cv_audit') }}</router-link></li>
-            <li><router-link to="/free-interview" class="footer-tech__link">{{ t('landing.nav.simulation') }}</router-link></li>
+            <li><router-link to="/free-cv-roast" class="footer-tech__link">Audit CV Gratuit</router-link></li>
+            <li><router-link to="/free-interview" class="footer-tech__link">Entraînement Visio IA</router-link></li>
+            <li><router-link to="/blog" class="footer-tech__link">Blog &amp; Actualités</router-link></li>
+            <li><a href="#avis" @click.prevent="goToSection('avis')" class="footer-tech__link">Avis Candidats</a></li>
           </ul>
         </div>
 
