@@ -64,12 +64,140 @@ const showPaywall = ref(false)         // Free tier limit reached
 const audioLevel = ref(0)
 let audioInterval = null
 
-let recognition = null;
-let currentSynthesis = null;
-let currentHDAudio = null; // Une seule piste HD à la fois (évite la voix en double)
-let cachedVoices = []; // ✅ Voix mémorisées dès le chargement de la page
-let pendingUtteranceText = null; // Texte en attente si les voix ne sont pas prêtes
-let accumulatedTranscript = ''; // ✅ Evite que la phrase soit coupée entre deux respirations
+let recognition = null
+let currentSynthesis = null
+let currentHDAudio = null
+let cachedVoices = []
+let pendingUtteranceText = null
+let accumulatedTranscript = ''
+let speakingWatchdog = null
+
+// ─── Crée un NOUVEL objet SpeechRecognition à chaque écoute ──────────────────
+// Chrome corrompt l'état interne de l'objet après plusieurs cycles.
+// La seule solution fiable est de le recréer à chaque fois.
+const SpeechRecognitionAPI = () => window.SpeechRecognition || window.webkitSpeechRecognition
+
+const initSpeechRecognition = () => {
+    if (!SpeechRecognitionAPI()) {
+        errorMsg.value = "Votre navigateur ne supporte pas la reconnaissance vocale. Utilisez Chrome ou Safari."
+        return false
+    }
+    return true
+}
+
+// Détruit l'ancien objet recognition et en crée un propre neuf
+const createFreshRecognition = () => {
+    if (recognition) {
+        try {
+            recognition.onstart = null
+            recognition.onresult = null
+            recognition.onend = null
+            recognition.onerror = null
+            recognition.abort()
+        } catch(e) {}
+        recognition = null
+    }
+    
+    const Rec = SpeechRecognitionAPI()
+    if (!Rec || !isInterviewStarted.value || isSpeaking.value) return
+    
+    accumulatedTranscript = ''
+    
+    const rec = new Rec()
+    rec.lang = 'fr-FR'
+    rec.continuous = false      // false = Chrome ne corrompt pas l'état interne
+    rec.interimResults = true
+    rec.maxAlternatives = 1
+    
+    let silenceTimer = null
+    const SILENCE_TIMEOUT = 8000
+    
+    rec.onstart = () => {
+        isListening.value = true
+        startAudioPulse()
+        console.log('[Micro] Instance fraîche démarrée')
+    }
+    
+    rec.onresult = (event) => {
+        let interimTranscript = ''
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                accumulatedTranscript += event.results[i][0].transcript + ' '
+            } else {
+                interimTranscript += event.results[i][0].transcript
+            }
+        }
+        transcript.value = accumulatedTranscript + interimTranscript
+        if (silenceTimer) clearTimeout(silenceTimer)
+        silenceTimer = setTimeout(() => {
+            if (transcript.value.trim() !== '') {
+                try { rec.stop() } catch(e) {}
+            }
+        }, SILENCE_TIMEOUT)
+    }
+    
+    rec.onend = () => {
+        isListening.value = false
+        stopAudioPulse()
+        if (silenceTimer) clearTimeout(silenceTimer)
+        
+        const text = accumulatedTranscript.trim()
+        accumulatedTranscript = ''
+        transcript.value = ''
+        recognition = null  // Libère la référence proprement
+        
+        if (text !== '' && !isSpeaking.value && isInterviewStarted.value) {
+            sendMessageToAI(text)
+        } else if (text === '' && !isSpeaking.value && isInterviewStarted.value) {
+            // Rien dit → relancer une instance fraîche
+            setTimeout(() => startListening(), 1000)
+        }
+        // Si isSpeaking = true, l'audio HD relancera via onended
+    }
+    
+    rec.onerror = (event) => {
+        isListening.value = false
+        stopAudioPulse()
+        if (silenceTimer) clearTimeout(silenceTimer)
+        recognition = null
+        console.warn('[Micro] Erreur:', event.error)
+        
+        if (event.error === 'not-allowed') {
+            errorMsg.value = "⚠️ Microphone refusé. Vérifiez les permissions de votre navigateur."
+            return
+        }
+        if (event.error === 'no-speech' || event.error === 'aborted') {
+            if (isInterviewStarted.value && !isSpeaking.value) {
+                setTimeout(() => startListening(), 1200)
+            }
+            return
+        }
+        if (isInterviewStarted.value && !isSpeaking.value) {
+            setTimeout(() => startListening(), 2000)
+        }
+    }
+    
+    recognition = rec
+    try {
+        rec.start()
+    } catch(e) {
+        console.error('[Micro] Impossible de démarrer:', e.message)
+        isListening.value = false
+        recognition = null
+    }
+}
+
+const startListening = () => {
+    if (!isInterviewStarted.value || isSpeaking.value || isListening.value) return
+    createFreshRecognition()
+}
+
+const stopListening = () => {
+    if (recognition) {
+        try { recognition.stop() } catch(e) {}
+    }
+}
+
 
 const startInterview = async () => {
     if (!config.value.jobTitle || !config.value.company || !config.value.cv) {
@@ -189,116 +317,6 @@ const extractFromUrl = async () => {
     }
 }
 
-const initSpeechRecognition = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        errorMsg.value = "Votre navigateur ne supporte pas la reconnaissance vocale. Utilisez Chrome ou Safari."
-        return false;
-    }
-    
-    recognition = new SpeechRecognition()
-    recognition.lang = 'fr-FR'
-    recognition.continuous = true  // ✅ Empêche le navigateur de couper après une pause
-    recognition.interimResults = true
-    recognition._isStarting = false // ✅ Guard flag contre les double-start
-    
-    // Helper sécurisé pour démarrer le micro
-    const safeStart = () => {
-        if (recognition._isStarting || isListening.value || isSpeaking.value || !isInterviewStarted.value) return
-        recognition._isStarting = true
-        try {
-            recognition.start()
-        } catch(e) {
-            recognition._isStarting = false
-            console.warn('recognition.start() error (safe):', e.message)
-        }
-    }
-    
-    recognition.onstart = () => {
-        recognition._isStarting = false
-        isListening.value = true
-        startAudioPulse()
-    }
-    
-    let silenceTimer = null
-    const SILENCE_TIMEOUT = 10000 // 10 secondes de silence
-    
-    recognition.onresult = (event) => {
-        let interimTranscript = ''
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                accumulatedTranscript += event.results[i][0].transcript + ' '
-            } else {
-                interimTranscript += event.results[i][0].transcript
-            }
-        }
-        
-        transcript.value = accumulatedTranscript + interimTranscript
-        
-        // Timer de silence : on reset à chaque mot capté
-        if (silenceTimer) clearTimeout(silenceTimer)
-        silenceTimer = setTimeout(() => {
-            if (transcript.value.trim() !== '') {
-                console.log("Silence prolongé (10s) détecté, envoi automatique.")
-                try { recognition.stop() } catch(e) {} // Déclenchera onend() qui enverra le message
-            }
-        }, SILENCE_TIMEOUT)
-    }
-    
-    recognition.onend = () => {
-        recognition._isStarting = false
-        isListening.value = false
-        stopAudioPulse()
-        if (silenceTimer) clearTimeout(silenceTimer)
-        if (recognition._noSpeechRestartTimer) {
-            clearTimeout(recognition._noSpeechRestartTimer)
-            recognition._noSpeechRestartTimer = null
-        }
-        // On n'envoie que si on a un transcrit et qu'on n'est pas déjà en train de parler
-        if (accumulatedTranscript.trim() !== '' && !isSpeaking.value) {
-            sendMessageToAI(accumulatedTranscript.trim())
-            accumulatedTranscript = ''
-            transcript.value = ''
-        } else if (!isSpeaking.value && isInterviewStarted.value) {
-            // Si le micro s'arrête sans texte (timeout navigateur), relancer après délai
-            recognition._noSpeechRestartTimer = setTimeout(() => {
-                recognition._noSpeechRestartTimer = null
-                safeStart()
-            }, 1000)
-        }
-    }
-    
-    recognition.onerror = (event) => {
-        recognition._isStarting = false
-        if (recognition._noSpeechRestartTimer) {
-            clearTimeout(recognition._noSpeechRestartTimer)
-            recognition._noSpeechRestartTimer = null
-        }
-        isListening.value = false
-        stopAudioPulse()
-        if (event.error === 'no-speech' || event.error === 'aborted') {
-            // Relancer silencieusement si l'IA ne parle pas
-            if (isInterviewStarted.value && !isSpeaking.value) {
-                recognition._noSpeechRestartTimer = setTimeout(() => {
-                    recognition._noSpeechRestartTimer = null
-                    safeStart()
-                }, 1200)
-            }
-            return
-        }
-        if (event.error === 'not-allowed') {
-            errorMsg.value = "⚠️ Accès au microphone refusé. Vérifiez les permissions de votre navigateur."
-            return
-        }
-        console.error("Speech recognition error", event.error)
-        errorMsg.value = "Erreur micro: " + event.error
-    }
-
-    // Expose safeStart so playHDAudio can call it after AI finishes speaking
-    recognition._safeStart = safeStart
-    return true
-}
 
 const connectWebSocket = () => {
     const token = localStorage.getItem('token')
@@ -454,28 +472,37 @@ const testAudio = async () => {
 const playHDAudio = (base64Data) => {
     if (!base64Data) return
 
+    // Stopper toute lecture en cours
     if (currentHDAudio) {
-        try {
-            currentHDAudio.pause()
-            currentHDAudio.currentTime = 0
-            currentHDAudio.src = ''
-        } catch (e) {}
+        try { currentHDAudio.pause(); currentHDAudio.src = '' } catch(e) {}
         currentHDAudio = null
     }
-    window.speechSynthesis.cancel() // TTS local coupé pour n'avoir qu'une seule voix
+    if (window.speechSynthesis) window.speechSynthesis.cancel()
+    // Stopper le micro pendant que l'IA parle
+    stopListening()
 
     ttsStatus.value = "Lecture audio HD..."
+    isSpeaking.value = true
+    startAudioPulse()
+
+    // Watchdog : si l'audio reste bloqué plus de 60s, on reset isSpeaking
+    if (speakingWatchdog) clearTimeout(speakingWatchdog)
+    speakingWatchdog = setTimeout(() => {
+        if (isSpeaking.value) {
+            console.warn('[Watchdog] isSpeaking bloqué, reset forcé')
+            isSpeaking.value = false
+            stopAudioPulse()
+            currentHDAudio = null
+            startListening()
+        }
+    }, 60000)
+
     try {
         const audio = new Audio(`data:audio/mp3;base64,${base64Data}`)
         currentHDAudio = audio
 
-        audio.onplay = () => {
-            isSpeaking.value = true
-            startAudioPulse()
-            if (recognition) { try { recognition.stop() } catch(e) {} }
-        }
-
         audio.onended = () => {
+            if (speakingWatchdog) clearTimeout(speakingWatchdog)
             currentHDAudio = null
             isSpeaking.value = false
             stopAudioPulse()
@@ -486,83 +513,76 @@ const playHDAudio = (base64Data) => {
                     pendingFinish.value = false
                     return
                 }
-                // Use safeStart to avoid InvalidStateError
-                if (recognition && recognition._safeStart) {
-                    recognition._safeStart()
-                } else if (!isListening.value && recognition && isInterviewStarted.value) {
-                    try { recognition.start() } catch(e) {}
-                }
-            }, 800)
+                startListening()
+            }, 600)
         }
 
         audio.onerror = (e) => {
+            if (speakingWatchdog) clearTimeout(speakingWatchdog)
             currentHDAudio = null
             console.error("HD Audio error:", e)
             ttsStatus.value = "Erreur Audio HD"
             isSpeaking.value = false
+            stopAudioPulse()
+            // Relancer le micro quand même
+            setTimeout(() => startListening(), 800)
         }
 
-        audio.play()
+        audio.play().catch(err => {
+            console.error('Audio play() failed:', err)
+            if (speakingWatchdog) clearTimeout(speakingWatchdog)
+            currentHDAudio = null
+            isSpeaking.value = false
+            stopAudioPulse()
+            setTimeout(() => startListening(), 800)
+        })
     } catch (err) {
+        if (speakingWatchdog) clearTimeout(speakingWatchdog)
         currentHDAudio = null
-        console.error("Failed to play HD Audio:", err)
-        ttsStatus.value = "Erreur lecture HD"
+        console.error("Failed to create Audio:", err)
+        isSpeaking.value = false
+        stopAudioPulse()
     }
 }
 
-let retryCount = 0;
+let retryCount = 0
 const speakText = (text) => {
     if (!window.speechSynthesis || !text?.trim()) return
-    
     ttsStatus.value = "Préparation..."
-    
-    // HACK CRITIQUE : On cancel d'abord
     window.speechSynthesis.cancel()
-    
-    // On attend un tout petit peu que le moteur audio soit "propre" (Fix Chrome)
+    stopListening()
     setTimeout(() => {
         const utterance = new SpeechSynthesisUtterance(text)
         utterance.lang = 'fr-FR'
         utterance.rate = 1.0
         utterance.pitch = 1.0
         utterance.volume = 1.0
-        
         const voice = getVoice()
         if (voice) utterance.voice = voice
-        
         utterance.onstart = () => {
             ttsStatus.value = "IA parle..."
             isSpeaking.value = true
             startAudioPulse()
             retryCount = 0
-            if (recognition) { try { recognition.stop() } catch(e) {} }
         }
-        
         utterance.onend = () => {
             ttsStatus.value = "Prêt"
             isSpeaking.value = false
             stopAudioPulse()
-            setTimeout(() => {
-                if (!isListening.value && recognition && isInterviewStarted.value) {
-                    try { recognition.start() } catch(e) {}
-                }
-            }, 800)
+            setTimeout(() => startListening(), 800)
         }
-        
         utterance.onerror = (e) => {
             console.error("SpeechSynthesis error:", e.error)
             ttsStatus.value = `Erreur: ${e.error}`
             isSpeaking.value = false
             stopAudioPulse()
-            
-            // Tentative de secours : on change de voix et on réessaie une fois
             if (retryCount < 2) {
-                console.warn("Échec synthèse, tentative de secours...")
                 retryCount++
                 speakText(text)
+            } else {
+                setTimeout(() => startListening(), 800)
             }
         }
-        
         window.speechSynthesis.resume()
         window.speechSynthesis.speak(utterance)
     }, 100)
@@ -570,22 +590,21 @@ const speakText = (text) => {
 
 const triggerListen = () => {
     if (isSpeaking.value) {
+        // Couper l'audio IA immédiatement
         window.speechSynthesis.cancel()
         if (currentHDAudio) {
             try { currentHDAudio.pause(); currentHDAudio.src = '' } catch(e) {}
             currentHDAudio = null
         }
+        if (speakingWatchdog) clearTimeout(speakingWatchdog)
         isSpeaking.value = false
+        stopAudioPulse()
     }
     if (isListening.value) {
-        try { recognition.stop() } catch(e) {}
+        stopListening()
     } else {
         errorMsg.value = ''
-        if (recognition && recognition._safeStart) {
-            recognition._safeStart()
-        } else {
-            try { recognition.start() } catch(e) {}
-        }
+        startListening()
     }
 }
 
@@ -642,12 +661,14 @@ const stopInterview = () => {
     showScorecard.value = false
     scorecard.value = null
     if (socket.value) socket.value.close()
-    if (recognition) recognition.stop()
+    stopListening()
+    if (speakingWatchdog) clearTimeout(speakingWatchdog)
     if (window.speechSynthesis) window.speechSynthesis.cancel()
     if (currentHDAudio) {
         try { currentHDAudio.pause(); currentHDAudio.src = '' } catch (e) {}
         currentHDAudio = null
     }
+    isSpeaking.value = false
     stopWebcam()
     stopAudioPulse()
     conversation.value = []
