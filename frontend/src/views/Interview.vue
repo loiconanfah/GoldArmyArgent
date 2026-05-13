@@ -200,14 +200,28 @@ const initSpeechRecognition = () => {
     recognition.lang = 'fr-FR'
     recognition.continuous = true  // ✅ Empêche le navigateur de couper après une pause
     recognition.interimResults = true
+    recognition._isStarting = false // ✅ Guard flag contre les double-start
+    
+    // Helper sécurisé pour démarrer le micro
+    const safeStart = () => {
+        if (recognition._isStarting || isListening.value || isSpeaking.value || !isInterviewStarted.value) return
+        recognition._isStarting = true
+        try {
+            recognition.start()
+        } catch(e) {
+            recognition._isStarting = false
+            console.warn('recognition.start() error (safe):', e.message)
+        }
+    }
     
     recognition.onstart = () => {
+        recognition._isStarting = false
         isListening.value = true
         startAudioPulse()
     }
     
     let silenceTimer = null
-    const SILENCE_TIMEOUT = 10000 // 10 secondes de silence demandées par l'utilisateur
+    const SILENCE_TIMEOUT = 10000 // 10 secondes de silence
     
     recognition.onresult = (event) => {
         let interimTranscript = ''
@@ -227,12 +241,13 @@ const initSpeechRecognition = () => {
         silenceTimer = setTimeout(() => {
             if (transcript.value.trim() !== '') {
                 console.log("Silence prolongé (10s) détecté, envoi automatique.")
-                recognition.stop() // Déclenchera onend() qui enverra le message
+                try { recognition.stop() } catch(e) {} // Déclenchera onend() qui enverra le message
             }
         }, SILENCE_TIMEOUT)
     }
     
     recognition.onend = () => {
+        recognition._isStarting = false
         isListening.value = false
         stopAudioPulse()
         if (silenceTimer) clearTimeout(silenceTimer)
@@ -246,15 +261,16 @@ const initSpeechRecognition = () => {
             accumulatedTranscript = ''
             transcript.value = ''
         } else if (!isSpeaking.value && isInterviewStarted.value) {
-            // Si le micro s'arrête sans texte (timeout navigateur), relancer après un court délai pour éviter la boucle no-speech
+            // Si le micro s'arrête sans texte (timeout navigateur), relancer après délai
             recognition._noSpeechRestartTimer = setTimeout(() => {
                 recognition._noSpeechRestartTimer = null
-                try { recognition.start() } catch(e) {}
-            }, 800)
+                safeStart()
+            }, 1000)
         }
     }
     
     recognition.onerror = (event) => {
+        recognition._isStarting = false
         if (recognition._noSpeechRestartTimer) {
             clearTimeout(recognition._noSpeechRestartTimer)
             recognition._noSpeechRestartTimer = null
@@ -262,17 +278,25 @@ const initSpeechRecognition = () => {
         isListening.value = false
         stopAudioPulse()
         if (event.error === 'no-speech' || event.error === 'aborted') {
-            // Ne pas afficher d'erreur à l'utilisateur ; relancer le micro après un délai pour éviter le spam
+            // Relancer silencieusement si l'IA ne parle pas
             if (isInterviewStarted.value && !isSpeaking.value) {
-                setTimeout(() => {
-                    try { recognition.start() } catch(e) {}
-                }, 1000)
+                recognition._noSpeechRestartTimer = setTimeout(() => {
+                    recognition._noSpeechRestartTimer = null
+                    safeStart()
+                }, 1200)
             }
+            return
+        }
+        if (event.error === 'not-allowed') {
+            errorMsg.value = "⚠️ Accès au microphone refusé. Vérifiez les permissions de votre navigateur."
             return
         }
         console.error("Speech recognition error", event.error)
         errorMsg.value = "Erreur micro: " + event.error
     }
+
+    // Expose safeStart so playHDAudio can call it after AI finishes speaking
+    recognition._safeStart = safeStart
     return true
 }
 
@@ -462,7 +486,10 @@ const playHDAudio = (base64Data) => {
                     pendingFinish.value = false
                     return
                 }
-                if (!isListening.value && recognition && isInterviewStarted.value) {
+                // Use safeStart to avoid InvalidStateError
+                if (recognition && recognition._safeStart) {
+                    recognition._safeStart()
+                } else if (!isListening.value && recognition && isInterviewStarted.value) {
                     try { recognition.start() } catch(e) {}
                 }
             }, 800)
@@ -542,12 +569,23 @@ const speakText = (text) => {
 }
 
 const triggerListen = () => {
-    if (isSpeaking.value) window.speechSynthesis.cancel()
+    if (isSpeaking.value) {
+        window.speechSynthesis.cancel()
+        if (currentHDAudio) {
+            try { currentHDAudio.pause(); currentHDAudio.src = '' } catch(e) {}
+            currentHDAudio = null
+        }
+        isSpeaking.value = false
+    }
     if (isListening.value) {
-        recognition.stop()
+        try { recognition.stop() } catch(e) {}
     } else {
         errorMsg.value = ''
-        try { recognition.start() } catch(e) {}
+        if (recognition && recognition._safeStart) {
+            recognition._safeStart()
+        } else {
+            try { recognition.start() } catch(e) {}
+        }
     }
 }
 
@@ -669,25 +707,29 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="interview-page fixed inset-0 z-[60] bg-[#F9FAFB] overflow-y-auto custom-scrollbar flex flex-col">
+  <div class="interview-page fixed inset-0 z-[60] bg-gradient-to-br from-slate-50 via-white to-amber-50/30 overflow-y-auto custom-scrollbar flex flex-col">
         <!-- CONFIGURATION WIZARD -->
     <div v-if="!isInterviewStarted" class="p-4 md:p-10 max-w-6xl mx-auto animate-fade-in-up space-y-10 flex flex-col w-full min-h-screen">
       <!-- NEW PREMIUM HEADER -->
       <div class="flex flex-col md:flex-row items-center justify-between gap-6 pt-10">
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-5">
             <button @click="goBackToDashboard" class="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-[#F59E0B] hover:border-[#F59E0B]/30 transition-all shadow-sm">
-                <ArrowLeftIcon class="w-6 h-6" />
+                <ArrowLeftIcon class="w-5 h-5" />
             </button>
             <div>
-                <h1 class="text-4xl font-black text-slate-900 tracking-tight leading-none mb-2">Simulateur d'Entretien</h1>
-                <p class="text-slate-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-                    <SparklesIcon class="w-4 h-4 text-[#F59E0B]" /> God Mode Intelligence 3.1
-                </p>
+                <div class="flex items-center gap-3 mb-1.5">
+                  <h1 class="text-4xl font-black text-slate-900 tracking-tight leading-none">Simulateur d'Entretien</h1>
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-200 text-amber-600 text-[9px] font-black uppercase tracking-widest">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    God Mode 3.1
+                  </span>
+                </div>
+                <p class="text-slate-400 font-semibold text-sm">Préparez-vous comme un pro avec un vrai recruteur IA</p>
             </div>
         </div>
         
-        <router-link to="/interview/history" class="px-6 py-3 bg-white border border-slate-200 text-slate-900 font-black text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center gap-3 hover:border-[#F59E0B]/30 shadow-sm">
-            <DocumentTextIcon class="w-4 h-4 text-[#F59E0B]" /> Mon Historique
+        <router-link to="/interview/history" class="px-6 py-3 bg-white border border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center gap-3 hover:border-amber-300 hover:text-amber-600 shadow-sm">
+            <DocumentTextIcon class="w-4 h-4" /> Mon Historique
         </router-link>
       </div>
 
@@ -811,20 +853,19 @@ onUnmounted(() => {
           </div>
       </div>
 
-            <!-- FOOTER ACTIONS -->
-      <div class="mt-4 pt-10 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div class="flex items-center gap-6">
-              <button @click="testAudio" class="px-6 py-3 bg-white border border-slate-200 text-slate-900 text-xs font-black rounded-2xl hover:border-[#F59E0B]/30 transition-all flex items-center gap-3 shadow-sm">
-                  <SpeakerWaveIcon class="w-4 h-4 text-[#F59E0B]" />
-                  Tester le son
+      <!-- FOOTER ACTIONS -->
+      <div class="mt-4 pt-10 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+              <button @click="testAudio" class="w-10 h-10 flex items-center justify-center bg-amber-50 text-amber-500 hover:bg-amber-100 rounded-xl border border-amber-100 transition-all">
+                  <SpeakerWaveIcon class="w-5 h-5" />
               </button>
               <div class="flex flex-col">
-                <span class="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-1">Système Audio</span>
-                <span v-if="ttsStatus" class="text-[10px] text-slate-900 font-bold uppercase">{{ ttsStatus }}</span>
+                <span class="text-[9px] text-slate-400 uppercase font-black tracking-widest mb-0.5">Système Audio</span>
+                <span v-if="ttsStatus" class="text-[11px] text-slate-700 font-bold">{{ ttsStatus }}</span>
               </div>
           </div>
-          <button @click="startInterview" class="w-full md:w-auto px-10 py-5 bg-gradient-to-r from-[#F59E0B] to-[#C44A2D] hover:from-[#C44A2D] hover:to-[#F59E0B] text-white font-black rounded-[2rem] shadow-2xl shadow-[#F59E0B]/30 flex items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-95 text-base uppercase tracking-widest">
-              Lancer la Visioconférence
+          <button @click="startInterview" class="w-full md:w-auto px-10 py-5 bg-gradient-to-r from-[#F59E0B] to-[#EA580C] hover:from-[#EA580C] hover:to-[#F59E0B] text-white font-black rounded-[2rem] shadow-2xl shadow-amber-500/30 flex items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-95 text-base uppercase tracking-widest">
+              🎬 Lancer la Visioconférence
               <VideoCameraIcon class="w-6 h-6" />
           </button>
       </div>
@@ -1013,8 +1054,18 @@ onUnmounted(() => {
               <PhoneIcon class="w-6 h-6 rotate-[135deg]" />
             </button>
         </div>
-        <p v-if="isListening" class="text-center text-rose-400 text-[10px] font-bold uppercase tracking-[0.2em] pb-3 animate-pulse">Micro actif — parlez maintenant</p>
-      </div>
+            <!-- Mic status label -->
+            <div v-if="isListening" class="flex items-center justify-center gap-2 pb-4 animate-pulse">
+              <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+              <p class="text-rose-400 text-[10px] font-black uppercase tracking-[0.2em]">Micro actif — parlez maintenant</p>
+            </div>
+            <div v-else-if="isAIThinking" class="flex items-center justify-center gap-2 pb-4">
+              <span class="w-2 h-2 rounded-full bg-amber-400 animate-bounce"></span>
+              <p class="text-amber-400 text-[10px] font-black uppercase tracking-[0.15em]">Recruteur en réflexion...</p>
+            </div>
+            <div v-else class="pb-4">
+              <p class="text-center text-slate-500 text-[10px] uppercase tracking-widest font-bold">Cliquez sur le micro pour parler</p>
+            </div>
     </div>
 
       <!-- ═══ PANNEAU DROIT : Transcription Premium ═══ -->
