@@ -29,7 +29,7 @@ INTERVIEW_LLM_MODEL = "gemini-2.0-flash"
 llm_client = UnifiedLLMClient()
 
 # Free tier: max complete interviews before paywall
-FREE_TIER_INTERVIEW_LIMIT = 2
+FREE_TIER_INTERVIEW_LIMIT = 1
 
 router = APIRouter(prefix="/api/interview", tags=["Interview Simulator"])
 
@@ -403,7 +403,7 @@ async def websocket_interview(websocket: WebSocket, token: str):
         if session_count >= FREE_TIER_INTERVIEW_LIMIT:
             await websocket.send_json({
                 "type": "paywall",
-                "message": "Vous avez atteint la limite de 2 entretiens gratuits. Passez à l'abonnement PRO pour continuer.",
+                "message": "Vous avez atteint la limite de 1 entretien gratuit. Passez à l'abonnement ESSENTIAL ou PRO pour continuer.",
                 "count": session_count,
                 "limit": FREE_TIER_INTERVIEW_LIMIT,
             })

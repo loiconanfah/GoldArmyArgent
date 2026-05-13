@@ -555,8 +555,11 @@ async def generate_cv_word_endpoint(raw_request: Request):
         raise HTTPException(status_code=500, detail=f"Erreur génération Word: {str(e)}")
 
 @app.post("/api/network/enrich")
-async def enrich_company(request: CompanyEnrichRequest):
+async def enrich_company(request: CompanyEnrichRequest, current_user: dict = Depends(get_current_user)):
     """Cherche les profils RH LinkedIn pour une entreprise."""
+    check = await check_subscription_limit(current_user["id"], "network_access")
+    if not check["allowed"]:
+        raise HTTPException(status_code=403, detail="L'enrichissement des profils et l'accès direct au réseau sont réservés aux abonnés ESSENTIAL et PRO.")
     try:
         from tools.linkedin_scraper import linkedin_scraper
         profiles = await linkedin_scraper.find_hr_profiles(request.company_name)
@@ -593,8 +596,11 @@ async def find_decision_makers_api(req: HeadhunterRequest, background_tasks: Bac
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/network/draft-email")
-async def draft_network_email(request: EmailDraftRequest):
+async def draft_network_email(request: EmailDraftRequest, current_user: dict = Depends(get_current_user)):
     """Rédige un courriel d'approche via Gemini."""
+    check = await check_subscription_limit(current_user["id"], "network_access")
+    if not check["allowed"]:
+        raise HTTPException(status_code=403, detail="La rédaction de courriels d'approche réseau est réservée aux forfaits ESSENTIAL et PRO.")
     try:
         from agents.network_agent import NetworkAgent
         agent = NetworkAgent()
@@ -609,6 +615,9 @@ class GoldProfileTopicRequest(BaseModel):
 
 @app.post("/api/network/gold-profile/audit")
 async def gold_profile_audit(current_user: dict = Depends(get_current_user)):
+    check = await check_subscription_limit(current_user["id"], "portfolio")
+    if not check["allowed"]:
+        raise HTTPException(status_code=403, detail="L'audit de branding LinkedIn et le Portfolio IA sont réservés aux abonnés ESSENTIAL et PRO.")
     from agents.mentor import MentorAgent
     from core.database import get_db
     
@@ -630,6 +639,9 @@ async def gold_profile_audit(current_user: dict = Depends(get_current_user)):
 
 @app.post("/api/network/gold-profile/plan")
 async def gold_profile_plan(current_user: dict = Depends(get_current_user)):
+    check = await check_subscription_limit(current_user["id"], "portfolio")
+    if not check["allowed"]:
+        raise HTTPException(status_code=403, detail="La planification de contenu réseau et le Portfolio IA sont inaccessibles en compte gratuit.")
     from agents.mentor import MentorAgent
     from core.database import get_db
     
@@ -648,6 +660,9 @@ async def gold_profile_plan(current_user: dict = Depends(get_current_user)):
 
 @app.post("/api/network/gold-profile/post")
 async def gold_profile_post(req: GoldProfileTopicRequest, current_user: dict = Depends(get_current_user)):
+    check = await check_subscription_limit(current_user["id"], "portfolio")
+    if not check["allowed"]:
+        raise HTTPException(status_code=403, detail="La génération de posts viraux et le Portfolio IA nécessitent le déblocage du forfait ESSENTIAL ou PRO.")
     from agents.mentor import MentorAgent
     from core.database import get_db
     
@@ -668,6 +683,9 @@ async def gold_profile_post(req: GoldProfileTopicRequest, current_user: dict = D
 @app.get("/api/network/contacts")
 async def get_network_contacts(current_user: dict = Depends(get_current_user)):
     """Récupère tout le carnet d'adresses réseau."""
+    check = await check_subscription_limit(current_user["id"], "address_book")
+    if not check["allowed"]:
+        raise HTTPException(status_code=403, detail="L'accès au carnet d'adresses réseau enrichi est réservé aux forfaits ESSENTIAL et PRO.")
     import json as _json
     try:
         from core.database import get_db
