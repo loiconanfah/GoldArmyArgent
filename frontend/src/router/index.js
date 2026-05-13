@@ -35,7 +35,8 @@ const routes = [
     {
         path: '/blog/:id',
         name: 'Article',
-        component: () => import('../views/Article.vue')
+        component: () => import('../views/Article.vue'),
+        props: true
     },
     // ── Pages SEO publiques ────────────────────────────────────────────────────
     {

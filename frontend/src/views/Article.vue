@@ -9,11 +9,18 @@ import LandingNav from '@/components/LandingNav.vue'
 import Footer from '@/components/Footer.vue'
 import RelatedArticles from '@/components/RelatedArticles.vue'
 
+// ── Props injectées par le router (props: true) ─────────────────────────────
+// vite-ssg résout les params de route comme props Vue AVANT le rendu,
+// ce qui garantit que useHead() génère les bonnes métadonnées au pré-rendu.
+const props = defineProps({ id: { type: String, default: '' } })
+
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const article = computed(() => articles.find(a => a.id === route.params.id))
+// Résolution de l'article : priorité à la prop SSG, fallback sur route.params (SPA live)
+const articleId = computed(() => props.id || route.params.id || '')
+const article = computed(() => articles.find(a => a.id === articleId.value))
 
 const BASE = 'https://www.goldarmyai.com'
 
@@ -25,7 +32,7 @@ useHead({
     { property: 'og:type', content: 'article' },
     { property: 'og:title', content: computed(() => article.value?.title ?? 'Blog | GoldArmy AI') },
     { property: 'og:description', content: computed(() => article.value?.description ?? '') },
-    { property: 'og:url', content: computed(() => `${BASE}/blog/${article.value?.id ?? ''}`) },
+    { property: 'og:url', content: computed(() => `${BASE}/blog/${articleId.value}`) },
     { property: 'og:image', content: computed(() => article.value?.image?.startsWith('http') ? article.value.image : `${BASE}${article.value?.image ?? '/og-banner.png'}`) },
     { property: 'og:image:width', content: '1200' },
     { property: 'og:image:height', content: '630' },
@@ -40,9 +47,9 @@ useHead({
     { name: 'twitter:image', content: computed(() => article.value?.image?.startsWith('http') ? article.value.image : `${BASE}${article.value?.image ?? '/og-banner.png'}`) },
   ],
   link: [
-    { rel: 'canonical', href: computed(() => `${BASE}/blog/${article.value?.id ?? ''}`) },
-    { rel: 'alternate', hreflang: 'fr', href: computed(() => `${BASE}/blog/${article.value?.id ?? ''}?lang=fr`) },
-    { rel: 'alternate', hreflang: 'en', href: computed(() => `${BASE}/blog/${article.value?.id ?? ''}?lang=en`) },
+    { rel: 'canonical', href: computed(() => `${BASE}/blog/${articleId.value}`) },
+    { rel: 'alternate', hreflang: 'fr', href: computed(() => `${BASE}/blog/${articleId.value}?lang=fr`) },
+    { rel: 'alternate', hreflang: 'en', href: computed(() => `${BASE}/blog/${articleId.value}?lang=en`) },
   ],
   script: [
     {
@@ -55,13 +62,22 @@ useHead({
         'image': article.value?.image?.startsWith('http') ? article.value.image : `${BASE}${article.value?.image ?? '/og-banner.png'}`,
         'datePublished': article.value?.date ?? '',
         'dateModified': article.value?.date ?? '',
-        'author': { '@type': 'Organization', 'name': 'GoldArmy AI', 'url': BASE },
+        'author': {
+          '@type': 'Person',
+          'name': article.value?.author ?? 'GoldArmy AI',
+          'url': BASE
+        },
         'publisher': {
           '@type': 'Organization',
           'name': 'GoldArmy AI',
-          'logo': { '@type': 'ImageObject', 'url': `${BASE}/images/logosansfond.png` }
+          'logo': { '@type': 'ImageObject', 'url': `${BASE}/logo.png` }
         },
-        'mainEntityOfPage': { '@type': 'WebPage', '@id': `${BASE}/blog/${article.value?.id ?? ''}` }
+        'mainEntityOfPage': {
+          '@type': 'WebPage',
+          '@id': `${BASE}/blog/${articleId.value}`
+        },
+        'url': `${BASE}/blog/${articleId.value}`,
+        'keywords': 'IA, recherche emploi, intelligence artificielle, CV ATS, GoldArmy AI'
       }))
     },
     {
@@ -72,7 +88,7 @@ useHead({
         'itemListElement': [
           { '@type': 'ListItem', 'position': 1, 'name': 'Accueil', 'item': `${BASE}/` },
           { '@type': 'ListItem', 'position': 2, 'name': 'Blog', 'item': `${BASE}/blog` },
-          { '@type': 'ListItem', 'position': 3, 'name': article.value?.title ?? '', 'item': `${BASE}/blog/${article.value?.id ?? ''}` },
+          { '@type': 'ListItem', 'position': 3, 'name': article.value?.title ?? '', 'item': `${BASE}/blog/${articleId.value}` },
         ]
       }))
     }
