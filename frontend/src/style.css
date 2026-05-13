@@ -119,13 +119,13 @@
   }
 }
 
-/* ═══ Theme light: overrides for app (Accueil + layout) when #app has .theme-light ═══ */
-#app {
+/* ═══ Theme light: overrides for app (Accueil + layout) when .theme-light is active ═══ */
+body {
   transition: background-color 0.35s ease, color 0.35s ease;
 }
 
 /* Article de blog : mêmes couleurs que le site en thème clair */
-#app.theme-light .page-wrapper--article {
+.theme-light .page-wrapper--article {
   --_theme---bodybackground: #f8fafc;
   --_theme---textcolor--primarytext: #0f172a;
   --_theme---textcolor--secondarytext: #1e293b;
@@ -135,124 +135,124 @@
   --_theme---textcolor--accenttext1: #ea580c;
   --_theme---border--mediumalpha: rgba(15, 23, 42, 0.12);
 }
-#app.theme-light .page-wrapper--article .article-body :deep(.text-indigo-400),
-#app.theme-light .page-wrapper--article .article-body :deep(.text-indigo-300) {
+.theme-light .page-wrapper--article .article-body :deep(.text-indigo-400),
+.theme-light .page-wrapper--article .article-body :deep(.text-indigo-300) {
   color: #4338ca !important;
 }
-#app.theme-light .page-wrapper--article .article-body :deep(a:hover) {
+.theme-light .page-wrapper--article .article-body :deep(a:hover) {
   color: #c2410c !important;
 }
-#app.theme-light,
-#app.theme-light .bg-surface-950 {
+.theme-light,
+.theme-light .bg-surface-950 {
   background-color: #F7F8FC !important;
 }
-#app.theme-light .bg-surface-900 {
+.theme-light .bg-surface-900 {
   background-color: #ffffff !important;
   box-shadow: 1px 0 0 0 #e8edf5;
 }
-#app.theme-light .bg-surface-800,
-#app.theme-light .hover\:bg-surface-800:hover {
+.theme-light .bg-surface-800,
+.theme-light .hover\:bg-surface-800:hover {
   background-color: #F0F3FA !important;
 }
-#app.theme-light .bg-surface-700 {
+.theme-light .bg-surface-700 {
   background-color: #cbd5e1 !important;
 }
-#app.theme-light .bg-surface-800\/70 {
+.theme-light .bg-surface-800\/70 {
   background-color: rgba(226, 232, 240, 0.9) !important;
 }
-#app.theme-light .bg-surface-950\/80 {
+.theme-light .bg-surface-950\/80 {
   background-color: rgba(248, 250, 252, 0.9) !important;
 }
-#app.theme-light,
-#app.theme-light .text-slate-200,
-#app.theme-light .text-white {
+.theme-light,
+.theme-light .text-slate-200,
+.theme-light .text-white {
   color: #0D1117 !important;
 }
 /* Texte secondaire thème clair: contraste élevé (WCAG AA) sur fond clair */
-#app.theme-light .text-slate-400,
-#app.theme-light .text-slate-500,
-#app.theme-light .text-slate-300 {
+.theme-light .text-slate-400,
+.theme-light .text-slate-500,
+.theme-light .text-slate-300 {
   color: #6B7280 !important;
 }
-#app.theme-light .placeholder-slate-500::placeholder {
+.theme-light .placeholder-slate-500::placeholder {
   color: #64748b !important;
 }
-#app.theme-light .border-surface-800,
-#app.theme-light .border-surface-700 {
+.theme-light .border-surface-800,
+.theme-light .border-surface-700 {
   border-color: #E8EDF5 !important;
 }
-#app.theme-light .border-surface-700\/50 {
+.theme-light .border-surface-700\/50 {
   border-color: rgba(232, 237, 245, 0.7) !important;
 }
-#app.theme-light .ring-surface-950 {
+.theme-light .ring-surface-950 {
   --tw-ring-color: #f8fafc;
 }
-#app.theme-light .border-surface-600 {
+.theme-light .border-surface-600 {
   border-color: #cbd5e1 !important;
 }
-#app.theme-light input,
-#app.theme-light .focus\:border-indigo-500\/50:focus {
+.theme-light input,
+.theme-light .focus\:border-indigo-500\/50:focus {
   --tw-border-opacity: 1;
 }
-#app.theme-light .bg-indigo-500\/5,
-#app.theme-light .bg-indigo-500\/10 {
+.theme-light .bg-indigo-500\/5,
+.theme-light .bg-indigo-500\/10 {
   background-color: rgba(99, 102, 241, 0.08) !important;
 }
-#app.theme-light .ring-offset-surface-950 {
+.theme-light .ring-offset-surface-950 {
   --tw-ring-offset-color: #f8fafc;
 }
-#app.theme-light .text-slate-600,
-#app.theme-light .text-slate-700 {
+.theme-light .text-slate-600,
+.theme-light .text-slate-700 {
   color: #1e293b !important;
 }
-#app.theme-light .border-2.border-surface-950 {
+.theme-light .border-2.border-surface-950 {
   border-color: #f8fafc !important;
 }
-#app.theme-light .group-hover\:ring-indigo-500\/30.group-hover {
+.theme-light .group-hover\:ring-indigo-500\/30.group-hover {
   --tw-ring-color: rgba(99, 102, 241, 0.3);
 }
-#app.theme-light .selection\:bg-gold-500\/30::selection {
+.theme-light .selection\:bg-gold-500\/30::selection {
   background-color: rgba(245, 158, 11, 0.25);
 }
 /* Scrollbar light theme: visible sur fond clair */
-#app.theme-light ::-webkit-scrollbar-thumb {
+.theme-light ::-webkit-scrollbar-thumb {
   background: #94a3b8;
 }
-#app.theme-light ::-webkit-scrollbar-thumb:hover {
+.theme-light ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
 /* Tutoriel: toujours fond sombre + texte clair pour lisibilité (thème clair ou sombre) */
-#app.theme-light .tutorial-panel {
+.theme-light .tutorial-panel {
   background-color: #1e2030 !important;
 }
-#app.theme-light .tutorial-panel .text-slate-300,
-#app.theme-light .tutorial-panel .text-slate-400,
-#app.theme-light .tutorial-panel .text-slate-500,
-#app.theme-light .tutorial-panel .text-slate-600,
-#app.theme-light .tutorial-panel p,
-#app.theme-light .tutorial-panel h3 {
+.theme-light .tutorial-panel .text-slate-300,
+.theme-light .tutorial-panel .text-slate-400,
+.theme-light .tutorial-panel .text-slate-500,
+.theme-light .tutorial-panel .text-slate-600,
+.theme-light .tutorial-panel p,
+.theme-light .tutorial-panel h3 {
   color: #e2e8f0 !important;
 }
-#app.theme-light .tutorial-panel .tutorial-explanatory {
+.theme-light .tutorial-panel .tutorial-explanatory {
   color: #f1f5f9 !important;
   font-size: 0.8125rem;
 }
-#app.theme-light .tutorial-panel .text-indigo-400 {
+.theme-light .tutorial-panel .text-indigo-400 {
   color: #a5b4fc !important;
 }
-#app.theme-light .tutorial-panel .bg-surface-700 {
+.theme-light .tutorial-panel .bg-surface-700 {
   background-color: #475569 !important;
 }
-#app.theme-light .tutorial-panel button:not([class*="bg-indigo"]) {
+.theme-light .tutorial-panel button:not([class*="bg-indigo"]) {
   color: #e2e8f0 !important;
   border-color: #64748b !important;
 }
-#app.theme-light .tutorial-panel button:hover:not(:disabled) {
+.theme-light .tutorial-panel button:hover:not(:disabled) {
   color: #fff !important;
 }
 
 /* Graphiques / SVG en thème clair: texte et traits lisibles */
-#app.theme-light .dashboard-chart text {
+.theme-light .dashboard-chart text {
   fill: #1e293b !important;
 }
 #app.theme-light .dashboard-chart line {

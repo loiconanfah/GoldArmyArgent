@@ -15,8 +15,7 @@ export function useTheme() {
 
   function applyThemeToDocument(value) {
     if (typeof document === 'undefined') return
-    const root = document.getElementById('app')
-    if (!root) return
+    const root = document.documentElement
     root.classList.remove('theme-light', 'theme-dark')
     if (value === 'light') root.classList.add('theme-light')
     else root.classList.add('theme-dark')
