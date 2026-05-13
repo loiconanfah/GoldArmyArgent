@@ -865,8 +865,8 @@ onUnmounted(() => {
               </div>
           </div>
           <button @click="startInterview" class="w-full md:w-auto px-10 py-5 bg-gradient-to-r from-[#F59E0B] to-[#EA580C] hover:from-[#EA580C] hover:to-[#F59E0B] text-white font-black rounded-[2rem] shadow-2xl shadow-amber-500/30 flex items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-95 text-base uppercase tracking-widest">
-              🎬 Lancer la Visioconférence
               <VideoCameraIcon class="w-6 h-6" />
+              Lancer la Visioconférence
           </button>
       </div>
     </div>
@@ -1066,7 +1066,8 @@ onUnmounted(() => {
             <div v-else class="pb-4">
               <p class="text-center text-slate-500 text-[10px] uppercase tracking-widest font-bold">Cliquez sur le micro pour parler</p>
             </div>
-    </div>
+        </div>
+      </div>
 
       <!-- ═══ PANNEAU DROIT : Transcription Premium ═══ -->
       <div v-show="showChat" class="interview-room-chat w-full md:w-[400px] lg:w-[440px] shrink-0 flex flex-col bg-[#111113] border-l border-white/[0.05] shadow-2xl relative z-[220]">
