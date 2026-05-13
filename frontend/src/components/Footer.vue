@@ -78,8 +78,8 @@ function goToSection(hash) {
   position: relative;
   margin-top: auto;
   padding: 4rem 0 2rem;
-  background: linear-gradient(180deg, #0d0d12 0%, #08080c 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-secondary, #f8fafc);
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
   overflow: hidden;
 }
 .footer-tech__glow {
@@ -103,7 +103,7 @@ function goToSection(hash) {
   grid-template-columns: 1.2fr 1fr 1fr 1fr;
   gap: 3rem 2rem;
   padding-bottom: 3rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
 }
 @media (max-width: 991px) {
   .footer-tech__grid {
@@ -127,7 +127,7 @@ function goToSection(hash) {
   align-items: center;
   gap: 0.75rem;
   text-decoration: none;
-  color: #fff;
+  color: var(--text-primary, #0f172a);
   font-weight: 700;
   font-size: 1.25rem;
   letter-spacing: -0.02em;
@@ -141,12 +141,12 @@ function goToSection(hash) {
   height: 48px;
   border-radius: 12px;
   object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
 }
 .footer-tech__tagline {
   font-size: 0.9375rem;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary, #475569);
   max-width: 320px;
   margin: 0;
 }
@@ -180,7 +180,7 @@ function goToSection(hash) {
 .footer-tech__link {
   font-size: 0.9375rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary, #475569);
   text-decoration: none;
   transition: color 0.2s, padding-left 0.2s;
 }
@@ -198,7 +198,7 @@ function goToSection(hash) {
 }
 .footer-tech__copy {
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary, rgba(0, 0, 0, 0.4));
   margin: 0;
 }
 .footer-tech__legal {
@@ -208,7 +208,7 @@ function goToSection(hash) {
 }
 .footer-tech__legal-link {
   font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-secondary, rgba(0, 0, 0, 0.45));
   text-decoration: none;
   transition: color 0.2s;
 }
@@ -219,6 +219,6 @@ function goToSection(hash) {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--border-color, rgba(0, 0, 0, 0.25));
 }
 </style>

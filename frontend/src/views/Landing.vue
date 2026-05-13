@@ -444,7 +444,7 @@ function closeNav() {
                   </router-link>
                     </div>
                 </div>
-              <div reveal-card="true" class="big-card-home1 dark">
+              <div reveal-card="true" class="big-card-home1">
                 <div class="big-card-img-wrapper">
                   <img src="/images/simulateur.png" loading="lazy" card="true" :alt="t('landing.sticky.card2_title')" class="big-card--home1-img" />
             </div>
@@ -639,7 +639,7 @@ function closeNav() {
               </div>
             </div>
             <div class="w-layout-grid key-figures-grid">
-              <div class="key-figures-card dark">
+              <div class="key-figures-card">
                 <div class="figures-card-wrapper">
                   <div class="key-number">{{ t('landing.key_figures.card1_number') }}<sup>+</sup></div>
                   <div><strong>{{ t('landing.key_figures.card1_label_1') }}<br />{{ t('landing.key_figures.card1_label_2') }}</strong></div>
@@ -649,7 +649,7 @@ function closeNav() {
                   <p>{{ t('landing.key_figures.card1_desc') }}</p>
                 </div>
               </div>
-              <div class="key-figures-card dark">
+              <div class="key-figures-card">
                 <div class="figures-card-wrapper">
                   <div class="key-number">{{ t('landing.key_figures.card2_number') }}<sup>%</sup></div>
                   <div><strong>{{ t('landing.key_figures.card2_label_1') }} <br />{{ t('landing.key_figures.card2_label_2') }}</strong></div>
@@ -659,7 +659,7 @@ function closeNav() {
                   <p>{{ t('landing.key_figures.card2_desc') }}</p>
                 </div>
               </div>
-              <div class="key-figures-card dark">
+              <div class="key-figures-card">
                 <div class="figures-card-wrapper">
                   <div class="key-number">{{ t('landing.key_figures.card3_number') }}<sup>+</sup></div>
                   <div><strong>{{ t('landing.key_figures.card3_label_1') }} <br />{{ t('landing.key_figures.card3_label_2') }}</strong></div>
@@ -698,7 +698,7 @@ function closeNav() {
                     </div>
               </div>
             </div>
-            <div class="testimonial-card-bg-img dark">
+            <div class="testimonial-card-bg-img">
               <div class="testimonial-logo">
                 <img src="https://cdn.prod.website-files.com/69383496538f3c3da700a557/694eba67e2e43f7ad899aa03_Logo-3-white.svg" loading="lazy" alt="" />
               </div>
@@ -889,7 +889,7 @@ function closeNav() {
                   </div>
                 </div>
               </div>
-              <div class="pricing-v3-col home1 dark last">
+              <div class="pricing-v3-col home1 last">
                 <div class="pricing-row1">
                   <div class="pricing-title-wrap">
                     <div class="price-title">{{ t('landing.pricing.plan4_title') }}</div>
@@ -1033,7 +1033,7 @@ function closeNav() {
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--text-secondary, rgba(0, 0, 0, 0.7));
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
     border: 1px solid rgba(99, 102, 241, 0.35);
     padding: 0.4rem 0.85rem;
@@ -1044,7 +1044,7 @@ function closeNav() {
     font-size: clamp(1.5rem, 5.5vw, 2rem);
     font-weight: 800;
     line-height: 1.2;
-    color: #fff;
+    color: var(--text-primary, #000);
     margin: 0 0 0.75rem;
     letter-spacing: -0.02em;
   }
@@ -1057,7 +1057,7 @@ function closeNav() {
   .hero-mobile__desc {
     font-size: 0.9375rem;
     line-height: 1.5;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--text-secondary, rgba(0, 0, 0, 0.75));
     margin: 0 0 1.5rem;
     max-width: 36ch;
   }
