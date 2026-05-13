@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="theme-light">
 
 <head>
   <meta charset="UTF-8" />
@@ -165,6 +165,17 @@
     'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', '1735578620768760');
     fbq('track', 'PageView');
+  </script>
+  <!-- Theme init: apply before Vue renders to avoid dark flash -->
+  <script>
+    (function() {
+      try {
+        // Force reset to light theme for all users
+        localStorage.setItem('goldarmy-theme', 'light');
+        document.documentElement.classList.remove('theme-dark');
+        document.documentElement.classList.add('theme-light');
+      } catch(e) {}
+    })();
   </script>
   <!-- End Meta Pixel Code -->
 </head>
