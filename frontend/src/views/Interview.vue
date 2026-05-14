@@ -65,6 +65,7 @@ const audioLevel = ref(0)
 let audioInterval = null
 
 let recognition = null
+let prewarmedRecognition = null  // Instance pré-chauffée pendant que l'IA parle
 let currentSynthesis = null
 let currentHDAudio = null
 let cachedVoices = []
@@ -72,9 +73,6 @@ let pendingUtteranceText = null
 let accumulatedTranscript = ''
 let speakingWatchdog = null
 
-// ─── Crée un NOUVEL objet SpeechRecognition à chaque écoute ──────────────────
-// Chrome corrompt l'état interne de l'objet après plusieurs cycles.
-// La seule solution fiable est de le recréer à chaque fois.
 const SpeechRecognitionAPI = () => window.SpeechRecognition || window.webkitSpeechRecognition
 
 const initSpeechRecognition = () => {
@@ -85,39 +83,25 @@ const initSpeechRecognition = () => {
     return true
 }
 
-// Détruit l'ancien objet recognition et en crée un propre neuf
-const createFreshRecognition = () => {
-    if (recognition) {
-        try {
-            recognition.onstart = null
-            recognition.onresult = null
-            recognition.onend = null
-            recognition.onerror = null
-            recognition.abort()
-        } catch(e) {}
-        recognition = null
-    }
-    
+// Construit un objet SpeechRecognition avec tous ses handlers, prêt à appeler .start()
+const buildRecognitionInstance = () => {
     const Rec = SpeechRecognitionAPI()
-    if (!Rec || !isInterviewStarted.value || isSpeaking.value) return
-    
-    accumulatedTranscript = ''
-    
+    if (!Rec) return null
+
     const rec = new Rec()
     rec.lang = 'fr-FR'
     rec.continuous = false      // false = Chrome ne corrompt pas l'état interne
     rec.interimResults = true
     rec.maxAlternatives = 1
-    
+
     let silenceTimer = null
-    const SILENCE_TIMEOUT = 8000
-    
+    const SILENCE_TIMEOUT = 7000
+
     rec.onstart = () => {
         isListening.value = true
         startAudioPulse()
-        console.log('[Micro] Instance fraîche démarrée')
     }
-    
+
     rec.onresult = (event) => {
         let interimTranscript = ''
         for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -135,48 +119,77 @@ const createFreshRecognition = () => {
             }
         }, SILENCE_TIMEOUT)
     }
-    
+
     rec.onend = () => {
         isListening.value = false
         stopAudioPulse()
         if (silenceTimer) clearTimeout(silenceTimer)
-        
+
         const text = accumulatedTranscript.trim()
         accumulatedTranscript = ''
         transcript.value = ''
-        recognition = null  // Libère la référence proprement
-        
+        recognition = null
+
         if (text !== '' && !isSpeaking.value && isInterviewStarted.value) {
             sendMessageToAI(text)
         } else if (text === '' && !isSpeaking.value && isInterviewStarted.value) {
-            // Rien dit → relancer une instance fraîche
-            setTimeout(() => startListening(), 1000)
+            setTimeout(() => startListening(), 400)
         }
-        // Si isSpeaking = true, l'audio HD relancera via onended
     }
-    
+
     rec.onerror = (event) => {
         isListening.value = false
         stopAudioPulse()
         if (silenceTimer) clearTimeout(silenceTimer)
         recognition = null
         console.warn('[Micro] Erreur:', event.error)
-        
+
         if (event.error === 'not-allowed') {
             errorMsg.value = "⚠️ Microphone refusé. Vérifiez les permissions de votre navigateur."
             return
         }
         if (event.error === 'no-speech' || event.error === 'aborted') {
             if (isInterviewStarted.value && !isSpeaking.value) {
-                setTimeout(() => startListening(), 1200)
+                setTimeout(() => startListening(), 400)
             }
             return
         }
         if (isInterviewStarted.value && !isSpeaking.value) {
-            setTimeout(() => startListening(), 2000)
+            setTimeout(() => startListening(), 800)
         }
     }
-    
+
+    return rec
+}
+
+// Pré-chauffe une instance pendant que l'IA parle (0 délai quand l'audio se termine)
+const prewarmRecognition = () => {
+    if (!SpeechRecognitionAPI() || prewarmedRecognition) return
+    prewarmedRecognition = buildRecognitionInstance()
+}
+
+// Détruit l'instance en cours et en crée une propre
+const createFreshRecognition = () => {
+    if (recognition) {
+        try {
+            recognition.onstart = null
+            recognition.onresult = null
+            recognition.onend = null
+            recognition.onerror = null
+            recognition.abort()
+        } catch(e) {}
+        recognition = null
+    }
+
+    if (!isInterviewStarted.value || isSpeaking.value) return
+
+    accumulatedTranscript = ''
+
+    // Utiliser l'instance pré-chauffée si disponible → démarrage instantané
+    const rec = prewarmedRecognition || buildRecognitionInstance()
+    prewarmedRecognition = null
+
+    if (!rec) return
     recognition = rec
     try {
         rec.start()
@@ -195,6 +208,16 @@ const startListening = () => {
 const stopListening = () => {
     if (recognition) {
         try { recognition.stop() } catch(e) {}
+    }
+    // Annuler aussi le pré-chauffage si l'IA recommence à parler
+    if (prewarmedRecognition) {
+        try {
+            prewarmedRecognition.onstart = null
+            prewarmedRecognition.onresult = null
+            prewarmedRecognition.onend = null
+            prewarmedRecognition.onerror = null
+        } catch(e) {}
+        prewarmedRecognition = null
     }
 }
 
@@ -485,6 +508,10 @@ const playHDAudio = (base64Data) => {
     isSpeaking.value = true
     startAudioPulse()
 
+    // ▶ Pré-chauffer l'instance micro PENDANT que l'IA parle
+    // Quand l'audio se termine, le micro est déjà prêt → 0ms de délai
+    prewarmRecognition()
+
     // Watchdog : si l'audio reste bloqué plus de 60s, on reset isSpeaking
     if (speakingWatchdog) clearTimeout(speakingWatchdog)
     speakingWatchdog = setTimeout(() => {
@@ -506,15 +533,14 @@ const playHDAudio = (base64Data) => {
             currentHDAudio = null
             isSpeaking.value = false
             stopAudioPulse()
-            ttsStatus.value = "Prêt (HD)"
-            setTimeout(() => {
-                if (pendingFinish.value) {
-                    finishInterview()
-                    pendingFinish.value = false
-                    return
-                }
-                startListening()
-            }, 600)
+            ttsStatus.value = "Prêt — Parlez !"
+            if (pendingFinish.value) {
+                finishInterview()
+                pendingFinish.value = false
+                return
+            }
+            // Instance déjà pré-chauffée → démarrage instantané
+            startListening()
         }
 
         audio.onerror = (e) => {
@@ -524,8 +550,7 @@ const playHDAudio = (base64Data) => {
             ttsStatus.value = "Erreur Audio HD"
             isSpeaking.value = false
             stopAudioPulse()
-            // Relancer le micro quand même
-            setTimeout(() => startListening(), 800)
+            setTimeout(() => startListening(), 200)
         }
 
         audio.play().catch(err => {
@@ -534,7 +559,7 @@ const playHDAudio = (base64Data) => {
             currentHDAudio = null
             isSpeaking.value = false
             stopAudioPulse()
-            setTimeout(() => startListening(), 800)
+            setTimeout(() => startListening(), 200)
         })
     } catch (err) {
         if (speakingWatchdog) clearTimeout(speakingWatchdog)
