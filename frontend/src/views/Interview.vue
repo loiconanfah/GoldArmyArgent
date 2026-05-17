@@ -740,15 +740,17 @@ const finishInterview = async () => {
             })
         })
         const result = await response.json()
-        if (result.status === 'success') {
+        if (result.status === 'success' && result.analysis && result.analysis.scores) {
             scorecard.value = result.analysis
             scorecard.value._session_id = result.session_id  // keep for history link
         } else {
-            errorMsg.value = "L'analyse a échoué."
+            errorMsg.value = "L'analyse a échoué. L'entretien était trop court."
+            showScorecard.value = false
         }
     } catch (e) {
         console.error("Analysis error:", e)
         errorMsg.value = "Erreur de connexion pour l'analyse."
+        showScorecard.value = false
     } finally {
         isAnalyzing.value = false
     }
