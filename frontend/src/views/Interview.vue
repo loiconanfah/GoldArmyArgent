@@ -65,7 +65,6 @@ const audioLevel = ref(0)
 let audioInterval = null
 
 let recognition = null
-let prewarmedRecognition = null  // Instance pré-chauffée pendant que l'IA parle
 let currentSynthesis = null
 let currentHDAudio = null
 let cachedVoices = []
@@ -171,12 +170,6 @@ const buildRecognitionInstance = () => {
     return rec
 }
 
-// Pré-chauffe une instance pendant que l'IA parle (0 délai quand l'audio se termine)
-const prewarmRecognition = () => {
-    if (!SpeechRecognitionAPI() || prewarmedRecognition) return
-    prewarmedRecognition = buildRecognitionInstance()
-}
-
 // Détruit l'instance en cours et en crée une propre
 const createFreshRecognition = () => {
     if (recognition) {
@@ -194,14 +187,13 @@ const createFreshRecognition = () => {
 
     accumulatedTranscript = ''
 
-    // Utiliser l'instance pré-chauffée si disponible → démarrage instantané
-    const rec = prewarmedRecognition || buildRecognitionInstance()
-    prewarmedRecognition = null
-
+    const rec = buildRecognitionInstance()
     if (!rec) return
     recognition = rec
+    
     try {
         rec.start()
+        console.log('[Micro] Démarrage de la capture vocale...')
     } catch(e) {
         console.error('[Micro] Impossible de démarrer:', e.message)
         isListening.value = false
@@ -210,23 +202,14 @@ const createFreshRecognition = () => {
 }
 
 const startListening = () => {
-    if (!isInterviewStarted.value || isSpeaking.value || isListening.value) return
+    if (!isInterviewStarted.value || isSpeaking.value) return
     createFreshRecognition()
 }
 
 const stopListening = () => {
     if (recognition) {
-        try { recognition.stop() } catch(e) {}
-    }
-    // Annuler aussi le pré-chauffage si l'IA recommence à parler
-    if (prewarmedRecognition) {
-        try {
-            prewarmedRecognition.onstart = null
-            prewarmedRecognition.onresult = null
-            prewarmedRecognition.onend = null
-            prewarmedRecognition.onerror = null
-        } catch(e) {}
-        prewarmedRecognition = null
+        try { recognition.abort() } catch(e) {}
+        recognition = null
     }
 }
 
@@ -516,10 +499,6 @@ const playHDAudio = (base64Data) => {
     ttsStatus.value = "Lecture audio HD..."
     isSpeaking.value = true
     startAudioPulse()
-
-    // ▶ Pré-chauffer l'instance micro PENDANT que l'IA parle
-    // Quand l'audio se termine, le micro est déjà prêt → 0ms de délai
-    prewarmRecognition()
 
     // Watchdog : si l'audio reste bloqué plus de 60s, on reset isSpeaking
     if (speakingWatchdog) clearTimeout(speakingWatchdog)
