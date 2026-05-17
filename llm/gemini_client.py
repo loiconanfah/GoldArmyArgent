@@ -247,29 +247,56 @@ class GeminiClient:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}"
         timeout_sec = kwargs.get("timeout") or 45
         timeout = aiohttp.ClientTimeout(total=timeout_sec)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(url, json=payload) as response:
-                if response.status != 200:
-                    err_text = await response.text()
-                    logger.error(f"Gemini API Error {response.status}: {err_text}")
-                    raise Exception(f"Gemini API HTTP {response.status}")
-                data = await response.json()
-                try:
-                    candidates = data.get("candidates", [])
-                    if not candidates:
-                        logger.error(f"Erreur de parsing Gemini: zéro candidats - {data}")
-                        raise Exception("Format de réponse Gemini inattendu: pas de candidats")
-                    # Thinking models: last part with "text" is the actual reply (first can be thought)
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    text_out = ""
-                    for part in parts:
-                        if "text" in part and part["text"]:
-                            text_out = part["text"]
-                    if text_out:
-                        return text_out
-                    raise Exception("Aucun texte dans la réponse Gemini")
-                except KeyError:
-                    logger.error(f"Erreur de parsing Gemini: {data}")
-                    raise Exception("Format de réponse Gemini inattendu")
+        
+        max_retries = 3
+        backoff = 1.0
+        
+        for attempt in range(max_retries):
+            try:
+                async with aiohttp.ClientSession(timeout=timeout) as session:
+                    async with session.post(url, json=payload) as response:
+                        if response.status == 429:
+                            wait_time = backoff * (2 ** attempt)
+                            logger.warning(f"⚠️ Gemini Chat Rate Limit (429). Tentative {attempt+1}/{max_retries}. Attente {wait_time:.1f}s...")
+                            await asyncio.sleep(wait_time)
+                            continue
+                            
+                        if response.status in [500, 502, 503, 504]:
+                            logger.warning(f"⚠️ Gemini Chat Server Error ({response.status}). Tentative {attempt+1}/{max_retries}...")
+                            await asyncio.sleep(backoff * (attempt + 1))
+                            continue
+                            
+                        if response.status != 200:
+                            err_text = await response.text()
+                            logger.error(f"Gemini API Error {response.status}: {err_text}")
+                            raise Exception(f"Gemini API HTTP {response.status}")
+                            
+                        data = await response.json()
+                        try:
+                            candidates = data.get("candidates", [])
+                            if not candidates:
+                                logger.error(f"Erreur de parsing Gemini: zéro candidats - {data}")
+                                raise Exception("Format de réponse Gemini inattendu: pas de candidats")
+                            # Thinking models: last part with "text" is the actual reply (first can be thought)
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            text_out = ""
+                            for part in parts:
+                                if "text" in part and part["text"]:
+                                    text_out = part["text"]
+                            if text_out:
+                                return text_out
+                            raise Exception("Aucun texte dans la réponse Gemini")
+                        except KeyError:
+                            logger.error(f"Erreur de parsing Gemini: {data}")
+                            raise Exception("Format de réponse Gemini inattendu")
+            except Exception as e:
+                if "HTTP 400" in str(e) or "HTTP 401" in str(e) or "HTTP 403" in str(e):
+                    raise e # Don't retry auth or bad request errors
+                if attempt == max_retries - 1:
+                    logger.error(f"Gemini Chat final error after {max_retries} attempts: {e}")
+                    raise e
+                await asyncio.sleep(backoff * (attempt + 1))
+
+        raise Exception(f"Gemini chat() a échoué après {max_retries} tentatives.")
 
     async def close(self): pass
