@@ -90,12 +90,12 @@ const buildRecognitionInstance = () => {
 
     const rec = new Rec()
     rec.lang = 'fr-FR'
-    rec.continuous = false      // false = Chrome ne corrompt pas l'état interne
+    rec.continuous = true       // true = dictée continue, évite les coupures précoces du navigateur
     rec.interimResults = true
     rec.maxAlternatives = 1
 
     let silenceTimer = null
-    const SILENCE_TIMEOUT = 7000
+    const SILENCE_TIMEOUT = 2200 // 2.2 secondes de silence pour envoyer automatiquement la réponse de manière fluide
 
     rec.onstart = () => {
         isListening.value = true
@@ -104,14 +104,21 @@ const buildRecognitionInstance = () => {
 
     rec.onresult = (event) => {
         let interimTranscript = ''
+        let finalTranscript = ''
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
-                accumulatedTranscript += event.results[i][0].transcript + ' '
+                finalTranscript += event.results[i][0].transcript + ' '
             } else {
                 interimTranscript += event.results[i][0].transcript
             }
         }
-        transcript.value = accumulatedTranscript + interimTranscript
+        
+        if (finalTranscript) {
+            accumulatedTranscript += finalTranscript
+        }
+        
+        transcript.value = (accumulatedTranscript + interimTranscript).trim()
+        
         if (silenceTimer) clearTimeout(silenceTimer)
         silenceTimer = setTimeout(() => {
             if (transcript.value.trim() !== '') {
@@ -125,7 +132,9 @@ const buildRecognitionInstance = () => {
         stopAudioPulse()
         if (silenceTimer) clearTimeout(silenceTimer)
 
-        const text = accumulatedTranscript.trim()
+        // Récupération ultra-robuste : si la phrase finale n'est pas marquée 'isFinal', 
+        // on récupère quand même le texte affiché à l'écran (transcript.value) pour ne rien perdre.
+        const text = (accumulatedTranscript.trim() || transcript.value.trim())
         accumulatedTranscript = ''
         transcript.value = ''
         recognition = null
