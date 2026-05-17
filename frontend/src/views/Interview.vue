@@ -94,7 +94,7 @@ const buildRecognitionInstance = () => {
     rec.maxAlternatives = 1
 
     let silenceTimer = null
-    const SILENCE_TIMEOUT = 2200 // 2.2 secondes de silence pour envoyer automatiquement la réponse de manière fluide
+    const SILENCE_TIMEOUT = 4500 // 4.5 secondes de silence pour permettre au candidat de faire des pauses sans être coupé
 
     rec.onstart = () => {
         isListening.value = true
@@ -141,7 +141,7 @@ const buildRecognitionInstance = () => {
         if (text !== '' && !isSpeaking.value && isInterviewStarted.value) {
             sendMessageToAI(text)
         } else if (text === '' && !isSpeaking.value && isInterviewStarted.value) {
-            setTimeout(() => startListening(), 400)
+            setTimeout(() => startListening(), 100)
         }
     }
 
@@ -158,12 +158,12 @@ const buildRecognitionInstance = () => {
         }
         if (event.error === 'no-speech' || event.error === 'aborted') {
             if (isInterviewStarted.value && !isSpeaking.value) {
-                setTimeout(() => startListening(), 400)
+                setTimeout(() => startListening(), 100)
             }
             return
         }
         if (isInterviewStarted.value && !isSpeaking.value) {
-            setTimeout(() => startListening(), 800)
+            setTimeout(() => startListening(), 100)
         }
     }
 
@@ -210,6 +210,34 @@ const stopListening = () => {
     if (recognition) {
         try { recognition.abort() } catch(e) {}
         recognition = null
+    }
+}
+
+const triggerListen = () => {
+    if (isAIThinking.value) return
+    
+    if (isSpeaking.value) {
+        // Couper l'audio IA immédiatement
+        window.speechSynthesis.cancel()
+        if (currentHDAudio) {
+            try { currentHDAudio.pause(); currentHDAudio.src = '' } catch(e) {}
+            currentHDAudio = null
+        }
+        if (speakingWatchdog) clearTimeout(speakingWatchdog)
+        isSpeaking.value = false
+        stopAudioPulse()
+        setTimeout(() => startListening(), 100)
+        return
+    }
+
+    if (isListening.value) {
+        // L'utilisateur clique pour stopper et envoyer manuellement
+        if (recognition) {
+            try { recognition.stop() } catch(e) {}
+        }
+    } else {
+        errorMsg.value = ''
+        startListening()
     }
 }
 
@@ -544,7 +572,7 @@ const playHDAudio = (base64Data) => {
             ttsStatus.value = "Erreur Audio HD"
             isSpeaking.value = false
             stopAudioPulse()
-            setTimeout(() => startListening(), 200)
+            setTimeout(() => startListening(), 100)
         }
 
         audio.play().catch(err => {
@@ -553,7 +581,7 @@ const playHDAudio = (base64Data) => {
             currentHDAudio = null
             isSpeaking.value = false
             stopAudioPulse()
-            setTimeout(() => startListening(), 200)
+            setTimeout(() => startListening(), 100)
         })
     } catch (err) {
         if (speakingWatchdog) clearTimeout(speakingWatchdog)
@@ -588,7 +616,7 @@ const speakText = (text) => {
             ttsStatus.value = "Prêt"
             isSpeaking.value = false
             stopAudioPulse()
-            setTimeout(() => startListening(), 800)
+            setTimeout(() => startListening(), 100)
         }
         utterance.onerror = (e) => {
             console.error("SpeechSynthesis error:", e.error)
@@ -599,7 +627,7 @@ const speakText = (text) => {
                 retryCount++
                 speakText(text)
             } else {
-                setTimeout(() => startListening(), 800)
+                setTimeout(() => startListening(), 100)
             }
         }
         window.speechSynthesis.resume()
@@ -607,25 +635,7 @@ const speakText = (text) => {
     }, 100)
 }
 
-const triggerListen = () => {
-    if (isSpeaking.value) {
-        // Couper l'audio IA immédiatement
-        window.speechSynthesis.cancel()
-        if (currentHDAudio) {
-            try { currentHDAudio.pause(); currentHDAudio.src = '' } catch(e) {}
-            currentHDAudio = null
-        }
-        if (speakingWatchdog) clearTimeout(speakingWatchdog)
-        isSpeaking.value = false
-        stopAudioPulse()
-    }
-    if (isListening.value) {
-        stopListening()
-    } else {
-        errorMsg.value = ''
-        startListening()
-    }
-}
+
 
 const scrollToBottom = () => {
     nextTick(() => {
