@@ -411,8 +411,14 @@ const connectWebSocket = () => {
             }
         }
         
-        socket.value.onclose = () => {
-            console.log("WebSocket Interview fermé")
+        socket.value.onclose = (event) => {
+            console.log("WebSocket Interview fermé", event)
+            if (isInterviewStarted.value) {
+                isInterviewStarted.value = false
+                stopWebcam()
+                stopAudioPulse()
+                errorMsg.value = "⚠️ Connexion perdue avec le serveur d'entretien. Veuillez vérifier votre connexion internet et relancer."
+            }
         }
     } catch (e) {
         errorMsg.value = "Erreur de connexion au serveur d'entretien."

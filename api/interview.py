@@ -374,6 +374,15 @@ async def websocket_interview(websocket: WebSocket, token: str):
     import jwt
     from loguru import logger
     
+    send_lock = asyncio.Lock()
+
+    async def safe_send(msg: dict):
+        async with send_lock:
+            try:
+                await websocket.send_json(msg)
+            except Exception as e:
+                logger.error(f"WS Safe Send Error: {e}")
+
     # 1. Authenticate
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -401,7 +410,7 @@ async def websocket_interview(websocket: WebSocket, token: str):
     if is_free:
         session_count = await _count_user_sessions(user_id)
         if session_count >= FREE_TIER_INTERVIEW_LIMIT:
-            await websocket.send_json({
+            await safe_send({
                 "type": "paywall",
                 "message": "Vous avez atteint la limite de 1 entretien gratuit. Passez à l'abonnement ESSENTIAL ou PRO pour continuer.",
                 "count": session_count,
@@ -492,7 +501,7 @@ CRITIQUE: Si l'entretien s'achève (ex: le candidat te remercie et dit au revoir
     enchanter = "Ravie de vous rencontrer" if recruiter_name in ("Sophie", "Alice") else "Ravi de vous rencontrer"
     greeting  = f"Bonjour ! Je suis {recruiter_name} pour le poste de {job_title} chez {company}. {enchanter}. Pouvez-vous vous présenter ?"
     
-    await websocket.send_json({
+    await safe_send({
         "type": "recruiter_response",
         "text": greeting,
         "recruiter_name": recruiter_name
@@ -507,7 +516,7 @@ CRITIQUE: Si l'entretien s'achève (ex: le candidat te remercie et dit au revoir
                     chunks.append(chunk["data"])
             if chunks:
                 full_audio_b64 = base64.b64encode(b"".join(chunks)).decode("utf-8")
-                await websocket.send_json({"type": "voice", "audio": full_audio_b64})
+                await safe_send({"type": "voice", "audio": full_audio_b64})
         except Exception as ve:
             logger.error(f"TTS Error: {ve}")
 
@@ -527,7 +536,7 @@ CRITIQUE: Si l'entretien s'achève (ex: le candidat te remercie et dit au revoir
             if not user_msg:
                 continue
             
-            await websocket.send_json({"type": "thinking"})
+            await safe_send({"type": "thinking"})
             conversation_history.append({"role": "user", "content": user_msg})
             
             
@@ -538,7 +547,7 @@ CRITIQUE: Si l'entretien s'achève (ex: le candidat te remercie et dit au revoir
             except Exception as llm_err:
                 logger.error(f"LLM Error in interview: {llm_err}")
                 response_text = "⚠️ Désolé, j'ai rencontré un problème technique pour générer ma réponse. Pouvons-nous reprendre ?"
-                await websocket.send_json({
+                await safe_send({
                     "type": "error",
                     "message": "Erreur technique LLM. L'entretien peut être instable.",
                     "recruiter_name": recruiter_name
@@ -546,7 +555,7 @@ CRITIQUE: Si l'entretien s'achève (ex: le candidat te remercie et dit au revoir
 
             conversation_history.append({"role": "assistant", "content": response_text})
             
-            await websocket.send_json({
+            await safe_send({
                 "type": "recruiter_response",
                 "text": response_text,
                 "recruiter_name": recruiter_name
@@ -558,7 +567,7 @@ CRITIQUE: Si l'entretien s'achève (ex: le candidat te remercie et dit au revoir
     except Exception as e:
         logger.error(f"WS Loop Error: {e}")
         try:
-            await websocket.send_json({"type": "error", "message": f"Erreur critique: {str(e)}"})
+            await safe_send({"type": "error", "message": f"Erreur critique: {str(e)}"})
             await websocket.close()
         except:
             pass
