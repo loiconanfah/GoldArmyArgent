@@ -635,9 +635,60 @@ const scrollToBottom = () => {
     })
 }
 
+let audioContext = null
+let analyser = null
+let microphone = null
+let audioData = null
+
 const startAudioPulse = () => {
     if (audioInterval) clearInterval(audioInterval)
-    audioInterval = setInterval(() => { audioLevel.value = Math.random() * 40 + 10 }, 150)
+    
+    // Tentative d'attachement d'un vrai analyseur audio au flux de la webcam
+    if (stream.value && !audioContext) {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)()
+            analyser = audioContext.createAnalyser()
+            analyser.fftSize = 256
+            microphone = audioContext.createMediaStreamSource(stream.value)
+            microphone.connect(analyser)
+            audioData = new Uint8Array(analyser.frequencyBinCount)
+        } catch (e) {
+            console.warn("AudioContext init error:", e)
+        }
+    }
+    
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume()
+    }
+    
+    let silenceTicks = 0
+    
+    audioInterval = setInterval(() => {
+        if (analyser && audioData) {
+            analyser.getByteFrequencyData(audioData)
+            let sum = 0
+            for (let i = 0; i < audioData.length; i++) sum += audioData[i]
+            const average = sum / audioData.length
+            
+            // Si on capte un vrai son
+            if (average > 2) {
+                silenceTicks = 0
+                // On efface l'erreur si elle était due au silence
+                if (errorMsg.value && errorMsg.value.includes("Aucun son")) {
+                    errorMsg.value = ""
+                }
+            } else {
+                silenceTicks++
+            }
+            
+            // Si le micro est ouvert depuis 5 secondes mais qu'aucun son ne passe (volume 0)
+            if (silenceTicks > (5000 / 150) && isListening.value && !isSpeaking.value) {
+                if (!errorMsg.value) {
+                    errorMsg.value = "⚠️ Aucun son détecté par le navigateur. Vérifiez que votre micro n'est pas muet dans les paramètres Windows."
+                }
+            }
+        }
+    }, 150)
 }
 
 const stopAudioPulse = () => {
