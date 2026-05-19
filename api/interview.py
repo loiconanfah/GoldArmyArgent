@@ -80,6 +80,19 @@ async def transcribe_audio(req: TranscribeRequest, current_user: dict = Depends(
         return {"status": "error", "message": str(e)}
 
 # ─────────────────────────────────────────────────────────────────────────────
+# POST /log — Debug client logs in terminal
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ClientLogRequest(BaseModel):
+    message: str
+
+@router.post("/log")
+async def receive_client_log(req: ClientLogRequest):
+    from loguru import logger
+    logger.info(f"🎤 {req.message}")
+    return {"status": "ok"}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # POST /extract-url — extract job info from URL
 # ─────────────────────────────────────────────────────────────────────────────
 

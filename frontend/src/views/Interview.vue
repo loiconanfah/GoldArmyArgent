@@ -72,6 +72,24 @@ let pendingUtteranceText = null
 let accumulatedTranscript = ''
 let speakingWatchdog = null
 
+// ═══════════════════════════════════════════════════════════════════════════
+// MOTEUR MICRO — Machine à états claire
+// ═══════════════════════════════════════════════════════════════════════════
+//  ÉTATS : 'idle' | 'listening' | 'sending' | 'ai_speaking'
+
+let micState = 'idle'     // état courant de la machine
+let silenceTimer = null
+const SILENCE_TIMEOUT = 4000  // ms de silence avant envoi automatique
+
+const sendServerLog = (msg) => {
+    console.log(msg)
+    fetch('/api/interview/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+    }).catch(() => {})
+}
+
 const SpeechRecognitionAPI = () => window.SpeechRecognition || window.webkitSpeechRecognition
 
 const initSpeechRecognition = () => {
@@ -82,142 +100,194 @@ const initSpeechRecognition = () => {
     return true
 }
 
-// Construit un objet SpeechRecognition avec tous ses handlers, prêt à appeler .start()
-const buildRecognitionInstance = () => {
+// Tue brutalement toute instance en cours
+const _killRecognition = () => {
+    if (recognition) {
+        try {
+            recognition.onstart  = null
+            recognition.onresult = null
+            recognition.onend    = null
+            recognition.onerror  = null
+            recognition.abort()
+        } catch(e) {}
+        recognition = null
+    }
+    if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null }
+    accumulatedTranscript = ''
+}
+
+// ─── Démarre une session d'écoute fraîche ────────────────────────────────
+const startListening = () => {
+    if (!isInterviewStarted.value) return
+    // Gardes strictes — pas d'écoute si l'IA parle ou si on attend sa réponse
+    if (micState === 'listening')    return
+    if (micState === 'ai_speaking')  return
+    if (micState === 'sending')      return
+
+    _killRecognition()   // détruit toute instance zombie
+
     const Rec = SpeechRecognitionAPI()
-    if (!Rec) return null
+    if (!Rec) return
+
+    micState = 'listening'
+    isListening.value = true
+    isSpeaking.value  = false
+    startAudioPulse()
+    accumulatedTranscript = ''
+    transcript.value = ''
 
     const rec = new Rec()
-    rec.lang = 'fr-FR'
-    rec.continuous = true       // true = dictée continue, évite les coupures précoces du navigateur
-    rec.interimResults = true
+    rec.lang            = 'fr-FR'
+    rec.continuous      = true   // Empêche le navigateur de couper au moindre petit silence (notre silenceTimer gère la fin)
+    rec.interimResults  = true
     rec.maxAlternatives = 1
+    recognition = rec
 
-    let silenceTimer = null
-    const SILENCE_TIMEOUT = 4500 // 4.5 secondes de silence pour permettre au candidat de faire des pauses sans être coupé
+    let antiThrottleTimer = null
+
+    sendServerLog('[Micro] --- Initialisation de la nouvelle instance ---')
 
     rec.onstart = () => {
-        isListening.value = true
-        startAudioPulse()
+        sendServerLog('[Micro EVENT] onstart - Micro actif')
+        // Hack anti-blocage Chrome: Chrome lève une erreur 'no-speech' après ~10s de silence
+        // Si cette erreur boucle, Chrome bloque le micro (throttle) pendant 10 à 15s.
+        // On force le redémarrage proprement à 8s avant que Chrome ne se fâche.
+        antiThrottleTimer = setTimeout(() => {
+            if (micState === 'listening' && accumulatedTranscript.trim() === '' && transcript.value.trim() === '') {
+                sendServerLog('[Micro 🔄] Reset préventif (8s) pour contourner le throttle Chrome')
+                try { rec.stop() } catch(e) {}
+            }
+        }, 8000)
     }
 
+    rec.onaudiostart = () => sendServerLog('[Micro EVENT] onaudiostart - Capture audio démarrée')
+    
+    rec.onsoundstart = () => {
+        sendServerLog('[Micro EVENT] onsoundstart - Un son est détecté')
+        if (antiThrottleTimer) { clearTimeout(antiThrottleTimer); antiThrottleTimer = null }
+    }
+    
+    rec.onspeechstart = () => sendServerLog('[Micro EVENT] onspeechstart - Une voix humaine est détectée')
+    rec.onspeechend = () => sendServerLog('[Micro EVENT] onspeechend - Fin de la voix humaine (Navigateur natif)')
+    rec.onsoundend = () => sendServerLog('[Micro EVENT] onsoundend - Fin de tout son')
+    rec.onaudioend = () => sendServerLog('[Micro EVENT] onaudioend - Capture audio terminée')
+
     rec.onresult = (event) => {
-        let interimTranscript = ''
-        let finalTranscript = ''
+        let interim = ''
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript + ' '
+                accumulatedTranscript += event.results[i][0].transcript + ' '
             } else {
-                interimTranscript += event.results[i][0].transcript
+                interim += event.results[i][0].transcript
             }
         }
-        
-        if (finalTranscript) {
-            accumulatedTranscript += finalTranscript
-        }
-        
-        transcript.value = (accumulatedTranscript + interimTranscript).trim()
-        
+        transcript.value = (accumulatedTranscript + interim).trim()
+
+        // Reset timer silence à chaque nouveau mot
         if (silenceTimer) clearTimeout(silenceTimer)
         silenceTimer = setTimeout(() => {
-            if (transcript.value.trim() !== '') {
-                try { rec.stop() } catch(e) {}
+            if (micState === 'listening' && transcript.value.trim() !== '') {
+                sendServerLog('[Micro] ⏱️ Silence_Timeout (4s) atteint → Envoi manuel forcé')
+                try { rec.stop() } catch(e) { sendServerLog(`[Micro] Erreur rec.stop(): ${e}`) }
             }
         }, SILENCE_TIMEOUT)
     }
 
     rec.onend = () => {
+        if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null }
+        if (antiThrottleTimer) { clearTimeout(antiThrottleTimer); antiThrottleTimer = null }
         isListening.value = false
         stopAudioPulse()
-        if (silenceTimer) clearTimeout(silenceTimer)
+        recognition = null
 
-        // Récupération ultra-robuste : si la phrase finale n'est pas marquée 'isFinal', 
-        // on récupère quand même le texte affiché à l'écran (transcript.value) pour ne rien perdre.
         const text = (accumulatedTranscript.trim() || transcript.value.trim())
         accumulatedTranscript = ''
         transcript.value = ''
-        recognition = null
 
-        if (text !== '' && !isSpeaking.value && isInterviewStarted.value) {
+        sendServerLog(`[Micro EVENT] onend — micState=${micState} | texte="${text.slice(0, 60)}"`)
+
+        if (!isInterviewStarted.value) {
+            micState = 'idle'
+            return
+        }
+
+        if (micState !== 'listening') {
+            // État modifié pendant l'écoute (ex: stopInterview, triggerListen coupe l'IA)
+            micState = 'idle'
+            return
+        }
+
+        if (text) {
+            micState = 'sending'
             sendMessageToAI(text)
-        } else if (text === '' && !isSpeaking.value && isInterviewStarted.value) {
-            setTimeout(() => startListening(), 100)
+            // → playHDAudio() mettra micState='ai_speaking'
+            // → audio.onended mettra micState='idle' + startListening()
+        } else {
+            // Aucune parole détectée → reprendre l'écoute
+            micState = 'idle'
+            setTimeout(() => startListening(), 200)
         }
     }
 
     rec.onerror = (event) => {
-        isListening.value = false
-        stopAudioPulse()
-        if (silenceTimer) clearTimeout(silenceTimer)
+        if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null }
+        if (antiThrottleTimer) { clearTimeout(antiThrottleTimer); antiThrottleTimer = null }
         recognition = null
-        console.warn('[Micro] Erreur:', event.error)
+        sendServerLog(`[Micro EVENT] onerror: "${event.error}" | message: "${event.message || ''}" | micState=${micState}`)
 
         if (event.error === 'not-allowed') {
+            micState = 'idle'
+            isListening.value = false
+            stopAudioPulse()
             errorMsg.value = "⚠️ Microphone refusé. Vérifiez les permissions de votre navigateur."
             return
         }
-        if (event.error === 'no-speech' || event.error === 'aborted') {
-            if (isInterviewStarted.value && !isSpeaking.value) {
-                setTimeout(() => startListening(), 100)
-            }
-            return
-        }
-        if (isInterviewStarted.value && !isSpeaking.value) {
-            setTimeout(() => startListening(), 100)
-        }
-    }
 
-    return rec
-}
-
-// Détruit l'instance en cours et en crée une propre
-const createFreshRecognition = () => {
-    if (recognition) {
-        try {
-            recognition.onstart = null
-            recognition.onresult = null
-            recognition.onend = null
-            recognition.onerror = null
-            recognition.abort()
-        } catch(e) {}
-        recognition = null
-    }
-
-    if (!isInterviewStarted.value || isSpeaking.value) return
-
-    accumulatedTranscript = ''
-
-    const rec = buildRecognitionInstance()
-    if (!rec) return
-    recognition = rec
-    
-    try {
-        rec.start()
-        console.log('[Micro] Démarrage de la capture vocale...')
-    } catch(e) {
-        console.error('[Micro] Impossible de démarrer:', e.message)
         isListening.value = false
-        recognition = null
+        stopAudioPulse()
+
+        // no-speech, aborted, network… → récupération automatique si pertinent
+        if (micState === 'listening' && isInterviewStarted.value) {
+            micState = 'idle'
+            setTimeout(() => startListening(), 300)
+        } else {
+            micState = 'idle'
+        }
     }
+
+    const startRec = (retries = 3) => {
+        try {
+            sendServerLog(`[Micro] Appel à rec.start() - Retries restants: ${retries}`)
+            rec.start()
+        } catch(e) {
+            sendServerLog(`[Micro] ❌ rec.start() a échoué: ${e.name} - ${e.message}`)
+            if (retries > 0 && isInterviewStarted.value && micState === 'listening') {
+                sendServerLog(`[Micro] Retentative de démarrage dans 200ms... (${retries} restantes)`)
+                setTimeout(() => startRec(retries - 1), 200)
+            } else {
+                recognition = null
+                micState = 'idle'
+                isListening.value = false
+                stopAudioPulse()
+            }
+        }
+    }
+    
+    startRec()
 }
 
-const startListening = () => {
-    if (!isInterviewStarted.value || isSpeaking.value) return
-    createFreshRecognition()
-}
-
+// ─── Arrêt définitif (fin d'entretien) ───────────────────────────────────
 const stopListening = () => {
-    if (recognition) {
-        try { recognition.abort() } catch(e) {}
-        recognition = null
-    }
+    micState = 'idle'
+    isListening.value = false
+    _killRecognition()
 }
 
 const triggerListen = () => {
     if (isAIThinking.value) return
-    
+
     if (isSpeaking.value) {
-        // Couper l'audio IA immédiatement
+        // Interrompre l'IA et prendre la parole immédiatement
         window.speechSynthesis.cancel()
         if (currentHDAudio) {
             try { currentHDAudio.pause(); currentHDAudio.src = '' } catch(e) {}
@@ -226,20 +296,22 @@ const triggerListen = () => {
         if (speakingWatchdog) clearTimeout(speakingWatchdog)
         isSpeaking.value = false
         stopAudioPulse()
-        setTimeout(() => startListening(), 100)
+        micState = 'idle'
+        setTimeout(() => startListening(), 80)
         return
     }
 
-    if (isListening.value) {
-        // L'utilisateur clique pour stopper et envoyer manuellement
+    if (micState === 'listening') {
+        // Envoyer manuellement sans attendre le silence
         if (recognition) {
             try { recognition.stop() } catch(e) {}
         }
-    } else {
+    } else if (micState === 'idle') {
         errorMsg.value = ''
         startListening()
     }
 }
+
 
 
 const startInterview = async () => {
@@ -384,7 +456,6 @@ const connectWebSocket = () => {
         socket.value.onmessage = (event) => {
             const msg = JSON.parse(event.data)
             
-            // Texte du recruteur (backend envoie "recruiter_response" avec .text)
             if (msg.type === 'recruiter_response' && msg.text) {
                 isAIThinking.value = false
                 const content = msg.text
@@ -396,6 +467,25 @@ const connectWebSocket = () => {
                 const endKeywords = ['au revoir', 'bonne journée', 'bonne chance', 'merci pour votre temps', 'bientôt', 'clôturer', 'fini cet entretien']
                 if (endKeywords.some(k => content.toLowerCase().includes(k))) pendingFinish.value = true
                 scrollToBottom()
+
+                // ⚡ Filet de sécurité : si l'audio HD n'arrive pas dans 8s, on relance le micro quand même
+                const voiceSafetyTimer = setTimeout(() => {
+                    if (isInterviewStarted.value && micState !== 'ai_speaking' && micState !== 'listening') {
+                        sendServerLog('[Micro] Pas d\'audio reçu après 8s — relance de secours.')
+                        micState = 'idle'
+                        isSpeaking.value = false
+                        startListening()
+                    }
+                }, 8000)
+                const onNextVoice = (e) => {
+                    const m = JSON.parse(e.data)
+                    if (m.type === 'voice' || m.type === 'error') {
+                        clearTimeout(voiceSafetyTimer)
+                        socket.value.removeEventListener('message', onNextVoice)
+                    }
+                }
+                socket.value.addEventListener('message', onNextVoice)
+
             } else if (msg.type === 'message' || msg.type === 'chunk') {
                 isAIThinking.value = false
                 const content = msg.content
@@ -437,6 +527,11 @@ const connectWebSocket = () => {
                 if (conversation.value.length === 0) {
                     isInterviewStarted.value = false
                     stopWebcam()
+                } else if (isInterviewStarted.value) {
+                    // Sinon, réactiver le micro pour continuer la conversation
+                    micState = 'idle'
+                    isSpeaking.value = false
+                    setTimeout(() => startListening(), 300)
                 }
             }
         }
@@ -523,24 +618,26 @@ const testAudio = async () => {
 const playHDAudio = (base64Data) => {
     if (!base64Data) return
 
-    // Stopper toute lecture en cours
+    // Stopper toute lecture HD en cours (voix en double)
     if (currentHDAudio) {
         try { currentHDAudio.pause(); currentHDAudio.src = '' } catch(e) {}
         currentHDAudio = null
     }
     if (window.speechSynthesis) window.speechSynthesis.cancel()
-    // Stopper le micro pendant que l'IA parle
-    stopListening()
 
-    ttsStatus.value = "Lecture audio HD..."
+    // Transition d'état : l'IA parle
+    micState = 'ai_speaking'
     isSpeaking.value = true
+    isListening.value = false
     startAudioPulse()
+    ttsStatus.value = "Lecture audio HD..."
 
-    // Watchdog : si l'audio reste bloqué plus de 60s, on reset isSpeaking
+    // Watchdog : reset forcé si l'audio reste bloqué > 60s
     if (speakingWatchdog) clearTimeout(speakingWatchdog)
     speakingWatchdog = setTimeout(() => {
-        if (isSpeaking.value) {
-            console.warn('[Watchdog] isSpeaking bloqué, reset forcé')
+        if (micState === 'ai_speaking') {
+            console.warn('[Watchdog] audio bloqué > 60s — reset forcé')
+            micState = 'idle'
             isSpeaking.value = false
             stopAudioPulse()
             currentHDAudio = null
@@ -563,7 +660,8 @@ const playHDAudio = (base64Data) => {
                 pendingFinish.value = false
                 return
             }
-            // Instance déjà pré-chauffée → démarrage instantané
+            // Transition : audio terminé → on ré-écoute
+            micState = 'idle'
             startListening()
         }
 
@@ -574,6 +672,7 @@ const playHDAudio = (base64Data) => {
             ttsStatus.value = "Erreur Audio HD"
             isSpeaking.value = false
             stopAudioPulse()
+            micState = 'idle'
             setTimeout(() => startListening(), 100)
         }
 
@@ -583,6 +682,7 @@ const playHDAudio = (base64Data) => {
             currentHDAudio = null
             isSpeaking.value = false
             stopAudioPulse()
+            micState = 'idle'
             setTimeout(() => startListening(), 100)
         })
     } catch (err) {
@@ -591,6 +691,7 @@ const playHDAudio = (base64Data) => {
         console.error("Failed to create Audio:", err)
         isSpeaking.value = false
         stopAudioPulse()
+        micState = 'idle'
     }
 }
 
@@ -599,7 +700,9 @@ const speakText = (text) => {
     if (!window.speechSynthesis || !text?.trim()) return
     ttsStatus.value = "Préparation..."
     window.speechSynthesis.cancel()
-    stopListening()
+    micState = 'ai_speaking'
+    isListening.value = false
+    stopAudioPulse()
     setTimeout(() => {
         const utterance = new SpeechSynthesisUtterance(text)
         utterance.lang = 'fr-FR'
@@ -618,6 +721,7 @@ const speakText = (text) => {
             ttsStatus.value = "Prêt"
             isSpeaking.value = false
             stopAudioPulse()
+            micState = 'idle'
             setTimeout(() => startListening(), 100)
         }
         utterance.onerror = (e) => {
@@ -629,6 +733,7 @@ const speakText = (text) => {
                 retryCount++
                 speakText(text)
             } else {
+                micState = 'idle'
                 setTimeout(() => startListening(), 100)
             }
         }
