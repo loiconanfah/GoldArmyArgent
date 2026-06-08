@@ -65,6 +65,8 @@ class OpenRouterClient:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
         
+        json_mode = kwargs.pop("json_mode", False)
+        
         payload = {
             "model": model,
             "messages": messages,
@@ -72,6 +74,9 @@ class OpenRouterClient:
             "max_tokens": max_tokens,
             **kwargs
         }
+        
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
         
         try:
             response = await self.client.post(
