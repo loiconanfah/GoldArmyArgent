@@ -10,10 +10,10 @@ from config.settings import settings
 
 # Modèles OpenRouter gratuits performants pour le fallback
 OPENROUTER_FALLBACK_MODELS = [
-    "openrouter/free",                           # Auto-routage OpenRouter (très fiable)
-    "google/gemma-4-31b-it:free",                # Gemma 4 gratuit
-    "nvidia/nemotron-3-super-120b-a12b:free",    # Nemotron gratuit
-    "moonshotai/kimi-k2.6:free",                 # Alternative gratuite
+    "openrouter/auto",                           # Auto-routage premium (choisit le meilleur rapport qualité/prix)
+    "google/gemini-2.5-flash",                   # Ultra rapide et pas cher
+    "meta-llama/llama-3.3-70b-instruct",         # Très intelligent et fiable
+    "anthropic/claude-3.5-haiku",                # Excellent pour la logique et très rapide
 ]
 
 # Mots-clés détectés dans les exceptions Gemini qui déclenchent le fallback
