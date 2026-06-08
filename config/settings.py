@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # OpenRouter Configuration
     openrouter_api_key: Optional[str] = Field(default=None, description="Clé API OpenRouter")
-    openrouter_default_model: str = Field(default="mistralai/mistral-7b-instruct:free", description="Modèle par défaut OpenRouter")
+    openrouter_default_model: str = Field(default="google/gemini-2.5-flash", description="Modèle par défaut OpenRouter")
 
     # Gemini Configuration
     gemini_api_key: Optional[str] = Field(default=None, description="Clé API Gemini")
