@@ -90,15 +90,10 @@ const dateNum = computed(() => new Date().getDate())
 const kpiValues = ref({ applied: '0', cv_analyzed: '0', interviews: '0', network: '0' })
 
 const playbooks = ref([
-  { id: 1, name: 'Sniper-to-Apply', desc: 'Candidature Express 1-Clic', fullDesc: "Ce workflow analyse l'offre d'emploi, adapte votre CV spécifiquement pour celle-ci, et remplit automatiquement le formulaire ATS de l'entreprise via l'agent MultiOn.", icon: RocketLaunchIcon, active: false },
   { id: 2, name: 'Ghostbuster', desc: 'Relance Anti-Fantôme', fullDesc: "Détecte automatiquement les candidatures sans réponse depuis plus de 15 jours ouvrables et génère un email de relance + message LinkedIn personnalisé. Mode auto disponible (scan toutes les 48h).", icon: EnvelopeIcon, active: false },
   { id: 3, name: 'Network Ninja', desc: 'Chasseur de Décideurs', fullDesc: "Cherche et identifie les décideurs clés (RH, CEO, Lead Dev) de l'entreprise sur LinkedIn et prépare un message d'accroche personnalisé.", icon: UsersIcon, active: false },
   { id: 4, name: 'Pre-Interview', desc: 'Entraînement Immersif', fullDesc: "Récupère les détails du poste et de l'entreprise pour préparer un simulateur d'entretien avec des questions probables et des conseils de posture.", icon: LightBulbIcon, active: false },
-  { id: 5, name: 'Daily Hunt', desc: 'Chasse Matinale (Cron)', fullDesc: "S'exécute tous les matins à 7h00. Scanne le web pour trouver 5 nouvelles offres d'emploi correspondant exactement à votre profil et les ajoute au CRM.", icon: MagnifyingGlassIcon, active: false },
-  { id: 6, name: 'Social Sniper', desc: 'Kit d\'Approche Multi-Canal', fullDesc: "Génère un arsenal complet pour infiltrer l'entreprise : Accroche LinkedIn, Commentaire expert, Relance et argument massue personnalisé.", icon: MegaphoneIcon, active: false },
   { id: 7, name: 'Post-Interview', desc: 'Debrief & Remerciement', fullDesc: "S'active après un entretien. Génère un email de remerciement stratégique et met à jour le statut de la candidature dans le CRM.", icon: HandThumbUpIcon, active: false },
-  { id: 8, name: 'Gold Profile', desc: 'Personal Branding LinkedIn', fullDesc: "Optimise votre profil LinkedIn à 100% : Bio, champs clés, et stratégie de contenu. Génère un plan de publication sur 30 jours et vous envoie chaque matin votre post prêt-à-publier par email.", icon: SparklesIcon, active: false },
-  { id: 9, name: 'Rejection Pivot', desc: 'Rebond & Alternatives', fullDesc: "Suite à un refus, envoie un email demandant du feedback constructif, et trouve instantanément 3 offres similaires pour rebondir.", icon: ArrowPathIcon, active: false },
   { id: 10, name: 'Smart Cover', desc: 'Lettre d\'Actualité', fullDesc: "Rédige une lettre de motivation dynamique en intégrant la dernière actualité pertinente de l'entreprise ciblée.", icon: DocumentTextIcon, active: false }
 ])
 

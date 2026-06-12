@@ -70,6 +70,22 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  server: {
+    proxy: {
+      // Proxy all /api/* requests to the Python backend (avoids Docker/IPv6 conflict on port 8000)
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy WebSocket connections as well
+      '/ws': {
+        target: 'ws://127.0.0.1:8000',
+        ws: true,
+        changeOrigin: true,
+      },
+    }
+  },
   ssgOptions: {
     script: 'async',
     style: 'async',

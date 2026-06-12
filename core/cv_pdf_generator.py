@@ -549,7 +549,7 @@ def _render_modern_sidebar(cv_data, doc, story, styles, c):
 
     f_sb   = Frame(0,  0, SW,      PH, leftPadding=22, rightPadding=14, topPadding=28, bottomPadding=24, id='sb')
     f_main = Frame(SW, 0, PW - SW, PH, leftPadding=22, rightPadding=28, topPadding=28, bottomPadding=24, id='main')
-    f_p2   = Frame(SW, 0, PW - SW, PH, leftPadding=22, rightPadding=28, topPadding=24, bottomPadding=24, id='main_p2')
+    f_p2   = Frame(SW, 0, PW - SW, PH, leftPadding=22, rightPadding=28, topPadding=40, bottomPadding=32, id='main_p2')
 
     doc.addPageTemplates([
         PageTemplate(id='P1', frames=[f_sb, f_main], onPage=on_page),
@@ -581,7 +581,7 @@ def _render_reverse_sidebar(cv_data, doc, story, styles, c):
 
     f_main = Frame(0,       0, PW - SW, PH, leftPadding=28, rightPadding=22, topPadding=28, bottomPadding=24, id='main')
     f_sb   = Frame(PW - SW, 0, SW,      PH, leftPadding=14, rightPadding=20, topPadding=28, bottomPadding=24, id='sb')
-    f_p2   = Frame(0,       0, PW - SW, PH, leftPadding=28, rightPadding=22, topPadding=24, bottomPadding=24, id='main_p2')
+    f_p2   = Frame(0,       0, PW - SW, PH, leftPadding=28, rightPadding=22, topPadding=40, bottomPadding=32, id='main_p2')
 
     doc.addPageTemplates([
         PageTemplate(id='P1', frames=[f_main, f_sb], onPage=on_page),
@@ -601,7 +601,7 @@ def _render_classic_single(cv_data, doc, story, styles, c):
         _inject_invisible_ats_layer(canvas, doc, cv_data)
 
     frame = Frame(50, 36, LETTER[0] - 100, LETTER[1] - 72,
-                  leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
+                  leftPadding=0, rightPadding=0, topPadding=8, bottomPadding=0)
     doc.addPageTemplates([PageTemplate(id='L', frames=[frame], onPage=on_page)])
     _build_main_full(cv_data, story, M, c)
 
@@ -625,7 +625,15 @@ def _render_executive_band(cv_data, doc, story, styles, c):
         canvas.restoreState()
 
     def on_p2(canvas, d):
-        pass  # Pas de bandeau sur page 2
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
+        # Thin accent band at top on page 2 for visual continuity
+        canvas.saveState()
+        canvas.setFillColor(c["SIDEBAR_BG"])
+        canvas.rect(0, PH - 8, PW, 8, fill=1, stroke=0)
+        canvas.setStrokeColor(c["ACCENT"])
+        canvas.setLineWidth(2)
+        canvas.line(0, PH - 8, PW, PH - 8)
+        canvas.restoreState()
 
     BODY_H  = PH - HD - 36   # hauteur disponible sous bandeau
     BODY_Y  = 24              # marge basse
@@ -633,7 +641,7 @@ def _render_executive_band(cv_data, doc, story, styles, c):
     f_hdr    = Frame(0,  PH - HD, PW,          HD,     leftPadding=36, rightPadding=36, topPadding=12, bottomPadding=8)
     f_left   = Frame(24, BODY_Y,  SW,           BODY_H, leftPadding=12, rightPadding=12, topPadding=16, bottomPadding=16, id='bl')
     f_right  = Frame(24 + SW + 8, BODY_Y, PW - SW - 48, BODY_H, leftPadding=12, rightPadding=12, topPadding=16, bottomPadding=16, id='br')
-    f_p2 = Frame(28, 24, PW - 56, PH - 48, leftPadding=16, rightPadding=16, topPadding=24, bottomPadding=24)
+    f_p2 = Frame(28, 24, PW - 56, PH - 56, leftPadding=16, rightPadding=16, topPadding=36, bottomPadding=24)
 
     doc.addPageTemplates([
         PageTemplate(id='P1', frames=[f_hdr, f_left, f_right], onPage=on_p1),
@@ -750,14 +758,22 @@ def _render_grid_bento(cv_data, doc, story, styles, c):
 
     f_l  = Frame(24,      24, half - 28,  PH - 48, leftPadding=18, rightPadding=10, topPadding=24, bottomPadding=24, id='l')
     f_r  = Frame(half + 4, 24, half - 28,  PH - 48, leftPadding=10, rightPadding=18, topPadding=24, bottomPadding=24, id='r')
-    f_p2 = Frame(24,      24, PW - 48,    PH - 48, leftPadding=18, rightPadding=18, topPadding=28, bottomPadding=24)
+    f_p2 = Frame(24,      24, PW - 48,    PH - 48, leftPadding=18, rightPadding=18, topPadding=40, bottomPadding=24)
 
     def on_p1(canvas, d):
         _inject_invisible_ats_layer(canvas, doc, cv_data)
 
+    def on_p2(canvas, d):
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
+        # Subtle accent top bar for visual continuity on page 2
+        canvas.saveState()
+        canvas.setFillColor(c["SIDEBAR_BG"])
+        canvas.rect(24, PH - 52, PW - 48, 4, fill=1, stroke=0)
+        canvas.restoreState()
+
     doc.addPageTemplates([
         PageTemplate(id='P1', frames=[f_l, f_r], onPage=on_p1),
-        PageTemplate(id='P2', frames=[f_p2])
+        PageTemplate(id='P2', frames=[f_p2], onPage=on_p2)
     ])
 
     # Col gauche: en-tête + profil + expériences
@@ -827,11 +843,18 @@ def _render_split_equal(cv_data, doc, story, styles, c):
         canvas.restoreState()
 
     def on_p2(canvas, d):
-        pass
+        _inject_invisible_ats_layer(canvas, doc, cv_data)
+        # Keep a slim accent stripe on the left for visual continuity
+        canvas.saveState()
+        canvas.setFillColor(c["SIDEBAR_BG"])
+        canvas.rect(0, 0, 8, PH, fill=1, stroke=0)
+        canvas.setFillColor(c["ACCENT"])
+        canvas.rect(8, 0, 3, PH, fill=1, stroke=0)
+        canvas.restoreState()
 
     f_l  = Frame(0,    0, half,     PH, leftPadding=26, rightPadding=16, topPadding=32, bottomPadding=28, id='l')
     f_r  = Frame(half, 0, half,     PH, leftPadding=16, rightPadding=26, topPadding=32, bottomPadding=28, id='r')
-    f_p2 = Frame(28,  28, PW - 56, PH - 56, leftPadding=20, rightPadding=20, topPadding=24, bottomPadding=24)
+    f_p2 = Frame(28,  28, PW - 56, PH - 56, leftPadding=20, rightPadding=20, topPadding=40, bottomPadding=24)
 
     doc.addPageTemplates([
         PageTemplate(id='P1', frames=[f_l, f_r], onPage=on_p1),
@@ -858,7 +881,7 @@ def _render_compact_tight(cv_data, doc, story, styles, c):
 
     def on_page(canvas, d):
         _inject_invisible_ats_layer(canvas, doc, cv_data)
-        # Bandeau latéral gauche fin (barre décorative)
+        # Bandeau latéral gauche fin (barre décorative) — drawn on EVERY page
         canvas.saveState()
         canvas.setFillColor(c["SIDEBAR_BG"])
         canvas.rect(0, 0, 6, PH, fill=1, stroke=0)
@@ -867,7 +890,7 @@ def _render_compact_tight(cv_data, doc, story, styles, c):
         canvas.restoreState()
 
     frame = Frame(22, 28, PW - 50, PH - 56,
-                  leftPadding=20, rightPadding=20, topPadding=20, bottomPadding=20)
+                  leftPadding=20, rightPadding=20, topPadding=32, bottomPadding=20)
     doc.addPageTemplates([PageTemplate(id='L', frames=[frame], onPage=on_page)])
 
     _build_main_full(cv_data, story, M, c)

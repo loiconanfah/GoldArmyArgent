@@ -196,7 +196,7 @@ const startCall = async () => {
     step.value = 'connecting'
     
     try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
         const res = await fetch(`${apiUrl}/api/public/interview`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -261,7 +261,7 @@ const submitAnswer = async () => {
     isProcessing.value = true
     
     try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
         const res = await fetch(`${apiUrl}/api/public/interview`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
