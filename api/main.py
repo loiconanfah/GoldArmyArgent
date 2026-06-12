@@ -412,23 +412,36 @@ async def generate_cv_pdf_endpoint(raw_request: Request):
 
         try:
             def _generate_pdf_sync(html: str) -> bytes:
+                import logging
                 from playwright.sync_api import sync_playwright
                 try:
                     with sync_playwright() as pw:
                         # Add sandbox flags for better compatibility in various environments
                         browser = pw.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox"])
                         page = browser.new_page()
+                        # Set A4 viewport width (794px @ 96dpi) for accurate layout
+                        page.set_viewport_size({"width": 794, "height": 1123})
                         # Use 'load' instead of 'networkidle' to avoid hanging on slow external assets
                         # and set a reasonable timeout.
                         page.set_content(html, wait_until="load", timeout=20000)
+                        # Measure actual rendered content height to auto-scale to max 2 pages
+                        content_height = page.evaluate("document.documentElement.scrollHeight")
+                        A4_HEIGHT_PX = 1123  # A4 at 96dpi
+                        MAX_PAGES = 2
+                        max_height = A4_HEIGHT_PX * MAX_PAGES
+                        if content_height > max_height:
+                            scale = max(0.1, min(1.0, max_height / content_height))
+                        else:
+                            scale = 1.0
+                        logging.info(f"[PDF] content_height={content_height}px, scale={scale:.3f}")
                         p_bytes = page.pdf(
                             format="A4", print_background=True,
-                            margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
+                            margin={"top": "0", "bottom": "0", "left": "0", "right": "0"},
+                            scale=scale
                         )
                         browser.close()
                         return p_bytes
                 except Exception as e:
-                    import logging
                     logging.error(f"[Playwright] Critical PDF generation error: {str(e)}")
                     raise e
 
@@ -477,22 +490,35 @@ async def generate_cv_pdf_from_html(raw_request: Request):
             raise HTTPException(status_code=400, detail="html manquant dans la requête")
 
         def _generate_pdf_sync(html: str) -> bytes:
+            import logging
             from playwright.sync_api import sync_playwright
             try:
                 with sync_playwright() as pw:
                     # Add sandbox flags for better compatibility
                     browser = pw.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox"])
                     page = browser.new_page()
+                    # Set A4 viewport width (794px @ 96dpi) for accurate layout
+                    page.set_viewport_size({"width": 794, "height": 1123})
                     # Use 'load' + timeout to prevent hanging on external fonts/assets
                     page.set_content(html, wait_until="load", timeout=20000)
+                    # Measure actual rendered content height to auto-scale to max 2 pages
+                    content_height = page.evaluate("document.documentElement.scrollHeight")
+                    A4_HEIGHT_PX = 1123  # A4 at 96dpi
+                    MAX_PAGES = 2
+                    max_height = A4_HEIGHT_PX * MAX_PAGES
+                    if content_height > max_height:
+                        scale = max(0.1, min(1.0, max_height / content_height))
+                    else:
+                        scale = 1.0
+                    logging.info(f"[PDF-HTML] content_height={content_height}px, scale={scale:.3f}")
                     p_bytes = page.pdf(
                         format="A4", print_background=True,
-                        margin={"top": "0", "bottom": "0", "left": "0", "right": "0"}
+                        margin={"top": "0", "bottom": "0", "left": "0", "right": "0"},
+                        scale=scale
                     )
                     browser.close()
                     return p_bytes
             except Exception as e:
-                import logging
                 logging.error(f"[Playwright-HTML] Critical PDF generation error: {str(e)}")
                 raise e
 

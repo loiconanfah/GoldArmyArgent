@@ -1,4 +1,5 @@
 from typing import Dict, Any, List
+import asyncio
 import json
 import re
 import time
@@ -211,6 +212,14 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
                 logger.error(f"[Mentor] Erreur parsing passe {i}: {e}")
                 if i == 1:
                     return {"status": "error", "type": "chat", "content": "Désolé, l'optimisation a échoué au premier cycle."}
+                elif i == 3:
+                    # Passe 3 optionnelle — on continue avec le draft de la passe 2
+                    logger.warning("[Mentor] Passe 3 échouée (rate-limit probable) — on utilise le draft de la passe 2.")
+                    break
+
+            # Pause entre les passes pour éviter le rate-limit des modèles gratuits
+            if i < iterations:
+                await asyncio.sleep(5)
 
         # Finalisation
         last_audit["original_ats_score"] = original_ats_score

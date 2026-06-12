@@ -4,7 +4,7 @@ import asyncio
 from typing import AsyncGenerator, Dict, List, Optional, Any
 import httpx
 from loguru import logger
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential  # kept for potential future use
 
 from config.settings import settings
 
@@ -43,11 +43,6 @@ class OpenRouterClient:
     async def close(self):
         await self.client.aclose()
     
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        reraise=True
-    )
     async def generate(
         self,
         prompt: str,
@@ -57,7 +52,7 @@ class OpenRouterClient:
         max_tokens: int = 2048,
         **kwargs
     ) -> str:
-        """Génère une réponse via OpenRouter (Completions ou Chat)."""
+        """Génère une réponse via OpenRouter avec retry automatique sur rate-limit."""
         model = model or self.default_model
         
         messages = []
@@ -78,23 +73,40 @@ class OpenRouterClient:
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
         
-        try:
-            response = await self.client.post(
-                f"{self.BASE_URL}/chat/completions",
-                json=payload
-            )
-            response.raise_for_status()
-            result = response.json()
-            return result["choices"][0]["message"]["content"]
-            
-        except httpx.HTTPError as e:
-            logger.error(f"❌ Erreur HTTP OpenRouter: {e}")
-            if e.response:
-                logger.error(f"Détails: {e.response.text}")
-            raise
-        except Exception as e:
-            logger.error(f"❌ Erreur OpenRouter: {e}")
-            raise
+        # Retry with exponential backoff — longer wait for 429 rate limits
+        max_attempts = 5
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = await self.client.post(
+                    f"{self.BASE_URL}/chat/completions",
+                    json=payload
+                )
+                response.raise_for_status()
+                result = response.json()
+                return result["choices"][0]["message"]["content"]
+                
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429:
+                    # Rate limit — wait longer before retry
+                    wait_time = min(15 * (2 ** (attempt - 1)), 120)  # 15s, 30s, 60s, 120s...
+                    logger.warning(f"⏳ OpenRouter 429 rate-limit (tentative {attempt}/{max_attempts}). Attente {wait_time}s...")
+                    if attempt < max_attempts:
+                        await asyncio.sleep(wait_time)
+                        continue
+                    else:
+                        logger.error(f"❌ OpenRouter: trop de 429 après {max_attempts} tentatives.")
+                        raise
+                else:
+                    logger.error(f"❌ Erreur HTTP OpenRouter: {e}")
+                    if e.response is not None:
+                        logger.error(f"Détails: {e.response.text}")
+                    raise
+            except httpx.HTTPError as e:
+                logger.error(f"❌ Erreur HTTP OpenRouter: {e}")
+                raise
+            except Exception as e:
+                logger.error(f"❌ Erreur OpenRouter: {e}")
+                raise
 
     async def list_models(self) -> List[Dict[str, Any]]:
         """Liste les modèles disponibles sur OpenRouter."""

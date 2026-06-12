@@ -78,7 +78,7 @@ body{font-family:'DM Sans',sans-serif;background:#FAFAF7;color:#2B2B2B;font-size
 /* Summary */
 .summary-text{font-size:11.5px;line-height:1.8;color:#444;font-style:italic;font-family:'Lora',serif;}
 /* Experience */
-.exp-block{margin-bottom:18px;}
+.exp-block{margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;}
 .exp-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
 .exp-title{font-size:12px;font-weight:600;color:#1A1A1A;}
 .exp-sep{color:#BBB;}
@@ -86,25 +86,25 @@ body{font-family:'DM Sans',sans-serif;background:#FAFAF7;color:#2B2B2B;font-size
 .exp-loc{font-size:11px;color:#888;}
 .exp-dates{font-size:10px;color:#999;white-space:nowrap;flex-shrink:0;margin-left:12px;}
 .bullet-list{list-style:none;padding:0;}
-.bullet-list li{padding-left:12px;margin-bottom:3px;font-size:11px;color:#555;position:relative;}
+.bullet-list li{padding-left:12px;margin-bottom:3px;font-size:11px;color:#555;position:relative;page-break-inside:avoid;break-inside:avoid;}
 .bullet-list li::before{content:'—';position:absolute;left:0;color:#4A7C59;font-weight:600;}
 /* Projects */
 .proj-name{font-size:12px;font-weight:600;color:#1A1A1A;margin-bottom:3px;}
 .proj-desc{font-size:11px;color:#666;margin-bottom:4px;}
 /* Education */
-.edu-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.edu-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}
 .edu-degree{font-size:11px;font-weight:600;color:#1A1A1A;}
 .edu-school{font-size:11px;color:#888;}
 .edu-year{color:#4A7C59;font-weight:500;font-size:10px;margin-left:6px;}
 /* Skills */
 .skill-cat{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4A7C59;margin:8px 0 4px;font-weight:600;}
-.skill-pills{display:flex;flex-wrap:wrap;gap:4px;}
+.skill-pills{display:flex;flex-wrap:wrap;gap:4px;page-break-inside:avoid;break-inside:avoid;}
 .pill{border:1px solid #DDD;border-radius:2px;padding:2px 8px;font-size:10px;color:#444;background:#fff;}
 /* 2-col bottom grid */
-.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:0;}
-.lang-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px;color:#555;}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:0;page-break-inside:avoid;break-inside:avoid;}
+.lang-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px;color:#555;page-break-inside:avoid;break-inside:avoid;}
 .lang-dash{color:#4A7C59;font-weight:700;}
-.cert-item{font-size:10px;color:#555;margin-bottom:4px;padding-left:8px;border-left:2px solid #4A7C59;}
+.cert-item{font-size:10px;color:#555;margin-bottom:4px;padding-left:8px;border-left:2px solid #4A7C59;page-break-inside:avoid;break-inside:avoid;}
 </style></head><body>
 <div class="page">
   <div class="hdr">

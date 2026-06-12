@@ -31,27 +31,27 @@ body{font-family:system-ui,sans-serif;background:#fff;font-size:11px;line-height
 .section-title{font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:${ACCENT};border-bottom:1.5px solid ${ACCENT};padding-bottom:3px;margin:20px 0 10px;}
 .summary-text{font-size:11px;color:#444;line-height:1.7;}
 .body-layout{display:grid;grid-template-columns:1fr 260px;gap:32px;}
-.exp-block{margin-bottom:18px;}
+.exp-block{margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;}
 .exp-header{display:flex;justify-content:space-between;align-items:baseline;}
 .exp-title{font-size:12px;font-weight:700;color:#111;}
 .exp-dates{font-size:9px;color:#888;white-space:nowrap;margin-left:8px;}
 .exp-company{font-size:11px;color:${ACCENT};font-weight:600;margin-bottom:5px;}
 .exp-loc{color:#888;font-weight:400;}
-.bullet-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:3px;}
+.bullet-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;}
 .bullet-dot{width:4px;height:4px;border-radius:50%;background:${ACCENT};margin-top:5px;flex-shrink:0;}
 .bullet-text{font-size:11px;color:#444;flex:1;line-height:1.55;}
-.proj-block{margin-bottom:14px;}
+.proj-block{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
 .proj-name{font-size:12px;font-weight:700;color:#111;margin-bottom:2px;}
 .proj-desc{font-size:11px;color:#555;}
-.edu-block{margin-bottom:10px;}
+.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
 .edu-degree{font-size:11px;font-weight:700;color:#111;}
 .edu-school{font-size:10px;color:#555;}
 .edu-meta{font-size:10px;color:#888;}
 .skill-cat{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${ACCENT};margin:8px 0 4px;}
-.skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;}
+.skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;page-break-inside:avoid;break-inside:avoid;}
 .pill{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:4px;padding:2px 8px;font-size:10px;color:#1D4ED8;font-weight:500;}
-.lang-item{font-size:10px;color:#333;margin-bottom:4px;padding-left:10px;border-left:2px solid ${ACCENT};}
-.cert-item{font-size:10px;color:#444;margin-bottom:4px;padding-left:10px;border-left:2px solid #ddd;}
+.lang-item{font-size:10px;color:#333;margin-bottom:4px;padding-left:10px;border-left:2px solid ${ACCENT};page-break-inside:avoid;break-inside:avoid;}
+.cert-item{font-size:10px;color:#444;margin-bottom:4px;padding-left:10px;border-left:2px solid #ddd;page-break-inside:avoid;break-inside:avoid;}
 </style></head><body>
 <div class="page">
   <div class="name-row">

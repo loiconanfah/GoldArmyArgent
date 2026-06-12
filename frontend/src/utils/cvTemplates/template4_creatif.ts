@@ -1,6 +1,7 @@
 /**
  * Template 4 – "Créatif" : Violet foncé + rose accent, côté latéral coloré.
  * Style: Creative / Design
+ * Page-break fix: sidebar uses table-cell background to repeat on page 2.
  */
 import { CvTemplate, CvData, ParsedAudit } from './types';
 import {
@@ -34,31 +35,32 @@ body{font-family:system-ui,sans-serif;background:#fff;font-size:11px;line-height
 .contact-bar{background:#F9FAFB;padding:10px 40px;display:flex;flex-wrap:wrap;gap:16px;border-bottom:1px solid #E5E7EB;}
 .contact-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#555;}
 .ci{font-size:11px;color:${ACCENT};}
-.body-layout{display:flex;}
-.sidebar{width:230px;flex-shrink:0;background:${SIDEBAR};padding:26px 20px;}
+/* Two-column layout via table for proper page-break background repeat */
+.body-layout{display:table;width:100%;table-layout:fixed;}
+.sidebar{display:table-cell;width:230px;background:${SIDEBAR};padding:26px 20px;vertical-align:top;}
 .section-title{font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:${PURPLE};margin:18px 0 8px;}
 .section-title:first-child{margin-top:0;}
 .edu-degree{font-size:11px;font-weight:700;color:${PURPLE};}
 .edu-school{font-size:10px;color:#555;}
 .edu-meta{font-size:10px;color:#888;}
-.edu-block{margin-bottom:10px;}
+.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
 .skill-cat{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${ACCENT};margin:8px 0 4px;}
-.skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;}
+.skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;page-break-inside:avoid;break-inside:avoid;}
 .pill{background:#fff;border:1.5px solid ${PURPLE};border-radius:12px;padding:2px 9px;font-size:10px;color:${PURPLE};font-weight:600;}
-.lang-item{font-size:10px;color:#333;margin-bottom:4px;padding-left:8px;border-left:3px solid ${ACCENT};}
-.cert-item{font-size:10px;color:#555;margin-bottom:4px;padding-left:8px;border-left:2px solid #DDD6FE;}
-.main{flex:1;padding:28px 32px;}
+.lang-item{font-size:10px;color:#333;margin-bottom:4px;padding-left:8px;border-left:3px solid ${ACCENT};page-break-inside:avoid;break-inside:avoid;}
+.cert-item{font-size:10px;color:#555;margin-bottom:4px;padding-left:8px;border-left:2px solid #DDD6FE;page-break-inside:avoid;break-inside:avoid;}
+.main{display:table-cell;background:#ffffff;padding:28px 32px;vertical-align:top;}
 .summary-text{font-size:11px;color:#444;line-height:1.7;}
-.exp-block{margin-bottom:20px;}
+.exp-block{margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
 .exp-header{display:flex;justify-content:space-between;align-items:baseline;}
 .exp-title{font-size:12px;font-weight:700;color:${PURPLE};}
 .exp-dates{font-size:9px;color:#888;margin-left:8px;white-space:nowrap;}
 .exp-company{font-size:11px;color:${ACCENT};font-weight:600;margin-bottom:5px;}
 .exp-loc{color:#888;font-weight:400;}
-.bullet-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:3px;}
+.bullet-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;}
 .bullet-dot{width:5px;height:5px;border-radius:50%;background:${ACCENT};margin-top:4px;flex-shrink:0;}
 .bullet-text{font-size:11px;color:#444;flex:1;line-height:1.55;}
-.proj-block{margin-bottom:14px;}
+.proj-block{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
 .proj-name{font-size:12px;font-weight:700;color:${PURPLE};margin-bottom:2px;}
 .proj-desc{font-size:11px;color:#555;}
 .exp-section-title{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${PURPLE};border-bottom:2px solid ${ACCENT};padding-bottom:3px;margin:20px 0 10px;}

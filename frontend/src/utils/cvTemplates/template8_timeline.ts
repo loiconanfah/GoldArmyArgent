@@ -90,26 +90,26 @@ body{font-family:'Nunito',sans-serif;background:#F9F5F0;color:#2D2D2D;font-size:
 .summary-band{background:#fff;border-left:4px solid #E85D4A;padding:16px 48px;margin:0;font-size:11.5px;color:#555;line-height:1.75;font-style:italic;}
 /* Skill + meta row */
 .meta-row{display:flex;gap:0;background:#F0EBE3;}
-.meta-cell{flex:1;padding:20px 24px;border-right:1px solid #E5DDD5;}
+.meta-cell{flex:1;padding:20px 24px;border-right:1px solid #E5DDD5;page-break-inside:avoid;break-inside:avoid;}
 .meta-cell:last-child{border-right:none;}
 .meta-title{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#E85D4A;font-weight:700;margin-bottom:8px;}
 .skill-cat{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;margin:6px 0 3px;font-weight:600;}
-.skill-pills{display:flex;flex-wrap:wrap;gap:3px;}
+.skill-pills{display:flex;flex-wrap:wrap;gap:3px;page-break-inside:avoid;break-inside:avoid;}
 .pill{background:#fff;border:1px solid #DDD;border-radius:10px;padding:2px 8px;font-size:9px;color:#555;}
-.lang-item{font-size:10px;color:#666;margin-bottom:3px;}
-.cert-item{font-size:10px;color:#666;margin-bottom:4px;padding-left:8px;border-left:2px solid #E85D4A;}
+.lang-item{font-size:10px;color:#666;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;}
+.cert-item{font-size:10px;color:#666;margin-bottom:4px;padding-left:8px;border-left:2px solid #E85D4A;page-break-inside:avoid;break-inside:avoid;}
 /* Timeline */
 .tl-container{padding:32px 0;}
 .tl-header{text-align:center;margin-bottom:20px;}
 .tl-header-title{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#E85D4A;font-weight:700;}
-.tl-row{display:flex;align-items:flex-start;position:relative;}
+.tl-row{display:flex;align-items:flex-start;position:relative;page-break-inside:avoid;break-inside:avoid;}
 .tl-side{flex:1;padding:8px 20px;}
 .tl-left{text-align:right;}
 .tl-center{width:50px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;position:relative;}
 .tl-center::before{content:'';position:absolute;top:0;bottom:-24px;left:50%;transform:translateX(-50%);width:2px;background:#E5DDD5;z-index:0;}
 .tl-row:last-child .tl-center::before{display:none;}
 .tl-node{width:28px;height:28px;border-radius:50%;background:#E85D4A;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;z-index:1;position:relative;box-shadow:0 2px 8px rgba(232,93,74,0.4);}
-.tl-card{background:#fff;border-radius:6px;padding:12px 14px;box-shadow:0 2px 10px rgba(0,0,0,0.07);margin-bottom:16px;}
+.tl-card{background:#fff;border-radius:6px;padding:12px 14px;box-shadow:0 2px 10px rgba(0,0,0,0.07);margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;}
 .tl-dates{font-size:9px;color:#E85D4A;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
 .tl-title{font-size:12px;font-weight:700;color:#2D2D2D;}
 .tl-sub{font-size:10px;color:#888;margin-bottom:5px;}
@@ -119,7 +119,7 @@ body{font-family:'Nunito',sans-serif;background:#F9F5F0;color:#2D2D2D;font-size:
 .tl-bullets li{font-size:10px;color:#666;margin-bottom:2px;padding-left:10px;position:relative;}
 .tl-bullets li::before{content:'›';position:absolute;left:0;color:#E85D4A;font-weight:700;}
 /* Education */
-.edu-block{margin-bottom:8px;}
+.edu-block{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}
 .edu-degree{font-size:10px;font-weight:600;color:#2D2D2D;}
 .edu-school{font-size:10px;color:#888;}
 .edu-meta{font-size:9px;color:#BBB;}

@@ -267,9 +267,9 @@ function scrollTarget() {
     >
       <!-- Background -->
       <div class="absolute inset-0 pointer-events-none">
-        <div class="absolute inset-0" style="background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(99,102,241,0.14) 0%,transparent 70%)" />
-        <div class="absolute inset-0" style="background:radial-gradient(ellipse 60% 50% at 80% 80%,rgba(139,92,246,0.09) 0%,transparent 70%)" />
-        <div class="absolute inset-0 opacity-[0.035]" style="background-image:linear-gradient(rgba(99,102,241,1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,1) 1px,transparent 1px);background-size:50px 50px" />
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(245,158,11,0.13) 0%,transparent 70%)" />
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse 60% 50% at 80% 80%,rgba(196,74,45,0.08) 0%,transparent 70%)" />
+        <div class="absolute inset-0 opacity-[0.03]" style="background-image:linear-gradient(rgba(245,158,11,1) 1px,transparent 1px),linear-gradient(90deg,rgba(245,158,11,1) 1px,transparent 1px);background-size:50px 50px" />
       </div>
 
       <!-- Floating 3D badges with Heroicons -->
@@ -304,8 +304,8 @@ function scrollTarget() {
       <!-- Hero content -->
       <div class="relative z-10 max-w-3xl mx-auto">
         <div class="flex justify-center mb-6">
-          <span class="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/25 rounded-full text-indigo-300 text-xs font-bold uppercase tracking-wider">
-            <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-ping" />
+          <span class="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/25 rounded-full text-amber-300 text-xs font-bold uppercase tracking-wider">
+            <span class="w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping" />
             {{ t('landing.hero.badge').replace('{', '').replace('}', '').trim() }}
           </span>
         </div>
@@ -313,10 +313,10 @@ function scrollTarget() {
         <h1 class="text-5xl lg:text-7xl font-black text-white mb-5 leading-[1.05] tracking-tight">
           {{ t('home.welcome_prefix') }}
           <span class="relative">
-            <span class="bg-gradient-to-r from-indigo-400 via-violet-300 to-blue-400 bg-clip-text text-transparent">{{ userName }}</span>
+            <span class="bg-gradient-to-r from-amber-400 via-orange-300 to-yellow-400 bg-clip-text text-transparent">{{ userName }}</span>
             <svg class="absolute -bottom-2 left-0 w-full" height="6" viewBox="0 0 200 6" preserveAspectRatio="none">
               <path d="M0 5 Q50 0 100 4 Q150 8 200 3" stroke="url(#ug)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-              <defs><linearGradient id="ug" x1="0" x2="1"><stop offset="0%" stop-color="#818CF8"/><stop offset="100%" stop-color="#60A5FA"/></linearGradient></defs>
+              <defs><linearGradient id="ug" x1="0" x2="1"><stop offset="0%" stop-color="#F59E0B"/><stop offset="100%" stop-color="#C44A2D"/></linearGradient></defs>
             </svg>
           </span>
         </h1>
@@ -328,16 +328,16 @@ function scrollTarget() {
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
           <button @click="startTutorial"
-            class="group relative overflow-hidden flex items-center gap-2.5 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-xl shadow-indigo-500/30 transition-all hover:scale-105 hover:shadow-indigo-500/50 active:scale-95 text-sm"
+            class="group relative overflow-hidden flex items-center gap-2.5 px-8 py-4 bg-amber-500 hover:bg-amber-400 text-surface-950 font-bold rounded-2xl shadow-xl shadow-amber-500/30 transition-all hover:scale-105 hover:shadow-amber-500/50 active:scale-95 text-sm"
           >
-            <span class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+            <span class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
             <QuestionMarkCircleIcon class="w-5 h-5" />
             {{ t('home.tutorial_btn') }}
           </button>
           <button @click="router.push('/opportunities')"
             class="flex items-center gap-2.5 px-8 py-4 bg-surface-800/70 hover:bg-surface-700/80 backdrop-blur border border-surface-700 text-white font-bold rounded-2xl transition-all hover:scale-105 active:scale-95 text-sm"
           >
-            <MapPinIcon class="w-5 h-5 text-blue-400" />
+            <MapPinIcon class="w-5 h-5 text-amber-400" />
             {{ t('home.find_job_btn') }}
           </button>
         </div>
@@ -487,11 +487,11 @@ function scrollTarget() {
           <p class="text-slate-500 text-sm">{{ t('home.pro_tips_subtitle') }}</p>
         </div>
 
-        <div class="relative overflow-hidden rounded-2xl border border-indigo-500/20 p-6 mb-4"
-          style="background:radial-gradient(ellipse at top left,rgba(99,102,241,0.1),transparent 60%)">
+        <div class="relative overflow-hidden rounded-2xl border border-amber-500/20 p-6 mb-4"
+          style="background:radial-gradient(ellipse at top left,rgba(245,158,11,0.08),transparent 60%)">
           <Transition name="tip" mode="out-in">
             <div :key="activeTip" class="relative">
-              <component :is="tips[activeTip].icon" class="w-8 h-8 text-indigo-400 mb-3" stroke-width="1.5" />
+              <component :is="tips[activeTip].icon" class="w-8 h-8 text-amber-400 mb-3" stroke-width="1.5" />
               <h3 class="text-lg font-bold text-white mb-2">{{ tips[activeTip].title }}</h3>
               <p class="text-slate-300 text-sm leading-relaxed">{{ tips[activeTip].text }}</p>
             </div>
@@ -499,36 +499,36 @@ function scrollTarget() {
           <div class="flex gap-1.5 mt-5">
             <button v-for="(_, i) in tips" :key="i" @click="activeTip = i"
               class="h-1 rounded-full transition-all duration-300"
-              :class="i === activeTip ? 'w-6 bg-indigo-400' : 'w-2 bg-surface-700 hover:bg-surface-600'" />
+              :class="i === activeTip ? 'w-6 bg-amber-400' : 'w-2 bg-surface-700 hover:bg-surface-600'" />
           </div>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           <button v-for="(tip, i) in tips" :key="i" @click="activeTip = i"
             class="text-left p-3 rounded-xl border transition-all duration-200 group"
-            :class="i === activeTip ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-surface-900 border-surface-800 hover:border-surface-700 hover:bg-surface-800'"
+            :class="i === activeTip ? 'bg-amber-500/10 border-amber-500/30' : 'bg-surface-900 border-surface-800 hover:border-surface-700 hover:bg-surface-800'"
           >
             <component :is="tip.icon" class="w-5 h-5 mb-2 transition-colors"
-              :class="i === activeTip ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'" stroke-width="1.5" />
-            <p class="text-[10px] font-bold" :class="i === activeTip ? 'text-indigo-200' : 'text-slate-400 group-hover:text-white'">{{ tip.title }}</p>
+              :class="i === activeTip ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-300'" stroke-width="1.5" />
+            <p class="text-[10px] font-bold" :class="i === activeTip ? 'text-amber-200' : 'text-slate-400 group-hover:text-white'">{{ tip.title }}</p>
           </button>
         </div>
       </section>
 
       <!-- ══ CTA ════════════════════════════════════════════════════════════ -->
-      <section class="relative rounded-3xl overflow-hidden border border-surface-800 p-10 lg:p-16 text-center"
+      <section class="relative rounded-3xl overflow-hidden border border-amber-500/20 p-10 lg:p-16 text-center"
         :style="{ opacity:ready?1:0, transform:ready?'none':'translateY(24px)', transition:'all 0.7s cubic-bezier(.22,1,.36,1) 0.65s' }">
-        <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at center,rgba(99,102,241,0.08),transparent 60%)" />
-        <p class="relative z-10 text-indigo-400 text-xs font-black uppercase tracking-widest mb-3">{{ t('home.cta_final_tagline') }}</p>
+        <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at center,rgba(245,158,11,0.07),transparent 60%)" />
+        <p class="relative z-10 text-amber-400 text-xs font-black uppercase tracking-widest mb-3">{{ t('home.cta_final_tagline') }}</p>
         <h2 class="relative z-10 text-3xl lg:text-4xl font-black text-white mb-8">{{ t('home.cta_title') }}</h2>
         <div class="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button @click="router.push('/mentor')"
-            class="flex items-center gap-2.5 px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-2xl shadow-xl shadow-violet-500/20 transition-all hover:scale-105 text-sm">
+            class="flex items-center gap-2.5 px-8 py-4 bg-amber-500 hover:bg-amber-400 text-surface-950 font-bold rounded-2xl shadow-xl shadow-amber-500/20 transition-all hover:scale-105 text-sm">
             <SparklesIcon class="w-5 h-5" />
             {{ t('home.cta_mentor') }}
           </button>
           <button @click="router.push('/opportunities')"
-            class="flex items-center gap-2.5 px-8 py-4 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 font-bold rounded-2xl transition-all hover:scale-105 text-sm">
+            class="flex items-center gap-2.5 px-8 py-4 bg-surface-800/70 hover:bg-surface-700/80 border border-amber-500/20 text-amber-300 font-bold rounded-2xl transition-all hover:scale-105 text-sm">
             <MapPinIcon class="w-5 h-5" />
             {{ t('home.cta_opportunities') }}
           </button>
@@ -555,4 +555,6 @@ function scrollTarget() {
 .tip-leave-active { transition: all 0.2s ease; }
 .tip-enter-from { opacity:0; transform:translateY(10px); }
 .tip-leave-to { opacity:0; transform:translateY(-6px); }
+/* GoldArmy brand glow for tutorial panel */
+.tutorial-panel { border-color: rgba(245,158,11,0.2); }
 </style>

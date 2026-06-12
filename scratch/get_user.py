@@ -9,16 +9,13 @@ from core.database import get_db
 
 async def main():
     db = get_db()
-    user = await db.users.find_one({"email": "yayzoy@gmail.com"})
-    if user:
-        print("EMAIL:", user.get("email"))
-        print("TIER:", user.get("subscription_tier"))
-        print("GOOGLE_ID:", user.get("google_id"))
-        print("APPLE_ID:", user.get("apple_id"))
-        print("HASHED_PWD:", user.get("hashed_password"))
-        print("VERIFIED:", user.get("is_verified"))
-    else:
-        print("USER NOT FOUND")
+    cursor = db.users.find({})
+    users = await cursor.to_list(length=100)
+    print("Total users in database:", len(users))
+    for i, user in enumerate(users):
+        print(f"User {i+1}: Email={user.get('email')} ID={user.get('id')} has_cv={'cv_text' in user}")
+        if 'cv_text' in user:
+            print(f"  CV length: {len(user['cv_text'])}")
 
 if __name__ == "__main__":
     asyncio.run(main())

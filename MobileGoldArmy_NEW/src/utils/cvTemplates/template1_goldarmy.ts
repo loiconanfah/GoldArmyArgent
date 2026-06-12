@@ -31,34 +31,34 @@ body{font-family:system-ui,sans-serif;background:#F0EFEA;font-size:11px;line-hei
 .contact-bar{background:${ACCENT};padding:10px 40px;display:flex;flex-wrap:wrap;gap:14px;}
 .contact-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#fff;font-weight:500;}
 .ci{font-size:11px;}
-.body-layout{display:flex;}
-.sidebar{width:230px;flex-shrink:0;background:#F3EEE6;padding:26px 20px;}
+.body-layout{display:flex;background:linear-gradient(to right, #F3EEE6 230px, #FAFAF8 230px);}
+.sidebar{width:230px;flex-shrink:0;background:transparent;padding:26px 20px;}
 .section-head{display:flex;align-items:center;gap:8px;margin:18px 0 8px;}
 .section-head:first-child{margin-top:0;}
 .section-line{flex:1;height:1px;background:#ccc;}
 .section-label{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#888;white-space:nowrap;}
-.edu-block{margin-bottom:10px;}
+.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
 .edu-degree{font-size:11px;font-weight:700;color:#1a1a1a;}
 .edu-school{font-size:10px;color:#555;}
 .edu-meta{font-size:10px;color:#888;}
 .skill-cat{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${ACCENT};margin:8px 0 4px;}
-.skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;}
+.skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;page-break-inside:avoid;break-inside:avoid;}
 .pill{background:#fff;border:1px solid #ddd;border-radius:3px;padding:2px 7px;font-size:10px;color:#333;font-weight:500;}
-.lang-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px;color:#333;}
+.lang-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px;color:#333;page-break-inside:avoid;break-inside:avoid;}
 .lang-dot{width:6px;height:6px;border-radius:50%;background:${ACCENT};flex-shrink:0;}
-.cert-item{font-size:10px;color:#444;margin-bottom:4px;padding-left:8px;border-left:2px solid ${ACCENT};}
+.cert-item{font-size:10px;color:#444;margin-bottom:4px;padding-left:8px;border-left:2px solid ${ACCENT};page-break-inside:avoid;break-inside:avoid;}
 .main{flex:1;padding:26px 30px;}
 .summary-text{font-size:11px;line-height:1.7;color:#444;}
-.exp-block{margin-bottom:20px;}
+.exp-block{margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
 .exp-header{display:flex;justify-content:space-between;align-items:baseline;}
 .exp-title{font-size:12px;font-weight:700;color:#1a1a1a;}
 .exp-dates{font-size:9px;color:#888;margin-left:8px;white-space:nowrap;}
 .exp-company{font-size:11px;color:${ACCENT};font-weight:600;margin-bottom:5px;}
 .exp-loc{color:#888;font-weight:400;}
-.bullet-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:3px;}
+.bullet-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;}
 .bullet-dot{width:5px;height:5px;border-radius:1px;background:${ACCENT};margin-top:4px;flex-shrink:0;}
 .bullet-text{font-size:11px;color:#444;flex:1;line-height:1.55;}
-.proj-block{margin-bottom:14px;}
+.proj-block{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
 .proj-name{font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:2px;}
 .proj-desc{font-size:11px;color:#555;line-height:1.55;}
 </style></head><body>
