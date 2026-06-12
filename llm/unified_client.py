@@ -26,6 +26,25 @@ def _is_rate_limit_error(exc: Exception) -> bool:
     return any(signal in msg for signal in RATE_LIMIT_SIGNALS)
 
 
+def _map_to_openrouter_model(model_name: Optional[str]) -> Optional[str]:
+    """Map les noms de modèles Gemini natifs vers des identifiants valides OpenRouter."""
+    if not model_name:
+        return None
+    # 'gemini-2.0-flash' n'est pas un identifiant valide sur OpenRouter.
+    # On le mappe vers 'google/gemini-2.5-flash' qui est disponible et stable.
+    mapping = {
+        "gemini-2.0-flash": "google/gemini-2.5-flash",
+        "gemini-2.5-flash": "google/gemini-2.5-flash",
+        "gemini-1.5-flash": "google/gemini-2.5-flash",
+        "gemini-3.1-pro-preview": "google/gemini-3.1-pro-preview",
+    }
+    if model_name in mapping:
+        return mapping[model_name]
+    if model_name.startswith("gemini-"):
+        return "google/gemini-2.5-flash"
+    return model_name
+
+
 class UnifiedLLMClient:
     """
     Client centralisé avec stratégie de fallback intelligente:
@@ -113,6 +132,7 @@ class UnifiedLLMClient:
         elif self.openrouter_client:
             try:
                 model = requested_model or settings.openrouter_default_model
+                model = _map_to_openrouter_model(model)
                 return await self.openrouter_client.generate(prompt, model=model, **kwargs)
             except Exception as e:
                 logger.warning(f"⚠️ Échec OpenRouter ({e}) — bascule sur Ollama local...")
@@ -162,6 +182,7 @@ class UnifiedLLMClient:
             try:
                 conv = "\n".join([f"{m['role']}: {m['content']}" for m in messages])
                 model = kwargs.get("model") or settings.openrouter_default_model
+                model = _map_to_openrouter_model(model)
                 return await self.openrouter_client.generate(conv, model=model)
             except Exception as e:
                 logger.warning(f"OpenRouter Chat failed: {e}")

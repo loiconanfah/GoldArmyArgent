@@ -23,6 +23,8 @@ class GeminiClient:
     async def generate(self, prompt: str, system: str = None, **kwargs) -> str:
         """Génère une réponse texte via Google Gemini REST API."""
         model = kwargs.get("model") or self.default_model
+        if "/" in model:
+            model = model.split("/")[-1]
         if model in ["gemini-3.1-pro-preview", "gemini-3.0-pro-preview", "gemini-1.5-flash"]:
             model = "gemini-2.0-flash"
         
@@ -130,6 +132,8 @@ class GeminiClient:
     async def generate_with_sources(self, prompt: str, system: str = None, **kwargs) -> tuple:
         """Génère une réponse et retourne les sources de grounding (Gemini 2.0)."""
         model = kwargs.get("model", self.default_model)
+        if "/" in model:
+            model = model.split("/")[-1]
         if model in ["gemini-3.1-pro-preview", "gemini-3.0-pro-preview", "gemini-1.5-flash"]:
             model = "gemini-2.0-flash"
         
@@ -226,6 +230,8 @@ class GeminiClient:
     async def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
         """Simulation mode chat. Supports model, max_tokens, temperature for faster/short replies."""
         model = kwargs.get("model", self.default_model)
+        if "/" in model:
+            model = model.split("/")[-1]
         if model in ["gemini-3.1-pro-preview", "gemini-3.0-pro-preview", "gemini-1.5-flash"]:
             model = "gemini-2.0-flash"
         contents = [{"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]} for m in messages if m["role"] != "system"]
