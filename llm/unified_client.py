@@ -37,6 +37,7 @@ def _map_to_openrouter_model(model_name: Optional[str]) -> Optional[str]:
         "gemini-2.5-flash": "google/gemini-2.5-flash",
         "gemini-1.5-flash": "google/gemini-2.5-flash",
         "gemini-3.1-pro-preview": "google/gemini-3.1-pro-preview",
+        "openrouter/free": "google/gemini-2.5-flash",
     }
     if model_name in mapping:
         return mapping[model_name]

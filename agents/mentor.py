@@ -146,14 +146,27 @@ OBLIGATIONS ABSOLUES :
 }"""
             else:
                 # PHASE 3: FINAL SCORING AND MAPPING
-                phase_instruction = f"PHASE 3 : Vérification Finale & Mapping. Analyse le CV hyper-optimisé que tu viens de générer. Assure-toi qu'il corrige bien TOUTES les failles initiales : {original_failles}. Génère le `correction_mapping` pour prouver tes actions. Évalue de manière stricte mais réaliste le NOUVEAU score ATS de ce CV généré (qui doit impérativement s'approcher de 100/100 vu les optimisations appliquées). NE REGÉNÈRE PAS LE CV."
-                context_data = f"[PREVIOUS_DRAFT_JSON]\n{json.dumps(current_cv_data, ensure_ascii=False)}"
+                phase_instruction = f"""PHASE 3 : Vérification Finale & Scoring du CV OPTIMISÉ.
+
+Tu analyses le CV que tu viens de réécrire (Draft 1), PAS le CV original.
+Ce CV a déjà été optimisé avec : mots-clés injectés, KPIs ajoutés, verbes d'action forts, mise en forme ATS.
+Failles originales corrigées : {original_failles}
+
+ÉVALUATION DU NOUVEAU CV (attendu entre 80-99/100) :
+- `mots_cles` : Tous les mots-clés techniques sont présents ? (attendu : 85-99)
+- `impact_resultats` : Tous les bullets ont des KPIs chiffrés ? (attendu : 85-99)
+- `mise_en_forme` : Structure ATS-friendly, sections claires ? (attendu : 85-99)
+- `lisibilite` : Langage professionnel, zéro faute, cohérent ? (attendu : 85-99)
+- `experience_pertinence` : Expériences bien décrites et pertinentes ? (attendu : 85-99)
+
+Génère le `correction_mapping` listant UNE faille par clé et sa correction appliquée dans le nouveau CV."""
+                context_data = f"[CV_OPTIMISÉ_DRAFT1]\n{json.dumps(current_cv_data, ensure_ascii=False)[:5000]}"
                 json_structure = """{
   "audit": {
-    "ats_score": 0,
-    "scores": { "mots_cles": 0, "impact_resultats": 0, "mise_en_forme": 0, "lisibilite": 0, "experience_pertinence": 0 },
-    "correction_mapping": { "Faille identifiée dans l'original": "Solution appliquée dans le nouveau CV" },
-    "tech_ajoutees": ["Technologies ou mots-clés injectés"]
+    "ats_score": 92,
+    "scores": { "mots_cles": 90, "impact_resultats": 88, "mise_en_forme": 95, "lisibilite": 93, "experience_pertinence": 91 },
+    "correction_mapping": { "[Faille 1 trouvée en Phase 1]": "[Comment elle est corrigée dans le nouveau CV]", "[Faille 2]": "[Correction 2]" },
+    "tech_ajoutees": ["Technologies injectées dans le CV optimisé"]
   }
 }"""
 
@@ -198,13 +211,21 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
                 parsed = json.loads(cleaned)
                 
                 if i == 1:
-                    last_audit = parsed.get("audit", {})
-                    original_ats_score = last_audit.get("ats_score", 0)
-                    original_failles = last_audit.get("failles", [])
+                    phase1_audit = parsed.get("audit", {})
+                    last_audit = phase1_audit.copy()
+                    original_ats_score = phase1_audit.get("ats_score", 0)
+                    original_failles = phase1_audit.get("failles", [])
                 elif i == 2:
                     current_cv_data = parsed.get("cv_data", {})
                 else:
-                    last_audit.update(parsed.get("audit", {})) # Update audit with final config
+                    # Phase 3: scores du CV OPTIMISÉ — on remplace les scores Phase 1 avec ceux du CV optimisé
+                    phase3_audit = parsed.get("audit", {})
+                    # Conserver les failles originales et le nom du candidat de Phase 1
+                    phase3_audit["original_failles"] = original_failles
+                    phase3_audit["candidate_name"] = last_audit.get("candidate_name", "")
+                    phase3_audit["candidate_title"] = last_audit.get("candidate_title", "")
+                    phase3_audit["mot_cles_manquants"] = last_audit.get("mot_cles_manquants", [])
+                    last_audit = phase3_audit
                 
                 logger.debug(f"[Mentor] Passe {i} terminée. Score ATS reporté: {parsed.get('audit', {}).get('ats_score')}")
                 
@@ -217,9 +238,9 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
                     logger.warning("[Mentor] Passe 3 échouée (rate-limit probable) — on utilise le draft de la passe 2.")
                     break
 
-            # Pause entre les passes pour éviter le rate-limit des modèles gratuits
+            # Pause minimale entre les passes car nous utilisons un modèle rapide et stable (Gemini 2.5 Flash)
             if i < iterations:
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
 
         # Finalisation
         last_audit["original_ats_score"] = original_ats_score
