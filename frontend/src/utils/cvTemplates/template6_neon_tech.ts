@@ -47,47 +47,49 @@ export const templateNeonTech: CvTemplate = {
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600;700&display=swap');
+@page{size:A4;margin:0;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:#0D0D1A;color:#E0E0FF;font-size:11px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.page{max-width:860px;margin:0 auto;background:#0D0D1A;}
-.banner{background:#111128;padding:30px 40px 20px;border-bottom:1px solid #00E5FF22;text-align:center;}
-.avatar-ring{width:72px;height:72px;border-radius:50%;border:2px solid #00E5FF;box-shadow:0 0 16px #00E5FF66;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;background:#1A1A35;}
-.avatar-initials{font-family:'Share Tech Mono',monospace;font-size:22px;color:#00E5FF;letter-spacing:2px;}
-.name-block{text-align:center;margin-bottom:12px;}
-.name-first{font-size:11px;color:#00E5FF;letter-spacing:3px;text-transform:uppercase;}
-.name-last{font-family:'Inter',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:1px;}
-.name-title{font-size:10px;color:#FF00A0;letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;}
-.contact-bar{background:#111128;padding:12px 40px;display:flex;flex-wrap:wrap;justify-content:center;gap:18px;border-bottom:1px solid #00E5FF22;}
-.ci{display:flex;align-items:baseline;gap:6px;font-size:10px;color:#A0A0CC;}
-.ci-icon{font-size:11px;color:#00E5FF;flex-shrink:0;font-family:'Share Tech Mono',monospace;}
-.ci-link{color:#00E5FF;font-size:9px;}
-.body{padding:28px 40px;background:#0D0D1A;}
-.sec-head{display:flex;align-items:center;gap:8px;margin:18px 0 10px;}
+html,body{width:210mm;height:297mm;overflow:hidden;}
+body{font-family:'Inter',sans-serif;background:#0D0D1A;color:#E0E0FF;font-size:9.5px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.page{width:210mm;height:297mm;overflow:hidden;background:#0D0D1A;display:flex;flex-direction:column;}
+.banner{background:#111128;padding:16px 32px 12px;border-bottom:1px solid #00E5FF22;text-align:center;flex-shrink:0;}
+.avatar-ring{width:44px;height:44px;border-radius:50%;border:2px solid #00E5FF;box-shadow:0 0 10px #00E5FF66;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;background:#1A1A35;}
+.avatar-initials{font-family:'Share Tech Mono',monospace;font-size:14px;color:#00E5FF;letter-spacing:2px;}
+.name-block{text-align:center;margin-bottom:6px;}
+.name-first{font-size:9px;color:#00E5FF;letter-spacing:3px;text-transform:uppercase;}
+.name-last{font-family:'Inter',sans-serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:1px;}
+.name-title{font-size:8.5px;color:#FF00A0;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;}
+.contact-bar{background:#111128;padding:7px 32px;display:flex;flex-wrap:wrap;justify-content:center;gap:12px;border-bottom:1px solid #00E5FF22;flex-shrink:0;}
+.ci{display:flex;align-items:baseline;gap:5px;font-size:8.5px;color:#A0A0CC;}
+.ci-icon{font-size:9px;color:#00E5FF;flex-shrink:0;font-family:'Share Tech Mono',monospace;}
+.ci-link{color:#00E5FF;font-size:8px;}
+.body{padding:14px 32px;background:#0D0D1A;flex:1;overflow:hidden;}
+.sec-head{display:flex;align-items:center;gap:6px;margin:10px 0 6px;}
 .sec-head:first-child{margin-top:0;}
-.sec-bar{width:3px;height:14px;background:linear-gradient(#00E5FF,#FF00A0);border-radius:2px;flex-shrink:0;}
-.sec-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#00E5FF;font-family:'Share Tech Mono',monospace;}
-.summary-text{font-size:11px;color:#C0C0E0;line-height:1.7;}
-.exp-block{margin-bottom:18px;padding-left:10px;border-left:2px solid #1A1A3A;page-break-inside:avoid;break-inside:avoid;}
+.sec-bar{width:2px;height:12px;background:linear-gradient(#00E5FF,#FF00A0);border-radius:2px;flex-shrink:0;}
+.sec-label{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:#00E5FF;font-family:'Share Tech Mono',monospace;}
+.summary-text{font-size:9.5px;color:#C0C0E0;line-height:1.5;}
+.exp-block{margin-bottom:10px;padding-left:8px;border-left:2px solid #1A1A3A;page-break-inside:avoid;break-inside:avoid;}
 .exp-top{display:flex;justify-content:space-between;align-items:baseline;}
-.exp-title{font-size:12px;font-weight:700;color:#fff;}
-.exp-dates{font-size:9px;color:#00E5FF;font-family:'Share Tech Mono',monospace;}
-.exp-co{font-size:10px;color:#FF00A0;font-weight:600;margin-bottom:5px;}
+.exp-title{font-size:10.5px;font-weight:700;color:#fff;}
+.exp-dates{font-size:8px;color:#00E5FF;font-family:'Share Tech Mono',monospace;}
+.exp-co{font-size:8.5px;color:#FF00A0;font-weight:600;margin-bottom:3px;}
 .exp-loc{color:#7070AA;font-weight:400;}
-.bullet{display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;}
-.bdot{color:#00E5FF;flex-shrink:0;font-size:9px;margin-top:1px;}
-.bullet div,.bullet{font-size:11px;color:#C0C0E0;line-height:1.55;}
-.proj-block{margin-bottom:14px;padding:10px 12px;border:1px solid #1A1A3A;border-radius:4px;background:#111128;page-break-inside:avoid;break-inside:avoid;}
-.proj-name{font-size:12px;font-weight:700;color:#fff;margin-bottom:4px;}
-.proj-desc{font-size:11px;color:#9090BB;margin-bottom:5px;}
-.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;padding-left:10px;border-left:2px solid #1A1A3A;}
-.edu-degree{font-size:10px;font-weight:600;color:#E0E0FF;}
-.edu-school{font-size:10px;color:#8080AA;}
-.edu-meta{font-size:9px;color:#6060AA;}
-.skill-cat{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#00E5FF;margin:8px 0 4px;}
+.bullet{display:flex;align-items:flex-start;gap:5px;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}
+.bdot{color:#00E5FF;flex-shrink:0;font-size:8px;margin-top:1px;}
+.bullet div,.bullet{font-size:9px;color:#C0C0E0;line-height:1.45;}
+.proj-block{margin-bottom:8px;padding:7px 9px;border:1px solid #1A1A3A;border-radius:4px;background:#111128;page-break-inside:avoid;break-inside:avoid;}
+.proj-name{font-size:10px;font-weight:700;color:#fff;margin-bottom:2px;}
+.proj-desc{font-size:8.5px;color:#9090BB;margin-bottom:3px;}
+.edu-block{margin-bottom:6px;page-break-inside:avoid;break-inside:avoid;padding-left:8px;border-left:2px solid #1A1A3A;}
+.edu-degree{font-size:9px;font-weight:600;color:#E0E0FF;}
+.edu-school{font-size:8.5px;color:#8080AA;}
+.edu-meta{font-size:8px;color:#6060AA;}
+.skill-cat{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#00E5FF;margin:5px 0 3px;}
 .skill-pills{display:flex;flex-wrap:wrap;gap:3px;page-break-inside:avoid;break-inside:avoid;}
-.pill{background:#1A1A3A;border:1px solid #00E5FF44;border-radius:2px;padding:2px 7px;font-size:9px;color:#C0C0FF;margin:2px 2px;display:inline-block;}
-.inline-row{display:flex;flex-wrap:wrap;gap:4px;}
-.cert-item{font-size:10px;color:#A0A0CC;margin-bottom:4px;padding-left:8px;border-left:2px solid #FF00A0;page-break-inside:avoid;break-inside:avoid;}
+.pill{background:#1A1A3A;border:1px solid #00E5FF44;border-radius:2px;padding:1px 6px;font-size:8.5px;color:#C0C0FF;margin:1px 1px;display:inline-block;}
+.inline-row{display:flex;flex-wrap:wrap;gap:3px;}
+.cert-item{font-size:8.5px;color:#A0A0CC;margin-bottom:3px;padding-left:6px;border-left:2px solid #FF00A0;page-break-inside:avoid;break-inside:avoid;}
 </style></head><body>
 <div class="page">
   <div class="banner">

@@ -20,44 +20,46 @@ function build(cvData: CvData, parsedAudit: ParsedAudit | null): string {
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"/>
 <style>
+@page{size:A4;margin:0;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:system-ui,sans-serif;background:#fff;font-size:11px;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.page{max-width:860px;margin:0 auto;background:#fff;}
-.header{background:${PURPLE};color:#fff;padding:32px 40px;position:relative;overflow:hidden;}
-.header::after{content:'';position:absolute;right:-60px;top:-60px;width:250px;height:250px;border-radius:50%;background:rgba(236,72,153,0.2);}
+html,body{width:210mm;height:297mm;overflow:hidden;}
+body{font-family:system-ui,sans-serif;background:#fff;font-size:9.5px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.page{width:210mm;height:297mm;overflow:hidden;background:#fff;display:flex;flex-direction:column;}
+.header{background:${PURPLE};color:#fff;padding:20px 32px;position:relative;overflow:hidden;flex-shrink:0;}
+.header::after{content:'';position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(236,72,153,0.2);}
 .header-inner{position:relative;z-index:1;}
-.first-name{font-size:14px;font-weight:300;letter-spacing:8px;text-transform:uppercase;color:rgba(255,255,255,0.65);}
-.last-name{font-size:38px;font-weight:900;letter-spacing:3px;text-transform:uppercase;}
-.job-title{font-size:12px;color:${ACCENT};letter-spacing:2px;font-weight:600;margin-top:6px;}
-.pink-bar{background:${ACCENT};height:4px;}
-.contact-bar{background:#F9FAFB;padding:10px 40px;display:flex;flex-wrap:wrap;gap:16px;border-bottom:1px solid #E5E7EB;}
-.contact-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#555;}
-.ci{font-size:11px;color:${ACCENT};}
-.body{padding:28px 40px;background:#ffffff;}
-.exp-section-title{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${PURPLE};border-bottom:2px solid ${ACCENT};padding-bottom:3px;margin:20px 0 10px;}
+.first-name{font-size:10px;font-weight:300;letter-spacing:6px;text-transform:uppercase;color:rgba(255,255,255,0.65);}
+.last-name{font-size:28px;font-weight:900;letter-spacing:2px;text-transform:uppercase;}
+.job-title{font-size:10px;color:${ACCENT};letter-spacing:2px;font-weight:600;margin-top:4px;}
+.pink-bar{background:${ACCENT};height:3px;flex-shrink:0;}
+.contact-bar{background:#F9FAFB;padding:7px 32px;display:flex;flex-wrap:wrap;gap:12px;border-bottom:1px solid #E5E7EB;flex-shrink:0;}
+.contact-item{display:flex;align-items:center;gap:4px;font-size:8.5px;color:#555;}
+.ci{font-size:9px;color:${ACCENT};}
+.body{padding:14px 32px;background:#ffffff;flex:1;overflow:hidden;}
+.exp-section-title{font-size:8px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${PURPLE};border-bottom:2px solid ${ACCENT};padding-bottom:2px;margin:10px 0 6px;}
 .exp-section-title:first-child{margin-top:0;}
-.summary-text{font-size:11px;color:#444;line-height:1.7;}
-.exp-block{margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
+.summary-text{font-size:9.5px;color:#444;line-height:1.5;}
+.exp-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
 .exp-header{display:flex;justify-content:space-between;align-items:baseline;}
-.exp-title{font-size:12px;font-weight:700;color:${PURPLE};}
-.exp-dates{font-size:9px;color:#888;margin-left:8px;white-space:nowrap;}
-.exp-company{font-size:11px;color:${ACCENT};font-weight:600;margin-bottom:5px;}
+.exp-title{font-size:10.5px;font-weight:700;color:${PURPLE};}
+.exp-dates{font-size:8px;color:#888;margin-left:8px;white-space:nowrap;}
+.exp-company{font-size:9.5px;color:${ACCENT};font-weight:600;margin-bottom:3px;}
 .exp-loc{color:#888;font-weight:400;}
-.bullet-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;}
-.bullet-dot{width:5px;height:5px;border-radius:50%;background:${ACCENT};margin-top:4px;flex-shrink:0;}
-.bullet-text{font-size:11px;color:#444;flex:1;line-height:1.55;}
-.proj-block{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
-.proj-name{font-size:12px;font-weight:700;color:${PURPLE};margin-bottom:2px;}
-.proj-desc{font-size:11px;color:#555;}
-.edu-degree{font-size:11px;font-weight:700;color:${PURPLE};}
-.edu-school{font-size:10px;color:#555;}
-.edu-meta{font-size:10px;color:#888;}
-.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
-.skill-cat{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${ACCENT};margin:8px 0 4px;}
-.skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;page-break-inside:avoid;break-inside:avoid;}
-.pill{background:#fff;border:1.5px solid ${PURPLE};border-radius:12px;padding:2px 9px;font-size:10px;color:${PURPLE};font-weight:600;margin:2px 2px;display:inline-block;}
-.inline-row{display:flex;flex-wrap:wrap;gap:4px;}
-.cert-item{font-size:10px;color:#555;margin-bottom:4px;padding-left:8px;border-left:2px solid #DDD6FE;page-break-inside:avoid;break-inside:avoid;}
+.bullet-row{display:flex;align-items:flex-start;gap:6px;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}
+.bullet-dot{width:4px;height:4px;border-radius:50%;background:${ACCENT};margin-top:3px;flex-shrink:0;}
+.bullet-text{font-size:9px;color:#444;flex:1;line-height:1.45;}
+.proj-block{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}
+.proj-name{font-size:10px;font-weight:700;color:${PURPLE};margin-bottom:1px;}
+.proj-desc{font-size:9px;color:#555;}
+.edu-degree{font-size:9.5px;font-weight:700;color:${PURPLE};}
+.edu-school{font-size:8.5px;color:#555;}
+.edu-meta{font-size:8.5px;color:#888;}
+.edu-block{margin-bottom:6px;page-break-inside:avoid;break-inside:avoid;}
+.skill-cat{font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${ACCENT};margin:5px 0 3px;}
+.skill-pills{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;}
+.pill{background:#fff;border:1.5px solid ${PURPLE};border-radius:10px;padding:1px 7px;font-size:8.5px;color:${PURPLE};font-weight:600;margin:1px 1px;display:inline-block;}
+.inline-row{display:flex;flex-wrap:wrap;gap:3px;}
+.cert-item{font-size:8.5px;color:#555;margin-bottom:3px;padding-left:6px;border-left:2px solid #DDD6FE;page-break-inside:avoid;break-inside:avoid;}
 </style></head><body>
 <div class="page">
   <div class="header">

@@ -60,40 +60,42 @@ function build(cvData: CvData, parsedAudit: ParsedAudit | null): string {
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"/>
 <style>
+@page{size:A4;margin:0;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:system-ui,sans-serif;background:#F0EFEA;font-size:11px;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.page{max-width:860px;margin:0 auto;background:#FAFAF8;}
+html,body{width:210mm;height:297mm;overflow:hidden;}
+body{font-family:system-ui,sans-serif;background:#F0EFEA;font-size:9.5px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.page{width:210mm;height:297mm;overflow:hidden;background:#FAFAF8;display:flex;flex-direction:column;}
 /* ── EN-TÊTE GOLDARMY ── */
-.banner{background:#1a1a1a;color:#fff;padding:36px 40px 28px;position:relative;overflow:hidden;}
-.banner::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:rgba(255,107,53,.15);border-radius:50%;}
+.banner{background:#1a1a1a;color:#fff;padding:20px 32px 16px;position:relative;overflow:hidden;flex-shrink:0;}
+.banner::before{content:'';position:absolute;top:-30px;right:-30px;width:140px;height:140px;background:rgba(255,107,53,.15);border-radius:50%;}
 .banner-inner{position:relative;z-index:1;}
-.first-name{font-size:13px;font-weight:400;letter-spacing:6px;color:rgba(255,255,255,.65);text-transform:uppercase;}
-.last-name{font-size:40px;font-weight:800;letter-spacing:4px;line-height:1;text-transform:uppercase;}
-.job-title{font-size:12px;color:rgba(255,255,255,.7);letter-spacing:2px;margin-top:6px;}
-.contact-bar{background:${ACCENT};padding:10px 40px;display:flex;flex-wrap:wrap;gap:14px;}
-.contact-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#fff;font-weight:500;}
-.ci{font-size:11px;}
+.first-name{font-size:10px;font-weight:400;letter-spacing:5px;color:rgba(255,255,255,.65);text-transform:uppercase;}
+.last-name{font-size:30px;font-weight:800;letter-spacing:3px;line-height:1;text-transform:uppercase;}
+.job-title{font-size:10px;color:rgba(255,255,255,.7);letter-spacing:2px;margin-top:4px;}
+.contact-bar{background:${ACCENT};padding:7px 32px;display:flex;flex-wrap:wrap;gap:12px;flex-shrink:0;}
+.contact-item{display:flex;align-items:center;gap:4px;font-size:8.5px;color:#fff;font-weight:500;}
+.ci{font-size:9px;}
 /* ── CORPS CLASSIQUE ── */
-.body{padding:28px 40px;}
-.sec-title{display:flex;align-items:center;gap:8px;margin:22px 0 10px;}
+.body{padding:14px 32px;flex:1;overflow:hidden;}
+.sec-title{display:flex;align-items:center;gap:6px;margin:12px 0 6px;}
 .sec-title:first-child{margin-top:0;}
 .sec-line{flex:1;height:1px;background:#ddd;}
-.sec-label{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#888;white-space:nowrap;}
-.summary-text{font-size:11px;color:#444;line-height:1.75;}
-.block{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
-.block-header{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px;margin-bottom:3px;}
-.block-title{font-size:12px;font-weight:700;color:#1a1a1a;}
-.block-sub{font-size:11px;color:${ACCENT};font-weight:500;}
-.block-dates{font-size:10px;color:#888;white-space:nowrap;flex-shrink:0;}
-.block-desc{font-size:11px;color:#555;margin:2px 0;}
-.bullets{list-style:none;padding:0;margin-top:4px;}
-.bullets li{padding-left:14px;position:relative;margin-bottom:3px;font-size:11px;color:#444;line-height:1.55;page-break-inside:avoid;break-inside:avoid;}
+.sec-label{font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#888;white-space:nowrap;}
+.summary-text{font-size:9.5px;color:#444;line-height:1.55;}
+.block{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}
+.block-header{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:3px;margin-bottom:2px;}
+.block-title{font-size:10.5px;font-weight:700;color:#1a1a1a;}
+.block-sub{font-size:9.5px;color:${ACCENT};font-weight:500;}
+.block-dates{font-size:8.5px;color:#888;white-space:nowrap;flex-shrink:0;}
+.block-desc{font-size:9.5px;color:#555;margin:1px 0;}
+.bullets{list-style:none;padding:0;margin-top:3px;}
+.bullets li{padding-left:12px;position:relative;margin-bottom:2px;font-size:9px;color:#444;line-height:1.45;page-break-inside:avoid;break-inside:avoid;}
 .bullets li::before{content:'▸';position:absolute;left:0;color:${ACCENT};font-weight:700;}
-.edu-block{margin-bottom:8px;}
+.edu-block{margin-bottom:5px;}
 .skill-cat{font-weight:700;color:#1a1a1a;}
-.pill{display:inline-block;background:#fff;border:1px solid #ddd;border-radius:3px;padding:2px 8px;font-size:10px;color:#333;margin:2px 2px;}
-.cert-item{font-size:10px;color:#444;margin-bottom:3px;padding-left:4px;}
-.inline-row{display:flex;flex-wrap:wrap;gap:4px;}
+.pill{display:inline-block;background:#fff;border:1px solid #ddd;border-radius:3px;padding:1px 6px;font-size:8.5px;color:#333;margin:1px 2px;}
+.cert-item{font-size:8.5px;color:#444;margin-bottom:2px;padding-left:4px;}
+.inline-row{display:flex;flex-wrap:wrap;gap:3px;}
 </style></head><body>
 <div class="page">
   <div class="banner">
@@ -109,7 +111,7 @@ body{font-family:system-ui,sans-serif;background:#F0EFEA;font-size:11px;line-hei
     ${expHtml ? `${secTitle('Expériences')}${expHtml}` : ''}
     ${projHtml ? `${secTitle('Projets')}${projHtml}` : ''}
     ${eduHtml ? `${secTitle('Formation')}${eduHtml}` : ''}
-    ${skillsHtml ? `${secTitle('Compétences')}<div style="line-height:1.9">${skillsHtml}</div>` : ''}
+    ${skillsHtml ? `${secTitle('Compétences')}<div style="line-height:1.7">${skillsHtml}</div>` : ''}
     ${langHtml ? `${secTitle('Langues')}<div class="inline-row">${langHtml}</div>` : ''}
     ${certHtml ? `${secTitle('Certifications')}${certHtml}` : ''}
   </div>

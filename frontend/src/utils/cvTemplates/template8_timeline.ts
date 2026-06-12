@@ -51,44 +51,46 @@ export const templateTimeline: CvTemplate = {
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Playfair+Display:wght@700&display=swap');
+@page{size:A4;margin:0;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Nunito',sans-serif;background:#F9F5F0;color:#2D2D2D;font-size:11px;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.page{max-width:900px;margin:0 auto;background:#fff;}
-.hdr{background:#2D2D2D;padding:32px 48px;display:flex;justify-content:space-between;align-items:center;}
+html,body{width:210mm;height:297mm;overflow:hidden;}
+body{font-family:'Nunito',sans-serif;background:#F9F5F0;color:#2D2D2D;font-size:9.5px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.page{width:210mm;height:297mm;overflow:hidden;background:#fff;display:flex;flex-direction:column;}
+.hdr{background:#2D2D2D;padding:18px 36px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
 .hdr-left{}
-.hdr-name{font-family:'Playfair Display',serif;font-size:36px;color:#fff;letter-spacing:1px;}
-.hdr-title{font-size:12px;color:#E85D4A;letter-spacing:3px;text-transform:uppercase;margin-top:4px;font-weight:600;}
+.hdr-name{font-family:'Playfair Display',serif;font-size:26px;color:#fff;letter-spacing:1px;}
+.hdr-title{font-size:10px;color:#E85D4A;letter-spacing:3px;text-transform:uppercase;margin-top:3px;font-weight:600;}
 .hdr-right{text-align:right;}
-.ct-item{display:flex;align-items:baseline;gap:6px;font-size:10px;color:#BBBBBB;margin-bottom:4px;justify-content:flex-end;}
-.ct-ic{color:#E85D4A;font-weight:700;min-width:14px;text-align:center;}
+.ct-item{display:flex;align-items:baseline;gap:5px;font-size:8.5px;color:#BBBBBB;margin-bottom:3px;justify-content:flex-end;}
+.ct-ic{color:#E85D4A;font-weight:700;min-width:12px;text-align:center;}
 .ct-li{align-items:flex-start;}
-.ct-link{color:#E85D4A;font-size:9px;word-break:break-all;}
-.summary-band{background:#fff;border-left:4px solid #E85D4A;padding:16px 48px;margin:0;font-size:11.5px;color:#555;line-height:1.75;font-style:italic;}
-.body{padding:28px 48px;background:#fff;}
-.sec-head{margin:22px 0 10px;border-bottom:2px solid #E85D4A;padding-bottom:4px;}
-.sec-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#E85D4A;font-weight:700;}
-.exp-block{margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;}
+.ct-link{color:#E85D4A;font-size:8px;word-break:break-all;}
+.summary-band{background:#fff;border-left:4px solid #E85D4A;padding:10px 36px;margin:0;font-size:9.5px;color:#555;line-height:1.6;font-style:italic;flex-shrink:0;}
+.body{padding:14px 36px;background:#fff;flex:1;overflow:hidden;}
+.sec-head{margin:10px 0 6px;border-bottom:2px solid #E85D4A;padding-bottom:2px;}
+.sec-label{font-size:8.5px;letter-spacing:3px;text-transform:uppercase;color:#E85D4A;font-weight:700;}
+.exp-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
 .exp-header{display:flex;justify-content:space-between;align-items:baseline;}
-.exp-title{font-size:12px;font-weight:700;color:#2D2D2D;}
-.exp-dates{font-size:9.5px;color:#E85D4A;font-weight:700;}
-.exp-company{font-size:11px;color:#888;font-weight:600;margin-bottom:5px;}
+.exp-title{font-size:10.5px;font-weight:700;color:#2D2D2D;}
+.exp-dates{font-size:8px;color:#E85D4A;font-weight:700;}
+.exp-company{font-size:9px;color:#888;font-weight:600;margin-bottom:3px;}
 .exp-loc{color:#BBB;}
-.bullet-row{display:flex;align-items:flex-start;gap:7px;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;}
-.bullet-dot{width:4px;height:4px;border-radius:50%;background:#E85D4A;margin-top:5px;flex-shrink:0;}
-.bullet-text{font-size:11px;color:#555;flex:1;line-height:1.55;}
-.proj-block{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
-.proj-name{font-size:12px;font-weight:700;color:#2D2D2D;margin-bottom:2px;}
-.proj-desc{font-size:11px;color:#666;}
-.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
-.edu-degree{font-size:11px;font-weight:700;color:#2D2D2D;}
-.edu-school{font-size:10px;color:#888;}
-.edu-meta{font-size:10px;color:#BBB;}
-.skill-cat{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;margin:6px 0 3px;font-weight:600;}
+.bullet-row{display:flex;align-items:flex-start;gap:6px;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}
+.bullet-dot{width:3.5px;height:3.5px;border-radius:50%;background:#E85D4A;margin-top:4px;flex-shrink:0;}
+.bullet-text{font-size:9px;color:#555;flex:1;line-height:1.45;}
+.proj-block{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}
+.proj-name{font-size:10px;font-weight:700;color:#2D2D2D;margin-bottom:1px;}
+.proj-desc{font-size:9px;color:#666;}
+.edu-block{margin-bottom:6px;page-break-inside:avoid;break-inside:avoid;}
+.edu-degree{font-size:9.5px;font-weight:700;color:#2D2D2D;}
+.edu-school{font-size:8.5px;color:#888;}
+.edu-meta{font-size:8.5px;color:#BBB;}
+.skill-cat{font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#888;margin:5px 0 3px;font-weight:600;}
 .skill-pills{display:flex;flex-wrap:wrap;gap:3px;page-break-inside:avoid;break-inside:avoid;}
-.pill{background:#fff;border:1px solid #DDD;border-radius:10px;padding:2px 8px;font-size:9px;color:#555;margin:2px 2px;display:inline-block;}
-.inline-row{display:flex;flex-wrap:wrap;gap:4px;}
-.lang-item{font-size:10px;color:#666;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;}
-.cert-item{font-size:10px;color:#666;margin-bottom:4px;padding-left:8px;border-left:2px solid #E85D4A;page-break-inside:avoid;break-inside:avoid;}
+.pill{background:#fff;border:1px solid #DDD;border-radius:8px;padding:1px 7px;font-size:8.5px;color:#555;margin:1px 1px;display:inline-block;}
+.inline-row{display:flex;flex-wrap:wrap;gap:3px;}
+.lang-item{font-size:8.5px;color:#666;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}
+.cert-item{font-size:8.5px;color:#666;margin-bottom:3px;padding-left:6px;border-left:2px solid #E85D4A;page-break-inside:avoid;break-inside:avoid;}
 </style></head><body>
 <div class="page">
   <div class="hdr">
