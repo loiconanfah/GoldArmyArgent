@@ -1,7 +1,6 @@
 /**
- * Template 4 – "Créatif" : Violet foncé + rose accent, côté latéral coloré.
- * Style: Creative / Design
- * Page-break fix: sidebar uses table-cell background to repeat on page 2.
+ * Template 4 – "Créatif" : Violet foncé + rose accent, format classique monocolonne.
+ * Style: Creative / Design (Format classique 1 colonne)
  */
 import { CvTemplate, CvData, ParsedAudit } from './types';
 import {
@@ -17,7 +16,6 @@ function build(cvData: CvData, parsedAudit: ParsedAudit | null): string {
   const f = extractCvFields(cvData, parsedAudit);
   const ACCENT  = '#EC4899'; // pink-500
   const PURPLE  = '#5B21B6'; // violet-800
-  const SIDEBAR = '#EDE9FE'; // violet-100
 
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"/>
@@ -35,21 +33,9 @@ body{font-family:system-ui,sans-serif;background:#fff;font-size:11px;line-height
 .contact-bar{background:#F9FAFB;padding:10px 40px;display:flex;flex-wrap:wrap;gap:16px;border-bottom:1px solid #E5E7EB;}
 .contact-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#555;}
 .ci{font-size:11px;color:${ACCENT};}
-/* Two-column layout via table for proper page-break background repeat */
-.body-layout{display:table;width:100%;table-layout:fixed;}
-.sidebar{display:table-cell;width:230px;background:${SIDEBAR};padding:26px 20px;vertical-align:top;}
-.section-title{font-size:9px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:${PURPLE};margin:18px 0 8px;}
-.section-title:first-child{margin-top:0;}
-.edu-degree{font-size:11px;font-weight:700;color:${PURPLE};}
-.edu-school{font-size:10px;color:#555;}
-.edu-meta{font-size:10px;color:#888;}
-.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
-.skill-cat{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${ACCENT};margin:8px 0 4px;}
-.skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;page-break-inside:avoid;break-inside:avoid;}
-.pill{background:#fff;border:1.5px solid ${PURPLE};border-radius:12px;padding:2px 9px;font-size:10px;color:${PURPLE};font-weight:600;}
-.lang-item{font-size:10px;color:#333;margin-bottom:4px;padding-left:8px;border-left:3px solid ${ACCENT};page-break-inside:avoid;break-inside:avoid;}
-.cert-item{font-size:10px;color:#555;margin-bottom:4px;padding-left:8px;border-left:2px solid #DDD6FE;page-break-inside:avoid;break-inside:avoid;}
-.main{display:table-cell;background:#ffffff;padding:28px 32px;vertical-align:top;}
+.body{padding:28px 40px;background:#ffffff;}
+.exp-section-title{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${PURPLE};border-bottom:2px solid ${ACCENT};padding-bottom:3px;margin:20px 0 10px;}
+.exp-section-title:first-child{margin-top:0;}
 .summary-text{font-size:11px;color:#444;line-height:1.7;}
 .exp-block{margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
 .exp-header{display:flex;justify-content:space-between;align-items:baseline;}
@@ -63,8 +49,15 @@ body{font-family:system-ui,sans-serif;background:#fff;font-size:11px;line-height
 .proj-block{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
 .proj-name{font-size:12px;font-weight:700;color:${PURPLE};margin-bottom:2px;}
 .proj-desc{font-size:11px;color:#555;}
-.exp-section-title{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${PURPLE};border-bottom:2px solid ${ACCENT};padding-bottom:3px;margin:20px 0 10px;}
-.exp-section-title:first-child{margin-top:0;}
+.edu-degree{font-size:11px;font-weight:700;color:${PURPLE};}
+.edu-school{font-size:10px;color:#555;}
+.edu-meta{font-size:10px;color:#888;}
+.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
+.skill-cat{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${ACCENT};margin:8px 0 4px;}
+.skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;page-break-inside:avoid;break-inside:avoid;}
+.pill{background:#fff;border:1.5px solid ${PURPLE};border-radius:12px;padding:2px 9px;font-size:10px;color:${PURPLE};font-weight:600;margin:2px 2px;display:inline-block;}
+.inline-row{display:flex;flex-wrap:wrap;gap:4px;}
+.cert-item{font-size:10px;color:#555;margin-bottom:4px;padding-left:8px;border-left:2px solid #DDD6FE;page-break-inside:avoid;break-inside:avoid;}
 </style></head><body>
 <div class="page">
   <div class="header">
@@ -76,18 +69,14 @@ body{font-family:system-ui,sans-serif;background:#fff;font-size:11px;line-height
   </div>
   <div class="pink-bar"></div>
   ${(f.email || f.phone || f.location || f.linkedin || f.github) ? `<div class="contact-bar">${buildContactItems(f, `color:${ACCENT}`)}</div>` : ''}
-  <div class="body-layout">
-    <div class="sidebar">
-      ${f.education.length > 0 ? `<div class="section-title">Formation</div>${buildEducationHtml(f.education)}` : ''}
-      ${f.skillsHtml ? `<div class="section-title">Compétences</div>${f.skillsHtml}` : ''}
-      ${f.languages.length > 0 ? `<div class="section-title">Langues</div>${f.languages.map(l => `<div class="lang-item">${escHtml(l)}</div>`).join('')}` : ''}
-      ${f.certifications.length > 0 ? `<div class="section-title">Certifications</div>${f.certifications.map(c => `<div class="cert-item">${escHtml(c)}</div>`).join('')}` : ''}
-    </div>
-    <div class="main">
-      ${f.summary ? `<div class="exp-section-title">Profil</div><p class="summary-text">${escHtml(f.summary)}</p>` : ''}
-      ${f.experiences.length > 0 ? `<div class="exp-section-title">Expériences</div>${buildExperiencesHtml(f.experiences, ACCENT)}` : ''}
-      ${f.projects.length > 0 ? `<div class="exp-section-title">Projets</div>${buildProjectsHtml(f.projects, ACCENT)}` : ''}
-    </div>
+  <div class="body">
+    ${f.summary ? `<div class="exp-section-title">Profil</div><p class="summary-text">${escHtml(f.summary)}</p>` : ''}
+    ${f.experiences.length > 0 ? `<div class="exp-section-title">Expériences</div>${buildExperiencesHtml(f.experiences, ACCENT)}` : ''}
+    ${f.projects.length > 0 ? `<div class="exp-section-title">Projets</div>${buildProjectsHtml(f.projects, ACCENT)}` : ''}
+    ${f.education.length > 0 ? `<div class="exp-section-title">Formation</div>${buildEducationHtml(f.education)}` : ''}
+    ${f.skillsHtml ? `<div class="exp-section-title">Compétences</div>${f.skillsHtml}` : ''}
+    ${f.languages.length > 0 ? `<div class="exp-section-title">Langues</div><div class="inline-row">${f.languages.map(l => `<span class="pill">${escHtml(l)}</span>`).join('')}</div>` : ''}
+    ${f.certifications.length > 0 ? `<div class="exp-section-title">Certifications</div>${f.certifications.map(c => `<div class="cert-item">${escHtml(c)}</div>`).join('')}` : ''}
   </div>
 </div>
 </body></html>`;

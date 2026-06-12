@@ -478,13 +478,9 @@ h1{{font-size:28px;font-weight:600;text-transform:uppercase;}}
       {f'{sec("Expériences")}{exp_html}' if exp_html else ""}
       {f'{sec("Projets")}{proj_html}' if proj_html else ""}
       {f'{sec("Formation")}{edu_html}' if edu_html else ""}
-      <div class="bottom">
-        {f'<div>{sec("Compétences")}{f["skills_html"]}</div>' if f["skills_html"] else "<div></div>"}
-        <div>
-          {f'{sec("Langues")}<p style="font-size:9.5px;color:#444;">{langs}</p>' if langs else ""}
-          {f'{sec("Certifications")}{certs}' if certs else ""}
-        </div>
-      </div>
+      {f'{sec("Compétences")}<div class="skills-section">{f["skills_html"]}</div>' if f["skills_html"] else ""}
+      {f'{sec("Langues")}<p style="font-size:9.5px;color:#444;">{langs}</p>' if langs else ""}
+      {f'{sec("Certifications")}{certs}' if certs else ""}
     </div>
   </td></tr></tbody>
   <tfoot><tr><td><div class="footer-space"></div></td></tr></tfoot>
@@ -627,13 +623,9 @@ h1{{font-family:'Lora',serif;font-size:28px;font-weight:600;color:#1A1A1A;}}
       {f'{sec("Profil")}<p class="summary-text">{esc(f["summary"])}</p>' if f["summary"] else ""}
       {f'{sec("Expériences")}{exp_out}' if exp_out else ""}
       {f'{sec("Formation")}{edu_out}' if edu_out else ""}
-      <div class="bottom">
-        {f'<div>{sec("Compétences")}{f["skills_html"]}</div>' if f["skills_html"] else "<div></div>"}
-        <div>
-          {f'{sec("Langues")}<p style="font-size:9.5px;color:#444;">{langs}</p>' if langs else ""}
-          {f'{sec("Certifications")}{certs}' if certs else ""}
-        </div>
-      </div>
+      {f'{sec("Compétences")}<div class="skills-section">{f["skills_html"]}</div>' if f["skills_html"] else ""}
+      {f'{sec("Langues")}<p style="font-size:9.5px;color:#444;">{langs}</p>' if langs else ""}
+      {f'{sec("Certifications")}{certs}' if certs else ""}
     </div>
   </td></tr></tbody>
   <tfoot><tr><td><div class="footer-space"></div></td></tr></tfoot>

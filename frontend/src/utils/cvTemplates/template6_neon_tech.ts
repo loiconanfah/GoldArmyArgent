@@ -1,7 +1,7 @@
 /**
  * Template 6 — Néon Tech
- * Dark background (#0D0D1A), cyan (#00E5FF) + magenta (#FF00A0) neon accents,
- * left sidebar with glowing borders. Futuristic / developer / startup look.
+ * Dark background (#0D0D1A), cyan (#00E5FF) + magenta (#FF00A0) neon accents.
+ * Format classique monocolonne avec en-tête cyber-glowing.
  */
 import { CvTemplate, CvData, ParsedAudit } from './types';
 import { escHtml, extractCvFields, buildEducationHtml } from './helpers';
@@ -9,7 +9,7 @@ import { escHtml, extractCvFields, buildEducationHtml } from './helpers';
 export const templateNeonTech: CvTemplate = {
   id: 'neon_tech',
   label: 'Néon Tech',
-  description: 'Dark / Cyber',
+  description: 'Dark / Cyber (Format classique 1 colonne)',
   accentColor: '#00E5FF',
   build(cvData: CvData, parsedAudit: ParsedAudit | null): string {
     const f = extractCvFields(cvData, parsedAudit);
@@ -22,7 +22,7 @@ export const templateNeonTech: CvTemplate = {
       location ? `<div class="ci"><span class="ci-icon">⌖</span>${escHtml(location)}</div>` : '',
       linkedin ? `<div class="ci"><span class="ci-icon">in</span><span class="ci-link">${escHtml(linkedin)}</span></div>` : '',
       github   ? `<div class="ci"><span class="ci-icon">⌾</span>${escHtml(github)}</div>` : '',
-    ].join('');
+    ].filter(Boolean).join('');
 
     const sec = (label: string) =>
       `<div class="sec-head"><span class="sec-bar"></span><span class="sec-label">${label}</span></div>`;
@@ -49,34 +49,19 @@ export const templateNeonTech: CvTemplate = {
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:#0D0D1A;color:#E0E0FF;font-size:11px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.page{max-width:860px;margin:0 auto;display:table;width:100%;table-layout:fixed;background:#0D0D1A;}
-/* Sidebar — table-cell so background repeats on page 2 */
-.sidebar{display:table-cell;width:230px;background:#111128;border-right:1px solid #00E5FF22;padding:30px 20px;vertical-align:top;}
+.page{max-width:860px;margin:0 auto;background:#0D0D1A;}
+.banner{background:#111128;padding:30px 40px 20px;border-bottom:1px solid #00E5FF22;text-align:center;}
 .avatar-ring{width:72px;height:72px;border-radius:50%;border:2px solid #00E5FF;box-shadow:0 0 16px #00E5FF66;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;background:#1A1A35;}
 .avatar-initials{font-family:'Share Tech Mono',monospace;font-size:22px;color:#00E5FF;letter-spacing:2px;}
-.name-block{text-align:center;margin-bottom:20px;}
+.name-block{text-align:center;margin-bottom:12px;}
 .name-first{font-size:11px;color:#00E5FF;letter-spacing:3px;text-transform:uppercase;}
 .name-last{font-family:'Inter',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:1px;}
 .name-title{font-size:10px;color:#FF00A0;letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;}
-/* Contact */
-.ci{display:flex;align-items:baseline;gap:6px;font-size:10px;color:#A0A0CC;margin-bottom:5px;word-break:break-all;}
+.contact-bar{background:#111128;padding:12px 40px;display:flex;flex-wrap:wrap;justify-content:center;gap:18px;border-bottom:1px solid #00E5FF22;}
+.ci{display:flex;align-items:baseline;gap:6px;font-size:10px;color:#A0A0CC;}
 .ci-icon{font-size:11px;color:#00E5FF;flex-shrink:0;font-family:'Share Tech Mono',monospace;}
 .ci-link{color:#00E5FF;font-size:9px;}
-/* Sidebar sections */
-.sb-sec{margin-top:18px;}
-.sb-sec-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#FF00A0;margin-bottom:8px;border-bottom:1px solid #FF00A033;padding-bottom:4px;}
-.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
-.edu-degree{font-size:10px;font-weight:600;color:#E0E0FF;}
-.edu-school{font-size:10px;color:#8080AA;}
-.edu-meta{font-size:9px;color:#6060AA;}
-.skill-cat{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#00E5FF;margin:8px 0 4px;}
-.skill-pills{display:flex;flex-wrap:wrap;gap:3px;page-break-inside:avoid;break-inside:avoid;}
-.pill{background:#1A1A3A;border:1px solid #00E5FF44;border-radius:2px;padding:2px 7px;font-size:9px;color:#C0C0FF;}
-.lang-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:10px;color:#A0A0CC;page-break-inside:avoid;break-inside:avoid;}
-.lang-dot{width:6px;height:6px;border-radius:50%;background:#FF00A0;flex-shrink:0;box-shadow:0 0 6px #FF00A0;}
-.cert-item{font-size:10px;color:#A0A0CC;margin-bottom:4px;padding-left:8px;border-left:2px solid #FF00A0;page-break-inside:avoid;break-inside:avoid;}
-/* Main */
-.main{display:table-cell;padding:30px 28px;background:#0D0D1A;vertical-align:top;}
+.body{padding:28px 40px;background:#0D0D1A;}
 .sec-head{display:flex;align-items:center;gap:8px;margin:18px 0 10px;}
 .sec-head:first-child{margin-top:0;}
 .sec-bar{width:3px;height:14px;background:linear-gradient(#00E5FF,#FF00A0);border-radius:2px;flex-shrink:0;}
@@ -94,25 +79,34 @@ body{font-family:'Inter',sans-serif;background:#0D0D1A;color:#E0E0FF;font-size:1
 .proj-block{margin-bottom:14px;padding:10px 12px;border:1px solid #1A1A3A;border-radius:4px;background:#111128;page-break-inside:avoid;break-inside:avoid;}
 .proj-name{font-size:12px;font-weight:700;color:#fff;margin-bottom:4px;}
 .proj-desc{font-size:11px;color:#9090BB;margin-bottom:5px;}
+.edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;padding-left:10px;border-left:2px solid #1A1A3A;}
+.edu-degree{font-size:10px;font-weight:600;color:#E0E0FF;}
+.edu-school{font-size:10px;color:#8080AA;}
+.edu-meta{font-size:9px;color:#6060AA;}
+.skill-cat{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#00E5FF;margin:8px 0 4px;}
+.skill-pills{display:flex;flex-wrap:wrap;gap:3px;page-break-inside:avoid;break-inside:avoid;}
+.pill{background:#1A1A3A;border:1px solid #00E5FF44;border-radius:2px;padding:2px 7px;font-size:9px;color:#C0C0FF;margin:2px 2px;display:inline-block;}
+.inline-row{display:flex;flex-wrap:wrap;gap:4px;}
+.cert-item{font-size:10px;color:#A0A0CC;margin-bottom:4px;padding-left:8px;border-left:2px solid #FF00A0;page-break-inside:avoid;break-inside:avoid;}
 </style></head><body>
 <div class="page">
-  <div class="sidebar">
+  <div class="banner">
     <div class="avatar-ring"><div class="avatar-initials">${escHtml(firstName[0] || '')}${escHtml(lastName[0] || '')}</div></div>
     <div class="name-block">
       <div class="name-first">${escHtml(firstName)}</div>
       <div class="name-last">${escHtml(lastName)}</div>
       ${jobTitle ? `<div class="name-title">${escHtml(jobTitle)}</div>` : ''}
     </div>
-    ${contact ? contact : ''}
-    ${education.length ? `<div class="sb-sec"><div class="sb-sec-title">Formation</div>${buildEducationHtml(education)}</div>` : ''}
-    ${skillsHtml ? `<div class="sb-sec"><div class="sb-sec-title">Compétences</div>${skillsHtml}</div>` : ''}
-    ${languages.length ? `<div class="sb-sec"><div class="sb-sec-title">Langues</div>${languages.map(l => `<div class="lang-row"><div class="lang-dot"></div>${escHtml(l)}</div>`).join('')}</div>` : ''}
-    ${certifications.length ? `<div class="sb-sec"><div class="sb-sec-title">Certifications</div>${certifications.map(c => `<div class="cert-item">${escHtml(c)}</div>`).join('')}</div>` : ''}
   </div>
-  <div class="main">
+  ${contact ? `<div class="contact-bar">${contact}</div>` : ''}
+  <div class="body">
     ${summary ? `${sec('Profil')}<p class="summary-text">${escHtml(summary)}</p>` : ''}
     ${expHtml ? `${sec('Expériences')}${expHtml}` : ''}
     ${projHtml ? `${sec('Projets')}${projHtml}` : ''}
+    ${education.length ? `${sec('Formation')}${buildEducationHtml(education)}` : ''}
+    ${skillsHtml ? `${sec('Compétences')}${skillsHtml}` : ''}
+    ${languages.length ? `${sec('Langues')}<div class="inline-row">${languages.map(l => `<span class="pill">${escHtml(l)}</span>`).join('')}</div>` : ''}
+    ${certifications.length ? `${sec('Certifications')}${certifications.map(c => `<div class="cert-item">${escHtml(c)}</div>`).join('')}` : ''}
   </div>
 </div>
 </body></html>`;

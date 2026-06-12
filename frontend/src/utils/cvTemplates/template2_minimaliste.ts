@@ -1,6 +1,6 @@
 /**
  * Template 2 – "Minimaliste" : Blanc pur, ligne fine bleue, typographie épurée.
- * Style: Clean & Modern
+ * Style: Clean & Modern (Format classique 1 colonne)
  */
 import { CvTemplate, CvData, ParsedAudit } from './types';
 import {
@@ -29,8 +29,9 @@ body{font-family:system-ui,sans-serif;background:#fff;font-size:11px;line-height
 .contact-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#555;}
 .ci{font-size:11px;color:${ACCENT};}
 .section-title{font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:${ACCENT};border-bottom:1.5px solid ${ACCENT};padding-bottom:3px;margin:20px 0 10px;}
+.section-title:first-child{margin-top:0;}
 .summary-text{font-size:11px;color:#444;line-height:1.7;}
-.body-layout{display:grid;grid-template-columns:1fr 260px;gap:32px;}
+.body-layout{display:block;}
 .exp-block{margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;}
 .exp-header{display:flex;justify-content:space-between;align-items:baseline;}
 .exp-title{font-size:12px;font-weight:700;color:#111;}
@@ -49,7 +50,8 @@ body{font-family:system-ui,sans-serif;background:#fff;font-size:11px;line-height
 .edu-meta{font-size:10px;color:#888;}
 .skill-cat{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${ACCENT};margin:8px 0 4px;}
 .skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;page-break-inside:avoid;break-inside:avoid;}
-.pill{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:4px;padding:2px 8px;font-size:10px;color:#1D4ED8;font-weight:500;}
+.pill{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:4px;padding:2px 8px;font-size:10px;color:#1D4ED8;font-weight:500;margin:2px 2px;display:inline-block;}
+.inline-row{display:flex;flex-wrap:wrap;gap:4px;}
 .lang-item{font-size:10px;color:#333;margin-bottom:4px;padding-left:10px;border-left:2px solid ${ACCENT};page-break-inside:avoid;break-inside:avoid;}
 .cert-item{font-size:10px;color:#444;margin-bottom:4px;padding-left:10px;border-left:2px solid #ddd;page-break-inside:avoid;break-inside:avoid;}
 </style></head><body>
@@ -59,18 +61,14 @@ body{font-family:system-ui,sans-serif;background:#fff;font-size:11px;line-height
     ${f.jobTitle ? `<div class="job-title">${escHtml(f.jobTitle)}</div>` : ''}
   </div>
   <div class="contact-bar">${buildContactItems(f, `color:${ACCENT}`)}</div>
-  ${f.summary ? `<p class="summary-text">${escHtml(f.summary)}</p>` : ''}
   <div class="body-layout">
-    <div>
-      ${f.experiences.length > 0 ? `<div class="section-title">Expériences</div>${buildExperiencesHtml(f.experiences, ACCENT)}` : ''}
-      ${f.projects.length > 0 ? `<div class="section-title">Projets</div>${buildProjectsHtml(f.projects, ACCENT)}` : ''}
-    </div>
-    <div>
-      ${f.education.length > 0 ? `<div class="section-title">Formation</div>${buildEducationHtml(f.education)}` : ''}
-      ${f.skillsHtml ? `<div class="section-title">Compétences</div>${f.skillsHtml}` : ''}
-      ${f.languages.length > 0 ? `<div class="section-title">Langues</div>${f.languages.map(l => `<div class="lang-item">${escHtml(l)}</div>`).join('')}` : ''}
-      ${f.certifications.length > 0 ? `<div class="section-title">Certifications</div>${f.certifications.map(c => `<div class="cert-item">${escHtml(c)}</div>`).join('')}` : ''}
-    </div>
+    ${f.summary ? `<div class="section-title">Profil</div><p class="summary-text">${escHtml(f.summary)}</p>` : ''}
+    ${f.experiences.length > 0 ? `<div class="section-title">Expériences</div>${buildExperiencesHtml(f.experiences, ACCENT)}` : ''}
+    ${f.projects.length > 0 ? `<div class="section-title">Projets</div>${buildProjectsHtml(f.projects, ACCENT)}` : ''}
+    ${f.education.length > 0 ? `<div class="section-title">Formation</div>${buildEducationHtml(f.education)}` : ''}
+    ${f.skillsHtml ? `<div class="section-title">Compétences</div>${f.skillsHtml}` : ''}
+    ${f.languages.length > 0 ? `<div class="section-title">Langues</div><div class="inline-row">${f.languages.map(l => `<span class="pill">${escHtml(l)}</span>`).join('')}</div>` : ''}
+    ${f.certifications.length > 0 ? `<div class="section-title">Certifications</div>${f.certifications.map(c => `<div class="cert-item">${escHtml(c)}</div>`).join('')}` : ''}
   </div>
 </div>
 </body></html>`;

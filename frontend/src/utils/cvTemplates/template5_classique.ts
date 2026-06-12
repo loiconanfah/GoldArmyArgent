@@ -1,6 +1,6 @@
 /**
  * Template 5 – "Classique" : Noir & blanc, typographie sériale, style avocat/consultant.
- * Style: Classic / Traditional
+ * Style: Classic / Traditional (Format classique 1 colonne)
  */
 import { CvTemplate, CvData, ParsedAudit } from './types';
 import {
@@ -28,7 +28,8 @@ body{font-family:Georgia,serif;background:#fff;font-size:11px;line-height:1.6;-w
 .contact-item{display:flex;align-items:center;gap:4px;font-size:10px;color:#444;}
 .ci{font-size:10px;}
 .section-title{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;border-bottom:1px solid #111;padding-bottom:3px;margin:18px 0 10px;}
-.body-layout{display:grid;grid-template-columns:1fr 220px;gap:28px;}
+.section-title:first-child{margin-top:0;}
+.body-layout{display:block;}
 .summary-text{font-size:11px;color:#333;line-height:1.75;font-style:italic;}
 .exp-block{margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;}
 .exp-header{display:flex;justify-content:space-between;align-items:baseline;}
@@ -48,7 +49,8 @@ body{font-family:Georgia,serif;background:#fff;font-size:11px;line-height:1.6;-w
 .edu-block{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
 .skill-cat{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#333;margin:8px 0 4px;}
 .skill-pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;page-break-inside:avoid;break-inside:avoid;}
-.pill{background:#F3F4F6;border:1px solid #D1D5DB;border-radius:2px;padding:2px 7px;font-size:10px;color:#111;}
+.pill{background:#F3F4F6;border:1px solid #D1D5DB;border-radius:2px;padding:2px 7px;font-size:10px;color:#111;margin:2px 2px;display:inline-block;}
+.inline-row{display:flex;flex-wrap:wrap;gap:4px;}
 .lang-item{font-size:10px;color:#333;margin-bottom:4px;page-break-inside:avoid;break-inside:avoid;}
 .cert-item{font-size:10px;color:#444;margin-bottom:4px;font-style:italic;page-break-inside:avoid;break-inside:avoid;}
 </style></head><body>
@@ -58,18 +60,14 @@ body{font-family:Georgia,serif;background:#fff;font-size:11px;line-height:1.6;-w
     ${f.jobTitle ? `<div class="job-title">${escHtml(f.jobTitle)}</div>` : ''}
   </div>
   <div class="contact-bar">${buildContactItems(f)}</div>
-  ${f.summary ? `<div class="section-title">Profil Professionnel</div><p class="summary-text">${escHtml(f.summary)}</p>` : ''}
   <div class="body-layout">
-    <div>
-      ${f.experiences.length > 0 ? `<div class="section-title">Expériences</div>${buildExperiencesHtml(f.experiences, '#111')}` : ''}
-      ${f.projects.length > 0 ? `<div class="section-title">Projets</div>${buildProjectsHtml(f.projects, '#111')}` : ''}
-    </div>
-    <div>
-      ${f.education.length > 0 ? `<div class="section-title">Formation</div>${buildEducationHtml(f.education)}` : ''}
-      ${f.skillsHtml ? `<div class="section-title">Compétences</div>${f.skillsHtml}` : ''}
-      ${f.languages.length > 0 ? `<div class="section-title">Langues</div>${f.languages.map(l => `<div class="lang-item">• ${escHtml(l)}</div>`).join('')}` : ''}
-      ${f.certifications.length > 0 ? `<div class="section-title">Certifications</div>${f.certifications.map(c => `<div class="cert-item">• ${escHtml(c)}</div>`).join('')}` : ''}
-    </div>
+    ${f.summary ? `<div class="section-title">Profil Professionnel</div><p class="summary-text">${escHtml(f.summary)}</p>` : ''}
+    ${f.experiences.length > 0 ? `<div class="section-title">Expériences</div>${buildExperiencesHtml(f.experiences, '#111')}` : ''}
+    ${f.projects.length > 0 ? `<div class="section-title">Projets</div>${buildProjectsHtml(f.projects, '#111')}` : ''}
+    ${f.education.length > 0 ? `<div class="section-title">Formation</div>${buildEducationHtml(f.education)}` : ''}
+    ${f.skillsHtml ? `<div class="section-title">Compétences</div>${f.skillsHtml}` : ''}
+    ${f.languages.length > 0 ? `<div class="section-title">Langues</div><div class="inline-row">${f.languages.map(l => `<span class="pill">${escHtml(l)}</span>`).join('')}</div>` : ''}
+    ${f.certifications.length > 0 ? `<div class="section-title">Certifications</div>${f.certifications.map(c => `<div class="cert-item">• ${escHtml(c)}</div>`).join('')}` : ''}
   </div>
 </div>
 </body></html>`;
