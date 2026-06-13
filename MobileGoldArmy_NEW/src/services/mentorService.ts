@@ -11,6 +11,8 @@ interface AuditCvPayload {
   message: string;
   cv_text: string;
   cv_filename: string;
+  job_url?: string;
+  job_text?: string;
 }
 
 export const mentorService = {
@@ -40,7 +42,9 @@ export const mentorService = {
       session_id: 'mentor-audit',
       image_data: null,
       background: !!payload.background,
-      task_type: 'mentor'
+      task_type: 'mentor',
+      job_text: payload.job_text,
+      job_url: payload.job_url
     };
 
     const res = await api.post('/api/chat', body, {

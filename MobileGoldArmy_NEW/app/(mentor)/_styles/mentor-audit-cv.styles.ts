@@ -437,9 +437,47 @@ export const mentorAuditCvStyles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
   },
+  fieldBlock: {
+    marginBottom: spacing.md,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4A4A46',
+    marginBottom: spacing.xs,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 14,
+    backgroundColor: '#F5F4F0',
+    borderWidth: 1,
+    borderColor: '#EAEAE6',
+  },
+  textInput: {
+    flex: 1,
+    marginLeft: spacing.sm,
+    fontSize: 14,
+    color: '#151515',
+    paddingVertical: 4,
+  },
+  textAreaWrapper: {
+    alignItems: 'flex-start',
+  },
+  textArea: {
+    height: 96,
+    textAlignVertical: 'top',
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: spacing.md,
+    lineHeight: 16,
+  },
 });
 
 // Expo Router route placeholder to silence route warning for style-only files.
 const _RoutePlaceholder = () => null;
 export default _RoutePlaceholder;
-

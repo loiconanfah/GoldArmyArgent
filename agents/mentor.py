@@ -4,6 +4,8 @@ import json
 import re
 import time
 from loguru import logger
+import httpx
+from bs4 import BeautifulSoup
 from core.agent_base import BaseAgent
 from llm.prompt_templates import PromptTemplates
 
@@ -32,7 +34,11 @@ class MentorAgent(BaseAgent):
              
         # audit_cv et rewrite_cv fusionnés en un seul outil
         if action in ["audit_cv", "rewrite_cv"]:
-            return await self._audit_and_rewrite_cv(cv_text)
+            return await self._audit_and_rewrite_cv(
+                cv_text,
+                job_text=user_input.get("job_text"),
+                job_url=user_input.get("job_url")
+            )
         elif action == "generate_portfolio":
             # Extraire le thème potentiel de la requête
             query = user_input.get("query", "").lower()
@@ -68,8 +74,40 @@ class MentorAgent(BaseAgent):
         """Phase d'action: non utilisée pour le mentor direct."""
         return {"status": "success", "message": "Action non supportée directement."}
 
-    async def _audit_and_rewrite_cv(self, cv_text: str) -> Dict[str, Any]:
-        """Audite et réécrit le CV en 3 passes internes pour garantir un score ATS > 80."""
+    async def _scrape_job_url(self, url: str) -> str:
+        """Scrape the text content of a job offer URL."""
+        try:
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "text/html,application/xhtml+xml",
+                    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+                }
+                resp = await client.get(url, headers=headers)
+                resp.raise_for_status()
+                html_content = resp.text
+            
+            soup = BeautifulSoup(html_content, "html.parser")
+            page_title = soup.title.string if soup.title else ""
+            
+            # Remove scripts, styles, navigations, footers
+            for script in soup(["script", "style", "nav", "footer", "header", "noscript"]):
+                script.decompose()
+            text_content = soup.get_text(separator=" ", strip=True)
+            return f"Titre de l'offre : {page_title}\n\nContenu de l'offre :\n{text_content[:15000]}"
+        except Exception as e:
+            logger.error(f"Error scraping job url {url}: {e}")
+            return ""
+
+    async def _audit_and_rewrite_cv(self, cv_text: str, job_text: str = None, job_url: str = None) -> Dict[str, Any]:
+        """Audite et réécrit le CV en 3 passes internes pour garantir un score ATS > 80, éventuellement adapté à une offre."""
+        if job_url and not job_text:
+            logger.info(f"[Mentor] Scraping de l'offre d'emploi depuis l'URL : {job_url}")
+            job_text = await self._scrape_job_url(job_url)
+
+        if job_text:
+            logger.info(f"[Mentor] Adaptation du CV par rapport à l'offre d'emploi : {job_text[:100]}...")
+            
         logger.info("[Mentor] Démarrage de l'Optimisation Multi-Passes (Triple Check)...")
         
         current_cv_data = {}
@@ -83,8 +121,12 @@ class MentorAgent(BaseAgent):
             
             if i == 1:
                 # PHASE 1: DIAGNOSTIC ONLY
-                phase_instruction = "PHASE 1 : Diagnostic strict du CV original. Tu DOIS UNIQUEMENT évaluer le CV fourni et lister ses failles réelles. Ne génère AUCUN `cv_data`."
-                context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
+                if job_text:
+                    phase_instruction = "PHASE 1 : Diagnostic strict du CV original PAR RAPPORT À L'OFFRE D'EMPLOI FOURNIE. Tu DOIS évaluer le CV, lister ses failles réelles et identifier les écarts (mots-clés manquants, expériences non valorisées) par rapport aux exigences de l'offre d'emploi. Ne génère AUCUN `cv_data`."
+                    context_data = f"[OFFRE_D_EMPLOI]\n{job_text}\n\n[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
+                else:
+                    phase_instruction = "PHASE 1 : Diagnostic strict du CV original. Tu DOIS UNIQUEMENT évaluer le CV fourni et lister ses failles réelles. Ne génère AUCUN `cv_data`."
+                    context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
                 json_structure = """{
   "audit": {
     "ats_score": 0,
@@ -97,7 +139,48 @@ class MentorAgent(BaseAgent):
 }"""
             elif i == 2:
                 # PHASE 2: FIRST DRAFT REWRITE
-                phase_instruction = f"""PHASE 2 : Réécriture Hyperprofessionnelle (Draft 1).
+                if job_text:
+                    phase_instruction = f"""PHASE 2 : Réécriture Hyperprofessionnelle Adaptée à l'Offre (Draft 1).
+Objectif : Produire un CV parfaitement adapté à l'offre d'emploi fournie et digne d'un TOP recruteur FAANG — zéro faute, impact maximal. Met en valeur les expériences et les compétences pour correspondre aux exigences de l'offre d'emploi.
+Basé sur les failles et écarts détectés : {original_failles}
+
+OBLIGATIONS ABSOLUES :
+[A] CHAQUE bullet point DOIT contenir UN KPI/métrique chiffré(e) obligatoire.
+    Format imposé : Verbe d'action + Contexte technique + Résultat quantifié
+    Exemples CORRECTS :
+    - "Développé 12 microservices FastAPI réduisant la latence P99 de 340ms à 180ms (-47%)"
+    - "Automatisé le pipeline CI/CD GitHub Actions → 0 downtime deploy, fréquence x3"
+    - "Conçu un cache Redis multicouche atteignant 98% hit-rate, économie 40% coûts DB"
+    Si tu ne connais PAS le chiffre exact, estime-le intelligemment à partir du contexte.
+    UN BULLET SANS KPI = ÉCHEC.
+[B] ZÉRO faute d'orthographe ou de grammaire — AUTO-VÉRIFIE chaque bullet avant de l'écrire.
+    Checklist obligatoire pour chaque phrase :
+    - Accord sujet/verbe correct ? (ex: "les APIs sont" pas "les APIs est")
+    - Accents corrects ? (développé, créé, géré, intégré, déployé, amélioré)
+    - Verbe à l'infinitif ou participe passé uniformément dans la section ?
+    - Aucun anglicisme mal accordé ? ("performantes" pas "performants" si féminin)
+    - Technologies capitalisées ? (Python, Docker, AWS, React, PostgreSQL)
+[C] Injecte massivement les mots-clés techniques requis par l'offre d'emploi et ceux identifiés en Phase 1.
+    Chaque poste doit nommer AU MOINS 3-4 technologies différentes dans ses bullets.
+[D] Conserve TOUS les contacts, dates, lieux sans exception.
+[E] ZÉRO RÉPETTION — Règle anti-rebrassage STRICTE :
+    - Chaque bullet DOIT commencer par un verbe d'action DIFFÉRENT des autres bullets du même poste.
+    - Banque de verbes imposée (varie obligatoirement) : Développé, Conçu, Architecturé, Optimisé,
+      Déployé, Automatisé, Réduit, Augmenté, Piloté, Intégré, Refactorisé, Implémenté,
+      Migré, Sécurisé, Coordonné, Livré, Encadré, Amélioré, Standardisé, Monitoré.
+    - INTERDIT : répéter le même verbe dans le même poste.
+    - INTERDIT : répéter les mêmes formulations génériques ("gérer", "assurer", "améliorer") 2x ou +.
+[G] ADAPTATION DES EXPÉRIENCES : Oriente et reformule le contenu de chaque expérience professionnelle pour résonner directement avec le secteur d'activité, les problématiques et les missions décrits dans l'offre d'emploi. Si l'offre met l'accent sur un sujet particulier (ex: la scalabilité, la sécurité, l'UI/UX, le management d'équipe, ou une stack spécifique), oriente les réalisations passées pour montrer comment tu as déjà résolu des problèmes similaires. N'invente pas de fausses entreprises ou de fausses dates, mais valorise et adapte les angles d'attaque de tes expériences réelles pour coller aux besoins du poste.
+[F] AUTO-RÉVISION OBLIGATOIRE avant de retourner le JSON :
+    Parcours mentalement chaque bullet et vérifie :
+    1. Verbes d'action tous différents dans un même poste ? Si non → remplace.
+    2. Fautes d'accord ou d'accent ? Si oui → corrige.
+    3. Bullets sans KPI ? Si oui → ajoute un chiffre.
+    4. Les descriptions d'expériences sont-elles bien orientées et adaptées pour répondre aux besoins clés de l'offre d'emploi ? Si non → réoriente les angles.
+    Seulement si ces tests sont OK → retourne le JSON."""
+                    context_data = f"[OFFRE_D_EMPLOI]\n{job_text}\n\n[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
+                else:
+                    phase_instruction = f"""PHASE 2 : Réécriture Hyperprofessionnelle (Draft 1).
 Objectif : Produire un CV digne d'un TOP recruteur FAANG — zéro faute, impact maximal.
 Basé sur les failles détectées : {original_failles}
 
@@ -108,7 +191,7 @@ OBLIGATIONS ABSOLUES :
     - "Développé 12 microservices FastAPI réduisant la latence P99 de 340ms à 180ms (-47%)"
     - "Automatisé le pipeline CI/CD GitHub Actions → 0 downtime deploy, fréquence x3"
     - "Conçu un cache Redis multicouche atteignant 98% hit-rate, économie 40% coûts DB"
-    Si tu ne connais PAS le chiffre exact, ESTIME intelligemment à partir du contexte.
+    Si tu ne connais PAS le chiffre exact, estime-le intelligemment à partir du contexte.
     UN BULLET SANS KPI = ÉCHEC.
 [B] ZÉRO faute d'orthographe ou de grammaire — AUTO-VÉRIFIE chaque bullet avant de l'écrire.
     Checklist obligatoire pour chaque phrase :
@@ -133,7 +216,7 @@ OBLIGATIONS ABSOLUES :
     2. Fautes d'accord ou d'accent ? Si oui → corrige.
     3. Bullets sans KPI ? Si oui → ajoute un chiffre.
     Seulement si les 3 tests sont OK → retourne le JSON."""
-                context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
+                    context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
                 json_structure = """{
   "cv_data": {
     "full_name": "...", "title": "...", "email": "...", "phone": "...", "location": "...", "linkedin": "...", "github": "...",
@@ -146,7 +229,22 @@ OBLIGATIONS ABSOLUES :
 }"""
             else:
                 # PHASE 3: FINAL SCORING AND MAPPING
-                phase_instruction = f"""PHASE 3 : Vérification Finale & Scoring du CV OPTIMISÉ.
+                if job_text:
+                    phase_instruction = f"""PHASE 3 : Vérification Finale & Scoring du CV OPTIMISÉ PAR RAPPORT À L'OFFRE.
+Tu analyses le CV que tu viens de réécrire (Draft 1) par rapport à l'offre d'emploi fournie, PAS le CV original.
+Ce CV a déjà été optimisé et adapté.
+
+ÉVALUATION DU NOUVEAU CV PAR RAPPORT À L'OFFRE (attendu entre 80-99/100) :
+- `mots_cles` : Tous les mots-clés techniques de l'offre d'emploi sont présents ? (attendu : 85-99)
+- `impact_resultats` : Tous les bullets ont des KPIs chiffrés ? (attendu : 85-99)
+- `mise_en_forme` : Structure ATS-friendly, sections claires ? (attendu : 85-99)
+- `lisibilite` : Langage professionnel, zéro faute, cohérent ? (attendu : 85-99)
+- `experience_pertinence` : Expériences bien décrites et pertinentes par rapport à l'offre ? (attendu : 85-99)
+
+Génère le `correction_mapping` listant une faille/écart d'origine par clé et sa correction/adaptation appliquée dans le nouveau CV."""
+                    context_data = f"[OFFRE_D_EMPLOI]\n{job_text}\n\n[CV_OPTIMISÉ_DRAFT1]\n{json.dumps(current_cv_data, ensure_ascii=False)[:5000]}"
+                else:
+                    phase_instruction = f"""PHASE 3 : Vérification Finale & Scoring du CV OPTIMISÉ.
 
 Tu analyses le CV que tu viens de réécrire (Draft 1), PAS le CV original.
 Ce CV a déjà été optimisé avec : mots-clés injectés, KPIs ajoutés, verbes d'action forts, mise en forme ATS.
@@ -160,7 +258,7 @@ Failles originales corrigées : {original_failles}
 - `experience_pertinence` : Expériences bien décrites et pertinentes ? (attendu : 85-99)
 
 Génère le `correction_mapping` listant UNE faille par clé et sa correction appliquée dans le nouveau CV."""
-                context_data = f"[CV_OPTIMISÉ_DRAFT1]\n{json.dumps(current_cv_data, ensure_ascii=False)[:5000]}"
+                    context_data = f"[CV_OPTIMISÉ_DRAFT1]\n{json.dumps(current_cv_data, ensure_ascii=False)[:5000]}"
                 json_structure = """{
   "audit": {
     "ats_score": 92,
@@ -170,7 +268,36 @@ Génère le `correction_mapping` listant UNE faille par clé et sa correction ap
   }
 }"""
 
-            prompt = f"""Tu es l'Expert Recruteur Tech \"GoldArmy Mentor\" — mode Optimisation Triple Pass.
+            if job_text:
+                prompt = f"""Tu es l'Expert Recruteur Tech \"GoldArmy Mentor\" — mode Optimisation Triple Pass et Adaptation d'Offre.
+{phase_instruction}
+
+**RÈGLES D'OR ABSOLUES :**
+1. **Score Honnête (Phase 1) :** Basé STRICTEMENT sur le CV fourni par rapport à l'offre (généralement 25-55/100). Jamais inventé.
+2. **KPI OBLIGATOIRE sur chaque bullet :** Chaque réalisation DOIT montrer un impact chiffré.
+   Formule : [Verbe fort] + [Technologie(s)] + [Résultat % / $ / x / ms / jours].
+   Si absent dans l'original : estime intelligemment. AUCUN bullet sans métrique = rejeté.
+3. **ATS Max :** Mots-clés techniques, frameworks, outils, certifications de l'offre d'emploi. Min. 3 techs par bullet.
+4. **GRAMMAIRE & ORTHOGRAPHE — PRIORITÉ #1 — AUTO-VÉRIFICATION PHRASE PAR PHRASE :**
+   ✓ Accents obligatoires : développé, intégré, réalisé, géré, déployé, amélioré, créé
+   ✓ Accord correct : sujet/verbe, adjectifs (ex: "APIs performantes" pas "performants")
+   ✓ Temps verbal uniforme dans chaque section (infinitif OU passé composé, pas les deux)
+   ✓ Majuscules technos : Python, FastAPI, Docker, Kubernetes, AWS, GCP, React, TypeScript
+   ✓ Zéro gallicisme mal formé, zéro anglicisme non accordé
+   ✓ Avant de finaliser : relis mentalement chaque bullet comme si tu étais le correcteur
+5. **Conservation totale :** Contacts, emails, téléphones, dates, lieux — rien ne disparaît.
+6. **Structure :** Summary → Experiences → Projects → Skills → Education → Languages → Certs.
+
+**JSON ATTENDU :**
+{json_structure}
+
+**CONTEXTE :**
+{context_data}
+
+Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
+"""
+            else:
+                prompt = f"""Tu es l'Expert Recruteur Tech \"GoldArmy Mentor\" — mode Optimisation Triple Pass.
 {phase_instruction}
 
 **RÈGLES D'OR ABSOLUES :**
@@ -194,7 +321,6 @@ Génère le `correction_mapping` listant UNE faille par clé et sa correction ap
 
 **CONTEXTE :**
 {context_data}
-
 Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
 """
             response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)

@@ -84,6 +84,8 @@ const inputQuery = ref('')
 const inputLocation = ref('')
 const cvText = ref('')
 const cvFilename = ref('')
+const jobUrl = ref('')
+const jobText = ref('')
 const isSaving = ref(false)
 const isGeneratingPortfolio = ref(false)
 const isUploadingCv = ref(false)
@@ -329,7 +331,9 @@ const sendMessage = async () => {
             nb_results: cvText.value ? null : 5, 
             location: inputLocation.value,
             session_id: sessionId.value,
-            image_data: selectedImage.value
+            image_data: selectedImage.value,
+            job_text: jobText.value || null,
+            job_url: jobUrl.value || null
         })
     })
     const data = await res.json()
@@ -1285,7 +1289,26 @@ const restoreCvFromHistory = (entry) => {
                         <DocumentTextIcon class="w-8 h-8 text-slate-900" />
                     </div>
                     <h3 class="text-2xl font-black text-slate-900 mb-2 tracking-tight">{{ t('agent_chat.audit_modal.title') }}</h3>
-                    <p class="text-slate-400 text-sm mb-8 leading-relaxed">{{ t('agent_chat.audit_modal.desc') }}</p>
+                    <p class="text-slate-400 text-sm mb-6 leading-relaxed">{{ t('agent_chat.audit_modal.desc') }}</p>
+                    
+                    <!-- Adaptation Offre d'emploi (Optionnel) -->
+                    <div class="w-full mb-6 text-left space-y-2">
+                        <label class="block text-slate-400 text-[10px] font-black uppercase tracking-wider">
+                            Adapter à une offre d'emploi (Optionnel)
+                        </label>
+                        <input 
+                            type="text" 
+                            v-model="jobUrl" 
+                            placeholder="Lien de l'offre (ex: https://...)" 
+                            class="w-full px-4 py-2 bg-[#F9FAFB]/90 border border-slate-100 focus:border-indigo-500/50 focus:ring-0 text-slate-900 placeholder-slate-400 text-xs rounded-xl transition-all outline-none"
+                        />
+                        <textarea 
+                            v-model="jobText" 
+                            placeholder="Description textuelle de l'offre..." 
+                            rows="2"
+                            class="w-full px-4 py-2 bg-[#F9FAFB]/90 border border-slate-100 focus:border-indigo-500/50 focus:ring-0 text-slate-900 placeholder-slate-400 text-xs rounded-xl resize-none transition-all outline-none"
+                        ></textarea>
+                    </div>
                     
                     <div class="w-full space-y-3">
                         <button 

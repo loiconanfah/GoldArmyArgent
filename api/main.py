@@ -210,6 +210,8 @@ class ChatRequest(BaseModel):
     image_data: Optional[str] = None # Base64 image for vision tasks
     background: Optional[bool] = False
     task_type: Optional[str] = "sniper" # 'sniper', 'mentor', 'cv_analysis'
+    job_text: Optional[str] = None
+    job_url: Optional[str] = None
 
 class CVAdaptRequest(BaseModel):
     job_title: str
@@ -1255,7 +1257,9 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks,
             "nb_results": request.nb_results,
             "location": request.location,
             "session_id": request.session_id or "default",
-            "image_data": request.image_data
+            "image_data": request.image_data,
+            "job_text": request.job_text,
+            "job_url": request.job_url
         }
         
         # Background mode handling

@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -32,6 +33,8 @@ export default function MentorAuditCvScreen() {
   const [cvSource, setCvSource] = useState<CvSource | null>(null);
   const [cvFileName, setCvFileName] = useState<string | null>(null);
   const [cvText, setCvText] = useState<string | null>(null);
+  const [jobUrl, setJobUrl] = useState('');
+  const [jobText, setJobText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [auditSummary, setAuditSummary] = useState<string | null>(null);
   const [rewriteContent, setRewriteContent] = useState<string | null>(null);
@@ -214,6 +217,8 @@ export default function MentorAuditCvScreen() {
         message,
         cv_text: cvText,
         cv_filename: cvFileName,
+        job_text: jobText || undefined,
+        job_url: jobUrl || undefined,
         background: true
       });
 
@@ -333,6 +338,42 @@ export default function MentorAuditCvScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Adapter à une offre d'emploi (Optionnel)</Text>
+            <Text style={styles.sectionSubtitle}>
+              Renseigne l'offre d'emploi pour adapter ton CV, les scores ATS et les suggestions à ce poste spécifique.
+            </Text>
+            
+            <View style={styles.fieldBlock}>
+              <Text style={styles.fieldLabel}>Lien de l'offre d'emploi</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="link-outline" size={16} color="#9CA3AF" />
+                <TextInput
+                  value={jobUrl}
+                  onChangeText={setJobUrl}
+                  placeholder="Ex: https://welcome-to-the-jungle.com/..."
+                  placeholderTextColor="#6B7280"
+                  style={styles.textInput}
+                />
+              </View>
+            </View>
+
+            <View style={[styles.fieldBlock, { marginBottom: 0, marginTop: spacing.sm }]}>
+              <Text style={styles.fieldLabel}>Description de l'offre (Texte)</Text>
+              <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
+                <Ionicons name="document-text-outline" size={16} color="#9CA3AF" />
+                <TextInput
+                  value={jobText}
+                  onChangeText={setJobText}
+                  placeholder="Colle ici les missions, la stack ou les prérequis de l'offre..."
+                  placeholderTextColor="#6B7280"
+                  style={[styles.textInput, styles.textArea]}
+                  multiline
+                />
+              </View>
+            </View>
+          </View>
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Résumé de l'audit</Text>
             {isLoading && !auditSummary ? (
@@ -639,6 +680,40 @@ export default function MentorAuditCvScreen() {
                   <Text style={styles.overlaySubtitle}>
                     Choisis le CV à analyser. Tu pourras ensuite lancer l'audit détaillé côté backend.
                   </Text>
+                </View>
+              </View>
+
+              {/* Formulaire d'offre d'emploi optionnelle dans le popup */}
+              <View style={{ marginBottom: spacing.md }}>
+                <Text style={{ fontSize: 11, fontWeight: '700', textTransform: 'uppercase', color: '#6B7280', letterSpacing: 0.5, marginBottom: spacing.xs }}>
+                  Adapter à une offre d'emploi (Optionnel)
+                </Text>
+                
+                <View style={[styles.fieldBlock, { marginBottom: spacing.sm }]}>
+                  <View style={[styles.inputWrapper, { height: 40 }]}>
+                    <Ionicons name="link-outline" size={14} color="#9CA3AF" />
+                    <TextInput
+                      value={jobUrl}
+                      onChangeText={setJobUrl}
+                      placeholder="Lien de l'offre (ex: https://...)"
+                      placeholderTextColor="#9CA3AF"
+                      style={[styles.textInput, { fontSize: 13, height: '100%' }]}
+                    />
+                  </View>
+                </View>
+
+                <View style={[styles.fieldBlock, { marginBottom: spacing.sm }]}>
+                  <View style={[styles.inputWrapper, styles.textAreaWrapper, { height: 70, paddingVertical: 4 }]}>
+                    <Ionicons name="document-text-outline" size={14} color="#9CA3AF" style={{ marginTop: 4 }} />
+                    <TextInput
+                      value={jobText}
+                      onChangeText={setJobText}
+                      placeholder="Description textuelle de l'offre..."
+                      placeholderTextColor="#9CA3AF"
+                      style={[styles.textInput, { fontSize: 13, height: 60, textAlignVertical: 'top' }]}
+                      multiline
+                    />
+                  </View>
                 </View>
               </View>
 
