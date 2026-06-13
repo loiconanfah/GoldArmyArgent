@@ -140,9 +140,11 @@ RÉPONDS UNIQUEMENT EN JSON VALIDE :
 CONTENU DE LA PAGE :
 {truncated_text}
 """
-        model = genai.GenerativeModel(INTERVIEW_LLM_MODEL)
-        response = await asyncio.to_thread(model.generate_content, extraction_prompt)
-        raw_text = getattr(response, "text", None) or ""
+        raw_text = await llm_client.generate(
+            prompt=extraction_prompt,
+            model=INTERVIEW_LLM_MODEL,
+            json_mode=True
+        )
         
         clean_json = re.sub(r"^[^{]*", "", raw_text.replace("```json", "").replace("```", "").strip()).strip()
         extracted_data = json.loads(clean_json)
@@ -323,11 +325,11 @@ HISTORIQUE DE L'ENTRETIEN :
 """
     
     try:
-        if not settings.gemini_api_key:
-            return {"status": "error", "message": "GEMINI_API_KEY non configurée"}
-        model = genai.GenerativeModel(INTERVIEW_LLM_MODEL)
-        response = await asyncio.to_thread(model.generate_content, analysis_prompt)
-        raw_text = getattr(response, "text", None) or ""
+        raw_text = await llm_client.generate(
+            prompt=analysis_prompt,
+            model=INTERVIEW_LLM_MODEL,
+            json_mode=True
+        )
         if not raw_text.strip():
             return {"status": "error", "message": "Réponse vide du modèle d'analyse"}
 
