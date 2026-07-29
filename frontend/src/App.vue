@@ -51,6 +51,7 @@ const toggleLanguage = () => {
   localStorage.setItem('language', nextLocale)
 }
 const userEmail = ref('')
+const userAvatar = ref('')
 const userTier = ref('FREE')
 
 onMounted(async () => {
@@ -60,11 +61,12 @@ onMounted(async () => {
     try {
       const user = JSON.parse(userStr)
       userEmail.value = user.email.split('@')[0]
+      userAvatar.value = user.avatar_url || ''
       userTier.value = user.subscription_tier || 'FREE'
     } catch(e){}
   }
 
-  // Refresh tier from API to be sure if logged in
+  // Refresh tier & avatar from API to be sure if logged in
   if (localStorage.getItem('token')) {
     try {
       const res = await authFetch('/api/profile')
@@ -72,6 +74,7 @@ onMounted(async () => {
       if (json.status === 'success') {
         userTier.value = json.data.subscription_tier || 'FREE'
         userEmail.value = json.data.full_name || json.data.email.split('@')[0]
+        userAvatar.value = json.data.avatar_url || ''
         
         // Identify user in Clarity
         Clarity.identify(json.data.id || json.data.email, undefined, undefined, json.data.full_name || json.data.email)
@@ -322,10 +325,11 @@ onMounted(() => {
             <!-- Enhanced User Profile Dropdown Trigger -->
             <button @click="handleLogout" title="Se déconnecter" class="flex items-center gap-3 p-1 pr-3 rounded-full hover:bg-surface-800 border border-transparent hover:border-surface-700 transition-all group">
                 <div class="relative">
-                    <div class="h-8 w-8 rounded-full bg-[#111827] flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-900 transition-all uppercase">
+                    <img v-if="userAvatar" :src="userAvatar" alt="Photo de profil" class="h-8 w-8 rounded-full object-cover ring-2 ring-amber-500/50 shadow-sm" />
+                    <div v-else class="h-8 w-8 rounded-full bg-[#111827] flex items-center justify-center text-white font-bold text-xs ring-2 ring-surface-900 transition-all uppercase">
                         {{ userEmail.charAt(0) }}
                     </div>
-                    <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-surface-950 rounded-full group-hover:bg-rose-400"></div>
+                    <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-surface-950 rounded-full group-hover:bg-emerald-400"></div>
                 </div>
                 <div class="hidden md:block text-left">
                     <div class="flex items-center gap-2 mb-0.5">

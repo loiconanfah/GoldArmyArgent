@@ -302,6 +302,8 @@ const goldProfilePostData = ref(null)
 const goldProfileSelectedTopic = ref(null)
 const activeCarouselSlide = ref(0)
 const goldProfileSavedAt = ref(null)
+const carouselTheme = ref('gold_luxe')
+const carouselDisplayMode = ref('hd_viewfinder')
 
 const saveGoldProfileCache = () => {
     try {
@@ -497,29 +499,95 @@ const downloadCarouselPDF = (postData) => {
         return
     }
     const slidesCount = postData.carousel_slides.length
+    const themeKey = carouselTheme.value || 'gold_luxe'
+
+    const themeStyles = {
+        gold_luxe: {
+            bg: 'radial-gradient(circle at 85% 15%, #1e293b 0%, #0f172a 60%, #050811 100%)',
+            border: '2px solid rgba(245, 158, 11, 0.45)',
+            headerBadgeBg: 'rgba(245, 158, 11, 0.15)',
+            headerBadgeBorder: 'rgba(245, 158, 11, 0.4)',
+            headerBadgeText: '#FBBF24',
+            titleColor: 'linear-gradient(135deg, #FFFFFF 0%, #FEF3C7 60%, #F59E0B 100%)',
+            titleShadow: '0 4px 15px rgba(0,0,0,0.6)',
+            boxBg: 'rgba(255, 255, 255, 0.04)',
+            boxBorderLeft: '#F59E0B',
+            boxText: '#F1F5F9',
+            swipeBg: 'rgba(245, 158, 11, 0.12)',
+            swipeBorder: 'rgba(245, 158, 11, 0.3)',
+            swipeText: '#FBBF24',
+            footerText: '#64748B',
+            bodyBg: '#050811'
+        },
+        cream_executive: {
+            bg: 'linear-gradient(135deg, #FDFBF7 0%, #F5F0E6 100%)',
+            border: '2px solid #D97706',
+            headerBadgeBg: 'rgba(5, 150, 105, 0.1)',
+            headerBadgeBorder: 'rgba(5, 150, 105, 0.3)',
+            headerBadgeText: '#059669',
+            titleColor: '#0F172A',
+            titleShadow: 'none',
+            boxBg: 'rgba(245, 158, 11, 0.06)',
+            boxBorderLeft: '#D97706',
+            boxText: '#1E293B',
+            swipeBg: 'rgba(15, 23, 42, 0.06)',
+            swipeBorder: 'rgba(15, 23, 42, 0.15)',
+            swipeText: '#0F172A',
+            footerText: '#64748B',
+            bodyBg: '#F5F0E6'
+        },
+        cyber_indigo: {
+            bg: 'radial-gradient(circle at 85% 15%, #1e1b4b 0%, #0f172a 60%, #030712 100%)',
+            border: '2px solid rgba(139, 92, 246, 0.5)',
+            headerBadgeBg: 'rgba(6, 182, 212, 0.15)',
+            headerBadgeBorder: 'rgba(6, 182, 212, 0.4)',
+            headerBadgeText: '#22D3EE',
+            titleColor: 'linear-gradient(135deg, #FFFFFF 0%, #E0E7FF 50%, #818CF8 100%)',
+            titleShadow: '0 4px 15px rgba(99, 102, 241, 0.4)',
+            boxBg: 'rgba(255, 255, 255, 0.05)',
+            boxBorderLeft: '#818CF8',
+            boxText: '#F8FAFC',
+            swipeBg: 'rgba(139, 92, 246, 0.15)',
+            swipeBorder: 'rgba(139, 92, 246, 0.35)',
+            swipeText: '#A78BFA',
+            footerText: '#64748B',
+            bodyBg: '#030712'
+        }
+    }
+
+    const st = themeStyles[themeKey] || themeStyles.gold_luxe
+
     const slidesHtml = postData.carousel_slides.map((s) => `
-        <div style="page-break-after: always; width: 800px; height: 800px; padding: 60px; background: radial-gradient(circle at 85% 15%, #1e293b 0%, #0f172a 60%, #080d1a 100%); color: #ffffff; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; border: 2px solid rgba(245, 158, 11, 0.4); border-radius: 40px; margin: 0 auto 40px auto; position: relative; overflow: hidden; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);">
+        <div style="page-break-after: always; width: 800px; height: 800px; padding: 60px; background: ${st.bg}; color: #ffffff; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; border: ${st.border}; border-radius: 40px; margin: 0 auto 40px auto; position: relative; overflow: hidden; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);">
             
-            <!-- Glowing Ambient Flare (Top Right) -->
-            <div style="position: absolute; top: -80px; right: -80px; width: 320px; height: 320px; background: rgba(245, 158, 11, 0.18); filter: blur(70px); border-radius: 50%; pointer-events: none;"></div>
-            <div style="position: absolute; bottom: -80px; left: -80px; width: 320px; height: 320px; background: rgba(99, 102, 241, 0.15); filter: blur(70px); border-radius: 50%; pointer-events: none;"></div>
+            <!-- Ambient Flare -->
+            <div style="position: absolute; top: -80px; right: -80px; width: 340px; height: 340px; background: rgba(245, 158, 11, 0.16); filter: blur(80px); border-radius: 50%; pointer-events: none;"></div>
 
             <!-- Top Header -->
             <div style="position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 18px; border-radius: 100px;">
-                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #F59E0B;"></span>
-                    <span style="font-size: 13px; font-weight: 900; color: #F59E0B; letter-spacing: 2px; text-transform: uppercase;">SLIDE ${s.slide_number} / ${slidesCount}</span>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #F59E0B, #D97706); display: flex; align-items: center; justify-content: center; font-weight: 900; color: #FFF; font-size: 18px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                        G
+                    </div>
+                    <div>
+                        <div style="font-size: 16px; font-weight: 900; color: ${st.titleColor.includes('gradient') ? '#FFFFFF' : st.titleColor}; margin: 0;">Gold Profile</div>
+                        <div style="font-size: 12px; font-weight: 700; color: #94A3B8;">@GoldArmy · Expert IA</div>
+                    </div>
                 </div>
-                <span style="font-size: 15px; font-weight: 800; color: #94A3B8; letter-spacing: 1px;">GOLD PROFILE</span>
+
+                <div style="display: flex; align-items: center; gap: 10px; background: ${st.headerBadgeBg}; border: 1px solid ${st.headerBadgeBorder}; padding: 8px 18px; border-radius: 100px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: ${st.headerBadgeText};"></span>
+                    <span style="font-size: 13px; font-weight: 900; color: ${st.headerBadgeText}; letter-spacing: 2px; text-transform: uppercase;">SLIDE ${s.slide_number} / ${slidesCount}</span>
+                </div>
             </div>
 
             <!-- Main Content Card Body -->
-            <div style="position: relative; z-index: 10; margin-top: 20px;">
-                <h1 style="font-size: 38px; font-weight: 900; line-height: 1.25; color: #FFFFFF; margin-bottom: 24px; text-shadow: 0 4px 12px rgba(0,0,0,0.5); tracking-tight: -0.5px;">
+            <div style="position: relative; z-index: 10; margin-top: 24px;">
+                <h1 style="font-size: 36px; font-weight: 900; line-height: 1.25; margin-bottom: 24px; ${st.titleColor.includes('gradient') ? `background: ${st.titleColor}; -webkit-background-clip: text; -webkit-text-fill-color: transparent;` : `color: ${st.titleColor};`} text-shadow: ${st.titleShadow}; tracking-tight: -0.5px;">
                     ${s.title}
                 </h1>
-                <div style="background: rgba(255, 255, 255, 0.04); border-left: 5px solid #F59E0B; border-radius: 20px; padding: 28px; backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,0.08);">
-                    <p style="font-size: 20px; line-height: 1.65; color: #E2E8F0; white-space: pre-wrap; margin: 0; font-weight: 500;">
+                <div style="background: ${st.boxBg}; border-left: 6px solid ${st.boxBorderLeft}; border-radius: 20px; padding: 28px; backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.08); border-right: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <p style="font-size: 20px; line-height: 1.65; color: ${st.boxText}; white-space: pre-wrap; margin: 0; font-weight: 500;">
                         ${s.content}
                     </p>
                 </div>
@@ -527,11 +595,11 @@ const downloadCarouselPDF = (postData) => {
 
             <!-- Bottom Action Footer -->
             <div style="position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 20px;">
-                <div style="display: flex; items-center; gap: 8px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); padding: 8px 16px; border-radius: 12px;">
-                    <span style="font-size: 14px; font-weight: 800; color: #F59E0B;">👉 Swipe pour la suite</span>
+                <div style="display: flex; align-items: center; gap: 8px; background: ${st.swipeBg}; border: 1px solid ${st.swipeBorder}; padding: 10px 20px; border-radius: 100px;">
+                    <span style="font-size: 14px; font-weight: 900; color: ${st.swipeText};">👉 Swipe pour la suite →</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 14px; font-weight: 700; color: #64748B;">GoldArmy.com</span>
+                    <span style="font-size: 14px; font-weight: 800; color: ${st.footerText};">Gold Profile IA</span>
                 </div>
             </div>
         </div>
@@ -548,7 +616,7 @@ const downloadCarouselPDF = (postData) => {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         @page { size: 800px 800px; margin: 0; }
-        body { margin: 0; padding: 20px; background: #080d1a; font-family: 'Inter', sans-serif; }
+        body { margin: 0; padding: 20px; background: ${st.bodyBg}; font-family: 'Inter', sans-serif; }
         @media print {
             body { padding: 0; background: none; }
         }
@@ -749,7 +817,7 @@ const downloadCarouselPDF = (postData) => {
 
               <div class="mt-4 flex items-center justify-between">
                 <span class="text-xs text-slate-500 italic">Optimisé pour la recherche des recruteurs</span>
-                <button @click="fetchGoldProfilePlan" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-xl transition-all">
+                <button @click="fetchGoldProfilePlan(false)" class="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-black rounded-xl shadow-md shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all">
                   Passer au Plan 30 Jours →
                 </button>
               </div>
@@ -830,53 +898,176 @@ const downloadCarouselPDF = (postData) => {
               </div>
             </div>
 
-            <!-- Right: Carousel Slides Deck -->
+            <!-- Right: Carousel Studio Presentation & Theme Selector -->
             <div class="flex flex-col">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="text-xs font-black text-slate-400 uppercase tracking-wider">Aperçu Diapositives PDF (Carrousel)</h5>
-                <span v-if="goldProfilePostData?.carousel_slides" class="text-xs font-bold text-amber-600">
-                  {{ goldProfilePostData.carousel_slides.length }} Diapositives
-                </span>
+              <!-- Top Controls: Theme Switcher & View Mode -->
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button @click="carouselTheme = 'gold_luxe'"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1"
+                          :class="carouselTheme === 'gold_luxe' ? 'bg-amber-400 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'">
+                    <span>🥇 Dark Luxe</span>
+                  </button>
+                  <button @click="carouselTheme = 'cream_executive'"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1"
+                          :class="carouselTheme === 'cream_executive' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'">
+                    <span>✨ Executive Cream</span>
+                  </button>
+                  <button @click="carouselTheme = 'cyber_indigo'"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1"
+                          :class="carouselTheme === 'cyber_indigo' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'">
+                    <span>⚡ Cyber Indigo</span>
+                  </button>
+                </div>
+
+                <!-- Display Mode Toggle -->
+                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button @click="carouselDisplayMode = 'hd_viewfinder'"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all"
+                          :class="carouselDisplayMode === 'hd_viewfinder' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
+                    🖥️ HD Viewer
+                  </button>
+                  <button @click="carouselDisplayMode = 'grid'"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all"
+                          :class="carouselDisplayMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
+                    ▦ Galerie ({{ goldProfilePostData?.carousel_slides?.length || 0 }})
+                  </button>
+                </div>
               </div>
 
-              <div v-if="goldProfilePostData?.carousel_slides && goldProfilePostData.carousel_slides.length"
-                   class="flex-1 p-4 bg-slate-950 rounded-3xl border border-slate-800 shadow-inner overflow-y-auto max-h-[380px]">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div v-for="slide in goldProfilePostData.carousel_slides" :key="slide.slide_number"
-                       class="relative p-5 rounded-3xl overflow-hidden border border-amber-500/30 shadow-2xl flex flex-col justify-between group hover:border-amber-400 transition-all aspect-square"
-                       style="background: radial-gradient(circle at 85% 15%, #1e293b 0%, #0f172a 70%, #080d1a 100%);">
+              <!-- HD Viewfinder Carousel Deck Card -->
+              <div v-if="goldProfilePostData?.carousel_slides && goldProfilePostData.carousel_slides.length">
+                
+                <!-- 1. HD Viewfinder Mode -->
+                <div v-if="carouselDisplayMode === 'hd_viewfinder'" class="flex flex-col items-center">
+                  <div v-for="(slide, idx) in [goldProfilePostData.carousel_slides[activeCarouselSlide] || goldProfilePostData.carousel_slides[0]]" :key="slide.slide_number"
+                       class="w-full relative p-6 md:p-8 rounded-[2rem] overflow-hidden shadow-2xl border transition-all duration-500 flex flex-col justify-between aspect-square max-h-[380px]"
+                       :style="
+                          carouselTheme === 'gold_luxe' 
+                            ? 'background: radial-gradient(circle at 85% 15%, #1e293b 0%, #0f172a 60%, #050811 100%); border-color: rgba(245, 158, 11, 0.45); color: white;' 
+                            : carouselTheme === 'cream_executive'
+                              ? 'background: linear-gradient(135deg, #FDFBF7 0%, #F5F0E6 100%); border-color: #D97706; color: #0F172A;'
+                              : 'background: radial-gradient(circle at 85% 15%, #1e1b4b 0%, #0f172a 60%, #030712 100%); border-color: rgba(139, 92, 246, 0.5); color: white;'
+                       ">
                     
-                    <!-- Glowing Ambient Flare -->
-                    <div class="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/20 rounded-full blur-2xl pointer-events-none"></div>
-                    <div class="absolute -bottom-12 -left-12 w-28 h-28 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                    <!-- Glow Flare -->
+                    <div class="absolute -top-16 -right-16 w-36 h-36 rounded-full blur-3xl pointer-events-none"
+                         :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500/25' : carouselTheme === 'cream_executive' ? 'bg-amber-400/20' : 'bg-indigo-500/30'"></div>
 
-                    <!-- Card Header -->
+                    <!-- Slide Card Header -->
                     <div class="relative z-10 flex items-center justify-between">
-                      <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs text-white shadow-md"
+                             :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500' : carouselTheme === 'cream_executive' ? 'bg-amber-600' : 'bg-indigo-600'">
+                          G
+                        </div>
+                        <div>
+                          <p class="text-xs font-black leading-none" :class="carouselTheme === 'cream_executive' ? 'text-slate-900' : 'text-white'">Gold Profile</p>
+                          <p class="text-[10px] font-bold text-slate-400">@GoldArmy · Expert IA</p>
+                        </div>
+                      </div>
+
+                      <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
+                            :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : carouselTheme === 'cream_executive' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'">
                         Slide {{ slide.slide_number }} / {{ goldProfilePostData.carousel_slides.length }}
                       </span>
-                      <span class="text-[9px] font-bold text-slate-400">@GoldArmy</span>
                     </div>
 
-                    <!-- Card Body -->
-                    <div class="relative z-10 my-2">
-                      <h6 class="text-xs md:text-sm font-black text-white line-clamp-2 leading-tight mb-2 tracking-tight group-hover:text-amber-200 transition-colors">
+                    <!-- Slide Card Body -->
+                    <div class="relative z-10 my-3">
+                      <h3 class="text-lg md:text-xl font-black leading-tight mb-3 tracking-tight"
+                          :class="carouselTheme === 'gold_luxe' ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-100 to-amber-300' : carouselTheme === 'cream_executive' ? 'text-slate-900' : 'text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-cyan-300'">
                         {{ slide.title }}
-                      </h6>
-                      <div class="p-2.5 rounded-xl bg-white/5 border-l-2 border-amber-400 backdrop-blur-md">
-                        <p class="text-[10px] text-slate-300 line-clamp-3 leading-relaxed font-medium">
+                      </h3>
+                      <div class="p-4 rounded-2xl backdrop-blur-xl border-l-4"
+                           :class="carouselTheme === 'gold_luxe' ? 'bg-white/5 border-amber-400 text-slate-200 border-y border-r border-white/10' : carouselTheme === 'cream_executive' ? 'bg-amber-50/80 border-amber-600 text-slate-800 border-y border-r border-amber-200/50' : 'bg-white/5 border-indigo-400 text-slate-100 border-y border-r border-white/10'">
+                        <p class="text-xs md:text-sm font-medium leading-relaxed whitespace-pre-wrap line-clamp-4">
                           {{ slide.content }}
                         </p>
                       </div>
                     </div>
 
-                    <!-- Card Footer -->
-                    <div class="relative z-10 flex items-center justify-between pt-2 border-t border-white/10 text-[9px] font-bold text-amber-400">
-                      <span>👉 Swipe →</span>
-                      <span class="text-slate-500">Gold Profile</span>
+                    <!-- Slide Card Footer -->
+                    <div class="relative z-10 flex items-center justify-between pt-3 border-t text-xs font-black"
+                         :class="carouselTheme === 'cream_executive' ? 'border-slate-200 text-slate-600' : 'border-white/10 text-amber-400'">
+                      <span class="px-3 py-1 rounded-full text-[10px]"
+                            :class="carouselTheme === 'gold_luxe' ? 'bg-amber-400/10 text-amber-300 border border-amber-400/30' : carouselTheme === 'cream_executive' ? 'bg-slate-200/60 text-slate-800' : 'bg-indigo-400/10 text-indigo-300 border border-indigo-400/30'">
+                        👉 Swipe pour la suite →
+                      </span>
+                      <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Gold Profile IA</span>
+                    </div>
+                  </div>
+
+                  <!-- Carousel Controls & Bullets -->
+                  <div class="flex items-center justify-between w-full mt-3 px-2">
+                    <button @click="activeCarouselSlide = Math.max(0, activeCarouselSlide - 1)"
+                            :disabled="activeCarouselSlide === 0"
+                            class="px-3 py-1.5 bg-slate-100 hover:bg-amber-100 text-slate-800 text-xs font-black rounded-xl disabled:opacity-30 transition-all">
+                      ← Précédent
+                    </button>
+                    <div class="flex items-center gap-1.5">
+                      <button v-for="(s, i) in goldProfilePostData.carousel_slides" :key="i"
+                              @click="activeCarouselSlide = i"
+                              class="w-2.5 h-2.5 rounded-full transition-all"
+                              :class="activeCarouselSlide === i ? 'bg-amber-500 w-6' : 'bg-slate-300 hover:bg-slate-400'"></button>
+                    </div>
+                    <button @click="activeCarouselSlide = Math.min(goldProfilePostData.carousel_slides.length - 1, activeCarouselSlide + 1)"
+                            :disabled="activeCarouselSlide === goldProfilePostData.carousel_slides.length - 1"
+                            class="px-3 py-1.5 bg-slate-100 hover:bg-amber-100 text-slate-800 text-xs font-black rounded-xl disabled:opacity-30 transition-all">
+                      Suivant →
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2. Grid View Gallery -->
+                <div v-else class="flex-1 p-3 bg-slate-950 rounded-3xl border border-slate-800 shadow-inner overflow-y-auto max-h-[380px]">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div v-for="slide in goldProfilePostData.carousel_slides" :key="slide.slide_number"
+                         class="relative p-5 rounded-3xl overflow-hidden border shadow-2xl flex flex-col justify-between group hover:border-amber-400 transition-all aspect-square"
+                         :style="
+                            carouselTheme === 'gold_luxe' 
+                              ? 'background: radial-gradient(circle at 85% 15%, #1e293b 0%, #0f172a 70%, #080d1a 100%); border-color: rgba(245, 158, 11, 0.35); color: white;' 
+                              : carouselTheme === 'cream_executive'
+                                ? 'background: linear-gradient(135deg, #FDFBF7 0%, #F5F0E6 100%); border-color: #D97706; color: #0F172A;'
+                                : 'background: radial-gradient(circle at 85% 15%, #1e1b4b 0%, #0f172a 70%, #030712 100%); border-color: rgba(139, 92, 246, 0.4); color: white;'
+                         ">
+                      
+                      <!-- Glowing Ambient Flare -->
+                      <div class="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+                      <!-- Card Header -->
+                      <div class="relative z-10 flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider"
+                              :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : carouselTheme === 'cream_executive' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'">
+                          Slide {{ slide.slide_number }} / {{ goldProfilePostData.carousel_slides.length }}
+                        </span>
+                        <span class="text-[9px] font-bold text-slate-400">@GoldArmy</span>
+                      </div>
+
+                      <!-- Card Body -->
+                      <div class="relative z-10 my-2">
+                        <h6 class="text-xs md:text-sm font-black line-clamp-2 leading-tight mb-2 tracking-tight group-hover:text-amber-300 transition-colors"
+                            :class="carouselTheme === 'cream_executive' ? 'text-slate-900' : 'text-white'">
+                          {{ slide.title }}
+                        </h6>
+                        <div class="p-2.5 rounded-xl border-l-2"
+                             :class="carouselTheme === 'gold_luxe' ? 'bg-white/5 border-amber-400 text-slate-200' : carouselTheme === 'cream_executive' ? 'bg-amber-50/80 border-amber-600 text-slate-800' : 'bg-white/5 border-indigo-400 text-slate-100'">
+                          <p class="text-[10px] line-clamp-3 leading-relaxed font-medium">
+                            {{ slide.content }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Card Footer -->
+                      <div class="relative z-10 flex items-center justify-between pt-2 border-t border-white/10 text-[9px] font-bold"
+                           :class="carouselTheme === 'cream_executive' ? 'border-slate-200 text-slate-700' : 'text-amber-400'">
+                        <span>👉 Swipe →</span>
+                        <span class="text-slate-400">Gold Profile</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+
               </div>
               <div v-else class="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50 border border-slate-200 rounded-2xl text-slate-400 text-xs italic">
                 Format texte pur (aucun carrousel généré pour ce jour).
