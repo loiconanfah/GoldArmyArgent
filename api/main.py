@@ -646,6 +646,22 @@ class GoldProfileTopicRequest(BaseModel):
     format: Optional[str] = "Text"
     linkedin_profile: Optional[str] = None
 
+@app.get("/api/network/gold-profile/results")
+async def get_gold_profile_results(current_user: dict = Depends(get_current_user)):
+    from core.database import get_db
+    db = get_db()
+    user = await db.users.find_one({"id": current_user["id"]})
+    if not user:
+        raise HTTPException(status_code=44, detail="Utilisateur non trouvé.")
+    return {
+        "status": "success",
+        "data": {
+            "audit": user.get("gold_profile_audit"),
+            "plan": user.get("gold_profile_plan"),
+            "updated_at": user.get("gold_profile_updated_at")
+        }
+    }
+
 @app.post("/api/network/gold-profile/audit")
 async def gold_profile_audit(req: Optional[GoldProfileAuditRequest] = None, current_user: dict = Depends(get_current_user)):
     check = await check_subscription_limit(current_user["id"], "portfolio")
@@ -653,6 +669,7 @@ async def gold_profile_audit(req: Optional[GoldProfileAuditRequest] = None, curr
         raise HTTPException(status_code=403, detail="L'audit de branding LinkedIn et le Portfolio IA sont réservés aux abonnés ESSENTIAL et PRO.")
     from agents.mentor import MentorAgent
     from core.database import get_db
+    import datetime
     
     db = get_db()
     user = await db.users.find_one({"id": current_user["id"]})
@@ -671,8 +688,15 @@ async def gold_profile_audit(req: Optional[GoldProfileAuditRequest] = None, curr
     
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de l'audit."))
+
+    audit_data = result.get("data")
+    now_iso = datetime.datetime.utcnow().isoformat()
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"gold_profile_audit": audit_data, "gold_profile_updated_at": now_iso}}
+    )
         
-    return {"status": "success", "data": result.get("data")}
+    return {"status": "success", "data": audit_data}
 
 @app.post("/api/network/gold-profile/plan")
 async def gold_profile_plan(req: Optional[GoldProfileAuditRequest] = None, current_user: dict = Depends(get_current_user)):
@@ -681,6 +705,7 @@ async def gold_profile_plan(req: Optional[GoldProfileAuditRequest] = None, curre
         raise HTTPException(status_code=403, detail="La planification de contenu réseau et le Portfolio IA sont inaccessibles en compte gratuit.")
     from agents.mentor import MentorAgent
     from core.database import get_db
+    import datetime
     
     db = get_db()
     user = await db.users.find_one({"id": current_user["id"]})
@@ -696,8 +721,15 @@ async def gold_profile_plan(req: Optional[GoldProfileAuditRequest] = None, curre
     
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de la planification."))
+
+    plan_data = result.get("data")
+    now_iso = datetime.datetime.utcnow().isoformat()
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"gold_profile_plan": plan_data, "gold_profile_updated_at": now_iso}}
+    )
         
-    return {"status": "success", "data": result.get("data")}
+    return {"status": "success", "data": plan_data}
 
 @app.post("/api/network/gold-profile/post")
 async def gold_profile_post(req: GoldProfileTopicRequest, current_user: dict = Depends(get_current_user)):

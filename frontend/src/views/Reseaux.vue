@@ -6,7 +6,8 @@ import { toastState } from '../store/toastState'
 import {
   BuildingOfficeIcon, UserGroupIcon, EnvelopeIcon, SparklesIcon,
   CheckBadgeIcon, LinkIcon, ArrowPathIcon, ClipboardIcon,
-  CheckCircleIcon, PencilSquareIcon, UserIcon, DocumentDuplicateIcon, CheckIcon
+  CheckCircleIcon, PencilSquareIcon, UserIcon, DocumentDuplicateIcon, CheckIcon,
+  ArrowDownTrayIcon, ArrowRightIcon, MagnifyingGlassIcon, UsersIcon
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -114,6 +115,7 @@ const formatNinjaDate = (iso) => {
 onMounted(() => {
     fetchProfile()
     loadNinjaResults()
+    loadGoldProfileCache()
 })
 
 
@@ -289,7 +291,8 @@ const selectHr = (name) => {
     selectedHrName.value = name
 }
 
-// ── Gold Profile Logic ──
+// ── Gold Profile Logic & Persistence ──
+const GOLD_PROFILE_CACHE_KEY = 'gold_profile_cache_v2'
 const goldProfileStep = ref('audit')
 const goldProfileLoading = ref(false)
 const linkedinInput = ref('')
@@ -298,8 +301,64 @@ const goldProfilePlanData = ref([])
 const goldProfilePostData = ref(null)
 const goldProfileSelectedTopic = ref(null)
 const activeCarouselSlide = ref(0)
+const goldProfileSavedAt = ref(null)
 
-const fetchGoldProfileAudit = async () => {
+const saveGoldProfileCache = () => {
+    try {
+        const payload = {
+            audit: goldProfileAuditData.value,
+            plan: goldProfilePlanData.value,
+            post: goldProfilePostData.value,
+            step: goldProfileStep.value,
+            linkedin: linkedinInput.value,
+            saved_at: new Date().toISOString()
+        }
+        localStorage.setItem(GOLD_PROFILE_CACHE_KEY, JSON.stringify(payload))
+        goldProfileSavedAt.value = payload.saved_at
+    } catch(e) {
+        console.warn("[GoldProfile] Failed to save local cache", e)
+    }
+}
+
+const loadGoldProfileCache = async () => {
+    try {
+        // 1. Try local storage for instantaneous 0ms restore
+        const cachedStr = localStorage.getItem(GOLD_PROFILE_CACHE_KEY)
+        if (cachedStr) {
+            const cached = JSON.parse(cachedStr)
+            if (cached.audit) {
+                goldProfileAuditData.value = cached.audit
+                goldProfilePlanData.value = cached.plan || []
+                goldProfilePostData.value = cached.post || null
+                goldProfileStep.value = cached.step || 'audit'
+                linkedinInput.value = cached.linkedin || ''
+                goldProfileSavedAt.value = cached.saved_at
+                return
+            }
+        }
+
+        // 2. Fallback to MongoDB backend cache
+        const res = await authFetch('/api/network/gold-profile/results')
+        const json = await res.json()
+        if (json.status === 'success' && json.data && json.data.audit) {
+            goldProfileAuditData.value = json.data.audit
+            goldProfilePlanData.value = json.data.plan || []
+            goldProfileStep.value = 'audit'
+            goldProfileSavedAt.value = json.data.updated_at
+            saveGoldProfileCache()
+        }
+    } catch(e) {
+        console.warn("[GoldProfile] Cache restore error", e)
+    }
+}
+
+const fetchGoldProfileAudit = async (forceRefresh = false) => {
+    if (!forceRefresh && goldProfileAuditData.value) {
+        goldProfileStep.value = 'audit'
+        toastState.addToast("Analyse restaurée depuis le cache (0 ms)", "info")
+        return
+    }
+
     goldProfileLoading.value = true
     try {
         const res = await authFetch('/api/network/gold-profile/audit', {
@@ -311,7 +370,8 @@ const fetchGoldProfileAudit = async () => {
         if (json.status === 'success') {
             goldProfileAuditData.value = json.data
             goldProfileStep.value = 'audit'
-            toastState.addToast("Audit LinkedIn terminé !", "success")
+            saveGoldProfileCache()
+            toastState.addToast("Nouvel audit LinkedIn généré !", "success")
         } else {
             toastState.addToast(json.detail || json.content || "Erreur d'audit", "error")
         }
@@ -322,7 +382,12 @@ const fetchGoldProfileAudit = async () => {
     }
 }
 
-const fetchGoldProfilePlan = async () => {
+const fetchGoldProfilePlan = async (forceRefresh = false) => {
+    if (!forceRefresh && goldProfilePlanData.value && goldProfilePlanData.value.length > 0) {
+        goldProfileStep.value = 'plan'
+        return
+    }
+
     goldProfileLoading.value = true
     try {
         const res = await authFetch('/api/network/gold-profile/plan', {
@@ -334,6 +399,7 @@ const fetchGoldProfilePlan = async () => {
         if (json.status === 'success') {
             goldProfilePlanData.value = json.data.plan || json.data
             goldProfileStep.value = 'plan'
+            saveGoldProfileCache()
         } else {
             toastState.addToast(json.detail || json.content || "Erreur de planification", "error")
         }
@@ -362,6 +428,7 @@ const generateGoldProfilePost = async (topic) => {
         if (json.status === 'success') {
             goldProfilePostData.value = json.data
             goldProfileStep.value = 'post'
+            saveGoldProfileCache()
         } else {
             toastState.addToast(json.detail || json.content || "Erreur de génération", "error")
         }
@@ -424,6 +491,89 @@ const copyToClipboard = async (text) => {
     try { await navigator.clipboard.writeText(text); toastState.addToast('Copié !') } catch(e) {}
 }
 
+const downloadCarouselPDF = (postData) => {
+    if (!postData || !postData.carousel_slides || !postData.carousel_slides.length) {
+        toastState.addToast('Aucune diapositive carrousel à exporter.', 'error')
+        return
+    }
+    const slidesCount = postData.carousel_slides.length
+    const slidesHtml = postData.carousel_slides.map((s) => `
+        <div style="page-break-after: always; width: 800px; height: 800px; padding: 60px; background: radial-gradient(circle at 85% 15%, #1e293b 0%, #0f172a 60%, #080d1a 100%); color: #ffffff; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; border: 2px solid rgba(245, 158, 11, 0.4); border-radius: 40px; margin: 0 auto 40px auto; position: relative; overflow: hidden; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);">
+            
+            <!-- Glowing Ambient Flare (Top Right) -->
+            <div style="position: absolute; top: -80px; right: -80px; width: 320px; height: 320px; background: rgba(245, 158, 11, 0.18); filter: blur(70px); border-radius: 50%; pointer-events: none;"></div>
+            <div style="position: absolute; bottom: -80px; left: -80px; width: 320px; height: 320px; background: rgba(99, 102, 241, 0.15); filter: blur(70px); border-radius: 50%; pointer-events: none;"></div>
+
+            <!-- Top Header -->
+            <div style="position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 18px; border-radius: 100px;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #F59E0B;"></span>
+                    <span style="font-size: 13px; font-weight: 900; color: #F59E0B; letter-spacing: 2px; text-transform: uppercase;">SLIDE ${s.slide_number} / ${slidesCount}</span>
+                </div>
+                <span style="font-size: 15px; font-weight: 800; color: #94A3B8; letter-spacing: 1px;">GOLD PROFILE</span>
+            </div>
+
+            <!-- Main Content Card Body -->
+            <div style="position: relative; z-index: 10; margin-top: 20px;">
+                <h1 style="font-size: 38px; font-weight: 900; line-height: 1.25; color: #FFFFFF; margin-bottom: 24px; text-shadow: 0 4px 12px rgba(0,0,0,0.5); tracking-tight: -0.5px;">
+                    ${s.title}
+                </h1>
+                <div style="background: rgba(255, 255, 255, 0.04); border-left: 5px solid #F59E0B; border-radius: 20px; padding: 28px; backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,0.08);">
+                    <p style="font-size: 20px; line-height: 1.65; color: #E2E8F0; white-space: pre-wrap; margin: 0; font-weight: 500;">
+                        ${s.content}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Bottom Action Footer -->
+            <div style="position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 20px;">
+                <div style="display: flex; items-center; gap: 8px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); padding: 8px 16px; border-radius: 12px;">
+                    <span style="font-size: 14px; font-weight: 800; color: #F59E0B;">👉 Swipe pour la suite</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 14px; font-weight: 700; color: #64748B;">GoldArmy.com</span>
+                </div>
+            </div>
+        </div>
+    `).join('')
+
+    const scriptTag = '<' + 'script' + '>'
+    const closeScriptTag = '<' + '/script' + '>'
+    const docStr = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Carrousel LinkedIn PDF - Gold Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        @page { size: 800px 800px; margin: 0; }
+        body { margin: 0; padding: 20px; background: #080d1a; font-family: 'Inter', sans-serif; }
+        @media print {
+            body { padding: 0; background: none; }
+        }
+    </style>
+</head>
+<body>
+    ${slidesHtml}
+    ${scriptTag}
+        window.onload = function() {
+            setTimeout(function() { window.print(); }, 400);
+        }
+    ${closeScriptTag}
+</body>
+</html>`
+
+    const win = window.open('', '_blank')
+    if (win) {
+        win.document.write(docStr)
+        win.document.close()
+        toastState.addToast('Module d\'impression/téléchargement PDF ouvert !')
+    } else {
+        toastState.addToast('Veuillez autoriser les fenêtres surgissantes pour télécharger le PDF.', 'error')
+    }
+}
+
 
 </script>
 
@@ -451,7 +601,311 @@ const copyToClipboard = async (text) => {
             </p>
         </div>
     </div>
-    <!-- ── Bento Grid: Headhunter + Gold Profile ── -->
+    <!-- ── Section 1: Grand Gold Profile (Suite IA Virale Plein Format - Taille Ninja) ── -->
+    <div class="relative w-full rounded-[2.5rem] overflow-hidden flex flex-col mb-12 shadow-xl border border-slate-200/80 bg-white p-6 md:p-10 transition-all duration-500"
+         style="min-height: 720px;">
+
+      <!-- Ambient Glows -->
+      <div class="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-amber-400/10 blur-[100px] pointer-events-none"></div>
+      <div class="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none"></div>
+
+      <!-- Header & Navigation Bar -->
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100 mb-8">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+            <SparklesIcon class="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">✨ Gold Profile IA</h2>
+              <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                Virale & Dwell-Time 3.0
+              </span>
+            </div>
+            <p class="text-xs md:text-sm text-slate-500 font-medium mt-1">
+              Audit algorithmique · Plan virale 30 jours (TOFU/MOFU/BOFU) · Générateur de Carrousels PDF Téléchargeables
+            </p>
+          </div>
+        </div>
+
+        <!-- Navigation Steps / Tabs -->
+        <div class="flex items-center gap-2 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/60 shrink-0">
+          <button @click="goldProfileStep='audit'"
+                  class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2"
+                  :class="goldProfileStep==='audit' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'">
+            <span>🎯 1. Audit Branding</span>
+          </button>
+          <button @click="fetchGoldProfilePlan"
+                  class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2"
+                  :class="goldProfileStep==='plan' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'">
+            <span>🗓️ 2. Plan 30 Jours</span>
+          </button>
+          <button v-if="goldProfilePostData" @click="goldProfileStep='post'"
+                  class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2"
+                  :class="goldProfileStep==='post' ? 'bg-amber-400 text-white shadow-md shadow-amber-200' : 'text-slate-500 hover:text-slate-900'">
+            <span>📸 3. Studio Post & PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Body Container -->
+      <div class="relative z-10 flex-1 flex flex-col justify-between">
+
+        <!-- LinkedIn URL Input Header -->
+        <div class="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div class="flex-1 w-full relative">
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                Profil LinkedIn à analyser (Optionnel - URL ou Résumé)
+              </label>
+              <span v-if="goldProfileSavedAt" class="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Sauvegardé (Restauré en 0 ms)
+              </span>
+            </div>
+            <input
+              v-model="linkedinInput"
+              type="text"
+              placeholder="ex: https://linkedin.com/in/votreprofil ou collé de votre section À propos..."
+              class="w-full px-4 py-2.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400/40 text-slate-800 font-medium"
+            />
+          </div>
+
+          <div class="flex items-center gap-2 w-full md:w-auto shrink-0">
+            <button v-if="goldProfileAuditData" @click="fetchGoldProfileAudit(true)" :disabled="goldProfileLoading"
+                    class="w-full md:w-auto px-5 py-3 bg-white border border-slate-300 hover:border-amber-400 text-slate-700 hover:text-slate-900 text-xs font-black rounded-xl shadow-2xs disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+              <ArrowPathIcon class="w-4 h-4 text-amber-500" :class="{ 'animate-spin': goldProfileLoading }" />
+              <span>Relancer une nouvelle analyse</span>
+            </button>
+            <button v-else @click="fetchGoldProfileAudit(false)" :disabled="goldProfileLoading"
+                    class="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-black rounded-xl shadow-md shadow-amber-500/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+              <SparklesIcon v-if="!goldProfileLoading" class="w-4 h-4" />
+              <span v-if="goldProfileLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span>{{ goldProfileLoading ? 'Analyse par l\'IA...' : 'Lancer l\'Audit Gold Profile' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="goldProfileLoading" class="flex-1 flex flex-col items-center justify-center py-20 gap-4 text-center">
+          <div class="w-16 h-16 border-4 border-amber-100 border-t-amber-500 rounded-full animate-spin shadow-inner"></div>
+          <p class="text-base font-black text-slate-800">L'IA analyse le profil et génère la stratégie virale...</p>
+          <p class="text-xs text-slate-400 max-w-sm">Calcul du Dwell-Time algorithmique, refonte du headline & planification TOFU/MOFU/BOFU...</p>
+        </div>
+
+        <!-- Initial Empty State -->
+        <div v-else-if="!goldProfileAuditData && goldProfileStep==='audit'" class="flex-1 flex flex-col items-center justify-center py-16 gap-6 text-center">
+          <div class="w-24 h-24 rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center shadow-inner">
+            <SparklesIcon class="w-12 h-12 text-amber-500 animate-pulse" />
+          </div>
+          <div class="max-w-xl">
+            <h3 class="text-2xl font-black text-slate-900 mb-2">Transformez votre profil en Aimant à Opportunités 🎯</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">
+              Obtenez votre score algorithmique LinkedIn, une accroche ultra-virale optimisée pour l'algorithme 2026, et débloquez votre plan éditorial 30 jours avec carrousels PDF.
+            </p>
+          </div>
+          <button @click="fetchGoldProfileAudit"
+                  class="px-8 py-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white text-sm font-black rounded-2xl shadow-lg shadow-amber-500/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-3">
+            <span>Dérouler mon Audit Gold Profile</span>
+            <ArrowRightIcon class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Step 1: Audit View -->
+        <div v-else-if="goldProfileStep==='audit' && goldProfileAuditData" class="flex-1 flex flex-col gap-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Score Card -->
+            <div class="p-6 bg-gradient-to-br from-amber-50 to-orange-50/50 rounded-3xl border border-amber-200/80 flex flex-col items-center justify-center text-center">
+              <div class="w-28 h-28 relative mb-4">
+                <svg class="w-28 h-28 -rotate-90" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="28" stroke="#fef3c7" stroke-width="6" fill="none"/>
+                  <circle cx="32" cy="32" r="28" stroke="#F59E0B" stroke-width="6" fill="none" stroke-linecap="round"
+                    :stroke-dasharray="175.9" :stroke-dashoffset="175.9*(1-(goldProfileAuditData.profile_score||0)/100)" class="transition-all duration-1000"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="text-3xl font-black text-slate-900">{{ goldProfileAuditData.profile_score }}</span>
+                  <span class="text-[9px] font-bold text-amber-700 uppercase">/ 100</span>
+                </div>
+              </div>
+              <h4 class="text-base font-black text-slate-900 mb-1">Score de Branding Algorithmique</h4>
+              <p class="text-xs text-slate-500">Index de visibilité Dwell Time & conversion profil</p>
+            </div>
+
+            <!-- Headline Card -->
+            <div class="lg:col-span-2 p-6 bg-slate-50 rounded-3xl border border-slate-200/80 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Accroche Profil Recommandée (Headline IA)</span>
+                  <button @click="copyToClipboard(goldProfileAuditData.headline)"
+                          class="px-3 py-1 bg-amber-100 text-amber-800 rounded-lg text-xs font-bold hover:bg-amber-200 transition-colors flex items-center gap-1.5">
+                    <DocumentDuplicateIcon class="w-3.5 h-3.5" />
+                    <span>Copier</span>
+                  </button>
+                </div>
+                <div class="p-4 bg-white rounded-2xl border border-slate-200 text-sm font-bold text-slate-800 leading-relaxed shadow-2xs">
+                  {{ goldProfileAuditData.headline }}
+                </div>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between">
+                <span class="text-xs text-slate-500 italic">Optimisé pour la recherche des recruteurs</span>
+                <button @click="fetchGoldProfilePlan" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-xl transition-all">
+                  Passer au Plan 30 Jours →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Optimizations List Grid -->
+          <div class="flex-1">
+            <h4 class="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Axes d'optimisation stratégiques</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div v-for="opt in (goldProfileAuditData.field_optimizations||[]).slice(0,6)" :key="opt.field"
+                   class="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs flex items-start gap-3 hover:border-amber-300 transition-colors">
+                <CheckBadgeIcon class="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                <div>
+                  <h5 class="text-xs font-black text-slate-900">{{ opt.field }}</h5>
+                  <p class="text-xs text-slate-600 mt-1 leading-relaxed">{{ opt.suggestion || opt.recommendation }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Plan 30 Jours View -->
+        <div v-else-if="goldProfileStep==='plan'" class="flex-1 flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <button @click="goldProfileStep='audit'" class="text-xs text-indigo-600 font-bold hover:underline">← Audit</button>
+              <span class="text-slate-300">|</span>
+              <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider">Matrice Edito Virale (30 Jours)</h4>
+            </div>
+            <span class="text-xs text-slate-500 font-medium">Cliquez sur un jour pour générer le post & le carrousel PDF</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 flex-1 overflow-y-auto max-h-[480px] p-1">
+            <div v-for="item in goldProfilePlanData" :key="item.day"
+                 @click="generateGoldProfilePost(item)"
+                 class="p-4 bg-white border border-slate-200/80 rounded-2xl hover:border-amber-400 hover:shadow-md cursor-pointer group transition-all flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-black text-amber-600 uppercase">Jour {{ item.day }}</span>
+                  <span class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase"
+                        :class="item.funnel_stage === 'TOFU' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : item.funnel_stage === 'MOFU' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'">
+                    {{ item.funnel_stage || 'TOFU' }}
+                  </span>
+                </div>
+                <h5 class="text-xs font-bold text-slate-800 group-hover:text-amber-600 transition-colors line-clamp-2 leading-snug">{{ item.topic }}</h5>
+                <p v-if="item.angle" class="text-[11px] text-slate-500 mt-1 line-clamp-2 italic leading-tight">{{ item.angle }}</p>
+              </div>
+
+              <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span class="text-[10px] font-bold text-slate-400">{{ item.format || 'Carrousel PDF' }}</span>
+                <span class="text-xs font-black text-amber-500 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                  Créer <ArrowRightIcon class="w-3.5 h-3.5" />
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Studio Créateur (Post & Carrousel PDF) -->
+        <div v-else-if="goldProfileStep==='post'" class="flex-1 flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <button @click="goldProfileStep='plan'" class="text-xs text-indigo-600 font-bold hover:underline">← Retour au Plan 30J</button>
+            
+            <div v-if="goldProfilePostData?.viral_score" class="flex items-center gap-2 px-3 py-1.5 bg-amber-100 rounded-full border border-amber-200 shadow-2xs">
+              <SparklesIcon class="w-4 h-4 text-amber-600" />
+              <span class="text-xs font-black text-amber-800">Score Algorithmique: {{ goldProfilePostData.viral_score }}/100</span>
+            </div>
+          </div>
+
+          <!-- Studio Layout Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 mb-6">
+            <!-- Left: Post Content -->
+            <div class="flex flex-col">
+              <h5 class="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Texte du Post LinkedIn</h5>
+              <div class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs md:text-sm text-slate-800 whitespace-pre-wrap font-medium leading-relaxed overflow-y-auto max-h-[360px]">
+                {{ typeof goldProfilePostData === 'string' ? goldProfilePostData : goldProfilePostData?.post_content }}
+              </div>
+            </div>
+
+            <!-- Right: Carousel Slides Deck -->
+            <div class="flex flex-col">
+              <div class="flex items-center justify-between mb-2">
+                <h5 class="text-xs font-black text-slate-400 uppercase tracking-wider">Aperçu Diapositives PDF (Carrousel)</h5>
+                <span v-if="goldProfilePostData?.carousel_slides" class="text-xs font-bold text-amber-600">
+                  {{ goldProfilePostData.carousel_slides.length }} Diapositives
+                </span>
+              </div>
+
+              <div v-if="goldProfilePostData?.carousel_slides && goldProfilePostData.carousel_slides.length"
+                   class="flex-1 p-4 bg-slate-950 rounded-3xl border border-slate-800 shadow-inner overflow-y-auto max-h-[380px]">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div v-for="slide in goldProfilePostData.carousel_slides" :key="slide.slide_number"
+                       class="relative p-5 rounded-3xl overflow-hidden border border-amber-500/30 shadow-2xl flex flex-col justify-between group hover:border-amber-400 transition-all aspect-square"
+                       style="background: radial-gradient(circle at 85% 15%, #1e293b 0%, #0f172a 70%, #080d1a 100%);">
+                    
+                    <!-- Glowing Ambient Flare -->
+                    <div class="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="absolute -bottom-12 -left-12 w-28 h-28 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <!-- Card Header -->
+                    <div class="relative z-10 flex items-center justify-between">
+                      <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        Slide {{ slide.slide_number }} / {{ goldProfilePostData.carousel_slides.length }}
+                      </span>
+                      <span class="text-[9px] font-bold text-slate-400">@GoldArmy</span>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="relative z-10 my-2">
+                      <h6 class="text-xs md:text-sm font-black text-white line-clamp-2 leading-tight mb-2 tracking-tight group-hover:text-amber-200 transition-colors">
+                        {{ slide.title }}
+                      </h6>
+                      <div class="p-2.5 rounded-xl bg-white/5 border-l-2 border-amber-400 backdrop-blur-md">
+                        <p class="text-[10px] text-slate-300 line-clamp-3 leading-relaxed font-medium">
+                          {{ slide.content }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Card Footer -->
+                    <div class="relative z-10 flex items-center justify-between pt-2 border-t border-white/10 text-[9px] font-bold text-amber-400">
+                      <span>👉 Swipe →</span>
+                      <span class="text-slate-500">Gold Profile</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="flex-1 flex flex-col items-center justify-center p-6 bg-slate-50 border border-slate-200 rounded-2xl text-slate-400 text-xs italic">
+                Format texte pur (aucun carrousel généré pour ce jour).
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Actions Bar -->
+          <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100">
+            <button @click="copyToClipboard(typeof goldProfilePostData === 'string' ? goldProfilePostData : goldProfilePostData?.post_content)"
+                    class="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md">
+              <DocumentDuplicateIcon class="w-4 h-4" />
+              <span>Copier le texte du post</span>
+            </button>
+
+            <button v-if="goldProfilePostData?.carousel_slides && goldProfilePostData.carousel_slides.length"
+                    @click="downloadCarouselPDF(goldProfilePostData)"
+                    class="flex-1 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md shadow-amber-500/20">
+              <ArrowDownTrayIcon class="w-4 h-4" />
+              <span>📥 Télécharger le Carrousel PDF</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ── Section 2: Bento Grid (Agent Headhunter + Drafting) ── -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
       <!-- ── Card 1: Agent Headhunter ── -->
@@ -548,168 +1002,8 @@ const copyToClipboard = async (text) => {
         </div>
       </div>
 
-      <!-- ── Card 2: Gold Profile ── -->
-      <div class="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col">
-        <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center shadow-sm shadow-amber-200">
-              <SparklesIcon class="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 class="font-black text-slate-800">✨ Gold Profile</h3>
-              <p class="text-[10px] text-slate-500 uppercase tracking-wider">Audit IA · Plan 30 jours · Posts viraux</p>
-            </div>
-          </div>
-          <button @click="fetchGoldProfileAudit" :disabled="goldProfileLoading"
-                  class="px-4 py-2 text-xs font-black bg-amber-400 text-white rounded-xl hover:bg-amber-500 disabled:opacity-50 shadow-sm shadow-amber-200 transition-all">
-            {{ goldProfileLoading ? 'Analyse...' : 'Auditer mon profil' }}
-          </button>
-        </div>
-
-        <!-- Body -->
-        <div class="p-6 flex-1 flex flex-col" style="min-height: 420px;">
-          <!-- LinkedIn Profile Input (Optional) -->
-          <div class="mb-4">
-            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
-              Coller votre profil LinkedIn ou URL (Optionnel)
-            </label>
-            <input
-              v-model="linkedinInput"
-              type="text"
-              placeholder="ex: https://linkedin.com/in/votreprofil ou résumé de profil..."
-              class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 text-slate-700"
-            />
-          </div>
-
-          <!-- Loading -->
-          <div v-if="goldProfileLoading" class="flex-1 flex flex-col items-center justify-center gap-3">
-            <div class="w-10 h-10 border-4 border-amber-100 border-t-amber-400 rounded-full animate-spin"></div>
-            <p class="text-xs font-semibold text-slate-500">L'IA analyse votre parcours et génère la stratégie...</p>
-          </div>
-
-          <!-- Empty / CTA -->
-          <div v-else-if="!goldProfileAuditData && goldProfileStep==='audit'" class="flex-1 flex flex-col items-center justify-center gap-4 text-center py-4">
-            <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center border border-amber-100">
-              <SparklesIcon class="w-7 h-7 text-amber-400" />
-            </div>
-            <div>
-              <p class="text-sm font-bold text-slate-700 mb-1">Audit & Stratégie Virale LinkedIn</p>
-              <p class="text-xs text-slate-400 max-w-[280px]">Score algorithmique, accroches Dwell Time, plan 30j (TOFU/MOFU/BOFU) & Carrousels PDF.</p>
-            </div>
-            <button @click="fetchGoldProfileAudit" class="px-5 py-2.5 bg-amber-400 text-white text-xs font-black rounded-xl hover:bg-amber-500 transition-all shadow-md shadow-amber-100">
-              Lancer l'audit Gold Profile →
-            </button>
-          </div>
-
-          <!-- Audit results -->
-          <div v-else-if="goldProfileStep==='audit' && goldProfileAuditData" class="flex-1 flex flex-col gap-4">
-            <!-- Score + headline -->
-            <div class="flex items-center gap-4 p-4 bg-amber-50/50 rounded-2xl border border-amber-100">
-              <div class="w-14 h-14 relative shrink-0">
-                <svg class="w-14 h-14 -rotate-90" viewBox="0 0 64 64">
-                  <circle cx="32" cy="32" r="28" stroke="#fef3c7" stroke-width="6" fill="none"/>
-                  <circle cx="32" cy="32" r="28" stroke="#F59E0B" stroke-width="6" fill="none" stroke-linecap="round"
-                    :stroke-dasharray="175.9" :stroke-dashoffset="175.9*(1-(goldProfileAuditData.profile_score||0)/100)" class="transition-all duration-1000"/>
-                </svg>
-                <div class="absolute inset-0 flex items-center justify-center">
-                  <span class="text-sm font-black text-slate-800">{{ goldProfileAuditData.profile_score }}</span>
-                </div>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Score de Branding</p>
-                <p class="font-bold text-slate-800 text-xs leading-snug line-clamp-2">{{ goldProfileAuditData.headline }}</p>
-                <button @click="copyToClipboard(goldProfileAuditData.headline)" class="mt-1 text-[10px] text-amber-600 font-bold hover:underline">
-                  Copier le headline →
-                </button>
-              </div>
-            </div>
-
-            <!-- Optimizations -->
-            <div class="space-y-2 flex-1 overflow-y-auto max-h-[220px]">
-              <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Optimisations stratégiques</p>
-              <div v-for="opt in (goldProfileAuditData.field_optimizations||[]).slice(0,4)" :key="opt.field"
-                   class="flex items-start gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                <CheckBadgeIcon class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                <div>
-                  <p class="text-xs font-black text-slate-700">{{ opt.field }}</p>
-                  <p class="text-[11px] text-slate-500 mt-0.5">{{ opt.suggestion || opt.recommendation }}</p>
-                </div>
-              </div>
-            </div>
-            <button @click="fetchGoldProfilePlan" class="w-full py-3 bg-slate-900 text-white text-xs font-black rounded-2xl hover:bg-slate-800 transition-colors">
-              Voir la stratégie virale 30 jours →
-            </button>
-          </div>
-
-          <!-- Plan 30 jours -->
-          <div v-else-if="goldProfileStep==='plan'" class="flex-1 flex flex-col">
-            <div class="flex items-center justify-between mb-3">
-              <button @click="goldProfileStep='audit'" class="text-xs text-indigo-600 font-bold">← Audit</button>
-              <p class="text-xs font-black text-slate-700 uppercase tracking-wider">Plan Virale 30 Jours</p>
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-1 overflow-y-auto content-start max-h-[360px]">
-              <div v-for="item in goldProfilePlanData" :key="item.day"
-                   @click="generateGoldProfilePost(item)"
-                   class="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-amber-400 cursor-pointer group transition-all flex flex-col justify-between">
-                <div>
-                  <div class="flex items-center justify-between mb-1">
-                    <span class="text-[9px] font-black text-amber-600 uppercase">J{{ item.day }}</span>
-                    <span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase"
-                          :class="item.funnel_stage === 'TOFU' ? 'bg-indigo-100 text-indigo-700' : item.funnel_stage === 'MOFU' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
-                      {{ item.funnel_stage || 'TOFU' }}
-                    </span>
-                  </div>
-                  <p class="text-[11px] font-bold text-slate-700 group-hover:text-amber-600 transition-colors line-clamp-2">{{ item.topic }}</p>
-                </div>
-                <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
-                  <span class="text-[8px] font-medium text-slate-400">{{ item.format || 'Text' }}</span>
-                  <span class="text-[9px] text-amber-500 font-bold group-hover:translate-x-0.5 transition-transform">Créer →</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Post généré -->
-          <div v-else-if="goldProfileStep==='post'" class="flex-1 flex flex-col">
-            <div class="flex items-center justify-between mb-3">
-              <button @click="goldProfileStep='plan'" class="text-xs text-indigo-600 font-bold">← Plan</button>
-              <div v-if="goldProfilePostData?.viral_score" class="flex items-center gap-1 px-2.5 py-1 bg-amber-100 rounded-full border border-amber-200">
-                <SparklesIcon class="w-3.5 h-3.5 text-amber-600" />
-                <span class="text-[10px] font-black text-amber-700">Score Viral: {{ goldProfilePostData.viral_score }}/100</span>
-              </div>
-            </div>
-
-            <!-- Post Content / Carousel Tabs -->
-            <div class="flex-1 overflow-y-auto max-h-[300px] mb-3 space-y-3">
-              <!-- Post Text -->
-              <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-700 whitespace-pre-wrap font-medium leading-relaxed">
-                {{ typeof goldProfilePostData === 'string' ? goldProfilePostData : goldProfilePostData?.post_content }}
-              </div>
-
-              <!-- Carousel Slides Preview (If available) -->
-              <div v-if="goldProfilePostData?.carousel_slides && goldProfilePostData.carousel_slides.length" class="p-3 bg-amber-50/60 border border-amber-100 rounded-2xl">
-                <p class="text-[10px] font-black text-amber-700 uppercase tracking-wider mb-2">📸 Diapositives Carrousel PDF</p>
-                <div class="flex gap-2 overflow-x-auto pb-2">
-                  <div v-for="slide in goldProfilePostData.carousel_slides" :key="slide.slide_number"
-                       class="min-w-[140px] max-w-[160px] p-2.5 bg-white border border-amber-200 rounded-xl shadow-2xs">
-                    <span class="text-[8px] font-black text-amber-500 uppercase">Slide {{ slide.slide_number }}</span>
-                    <p class="text-[10px] font-bold text-slate-800 mt-0.5 truncate">{{ slide.title }}</p>
-                    <p class="text-[9px] text-slate-500 mt-1 line-clamp-3 leading-tight">{{ slide.content }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button @click="copyToClipboard(typeof goldProfilePostData === 'string' ? goldProfilePostData : goldProfilePostData?.post_content)"
-                    class="w-full py-3 bg-amber-400 text-white text-xs font-black rounded-2xl hover:bg-amber-500 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-amber-200">
-              <DocumentDuplicateIcon class="w-4 h-4" /> Copier le post viral
-            </button>
-          </div>
-        </div>
-      </div>
-
     </div>
+
 
 
     <!-- ── Section: Network Ninja (Luxury Light Constellation Edition) ── -->
