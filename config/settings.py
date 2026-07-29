@@ -28,9 +28,14 @@ class Settings(BaseSettings):
     # Skyvern Configuration
     skyvern_api_key: Optional[str] = Field(default=None, description="Clé API Skyvern")
 
+    # Frontend Configuration
+    frontend_url: str = Field(default="http://localhost:5173", description="URL racine du frontend web")
+
     # Stripe Configuration
     stripe_api_key: Optional[str] = Field(default=None, description="Clé API Stripe Live")
     stripe_webhook_secret: Optional[str] = Field(default=None, description="Secret Webhook Stripe")
+    stripe_price_essential: str = Field(default="price_1T5Xf6PvxExBNm38EHU1rkhq", description="ID Price Stripe Essentiel")
+    stripe_price_pro: str = Field(default="price_1T5Xf7PvxExBNm38iixC2ipQ", description="ID Price Stripe Pro")
 
     # Google OAuth Configuration
     google_client_id: Optional[str] = Field(default=None, description="Client ID Google OAuth (Web)")
