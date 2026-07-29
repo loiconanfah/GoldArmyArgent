@@ -638,11 +638,16 @@ async def draft_network_email(request: EmailDraftRequest, current_user: dict = D
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class GoldProfileAuditRequest(BaseModel):
+    linkedin_profile: Optional[str] = None
+
 class GoldProfileTopicRequest(BaseModel):
     topic: str
+    format: Optional[str] = "Text"
+    linkedin_profile: Optional[str] = None
 
 @app.post("/api/network/gold-profile/audit")
-async def gold_profile_audit(current_user: dict = Depends(get_current_user)):
+async def gold_profile_audit(req: Optional[GoldProfileAuditRequest] = None, current_user: dict = Depends(get_current_user)):
     check = await check_subscription_limit(current_user["id"], "portfolio")
     if not check["allowed"]:
         raise HTTPException(status_code=403, detail="L'audit de branding LinkedIn et le Portfolio IA sont réservés aux abonnés ESSENTIAL et PRO.")
@@ -651,14 +656,18 @@ async def gold_profile_audit(current_user: dict = Depends(get_current_user)):
     
     db = get_db()
     user = await db.users.find_one({"id": current_user["id"]})
-    cv_text = user.get("cv_text", "")
-    
-    if not cv_text:
-        raise HTTPException(status_code=400, detail="Veuillez d'abord uploader un CV dans votre profil pour utiliser Gold Profile.")
+    cv_text = user.get("cv_text", "") if user else ""
+    linkedin_text = (req.linkedin_profile if req and req.linkedin_profile else "") or (user.get("linkedin_profile", "") if user else "")
+
+    if not cv_text and not linkedin_text:
+        raise HTTPException(status_code=400, detail="Veuillez d'abord uploader un CV ou coller votre profil LinkedIn pour utiliser Gold Profile.")
         
+    if req and req.linkedin_profile and user:
+        await db.users.update_one({"id": current_user["id"]}, {"$set": {"linkedin_profile": req.linkedin_profile}})
+
     mentor = MentorAgent()
     await mentor.initialize()
-    result = await mentor.think({"action": "gold_profile_audit", "cv_text": cv_text})
+    result = await mentor.think({"action": "gold_profile_audit", "cv_text": cv_text, "linkedin_text": linkedin_text})
     
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de l'audit."))
@@ -666,7 +675,7 @@ async def gold_profile_audit(current_user: dict = Depends(get_current_user)):
     return {"status": "success", "data": result.get("data")}
 
 @app.post("/api/network/gold-profile/plan")
-async def gold_profile_plan(current_user: dict = Depends(get_current_user)):
+async def gold_profile_plan(req: Optional[GoldProfileAuditRequest] = None, current_user: dict = Depends(get_current_user)):
     check = await check_subscription_limit(current_user["id"], "portfolio")
     if not check["allowed"]:
         raise HTTPException(status_code=403, detail="La planification de contenu réseau et le Portfolio IA sont inaccessibles en compte gratuit.")
@@ -675,11 +684,15 @@ async def gold_profile_plan(current_user: dict = Depends(get_current_user)):
     
     db = get_db()
     user = await db.users.find_one({"id": current_user["id"]})
-    cv_text = user.get("cv_text", "")
-    
+    cv_text = user.get("cv_text", "") if user else ""
+    linkedin_text = (req.linkedin_profile if req and req.linkedin_profile else "") or (user.get("linkedin_profile", "") if user else "")
+
+    if not cv_text and not linkedin_text:
+        raise HTTPException(status_code=400, detail="Veuillez d'abord uploader un CV ou coller votre profil LinkedIn pour générer le plan.")
+
     mentor = MentorAgent()
     await mentor.initialize()
-    result = await mentor.think({"action": "gold_profile_plan", "cv_text": cv_text})
+    result = await mentor.think({"action": "gold_profile_plan", "cv_text": cv_text, "linkedin_text": linkedin_text})
     
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de la planification."))
@@ -696,16 +709,19 @@ async def gold_profile_post(req: GoldProfileTopicRequest, current_user: dict = D
     
     db = get_db()
     user = await db.users.find_one({"id": current_user["id"]})
-    cv_text = user.get("cv_text", "")
-    
+    cv_text = user.get("cv_text", "") if user else ""
+    linkedin_text = req.linkedin_profile or (user.get("linkedin_profile", "") if user else "")
+
     mentor = MentorAgent()
     await mentor.initialize()
-    result = await mentor.think({"action": "gold_profile_post", "cv_text": cv_text, "topic": req.topic})
+    result = await mentor.think({"action": "gold_profile_post", "topic": req.topic, "format": req.format or "Text", "cv_text": cv_text, "linkedin_text": linkedin_text})
     
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de la génération du post."))
+
         
     return {"status": "success", "data": result.get("data")}
+
 
 
 @app.get("/api/network/contacts")

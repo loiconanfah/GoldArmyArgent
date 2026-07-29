@@ -117,30 +117,58 @@ onMounted(() => {
 })
 
 
-// ── Ninja SVG Node positioning helpers ──
-const ninjaNodeX = (i, total, radius) => {
-    const angle = (i / total) * Math.PI * 2 - Math.PI / 2
-    return 500 + Math.cos(angle) * radius
+// ── Ninja SVG Node positioning helpers (Zero-Collision Constellation Layout) ──
+const NINJA_CENTER_X = 600
+const NINJA_CENTER_Y = 400
+
+const getNinjaCompanyRadius = (cTotal) => {
+    return Math.max(260, Math.min(360, 200 + cTotal * 12))
 }
-const ninjaNodeY = (i, total, radius) => {
+
+const ninjaNodeX = (i, total, radiusOverride = null) => {
+    const radius = radiusOverride || getNinjaCompanyRadius(total)
     const angle = (i / total) * Math.PI * 2 - Math.PI / 2
-    return 340 + Math.sin(angle) * radius
+    return NINJA_CENTER_X + Math.cos(angle) * radius
 }
+
+const ninjaNodeY = (i, total, radiusOverride = null) => {
+    const radius = radiusOverride || getNinjaCompanyRadius(total)
+    const angle = (i / total) * Math.PI * 2 - Math.PI / 2
+    return NINJA_CENTER_Y + Math.sin(angle) * radius
+}
+
+// Spreads profile nodes OUTWARD (radially away from center) in a tight fan to prevent sideways collisions
 const ninjaProfileX = (ci, pi, cTotal, pTotal) => {
-    const cx = ninjaNodeX(ci, cTotal, 210)
+    const cx = ninjaNodeX(ci, cTotal)
     const baseAngle = (ci / cTotal) * Math.PI * 2 - Math.PI / 2
-    const spread = Math.PI / 2.2
-    const step = pTotal > 1 ? spread / (pTotal - 1) : 0
-    const angle = baseAngle - spread / 2 + step * pi
-    return cx + Math.cos(angle) * 95
+    const fanSpread = Math.PI / 4 // 45 degrees fan spread outward
+    const step = pTotal > 1 ? fanSpread / (pTotal - 1) : 0
+    const angle = baseAngle - (fanSpread / 2) + (step * pi)
+    const distOutward = 95 // 95px outward from company node
+    return cx + Math.cos(angle) * distOutward
 }
+
 const ninjaProfileY = (ci, pi, cTotal, pTotal) => {
-    const cy = ninjaNodeY(ci, cTotal, 210)
+    const cy = ninjaNodeY(ci, cTotal)
     const baseAngle = (ci / cTotal) * Math.PI * 2 - Math.PI / 2
-    const spread = Math.PI / 2.2
-    const step = pTotal > 1 ? spread / (pTotal - 1) : 0
-    const angle = baseAngle - spread / 2 + step * pi
-    return cy + Math.sin(angle) * 95
+    const fanSpread = Math.PI / 4
+    const step = pTotal > 1 ? fanSpread / (pTotal - 1) : 0
+    const angle = baseAngle - (fanSpread / 2) + (step * pi)
+    const distOutward = 95
+    return cy + Math.sin(angle) * distOutward
+}
+
+// Places company label pill radially INWARD towards center so it never collides with profile nodes outward
+const ninjaLabelX = (ci, total) => {
+    const cx = ninjaNodeX(ci, total)
+    const angle = (ci / total) * Math.PI * 2 - Math.PI / 2
+    return cx - Math.cos(angle) * 35 - 65
+}
+
+const ninjaLabelY = (ci, total) => {
+    const cy = ninjaNodeY(ci, total)
+    const angle = (ci / total) * Math.PI * 2 - Math.PI / 2
+    return cy - Math.sin(angle) * 35 - 14
 }
 
 const ninjaHoverNode = ref(null)
@@ -153,7 +181,7 @@ const showNinjaTooltip = (e, profile) => {
     ninjaHoverNode.value = profile
     let x = e.clientX + 20
     let y = e.clientY - 30
-    if (x + 290 > window.innerWidth) x = e.clientX - 310
+    if (x + 310 > window.innerWidth) x = e.clientX - 330
     if (y + 320 > window.innerHeight) y = e.clientY - 320
     ninjaTooltipX.value = x
     ninjaTooltipY.value = y
@@ -201,14 +229,6 @@ const ninjaWheel = (e) => {
     ninjaScale.value = Math.min(3, Math.max(0.3, ninjaScale.value + delta))
 }
 
-const ninjaLabelX = (i, total, radius) => {
-    const angle = (i / total) * Math.PI * 2 - Math.PI / 2
-    const cx = 500 + Math.cos(angle) * radius
-    // If node is on the right half, put label to the right; else to the left (with offset)
-    return Math.cos(angle) >= 0 ? cx + 14 : cx - 162
-}
-// ── End Pan/Zoom ──
-// ── End Ninja Helpers ──
 
 const prefillDraft = (companyNameStr) => {
     companyName.value = companyNameStr
@@ -272,15 +292,21 @@ const selectHr = (name) => {
 // ── Gold Profile Logic ──
 const goldProfileStep = ref('audit')
 const goldProfileLoading = ref(false)
+const linkedinInput = ref('')
 const goldProfileAuditData = ref(null)
 const goldProfilePlanData = ref([])
-const goldProfilePostData = ref('')
+const goldProfilePostData = ref(null)
 const goldProfileSelectedTopic = ref(null)
+const activeCarouselSlide = ref(0)
 
 const fetchGoldProfileAudit = async () => {
     goldProfileLoading.value = true
     try {
-        const res = await authFetch('/api/network/gold-profile/audit', { method: 'POST' })
+        const res = await authFetch('/api/network/gold-profile/audit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ linkedin_profile: linkedinInput.value })
+        })
         const json = await res.json()
         if (json.status === 'success') {
             goldProfileAuditData.value = json.data
@@ -299,7 +325,11 @@ const fetchGoldProfileAudit = async () => {
 const fetchGoldProfilePlan = async () => {
     goldProfileLoading.value = true
     try {
-        const res = await authFetch('/api/network/gold-profile/plan', { method: 'POST' })
+        const res = await authFetch('/api/network/gold-profile/plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ linkedin_profile: linkedinInput.value })
+        })
         const json = await res.json()
         if (json.status === 'success') {
             goldProfilePlanData.value = json.data.plan || json.data
@@ -317,15 +347,20 @@ const fetchGoldProfilePlan = async () => {
 const generateGoldProfilePost = async (topic) => {
     goldProfileLoading.value = true
     goldProfileSelectedTopic.value = topic
+    activeCarouselSlide.value = 0
     try {
         const res = await authFetch('/api/network/gold-profile/post', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic: topic.topic })
+            body: JSON.stringify({
+                topic: topic.topic,
+                format: topic.format || 'Text',
+                linkedin_profile: linkedinInput.value
+            })
         })
         const json = await res.json()
         if (json.status === 'success') {
-            goldProfilePostData.value = json.data.post_content || json.data
+            goldProfilePostData.value = json.data
             goldProfileStep.value = 'post'
         } else {
             toastState.addToast(json.detail || json.content || "Erreur de génération", "error")
@@ -534,93 +569,141 @@ const copyToClipboard = async (text) => {
 
         <!-- Body -->
         <div class="p-6 flex-1 flex flex-col" style="min-height: 420px;">
+          <!-- LinkedIn Profile Input (Optional) -->
+          <div class="mb-4">
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">
+              Coller votre profil LinkedIn ou URL (Optionnel)
+            </label>
+            <input
+              v-model="linkedinInput"
+              type="text"
+              placeholder="ex: https://linkedin.com/in/votreprofil ou résumé de profil..."
+              class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-400 text-slate-700"
+            />
+          </div>
+
           <!-- Loading -->
           <div v-if="goldProfileLoading" class="flex-1 flex flex-col items-center justify-center gap-3">
             <div class="w-10 h-10 border-4 border-amber-100 border-t-amber-400 rounded-full animate-spin"></div>
-            <p class="text-xs font-semibold text-slate-500">L'IA analyse votre profil LinkedIn...</p>
+            <p class="text-xs font-semibold text-slate-500">L'IA analyse votre parcours et génère la stratégie...</p>
           </div>
 
           <!-- Empty / CTA -->
-          <div v-else-if="!goldProfileAuditData && goldProfileStep==='audit'" class="flex-1 flex flex-col items-center justify-center gap-4 text-center py-6">
-            <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center border border-amber-100">
-              <SparklesIcon class="w-8 h-8 text-amber-400" />
+          <div v-else-if="!goldProfileAuditData && goldProfileStep==='audit'" class="flex-1 flex flex-col items-center justify-center gap-4 text-center py-4">
+            <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center border border-amber-100">
+              <SparklesIcon class="w-7 h-7 text-amber-400" />
             </div>
             <div>
-              <p class="text-sm font-bold text-slate-700 mb-1">Audit LinkedIn IA</p>
-              <p class="text-xs text-slate-400 max-w-[260px]">Obtenez votre score, un headline optimisé et un plan de contenu 30 jours personnalisé.</p>
+              <p class="text-sm font-bold text-slate-700 mb-1">Audit & Stratégie Virale LinkedIn</p>
+              <p class="text-xs text-slate-400 max-w-[280px]">Score algorithmique, accroches Dwell Time, plan 30j (TOFU/MOFU/BOFU) & Carrousels PDF.</p>
             </div>
             <button @click="fetchGoldProfileAudit" class="px-5 py-2.5 bg-amber-400 text-white text-xs font-black rounded-xl hover:bg-amber-500 transition-all shadow-md shadow-amber-100">
-              Lancer l'audit →
+              Lancer l'audit Gold Profile →
             </button>
           </div>
 
           <!-- Audit results -->
-          <div v-else-if="goldProfileStep==='audit' && goldProfileAuditData" class="flex-1 flex flex-col gap-5">
+          <div v-else-if="goldProfileStep==='audit' && goldProfileAuditData" class="flex-1 flex flex-col gap-4">
             <!-- Score + headline -->
             <div class="flex items-center gap-4 p-4 bg-amber-50/50 rounded-2xl border border-amber-100">
-              <div class="w-16 h-16 relative shrink-0">
-                <svg class="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+              <div class="w-14 h-14 relative shrink-0">
+                <svg class="w-14 h-14 -rotate-90" viewBox="0 0 64 64">
                   <circle cx="32" cy="32" r="28" stroke="#fef3c7" stroke-width="6" fill="none"/>
                   <circle cx="32" cy="32" r="28" stroke="#F59E0B" stroke-width="6" fill="none" stroke-linecap="round"
                     :stroke-dasharray="175.9" :stroke-dashoffset="175.9*(1-(goldProfileAuditData.profile_score||0)/100)" class="transition-all duration-1000"/>
                 </svg>
                 <div class="absolute inset-0 flex items-center justify-center">
-                  <span class="text-base font-black text-slate-800">{{ goldProfileAuditData.profile_score }}</span>
+                  <span class="text-sm font-black text-slate-800">{{ goldProfileAuditData.profile_score }}</span>
                 </div>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Score LinkedIn</p>
-                <p class="font-bold text-slate-800 text-sm leading-snug">{{ goldProfileAuditData.headline }}</p>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Score de Branding</p>
+                <p class="font-bold text-slate-800 text-xs leading-snug line-clamp-2">{{ goldProfileAuditData.headline }}</p>
                 <button @click="copyToClipboard(goldProfileAuditData.headline)" class="mt-1 text-[10px] text-amber-600 font-bold hover:underline">
                   Copier le headline →
                 </button>
               </div>
             </div>
+
             <!-- Optimizations -->
-            <div class="space-y-2 flex-1 overflow-y-auto">
-              <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Optimisations recommandées</p>
+            <div class="space-y-2 flex-1 overflow-y-auto max-h-[220px]">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Optimisations stratégiques</p>
               <div v-for="opt in (goldProfileAuditData.field_optimizations||[]).slice(0,4)" :key="opt.field"
-                   class="flex items-start gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                   class="flex items-start gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
                 <CheckBadgeIcon class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <div>
                   <p class="text-xs font-black text-slate-700">{{ opt.field }}</p>
-                  <p class="text-[11px] text-slate-400 mt-0.5">{{ opt.recommendation || opt.suggestion }}</p>
+                  <p class="text-[11px] text-slate-500 mt-0.5">{{ opt.suggestion || opt.recommendation }}</p>
                 </div>
               </div>
             </div>
             <button @click="fetchGoldProfilePlan" class="w-full py-3 bg-slate-900 text-white text-xs font-black rounded-2xl hover:bg-slate-800 transition-colors">
-              Voir la stratégie 30 jours →
+              Voir la stratégie virale 30 jours →
             </button>
           </div>
 
           <!-- Plan 30 jours -->
           <div v-else-if="goldProfileStep==='plan'" class="flex-1 flex flex-col">
-            <div class="flex items-center gap-2 mb-4">
+            <div class="flex items-center justify-between mb-3">
               <button @click="goldProfileStep='audit'" class="text-xs text-indigo-600 font-bold">← Audit</button>
-              <p class="text-xs font-black text-slate-700 uppercase tracking-wider">Plan 30 Jours</p>
+              <p class="text-xs font-black text-slate-700 uppercase tracking-wider">Plan Virale 30 Jours</p>
             </div>
-            <div class="grid grid-cols-3 gap-2 flex-1 overflow-y-auto content-start" style="max-height:380px;">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 flex-1 overflow-y-auto content-start max-h-[360px]">
               <div v-for="item in goldProfilePlanData" :key="item.day"
                    @click="generateGoldProfilePost(item)"
-                   class="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-amber-400 cursor-pointer group transition-all">
-                <span class="text-[10px] font-black text-amber-500 uppercase">Jour {{ item.day }}</span>
-                <p class="text-[11px] font-bold text-slate-700 mt-1 group-hover:text-amber-600 transition-colors line-clamp-2">{{ item.topic }}</p>
+                   class="p-3 bg-slate-50 border border-slate-200 rounded-xl hover:border-amber-400 cursor-pointer group transition-all flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[9px] font-black text-amber-600 uppercase">J{{ item.day }}</span>
+                    <span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase"
+                          :class="item.funnel_stage === 'TOFU' ? 'bg-indigo-100 text-indigo-700' : item.funnel_stage === 'MOFU' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'">
+                      {{ item.funnel_stage || 'TOFU' }}
+                    </span>
+                  </div>
+                  <p class="text-[11px] font-bold text-slate-700 group-hover:text-amber-600 transition-colors line-clamp-2">{{ item.topic }}</p>
+                </div>
+                <div class="mt-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
+                  <span class="text-[8px] font-medium text-slate-400">{{ item.format || 'Text' }}</span>
+                  <span class="text-[9px] text-amber-500 font-bold group-hover:translate-x-0.5 transition-transform">Créer →</span>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Post généré -->
           <div v-else-if="goldProfileStep==='post'" class="flex-1 flex flex-col">
-            <div class="flex items-center gap-2 mb-4">
+            <div class="flex items-center justify-between mb-3">
               <button @click="goldProfileStep='plan'" class="text-xs text-indigo-600 font-bold">← Plan</button>
-              <p class="text-xs font-black text-slate-700 uppercase tracking-wider truncate">{{ goldProfileSelectedTopic?.topic }}</p>
+              <div v-if="goldProfilePostData?.viral_score" class="flex items-center gap-1 px-2.5 py-1 bg-amber-100 rounded-full border border-amber-200">
+                <SparklesIcon class="w-3.5 h-3.5 text-amber-600" />
+                <span class="text-[10px] font-black text-amber-700">Score Viral: {{ goldProfilePostData.viral_score }}/100</span>
+              </div>
             </div>
-            <div class="flex-1 bg-indigo-50 rounded-2xl p-4 text-sm text-slate-700 whitespace-pre-wrap font-medium leading-relaxed overflow-y-auto mb-4" style="max-height:300px;">
-              {{ goldProfilePostData }}
+
+            <!-- Post Content / Carousel Tabs -->
+            <div class="flex-1 overflow-y-auto max-h-[300px] mb-3 space-y-3">
+              <!-- Post Text -->
+              <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs text-slate-700 whitespace-pre-wrap font-medium leading-relaxed">
+                {{ typeof goldProfilePostData === 'string' ? goldProfilePostData : goldProfilePostData?.post_content }}
+              </div>
+
+              <!-- Carousel Slides Preview (If available) -->
+              <div v-if="goldProfilePostData?.carousel_slides && goldProfilePostData.carousel_slides.length" class="p-3 bg-amber-50/60 border border-amber-100 rounded-2xl">
+                <p class="text-[10px] font-black text-amber-700 uppercase tracking-wider mb-2">📸 Diapositives Carrousel PDF</p>
+                <div class="flex gap-2 overflow-x-auto pb-2">
+                  <div v-for="slide in goldProfilePostData.carousel_slides" :key="slide.slide_number"
+                       class="min-w-[140px] max-w-[160px] p-2.5 bg-white border border-amber-200 rounded-xl shadow-2xs">
+                    <span class="text-[8px] font-black text-amber-500 uppercase">Slide {{ slide.slide_number }}</span>
+                    <p class="text-[10px] font-bold text-slate-800 mt-0.5 truncate">{{ slide.title }}</p>
+                    <p class="text-[9px] text-slate-500 mt-1 line-clamp-3 leading-tight">{{ slide.content }}</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <button @click="copyToClipboard(goldProfilePostData)"
-                    class="w-full py-3 bg-amber-400 text-white text-xs font-black rounded-2xl hover:bg-amber-500 transition-colors flex items-center justify-center gap-2">
-              <DocumentDuplicateIcon class="w-4 h-4" /> Copier le post
+
+            <button @click="copyToClipboard(typeof goldProfilePostData === 'string' ? goldProfilePostData : goldProfilePostData?.post_content)"
+                    class="w-full py-3 bg-amber-400 text-white text-xs font-black rounded-2xl hover:bg-amber-500 transition-colors flex items-center justify-center gap-2 shadow-sm shadow-amber-200">
+              <DocumentDuplicateIcon class="w-4 h-4" /> Copier le post viral
             </button>
           </div>
         </div>
@@ -629,57 +712,59 @@ const copyToClipboard = async (text) => {
     </div>
 
 
-    <!-- ── Section: Network Ninja ── -->
-    <div class="relative w-full rounded-[2.5rem] overflow-hidden flex flex-col mb-12 shadow-2xl"
-         style="height: 720px; background: #f8fafc; border: 1px solid #e2e8f0;">
+    <!-- ── Section: Network Ninja (Luxury Light Constellation Edition) ── -->
+    <div class="relative w-full rounded-[2.5rem] overflow-hidden flex flex-col mb-12 shadow-xl transition-all duration-500 border border-slate-200/80 bg-white"
+         style="height: 740px;">
 
+        <!-- Ambient Warm Light Glows -->
+        <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-amber-400/10 blur-[100px] pointer-events-none"></div>
+        <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none"></div>
 
-        <!-- Header -->
-        <div class="absolute top-5 left-6 z-20 flex items-center gap-3">
-            <div class="flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium" style="background:white; border:1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <span style="color:#F59E0B;" class="font-black">🥷</span>
-                <span class="text-slate-800 font-bold tracking-wide">Network Ninja</span>
+        <!-- Header Glass HUD (Thème Clair) -->
+        <div class="absolute top-6 left-6 z-20 flex items-center gap-3">
+            <div class="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-sm font-bold bg-white/90 border border-slate-200 text-slate-900 shadow-sm backdrop-blur-md">
+                <span class="text-lg">🥷</span>
+                <span class="text-slate-900 font-black tracking-wide">Network Ninja Radar</span>
             </div>
-            <div v-if="ninjaTotalProfiles > 0" class="px-3 py-1.5 rounded-full flex items-center gap-2" style="background:rgba(232,93,62,0.1); border:1px solid rgba(232,93,62,0.3);">
-                <span class="w-2 h-2 rounded-full animate-pulse" style="background:#F59E0B;"></span>
-                <span class="text-xs font-bold" style="color:#F59E0B;">{{ ninjaTotalProfiles }} décideur(s)</span>
+            <div v-if="ninjaTotalProfiles > 0" class="px-3.5 py-2 rounded-2xl flex items-center gap-2.5 bg-amber-50 border border-amber-200/80 backdrop-blur-md">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+                <span class="text-xs font-black text-amber-800 tracking-wider uppercase">{{ ninjaTotalProfiles }} Décideurs Détectés</span>
             </div>
         </div>
 
-        <!-- Relancer + Recenter -->
-        <div class="absolute top-5 right-6 z-20 flex items-center gap-2">
+        <!-- Action Controls HUD (Recentrer & Relancer) -->
+        <div class="absolute top-6 right-6 z-20 flex items-center gap-2.5">
             <button @click="ninjaResetView()"
-                title="Recentrer"
-                class="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-                style="background:white; border:1px solid #e2e8f0; color:#64748b; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                title="Recentrer la carte"
+                class="w-10 h-10 rounded-2xl flex items-center justify-center bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm active:scale-95">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
             </button>
             <button @click="runNinja" :disabled="ninjaRunning"
-                class="px-4 py-2 text-slate-800 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
-                style="background:white; border:1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                <svg v-if="ninjaRunning" class="w-4 h-4 animate-spin" style="color:#F59E0B;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                <svg v-else class="w-4 h-4" style="color:#64748b;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                {{ ninjaRunning ? 'Scan...' : 'Relancer' }}
+                class="px-5 py-2.5 rounded-2xl text-sm font-bold text-white transition-all flex items-center gap-2.5 shadow-md shadow-amber-500/20 active:scale-95 border border-amber-400/40"
+                style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <svg v-if="ninjaRunning" class="w-4 h-4 animate-spin text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <svg v-else class="w-4 h-4 text-amber-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>{{ ninjaRunning ? 'Scan Réseau...' : 'Relancer le Scan' }}</span>
             </button>
         </div>
 
-        <!-- Pan/Zoom hint -->
-        <div class="absolute bottom-5 left-6 z-20 flex items-center gap-2" style="color:#64748b; font-size:11px;">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/></svg>
-            Glisser pour naviguer · Scroll pour zoomer
+        <!-- Pan/Zoom Guidance HUD -->
+        <div class="absolute bottom-6 left-6 z-20 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 border border-slate-200 text-slate-500 text-xs backdrop-blur-md shadow-sm">
+            <svg class="w-3.5 h-3.5 text-amber-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/></svg>
+            <span>Glisser pour explorer · Molette pour zoomer</span>
         </div>
 
-        <!-- Zoom controls -->
-        <div class="absolute bottom-4 right-6 z-20 flex flex-col gap-1.5">
-            <button @click="ninjaZoom(0.15)" class="w-8 h-8 rounded-xl flex items-center justify-center transition-all" style="background:white; border:1px solid #e2e8f0; color:#64748b; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <!-- Zoom Controls HUD -->
+        <div class="absolute bottom-6 right-6 z-20 flex flex-col gap-2">
+            <button @click="ninjaZoom(0.2)" class="w-9 h-9 rounded-xl flex items-center justify-center bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-all active:scale-95 shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             </button>
-            <button @click="ninjaZoom(-0.15)" class="w-8 h-8 rounded-xl flex items-center justify-center transition-all" style="background:white; border:1px solid #e2e8f0; color:#64748b; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <button @click="ninjaZoom(-0.2)" class="w-9 h-9 rounded-xl flex items-center justify-center bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 transition-all active:scale-95 shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
             </button>
         </div>
 
-        <!-- Pan/Zoom SVG -->
+        <!-- Pan/Zoom SVG Canvas -->
         <svg class="absolute inset-0 w-full h-full select-none"
              :class="ninjaDragging ? 'cursor-grabbing' : 'cursor-grab'"
              @mousedown.prevent="ninjaPanStart"
@@ -689,198 +774,218 @@ const copyToClipboard = async (text) => {
              @wheel.prevent="ninjaWheel"
              ref="ninjaSvgEl">
 
-            <!-- Transformed group (pan + zoom) -->
-            <g :transform="`translate(${ninjaPanX}, ${ninjaPanY}) scale(${ninjaScale})`">
+            <defs>
+                <!-- Light Fine Grid Pattern -->
+                <pattern id="light-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(226, 232, 240, 0.8)" stroke-width="1" />
+                    <circle cx="40" cy="40" r="1.2" fill="rgba(245, 158, 11, 0.2)" />
+                </pattern>
+                <!-- Glow Filter -->
+                <filter id="glow-gold-light" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
 
-                <!-- Background particle dots -->
-                <circle v-for="i in 50" :key="'bg-'+i"
-                    :cx="((i * 139.5) % 960) - 80"
-                    :cy="((i * 89.1) % 660) - 30"
-                    :r="i % 4 === 0 ? 1.8 : 0.9"
-                    fill="#94a3b8"
-                    :opacity="0.15 + (i%4)*0.05" />
+            <!-- Light Grid Background -->
+            <rect width="100%" height="100%" fill="url(#light-grid)" />
+
+            <!-- Transformed Interactive Group -->
+            <g :transform="`translate(${ninjaPanX}, ${ninjaPanY}) scale(${ninjaScale})`">
 
                 <template v-if="ninjaCompanies.length > 0">
 
-                    <!-- Center → Company edges -->
+                    <!-- Center → Company Rays (Warm Gold Dotted Lines) -->
                     <template v-for="(company, ci) in ninjaCompanies" :key="'ec-'+ci">
-                        <line x1="500" y1="340"
-                            :x2="ninjaNodeX(ci, ninjaCompanies.length, 210)"
-                            :y2="ninjaNodeY(ci, ninjaCompanies.length, 210)"
-                            stroke="#F59E0B" stroke-width="1.2" opacity="0.3"
-                            stroke-dasharray="6,5" class="ninja-edge-anim" />
+                        <line x1="600" y1="400"
+                            :x2="ninjaNodeX(ci, ninjaCompanies.length)"
+                            :y2="ninjaNodeY(ci, ninjaCompanies.length)"
+                            stroke="#f59e0b" stroke-width="1.8" opacity="0.45"
+                            stroke-dasharray="6,4" class="ninja-laser-flow" />
                     </template>
 
-                    <!-- Company → Profile edges -->
+                    <!-- Company → Decision Maker Connectors (Soft Indigo Dotted Lines) -->
                     <template v-for="(company, ci) in ninjaCompanies" :key="'ep-'+ci">
                         <template v-for="(prof, pi) in company.profiles" :key="'ep-'+ci+'-'+pi">
                             <line
-                                :x1="ninjaNodeX(ci, ninjaCompanies.length, 210)"
-                                :y1="ninjaNodeY(ci, ninjaCompanies.length, 210)"
+                                :x1="ninjaNodeX(ci, ninjaCompanies.length)"
+                                :y1="ninjaNodeY(ci, ninjaCompanies.length)"
                                 :x2="ninjaProfileX(ci, pi, ninjaCompanies.length, company.profiles.length)"
                                 :y2="ninjaProfileY(ci, pi, ninjaCompanies.length, company.profiles.length)"
-                                stroke="rgba(0,0,0,0.12)" stroke-width="1"
-                                stroke-dasharray="3,4" class="ninja-edge-anim-slow" />
+                                stroke="#6366f1" stroke-width="1.2" opacity="0.35"
+                                stroke-dasharray="3,3" class="ninja-laser-slow" />
                         </template>
                     </template>
 
-                    <!-- Company nodes -->
+                    <!-- Company Hub Nodes (Clean White/Gold Pills) -->
                     <template v-for="(company, ci) in ninjaCompanies" :key="'nc-'+ci">
-                        <!-- Pulse ring -->
-                        <circle :cx="ninjaNodeX(ci, ninjaCompanies.length, 210)"
-                                :cy="ninjaNodeY(ci, ninjaCompanies.length, 210)"
-                                r="20" fill="none"
-                                stroke="#F59E0B" stroke-width="1.5" opacity="0.15"
-                                class="ninja-pulse-ring"
-                                :style="{ animationDelay: ci * 0.4 + 's' }" />
-                        <!-- Dot -->
-                        <circle :cx="ninjaNodeX(ci, ninjaCompanies.length, 210)"
-                                :cy="ninjaNodeY(ci, ninjaCompanies.length, 210)"
-                                r="9" fill="#F59E0B">
-                            <animate attributeName="r" values="8;10;8" dur="3s" repeatCount="indefinite"
-                                :begin="ci * 0.4 + 's'" />
+                        <!-- Pulsing Gold Ring -->
+                        <circle :cx="ninjaNodeX(ci, ninjaCompanies.length)"
+                                :cy="ninjaNodeY(ci, ninjaCompanies.length)"
+                                r="22" fill="none"
+                                stroke="#f59e0b" stroke-width="1.5" opacity="0.25"
+                                class="ninja-pulse-ring-cyber"
+                                :style="{ animationDelay: ci * 0.3 + 's' }" />
+                        
+                        <!-- Company Orb -->
+                        <circle :cx="ninjaNodeX(ci, ninjaCompanies.length)"
+                                :cy="ninjaNodeY(ci, ninjaCompanies.length)"
+                                r="10" fill="#f59e0b" filter="url(#glow-gold-light)">
+                            <animate attributeName="r" values="9;11;9" dur="2.5s" repeatCount="indefinite"
+                                :begin="ci * 0.3 + 's'" />
                         </circle>
-                        <!-- Glow -->
-                        <circle :cx="ninjaNodeX(ci, ninjaCompanies.length, 210)"
-                                :cy="ninjaNodeY(ci, ninjaCompanies.length, 210)"
-                                r="5" fill="rgba(255,255,255,0.8)" class="pointer-events-none" />
+                        
+                        <!-- Inner White Point -->
+                        <circle :cx="ninjaNodeX(ci, ninjaCompanies.length)"
+                                :cy="ninjaNodeY(ci, ninjaCompanies.length)"
+                                r="4" fill="#ffffff" class="pointer-events-none" />
 
-                        <!-- Company label pill (foreignObject) -->
+                        <!-- Company Badge Label (Crisp Light Theme Pill) -->
                         <foreignObject
-                            :x="ninjaLabelX(ci, ninjaCompanies.length, 210)"
-                            :y="ninjaNodeY(ci, ninjaCompanies.length, 210) - 14"
-                            width="148" height="28" class="pointer-events-none">
+                            :x="ninjaLabelX(ci, ninjaCompanies.length)"
+                            :y="ninjaLabelY(ci, ninjaCompanies.length)"
+                            width="150" height="34" class="pointer-events-none">
                             <div xmlns="http://www.w3.org/1999/xhtml"
-                                 style="background:rgba(255,255,255,0.95); border:1px solid rgba(232,93,62,0.3); border-radius:14px; padding:4px 11px; font-size:11px; font-weight:700; color:#334155; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-family:sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; letter-spacing:0.01em;">
-                                {{ company.company_name }}
+                                 class="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white/95 shadow-md backdrop-blur-md">
+                                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                                <span class="text-[11px] font-black text-slate-800 truncate tracking-wide font-sans">
+                                    {{ company.company_name }}
+                                </span>
                             </div>
                         </foreignObject>
 
-                        <!-- Profile nodes -->
+                        <!-- Decision Maker Nodes (Clear Light Indigo Nodes) -->
                         <template v-for="(prof, pi) in company.profiles" :key="'np-'+ci+'-'+pi">
-                            <!-- Large hover target -->
+                            <!-- Large Interactive Target -->
                             <circle
                                 :cx="ninjaProfileX(ci, pi, ninjaCompanies.length, company.profiles.length)"
                                 :cy="ninjaProfileY(ci, pi, ninjaCompanies.length, company.profiles.length)"
-                                r="18" fill="transparent" class="cursor-pointer"
+                                r="22" fill="transparent" class="cursor-pointer"
                                 @mouseenter.stop="showNinjaTooltip($event, { ...prof, company_name: company.company_name, key: company.company_name+'_'+pi })"
                                 @mouseleave.stop="scheduleHideTooltip()" />
-                            <!-- Visible dot -->
+                            
+                            <!-- Visible Node Circle -->
                             <circle
                                 :cx="ninjaProfileX(ci, pi, ninjaCompanies.length, company.profiles.length)"
                                 :cy="ninjaProfileY(ci, pi, ninjaCompanies.length, company.profiles.length)"
-                                :r="ninjaHoverNode && ninjaHoverNode.key === company.company_name+'_'+pi ? 7 : 5"
-                                :fill="ninjaHoverNode && ninjaHoverNode.key === company.company_name+'_'+pi ? '#0f172a' : '#cbd5e1'"
-                                class="pointer-events-none transition-all" />
-                            <!-- Profile name -->
+                                :r="ninjaHoverNode && ninjaHoverNode.key === company.company_name+'_'+pi ? 10 : 6"
+                                :fill="ninjaHoverNode && ninjaHoverNode.key === company.company_name+'_'+pi ? '#4f46e5' : '#6366f1'"
+                                class="pointer-events-none transition-all duration-300" />
+                            
+                            <!-- Profile Name (Crisp Slate-800 text with zero collision) -->
                             <text
-                                :x="ninjaProfileX(ci, pi, ninjaCompanies.length, company.profiles.length) + 9"
+                                :x="ninjaProfileX(ci, pi, ninjaCompanies.length, company.profiles.length) + 12"
                                 :y="ninjaProfileY(ci, pi, ninjaCompanies.length, company.profiles.length) + 4"
-                                font-size="9" fill="#64748b"
-                                font-family="sans-serif" class="pointer-events-none font-medium">
+                                font-size="11" fill="#1e293b" font-weight="700"
+                                font-family="sans-serif" class="pointer-events-none tracking-wide">
                                 {{ (prof.name || '').split(' ')[0] }}
                             </text>
                         </template>
                     </template>
 
-                    <!-- Central node (always rendered on top) -->
-                    <circle cx="500" cy="340" r="30" fill="rgba(0,0,0,0.03)" />
-                    <circle cx="500" cy="340" r="20" fill="rgba(0,0,0,0.05)">
-                        <animate attributeName="r" values="18;22;18" dur="4s" repeatCount="indefinite" />
-                    </circle>
-                    <circle cx="500" cy="340" r="10" fill="#0f172a" opacity="0.95">
-                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite" />
-                    </circle>
-                    <circle cx="500" cy="340" r="4" fill="white" />
+                    <!-- Central Core Radar (Ninja Center at 600, 400) -->
+                    <g transform="translate(600, 400)">
+                        <circle cx="0" cy="0" r="42" fill="none" stroke="rgba(245, 158, 11, 0.4)" stroke-width="1.5" stroke-dasharray="6 6" class="animate-spin-slow" />
+                        <circle cx="0" cy="0" r="30" fill="#0f172a" stroke="#f59e0b" stroke-width="2" filter="url(#glow-gold-light)" />
+                        <text x="0" y="7" text-anchor="middle" font-size="20" class="select-none">🥷</text>
+                    </g>
 
                 </template>
             </g>
         </svg>
 
-        <!-- Hover Tooltip Card -->
+        <!-- Glassmorphic Tooltip Card (Thème Clair Luxueux) -->
         <Transition name="fade-scale">
             <div v-if="ninjaHoverNode"
                  @mouseenter="cancelHideTooltip()"
                  @mouseleave="scheduleHideTooltip()"
-                 class="fixed z-[200] w-72 rounded-2xl shadow-xl p-5"
-                 style="background:rgba(255,255,255,0.98); border:1px solid #e2e8f0; backdrop-filter:blur(20px);"
+                 class="fixed z-[200] w-80 rounded-3xl p-5 shadow-2xl border border-slate-200 backdrop-blur-xl bg-white/98 text-slate-900"
                  :style="{ left: ninjaTooltipX + 'px', top: ninjaTooltipY + 'px' }">
 
-                <p class="text-xs font-black tracking-widest uppercase mb-1" style="color:#F59E0B;">{{ ninjaHoverNode.role }}</p>
-                <h4 class="text-slate-900 text-base font-black mb-0.5">{{ ninjaHoverNode.name }}</h4>
-                <p class="text-xs mb-4 font-medium" style="color:#64748b;">@ {{ ninjaHoverNode.company_name }}</p>
+                <div class="flex items-center justify-between mb-3">
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
+                        {{ ninjaHoverNode.role || 'Décideur Clé' }}
+                    </span>
+                    <span class="text-xs font-bold text-slate-500 truncate max-w-[120px]">@ {{ ninjaHoverNode.company_name }}</span>
+                </div>
 
-                <p class="text-sm leading-relaxed mb-5 italic pl-3" style="color:#475569; border-left:2px solid #F59E0B;">
-                    "{{ ninjaHoverNode.message }}"
-                </p>
+                <h4 class="text-slate-900 text-lg font-black mb-1 flex items-center gap-2">
+                    <span>{{ ninjaHoverNode.name }}</span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                </h4>
 
-                <p class="text-[10px] uppercase tracking-widest font-black mb-2" style="color:#94a3b8;">Actions</p>
+                <div class="relative p-3.5 rounded-2xl bg-slate-50 border border-slate-100 my-3">
+                    <p class="text-xs text-slate-700 leading-relaxed italic pl-2 border-l-2 border-amber-500">
+                        "{{ ninjaHoverNode.message }}"
+                    </p>
+                </div>
 
-                <a v-if="ninjaHoverNode.linkedin_url" :href="ninjaHoverNode.linkedin_url" target="_blank"
-                   class="flex items-center justify-between p-3 rounded-xl mb-1 transition-all"
-                   style="border:1px solid transparent;"
-                   onmouseover="this.style.background='rgba(0,0,0,0.03)'; this.style.borderColor='#e2e8f0'"
-                   onmouseout="this.style.background='transparent'; this.style.borderColor='transparent'">
-                    <div class="flex items-center gap-3">
-                        <svg class="w-4 h-4" fill="#0A66C2" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                        <span class="text-sm font-bold text-slate-700">Voir le profil</span>
-                    </div>
-                    <svg class="w-4 h-4" style="color:#94a3b8;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </a>
+                <div class="flex items-center gap-2 mt-4">
+                    <a v-if="ninjaHoverNode.linkedin_url" :href="ninjaHoverNode.linkedin_url" target="_blank"
+                       class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-bold transition-all active:scale-95">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                        <span>Profil LinkedIn</span>
+                    </a>
 
-                <button @click="copyNinjaMessage(ninjaHoverNode.message, ninjaHoverNode.key)"
-                    class="w-full flex items-center justify-between p-3 rounded-xl transition-all"
-                    style="border:1px solid transparent;"
-                    onmouseover="this.style.background='rgba(232,93,62,0.06)'; this.style.borderColor='rgba(232,93,62,0.25)'"
-                    onmouseout="this.style.background='transparent'; this.style.borderColor='transparent'">
-                    <div class="flex items-center gap-3">
-                        <svg class="w-4 h-4" style="color:#64748b;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                        <span class="text-sm font-bold text-slate-700">Copier ({{ (ninjaHoverNode.message||'').length }} car.)</span>
-                    </div>
-                    <svg v-if="ninjaCopied[ninjaHoverNode.key]" class="w-4 h-4" style="color:#F59E0B;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    <svg v-else class="w-4 h-4" style="color:#94a3b8;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </button>
+                    <button @click="copyNinjaMessage(ninjaHoverNode.message, ninjaHoverNode.key)"
+                        class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold transition-all active:scale-95">
+                        <svg v-if="ninjaCopied[ninjaHoverNode.key]" class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <svg v-else class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        <span>{{ ninjaCopied[ninjaHoverNode.key] ? 'Copié !' : 'Copier Accroche' }}</span>
+                    </button>
+                </div>
             </div>
         </Transition>
 
-        <!-- Empty state -->
+        <!-- Empty Radar State -->
         <div v-if="!ninjaLoading && !ninjaRunning && ninjaCompanies.length === 0"
-             class="absolute inset-0 flex flex-col items-center justify-center text-center z-20">
-            <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-                 style="background:white; border:1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-                <svg class="w-8 h-8" style="color:#F59E0B;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+             class="absolute inset-0 flex flex-col items-center justify-center text-center z-20 p-6">
+            <div class="relative w-20 h-20 rounded-3xl flex items-center justify-center mb-6 bg-slate-50 border border-slate-200 shadow-sm">
+                <span class="text-4xl animate-bounce">🥷</span>
+                <span class="absolute inset-0 rounded-3xl bg-amber-500/10 animate-ping"></span>
             </div>
-            <p class="text-slate-900 text-xl font-bold mb-2">Aucun réseau identifié</p>
-            <p class="text-sm max-w-sm mb-6" style="color:#64748b;">Lancez le workflow depuis votre Dashboard pour cartographier vos contacts.</p>
-            <button @click="runNinja" class="px-6 py-3 text-white font-bold rounded-2xl shadow-lg" style="background:#F59E0B;">Lancer le scan</button>
+            <h3 class="text-slate-900 text-2xl font-black mb-3">Aucune Cartographie Ninja Active</h3>
+            <p class="text-slate-500 text-sm max-w-md mb-8 leading-relaxed">
+                Détectez instantanément les responsables recrutement et décideurs clés sur vos entreprises cibles en un clic.
+            </p>
+            <button @click="runNinja" 
+                    class="px-8 py-4 rounded-2xl text-white font-black text-base shadow-lg transition-all hover:scale-105 active:scale-95 border border-amber-400/50"
+                    style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                🚀 Lancer la Cartographie Réseau
+            </button>
         </div>
 
-        <!-- Scanning overlay -->
-        <div v-if="ninjaRunning" class="absolute inset-0 flex flex-col items-center justify-center text-center z-50"
-             style="background:rgba(255,255,255,0.94); backdrop-filter:blur(8px);">
-            <div class="relative w-28 h-28 mb-8">
-                <div class="absolute inset-0 rounded-full" style="border:4px solid rgba(232,93,62,0.15);"></div>
-                <div class="absolute inset-0 rounded-full animate-spin" style="border:4px solid #F59E0B; border-top-color:transparent;"></div>
-                <div class="absolute inset-0 flex items-center justify-center text-4xl">🥷</div>
+        <!-- Scanning Overlay -->
+        <div v-if="ninjaRunning" class="absolute inset-0 flex flex-col items-center justify-center text-center z-50 bg-white/95 backdrop-blur-md">
+            <div class="relative w-32 h-32 mb-8 flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-4 border-amber-100"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
+                <div class="text-4xl animate-pulse">🥷</div>
             </div>
-            <p class="text-xl font-black tracking-widest uppercase animate-pulse" style="color:#F59E0B;">Scan en cours</p>
-            <p class="text-sm mt-3 max-w-sm" style="color:#64748b;">Identification des décideurs LinkedIn...</p>
+            <p class="text-2xl font-black tracking-widest uppercase text-amber-600 animate-pulse">
+                Scan Radar IA en cours...
+            </p>
+            <p class="text-slate-500 text-sm mt-3 font-medium">Cartographie des décideurs clés & génération des accroches d'approche...</p>
         </div>
     </div>
 
+
     <!-- Loading Modal for Drafting -->
     <div v-if="isDrafting" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-white/80 backdrop-blur-md animate-fade-in"></div>
-        <div class="relative bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-2xl max-w-sm w-full text-center animate-fade-in-up">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md animate-fade-in"></div>
+        <div class="relative bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl max-w-sm w-full text-center animate-fade-in-up text-white">
             <div class="relative w-24 h-24 mx-auto mb-8">
-                <div class="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
-                <div class="absolute inset-0 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                <div class="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                 <div class="absolute inset-0 flex items-center justify-center">
-                    <SparklesIcon class="w-10 h-10 text-indigo-500 animate-pulse" />
+                    <SparklesIcon class="w-10 h-10 text-indigo-400 animate-pulse" />
                 </div>
             </div>
-            <h3 class="text-2xl font-black text-slate-900 mb-3">{{ t('network_osint.loading_title') }}</h3>
-            <p class="text-slate-500 font-medium leading-relaxed">{{ t('network_osint.loading_desc') }}</p>
+            <h3 class="text-2xl font-black text-white mb-3">{{ t('network_osint.loading_title') }}</h3>
+            <p class="text-slate-400 font-medium leading-relaxed">{{ t('network_osint.loading_desc') }}</p>
             <div class="mt-8 flex items-center justify-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0ms"></span>
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 150ms"></span>
@@ -903,139 +1008,55 @@ const copyToClipboard = async (text) => {
   border-radius: 4px;
 }
 
-/* ── Network Ninja animations ── */
-.ninja-dot {
-  animation: ninja-bounce 0.8s ease-in-out infinite alternate;
-}
-@keyframes ninja-bounce {
-  from { transform: translateY(0); opacity: 0.5; }
-  to   { transform: translateY(-8px); opacity: 1; }
-}
-
-.ninja-pulse-ring {
-  animation: ninja-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  border: 3px solid #a855f7;
-}
-@keyframes ninja-ring {
-  0%  { transform: scale(1);   opacity: 0.8; }
-  50% { transform: scale(1.3); opacity: 0.2; }
-  100%{ transform: scale(1);   opacity: 0.8; }
-}
-
-.ninja-grid {
-  background-image:
-    linear-gradient(rgba(168, 85, 247, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(168, 85, 247, 0.08) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-
-.ninja-edge {
-  animation: ninja-dash 3s linear infinite;
-}
-@keyframes ninja-dash {
+/* ── Cyber Network Ninja Animations ── */
+@keyframes laserFlow {
   from { stroke-dashoffset: 0; }
-  to   { stroke-dashoffset: -40; }
+  to   { stroke-dashoffset: -28; }
+}
+.ninja-laser-flow {
+  animation: laserFlow 2s linear infinite;
+}
+.ninja-laser-slow {
+  animation: laserFlow 4s linear infinite;
 }
 
-.ninja-profile-node {
-  animation: ninja-node-pulse 2.5s ease-in-out infinite;
+@keyframes ringPulseCyber {
+  0%   { transform: scale(0.9); opacity: 0.5; }
+  50%  { transform: scale(1.3); opacity: 0.1; }
+  100% { transform: scale(0.9); opacity: 0.5; }
+}
+.ninja-pulse-ring-cyber {
+  animation: ringPulseCyber 3s ease-in-out infinite;
   transform-origin: center;
   transform-box: fill-box;
 }
-@keyframes ninja-node-pulse {
-  0%, 100% { r: 16; }
-  50%       { r: 18; }
-}
 
-/* Ninja Animation Styles */
-@keyframes dash-ninja {
-  to { stroke-dashoffset: -20; }
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
-@keyframes pulse-glow-ninja {
-  0%, 100% { filter: drop-shadow(0 0 4px rgba(232, 93, 62, 0.4)); transform: scale(1); }
-  50% { filter: drop-shadow(0 0 10px rgba(232, 93, 62, 0.8)); transform: scale(1.1); }
-}
-@keyframes float-node-ninja {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-3px); }
-}
-.ninja-anim-edge {
-  stroke-dasharray: 4,4;
-  animation: dash-ninja 2s linear infinite;
-}
-.ninja-anim-node {
+.animate-spin-slow {
+  animation: spinSlow 16s linear infinite;
   transform-origin: center;
-  animation: pulse-glow-ninja 3s infinite ease-in-out;
   transform-box: fill-box;
 }
-.ninja-float {
-  animation: float-node-ninja 4s infinite ease-in-out;
-}
 
+@keyframes spinReverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+.animate-spin-reverse {
+  animation: spinReverse 10s linear infinite;
+}
 
 .fade-scale-enter-active, .fade-scale-leave-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .fade-scale-enter-from, .fade-scale-leave-to {
   opacity: 0;
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
-
-/* ── Ninja SVG Animations ── */
-@keyframes ninja-edge-flow {
-  from { stroke-dashoffset: 0; }
-  to   { stroke-dashoffset: -18; }
-}
-.ninja-edge-anim {
-  animation: ninja-edge-flow 2.5s linear infinite;
-}
-.ninja-company-node {
-  animation: ninja-company-pulse 3s ease-in-out infinite alternate;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-@keyframes ninja-company-pulse {
-  from { r: 8; opacity: 0.85; }
-  to   { r: 10; opacity: 1; }
-}
-.ninja-pulse-ring {
-  animation: ninja-ring-expand 3s ease-in-out infinite;
-  transform-origin: center;
-  transform-box: fill-box;
-}
-@keyframes ninja-ring-expand {
-  0%   { r: 12; opacity: 0.4; }
-  50%  { r: 22; opacity: 0.1; }
-  100% { r: 12; opacity: 0.4; }
-}
-
-
-/* ── Ninja SVG Animations ── */
-@keyframes ninja-edge-flow {
-  from { stroke-dashoffset: 0; }
-  to   { stroke-dashoffset: -22; }
-}
-.ninja-edge-anim {
-  animation: ninja-edge-flow 2s linear infinite;
-}
-.ninja-edge-anim-slow {
-  stroke-dasharray: 3,5;
-  animation: ninja-edge-flow 4s linear infinite;
-}
-.ninja-pulse-ring {
-  animation: ninja-ring-pulse 3s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-@keyframes ninja-ring-pulse {
-  0%   { opacity: 0.3; transform: scale(0.9); }
-  50%  { opacity: 0.08; transform: scale(1.4); }
-  100% { opacity: 0.3; transform: scale(0.9); }
-}
-.fade-scale-enter-active, .fade-scale-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
 .fade-scale-enter-from, .fade-scale-leave-to {
   opacity: 0;
   transform: scale(0.95) translateY(-4px);

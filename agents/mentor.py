@@ -25,11 +25,12 @@ class MentorAgent(BaseAgent):
         action = user_input.get("action")
         cv_text = user_input.get("cv_text", "")
         
-        if not cv_text:
+        linkedin_text = user_input.get("linkedin_text") or user_input.get("linkedin_profile", "")
+        if not cv_text and not linkedin_text:
              return {
                  "status": "error", 
                  "type": "chat",
-                 "content": "❌ Un CV est requis. Uploade ton PDF via le bouton **'Ajouter CV (PDF)'** en haut à droite."
+                 "content": "❌ Un CV ou un profil LinkedIn est requis pour utiliser cette fonctionnalité."
              }
              
         # audit_cv et rewrite_cv fusionnés en un seul outil
@@ -61,12 +62,16 @@ class MentorAgent(BaseAgent):
             debrief = user_input.get("debrief", {})
             return await self._generate_post_interview_kit(cv_text, company, job, debrief)
         elif action == "gold_profile_audit":
-            return await self._generate_gold_profile_audit(cv_text)
+            linkedin_text = user_input.get("linkedin_text") or user_input.get("linkedin_profile", "")
+            return await self._generate_gold_profile_audit(cv_text, linkedin_text)
         elif action == "gold_profile_plan":
-            return await self._generate_gold_profile_plan(cv_text)
+            linkedin_text = user_input.get("linkedin_text") or user_input.get("linkedin_profile", "")
+            return await self._generate_gold_profile_plan(cv_text, linkedin_text)
         elif action == "gold_profile_post":
-            topic = user_input.get("topic")
-            return await self._generate_gold_profile_post(cv_text, topic)
+            topic = user_input.get("topic", "")
+            format_type = user_input.get("format", "Text")
+            linkedin_text = user_input.get("linkedin_text") or user_input.get("linkedin_profile", "")
+            return await self._generate_gold_profile_post(cv_text, topic, format_type, linkedin_text)
         else:
              return {"status": "error", "type": "chat", "content": f"Action inconnue: {action}"}
 
@@ -645,49 +650,107 @@ Réponds UNIQUEMENT en JSON."""
             logger.error(f"[Mentor] Erreur Post-Interview: {e}")
             return {"status": "error", "content": "Échec de l'analyse post-entretien."}
 
-    async def _generate_gold_profile_audit(self, cv_text: str) -> Dict[str, Any]:
-        """Génère un audit complet du profil LinkedIn."""
-        prompt = f"""Tu es un expert LinkedIn Personal Branding. Analyse mon parcours et génère un kit d'optimisation.
-MON CV: {cv_text[:3000]}
+    async def _generate_gold_profile_audit(self, cv_text: str, linkedin_text: str = "") -> Dict[str, Any]:
+        """Génère un audit d'optimisation complet du profil LinkedIn (basé sur CV et/ou profil réel)."""
+        source_context = ""
+        if cv_text:
+            source_context += f"--- CONTENU CV ---\n{cv_text[:3000]}\n"
+        if linkedin_text:
+            source_context += f"\n--- PROFIL LINKEDIN ACTUEL ---\n{linkedin_text[:3000]}\n"
 
-Génère un JSON avec:
-1. "headline": Un titre LinkedIn percutant (moins de 220 chars).
-2. "about": Une section 'À propos' (Sommaire) captivante utilisant le storytelling.
-3. "field_optimizations": [
-    {{"field": "Titre", "current": "...", "suggestion": "..."}},
-    {{"field": "Compétences", "suggestion": "Liste des 5 top skills à mettre en avant"}}
-   ]
-4. "profile_score": Un score sur 100 de l'état actuel.
+        if not source_context:
+            source_context = "Aucun CV ni profil fourni."
 
-Réponds UNIQUEMENT en JSON."""
+        prompt = f"""Tu es le N°1 mondial en Personal Branding & Stratégie LinkedIn.
+Analyse le profil / CV ci-dessous et génère un kit d'optimisation pour maximiser la visibilité auprès des recruteurs et clients.
+
+{source_context}
+
+Génère un JSON respectant scrupuleusement la structure :
+{{
+  "profile_score": 85,
+  "headline": "Titre LinkedIn percutant (< 220 chars) incluant la proposition de valeur et mots-clés SEO",
+  "about": "Section 'À propos' captivante en storytelling (Accroche, Mission, Impact, Compétences clés, CTA)",
+  "field_optimizations": [
+     {{"field": "Titre Profil", "current": "Titre actuel", "suggestion": "Nouveau titre optimisé SEO"}},
+     {{"field": "Section À Propos", "current": "Texte actuel", "suggestion": "Storytelling avec structure en sauts de ligne"}},
+     {{"field": "Compétences", "suggestion": "Top 5 compétences algorithmiques indispensables"}}
+  ],
+  "top_skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5"]
+}}
+
+Réponds UNIQUEMENT en JSON valide."""
         return await self._call_llm_json(prompt, "gold_profile_audit")
 
-    async def _generate_gold_profile_plan(self, cv_text: str) -> Dict[str, Any]:
-        """Génère un plan de contenu de 30 jours (titres)."""
-        prompt = f"""Tu es un stratège de contenu LinkedIn. Basé sur mon CV, génère exactement 30 thèmes de publications pour démontrer mon expertise sur un mois complet.
-MON CV: {cv_text[:3000]}
+    async def _generate_gold_profile_plan(self, cv_text: str, linkedin_text: str = "") -> Dict[str, Any]:
+        """Génère un plan de contenu structuré en funnel TOFU / MOFU / BOFU avec formats adaptés."""
+        source_context = ""
+        if cv_text:
+            source_context += f"--- CONTENU CV ---\n{cv_text[:1500]}\n"
+        if linkedin_text:
+            source_context += f"\n--- PROFIL LINKEDIN ---\n{linkedin_text[:1500]}\n"
 
-Génère un JSON avec:
-"plan": [
-  {{"day": 1, "topic": "Titre du sujet", "angle": "L'approche à prendre"}},
-  ... jusqu'au jour 30
-]
+        prompt = f"""Tu es un stratège de contenu LinkedIn d'élite.
+Génère un plan de publication stratégique de 10 jours concis et percutant basé sur ce profil.
 
-Consignes: Mixe entre expertise technique, opinion sur le secteur, et retours d'expérience. Réponds UNIQUEMENT en JSON."""
+{source_context}
+
+Consignes :
+1. Structurer en 10 jours (Funnel: TOFU, MOFU, BOFU).
+2. Formats : "Text", "Carousel PDF", "Poll", "Story".
+3. Rédiger des angles ultra-courts (1 phrase max, < 15 mots).
+
+Génère un JSON strict et valide :
+{{
+  "plan": [
+    {{
+      "day": 1,
+      "topic": "Titre court",
+      "angle": "Angle en 1 phrase",
+      "funnel_stage": "TOFU",
+      "format": "Carousel PDF"
+    }}
+  ]
+}}
+
+Réponds UNIQUEMENT en JSON valide."""
         return await self._call_llm_json(prompt, "gold_profile_plan")
 
-    async def _generate_gold_profile_post(self, cv_text: str, topic: str) -> Dict[str, Any]:
-        """Génère un post LinkedIn complet pour un sujet donné."""
-        prompt = f"""Rédige un post LinkedIn viral et professionnel sur le sujet : {topic}.
-MON CV: {cv_text[:2000]}
+    async def _generate_gold_profile_post(self, cv_text: str, topic: str, format_type: str = "Text", linkedin_text: str = "") -> Dict[str, Any]:
+        """Génère un post LinkedIn hautement viral avec score de viralité et carrousel si nécessaire."""
+        source_context = ""
+        if cv_text:
+            source_context += f"--- PROFIL / CV ---\n{cv_text[:1500]}\n"
+        if linkedin_text:
+            source_context += f"\n{linkedin_text[:1500]}\n"
 
-Structure:
-- Accroche forte (Hook)
-- Corps du texte avec sauts de lignes fréquents
-- Call to Action (CTA) à la fin
-- 3 hashtags pertinents.
+        prompt = f"""Tu es le rédacteur de posts LinkedIn le plus viral au monde.
+Rédige une publication LinkedIn haute performance sur le sujet : "{topic}" (Format préconisé : {format_type}).
 
-Réponds UNIQUEMENT en JSON: {{"post_content": "..."}}"""
+{source_context}
+
+Consignes de Viralité & Copywriting :
+1. Accroche (Hook) : Doit forcer l'utilisateur à cliquer sur "Voir plus" dans la ligne 1 ou 2.
+2. Corps du texte : Phrases courtes, aérées, sauts de lignes fréquents pour lecture mobile.
+3. CTA Comment Bait : Inciter à commenter.
+4. Score de viralité : De 1 à 100 avec 2 conseils d'optimisation.
+5. Si le format est "Carousel PDF", inclure 4 diapositives simples.
+
+Génère un JSON strict :
+{{
+  "post_content": "Texte du post...",
+  "hook": "Accroche 2 lignes",
+  "cta_comment_bait": "Appel à l'action",
+  "hashtags": ["#Hashtag1", "#Hashtag2"],
+  "viral_score": 92,
+  "viral_tips": ["Conseil 1", "Conseil 2"],
+  "carousel_slides": [
+    {{"slide_number": 1, "title": "Titre Slide 1", "content": "Contenu court"}},
+    {{"slide_number": 2, "title": "Titre Slide 2", "content": "Contenu court"}}
+  ]
+}}
+
+Réponds UNIQUEMENT en JSON valide."""
         return await self._call_llm_json(prompt, "gold_profile_post")
 
     async def _call_llm_json(self, prompt: str, action_name: str) -> Dict[str, Any]:
@@ -695,10 +758,66 @@ Réponds UNIQUEMENT en JSON: {{"post_content": "..."}}"""
             from llm.unified_client import UnifiedLLMClient
             llm = UnifiedLLMClient()
             response = await llm.generate(prompt, json_mode=True)
-            match = re.search(r'\{.*\}', response, re.DOTALL)
-            clean = match.group(0) if match else response
-            data = json.loads(clean)
-            return {"status": "success", "type": action_name, "data": data}
+            
+            # Nettoyer les marqueurs markdown ```json ... ```
+            clean_raw = re.sub(r'```json\s*', '', response)
+            clean_raw = re.sub(r'```\s*', '', clean_raw)
+
+            match = re.search(r'\{.*\}', clean_raw, re.DOTALL)
+            clean = match.group(0) if match else clean_raw
+
+            # Enlever les virgules superflues avant ] ou }
+            clean = re.sub(r',\s*([\]}])', r'\1', clean)
+            
+            data = None
+            # Essai 1: Standard json.loads avec strict=False
+            try:
+                data = json.loads(clean, strict=False)
+            except Exception:
+                pass
+                
+            # Essai 2: Échappement des sauts de ligne réels dans les chaînes
+            if data is None:
+                try:
+                    clean_fixed = re.sub(r'(?<!\\)\n', r'\\n', clean)
+                    data = json.loads(clean_fixed, strict=False)
+                except Exception:
+                    pass
+
+            # Essai 3: Réparation si le JSON a été tronqué en fin de réponse LLM
+            if data is None:
+                try:
+                    truncated_fix = clean.strip()
+                    last_obj_idx = truncated_fix.rfind('{')
+                    if last_obj_idx > 0:
+                        truncated_fix = truncated_fix[:last_obj_idx].rstrip(', \n\t')
+                        if not truncated_fix.endswith(']'):
+                            truncated_fix += ']'
+                        if not truncated_fix.endswith('}'):
+                            truncated_fix += '}'
+                        data = json.loads(truncated_fix, strict=False)
+                except Exception:
+                    pass
+
+            # Essai 4: Parsing via ast.literal_eval si le LLM a renvoyé de la syntaxe Python dict
+            if data is None:
+                try:
+                    import ast
+                    data = ast.literal_eval(clean)
+                except Exception:
+                    pass
+
+            if data is not None and isinstance(data, dict):
+                return {"status": "success", "type": action_name, "data": data}
+
+            logger.error(f"[Mentor] Échec parsing JSON pour {action_name}. Extrait brut: {response[:300]}")
+            return {"status": "error", "content": f"Échec de l'action {action_name} (Format JSON invalide)."}
         except Exception as e:
             logger.error(f"[Mentor] Erreur {action_name}: {e}")
             return {"status": "error", "content": f"Échec de l'action {action_name}."}
+
+
+
+
+
+

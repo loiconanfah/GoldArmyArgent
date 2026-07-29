@@ -8,7 +8,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '858832305716-gu9ujnr16um5qisbgqhpv4g7pv78qbht.apps.googleusercontent.com'
 import { API_URL } from '../config'
 
 // Track SDK load state globally to avoid multiple script injections
