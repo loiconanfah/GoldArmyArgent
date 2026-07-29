@@ -7,7 +7,9 @@ import {
   BuildingOfficeIcon, UserGroupIcon, EnvelopeIcon, SparklesIcon,
   CheckBadgeIcon, LinkIcon, ArrowPathIcon, ClipboardIcon,
   CheckCircleIcon, PencilSquareIcon, UserIcon, DocumentDuplicateIcon, CheckIcon,
-  ArrowDownTrayIcon, ArrowRightIcon, MagnifyingGlassIcon, UsersIcon
+  ArrowDownTrayIcon, ArrowRightIcon, MagnifyingGlassIcon, UsersIcon,
+  CalendarDaysIcon, PhotoIcon, ChartBarIcon, ComputerDesktopIcon,
+  Squares2X2Icon, MoonIcon, SunIcon, BoltIcon, TrophyIcon
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -292,13 +294,14 @@ const selectHr = (name) => {
 }
 
 // ── Gold Profile Logic & Persistence ──
-const GOLD_PROFILE_CACHE_KEY = 'gold_profile_cache_v2'
+const GOLD_PROFILE_CACHE_KEY = 'gold_profile_cache_v3'
 const goldProfileStep = ref('audit')
 const goldProfileLoading = ref(false)
 const linkedinInput = ref('')
 const goldProfileAuditData = ref(null)
 const goldProfilePlanData = ref([])
 const goldProfilePostData = ref(null)
+const goldProfileGeneratedPosts = ref({}) // { [day]: postData }
 const goldProfileSelectedTopic = ref(null)
 const activeCarouselSlide = ref(0)
 const goldProfileSavedAt = ref(null)
@@ -311,6 +314,7 @@ const saveGoldProfileCache = () => {
             audit: goldProfileAuditData.value,
             plan: goldProfilePlanData.value,
             post: goldProfilePostData.value,
+            posts: goldProfileGeneratedPosts.value,
             step: goldProfileStep.value,
             linkedin: linkedinInput.value,
             saved_at: new Date().toISOString()
@@ -332,6 +336,7 @@ const loadGoldProfileCache = async () => {
                 goldProfileAuditData.value = cached.audit
                 goldProfilePlanData.value = cached.plan || []
                 goldProfilePostData.value = cached.post || null
+                goldProfileGeneratedPosts.value = cached.posts || {}
                 goldProfileStep.value = cached.step || 'audit'
                 linkedinInput.value = cached.linkedin || ''
                 goldProfileSavedAt.value = cached.saved_at
@@ -345,6 +350,7 @@ const loadGoldProfileCache = async () => {
         if (json.status === 'success' && json.data && json.data.audit) {
             goldProfileAuditData.value = json.data.audit
             goldProfilePlanData.value = json.data.plan || []
+            goldProfileGeneratedPosts.value = json.data.posts || {}
             goldProfileStep.value = 'audit'
             goldProfileSavedAt.value = json.data.updated_at
             saveGoldProfileCache()
@@ -395,7 +401,7 @@ const fetchGoldProfilePlan = async (forceRefresh = false) => {
         const res = await authFetch('/api/network/gold-profile/plan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ linkedin_profile: linkedinInput.value })
+            body: JSON.stringify({ linkedin_profile: linkedinInput.value, start_day: 1, days_count: 15 })
         })
         const json = await res.json()
         if (json.status === 'success') {
@@ -412,10 +418,45 @@ const fetchGoldProfilePlan = async (forceRefresh = false) => {
     }
 }
 
-const generateGoldProfilePost = async (topic) => {
+const fetchMoreGoldProfilePlan = async () => {
+    const startDay = (goldProfilePlanData.value ? goldProfilePlanData.value.length : 0) + 1
     goldProfileLoading.value = true
+    try {
+        const res = await authFetch('/api/network/gold-profile/plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ linkedin_profile: linkedinInput.value, start_day: startDay, days_count: 15 })
+        })
+        const json = await res.json()
+        if (json.status === 'success') {
+            const extendedPlan = json.data.plan || json.data
+            goldProfilePlanData.value = extendedPlan
+            toastState.addToast(`Jours ${startDay} à ${startDay + 14} ajoutés à la matrice !`, "success")
+            saveGoldProfileCache()
+        } else {
+            toastState.addToast(json.detail || "Erreur d'extension du plan", "error")
+        }
+    } catch(e) {
+        toastState.addToast("Erreur lors de l'extension du plan", "error")
+    } finally {
+        goldProfileLoading.value = false
+    }
+}
+
+const generateGoldProfilePost = async (topic, forceRefresh = false) => {
+    const dayKey = topic.day || topic.topic
     goldProfileSelectedTopic.value = topic
     activeCarouselSlide.value = 0
+
+    // Check if post already generated and saved for this day
+    if (!forceRefresh && goldProfileGeneratedPosts.value[dayKey]) {
+        goldProfilePostData.value = goldProfileGeneratedPosts.value[dayKey]
+        goldProfileStep.value = 'post'
+        toastState.addToast(`Post du Jour ${dayKey} restauré (0 ms)`, "info")
+        return
+    }
+
+    goldProfileLoading.value = true
     try {
         const res = await authFetch('/api/network/gold-profile/post', { 
             method: 'POST',
@@ -423,12 +464,17 @@ const generateGoldProfilePost = async (topic) => {
             body: JSON.stringify({
                 topic: topic.topic,
                 format: topic.format || 'Text',
-                linkedin_profile: linkedinInput.value
+                linkedin_profile: linkedinInput.value,
+                day: topic.day
             })
         })
         const json = await res.json()
         if (json.status === 'success') {
             goldProfilePostData.value = json.data
+            goldProfileGeneratedPosts.value = {
+                ...goldProfileGeneratedPosts.value,
+                [dayKey]: json.data
+            }
             goldProfileStep.value = 'post'
             saveGoldProfileCache()
         } else {
@@ -685,7 +731,10 @@ const downloadCarouselPDF = (postData) => {
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">✨ Gold Profile IA</h2>
+              <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <SparklesIcon class="w-7 h-7 text-amber-500" />
+                <span>Gold Profile IA</span>
+              </h2>
               <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
                 Virale & Dwell-Time 3.0
               </span>
@@ -701,17 +750,20 @@ const downloadCarouselPDF = (postData) => {
           <button @click="goldProfileStep='audit'"
                   class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2"
                   :class="goldProfileStep==='audit' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'">
-            <span>🎯 1. Audit Branding</span>
+            <ChartBarIcon class="w-4 h-4 text-amber-500" />
+            <span>1. Audit Branding</span>
           </button>
-          <button @click="fetchGoldProfilePlan"
+          <button @click="fetchGoldProfilePlan(false)"
                   class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2"
                   :class="goldProfileStep==='plan' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'">
-            <span>🗓️ 2. Plan 30 Jours</span>
+            <CalendarDaysIcon class="w-4 h-4 text-amber-500" />
+            <span>2. Plan 30 Jours</span>
           </button>
           <button v-if="goldProfilePostData" @click="goldProfileStep='post'"
                   class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2"
                   :class="goldProfileStep==='post' ? 'bg-amber-400 text-white shadow-md shadow-amber-200' : 'text-slate-500 hover:text-slate-900'">
-            <span>📸 3. Studio Post & PDF</span>
+            <PhotoIcon class="w-4 h-4" />
+            <span>3. Studio Post & PDF</span>
           </button>
         </div>
       </div>
@@ -846,15 +898,26 @@ const downloadCarouselPDF = (postData) => {
             <div class="flex items-center gap-2">
               <button @click="goldProfileStep='audit'" class="text-xs text-indigo-600 font-bold hover:underline">← Audit</button>
               <span class="text-slate-300">|</span>
-              <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider">Matrice Edito Virale (30 Jours)</h4>
+              <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <CalendarDaysIcon class="w-4 h-4 text-amber-500" />
+                <span>Matrice Éditoriale Continuité ({{ goldProfilePlanData.length }} Jours)</span>
+              </h4>
             </div>
-            <span class="text-xs text-slate-500 font-medium">Cliquez sur un jour pour générer le post & le carrousel PDF</span>
+            <span class="text-xs text-slate-500 font-medium">Cliquez sur un jour pour voir ou générer le post & le carrousel</span>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 flex-1 overflow-y-auto max-h-[480px] p-1">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 flex-1 overflow-y-auto max-h-[420px] p-1">
             <div v-for="item in goldProfilePlanData" :key="item.day"
-                 @click="generateGoldProfilePost(item)"
-                 class="p-4 bg-white border border-slate-200/80 rounded-2xl hover:border-amber-400 hover:shadow-md cursor-pointer group transition-all flex flex-col justify-between">
+                 @click="generateGoldProfilePost(item, false)"
+                 class="p-4 bg-white border border-slate-200/80 rounded-2xl hover:border-amber-400 hover:shadow-md cursor-pointer group transition-all flex flex-col justify-between relative overflow-hidden"
+                 :class="{ 'border-emerald-300 bg-emerald-50/20': goldProfileGeneratedPosts[item.day] }">
+              
+              <div v-if="goldProfileGeneratedPosts[item.day]" class="absolute top-0 right-0 w-12 h-12 overflow-hidden pointer-events-none">
+                <div class="bg-emerald-500 text-white text-[8px] font-black uppercase py-0.5 text-center rotate-45 transform translate-x-3 translate-y-2 shadow-xs">
+                  Prêt
+                </div>
+              </div>
+
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-xs font-black text-amber-600 uppercase">Jour {{ item.day }}</span>
@@ -868,19 +931,42 @@ const downloadCarouselPDF = (postData) => {
               </div>
 
               <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
-                <span class="text-[10px] font-bold text-slate-400">{{ item.format || 'Carrousel PDF' }}</span>
+                <span class="text-[10px] font-bold" :class="goldProfileGeneratedPosts[item.day] ? 'text-emerald-700 font-extrabold' : 'text-slate-400'">
+                  {{ goldProfileGeneratedPosts[item.day] ? '✓ Enregistré (0 ms)' : (item.format || 'Carrousel PDF') }}
+                </span>
                 <span class="text-xs font-black text-amber-500 group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                  Créer <ArrowRightIcon class="w-3.5 h-3.5" />
+                  <span>{{ goldProfileGeneratedPosts[item.day] ? 'Ouvrir' : 'Créer' }}</span>
+                  <ArrowRightIcon class="w-3.5 h-3.5" />
                 </span>
               </div>
             </div>
+          </div>
+
+          <!-- Extension Continue du Plan -->
+          <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span class="text-xs text-slate-500 font-medium">
+              Actuellement : {{ goldProfilePlanData.length }} jours de contenu stratégique prêts.
+            </span>
+            <button @click="fetchMoreGoldProfilePlan" :disabled="goldProfileLoading"
+                    class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-black rounded-xl shadow-md shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2">
+              <SparklesIcon v-if="!goldProfileLoading" class="w-4 h-4" />
+              <span v-if="goldProfileLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              <span>Générer les 15 jours suivants (Jour {{ goldProfilePlanData.length + 1 }} à {{ goldProfilePlanData.length + 15 }})</span>
+            </button>
           </div>
         </div>
 
         <!-- Step 3: Studio Créateur (Post & Carrousel PDF) -->
         <div v-else-if="goldProfileStep==='post'" class="flex-1 flex flex-col">
-          <div class="flex items-center justify-between mb-4">
-            <button @click="goldProfileStep='plan'" class="text-xs text-indigo-600 font-bold hover:underline">← Retour au Plan 30J</button>
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+            <div class="flex items-center gap-3">
+              <button @click="goldProfileStep='plan'" class="text-xs text-indigo-600 font-bold hover:underline">← Retour au Plan</button>
+              <button v-if="goldProfileSelectedTopic" @click="generateGoldProfilePost(goldProfileSelectedTopic, true)" :disabled="goldProfileLoading"
+                      class="px-3 py-1.5 bg-white border border-slate-200 hover:border-amber-400 text-slate-700 hover:text-slate-900 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5">
+                <ArrowPathIcon class="w-3.5 h-3.5 text-amber-500" :class="{ 'animate-spin': goldProfileLoading }" />
+                <span>Régénérer ce jour par l'IA</span>
+              </button>
+            </div>
             
             <div v-if="goldProfilePostData?.viral_score" class="flex items-center gap-2 px-3 py-1.5 bg-amber-100 rounded-full border border-amber-200 shadow-2xs">
               <SparklesIcon class="w-4 h-4 text-amber-600" />
@@ -904,33 +990,38 @@ const downloadCarouselPDF = (postData) => {
               <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
                 <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                   <button @click="carouselTheme = 'gold_luxe'"
-                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5"
                           :class="carouselTheme === 'gold_luxe' ? 'bg-amber-400 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'">
-                    <span>🥇 Dark Luxe</span>
+                    <MoonIcon class="w-3.5 h-3.5" />
+                    <span>Dark Luxe</span>
                   </button>
                   <button @click="carouselTheme = 'cream_executive'"
-                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5"
                           :class="carouselTheme === 'cream_executive' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'">
-                    <span>✨ Executive Cream</span>
+                    <SunIcon class="w-3.5 h-3.5" />
+                    <span>Executive Cream</span>
                   </button>
                   <button @click="carouselTheme = 'cyber_indigo'"
-                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5"
                           :class="carouselTheme === 'cyber_indigo' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'">
-                    <span>⚡ Cyber Indigo</span>
+                    <BoltIcon class="w-3.5 h-3.5" />
+                    <span>Cyber Indigo</span>
                   </button>
                 </div>
 
                 <!-- Display Mode Toggle -->
                 <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                   <button @click="carouselDisplayMode = 'hd_viewfinder'"
-                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5"
                           :class="carouselDisplayMode === 'hd_viewfinder' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                    🖥️ HD Viewer
+                    <ComputerDesktopIcon class="w-3.5 h-3.5" />
+                    <span>HD Viewer</span>
                   </button>
                   <button @click="carouselDisplayMode = 'grid'"
-                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all"
+                          class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5"
                           :class="carouselDisplayMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'">
-                    ▦ Galerie ({{ goldProfilePostData?.carousel_slides?.length || 0 }})
+                    <Squares2X2Icon class="w-3.5 h-3.5" />
+                    <span>Galerie ({{ goldProfilePostData?.carousel_slides?.length || 0 }})</span>
                   </button>
                 </div>
               </div>
@@ -990,9 +1081,10 @@ const downloadCarouselPDF = (postData) => {
                     <!-- Slide Card Footer -->
                     <div class="relative z-10 flex items-center justify-between pt-3 border-t text-xs font-black"
                          :class="carouselTheme === 'cream_executive' ? 'border-slate-200 text-slate-600' : 'border-white/10 text-amber-400'">
-                      <span class="px-3 py-1 rounded-full text-[10px]"
+                      <span class="px-3 py-1 rounded-full text-[10px] flex items-center gap-1"
                             :class="carouselTheme === 'gold_luxe' ? 'bg-amber-400/10 text-amber-300 border border-amber-400/30' : carouselTheme === 'cream_executive' ? 'bg-slate-200/60 text-slate-800' : 'bg-indigo-400/10 text-indigo-300 border border-indigo-400/30'">
-                        👉 Swipe pour la suite →
+                        <span>Swipe pour la suite</span>
+                        <ArrowRightIcon class="w-3 h-3" />
                       </span>
                       <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Gold Profile IA</span>
                     </div>
@@ -1061,7 +1153,10 @@ const downloadCarouselPDF = (postData) => {
                       <!-- Card Footer -->
                       <div class="relative z-10 flex items-center justify-between pt-2 border-t border-white/10 text-[9px] font-bold"
                            :class="carouselTheme === 'cream_executive' ? 'border-slate-200 text-slate-700' : 'text-amber-400'">
-                        <span>👉 Swipe →</span>
+                        <span class="flex items-center gap-1">
+                          <span>Swipe</span>
+                          <ArrowRightIcon class="w-3 h-3" />
+                        </span>
                         <span class="text-slate-400">Gold Profile</span>
                       </div>
                     </div>
@@ -1078,7 +1173,7 @@ const downloadCarouselPDF = (postData) => {
           <!-- Bottom Actions Bar -->
           <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100">
             <button @click="copyToClipboard(typeof goldProfilePostData === 'string' ? goldProfilePostData : goldProfilePostData?.post_content)"
-                    class="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md">
+                    class="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20">
               <DocumentDuplicateIcon class="w-4 h-4" />
               <span>Copier le texte du post</span>
             </button>
@@ -1460,17 +1555,17 @@ const downloadCarouselPDF = (postData) => {
 
     <!-- Loading Modal for Drafting -->
     <div v-if="isDrafting" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md animate-fade-in"></div>
-        <div class="relative bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl max-w-sm w-full text-center animate-fade-in-up text-white">
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-md animate-fade-in"></div>
+        <div class="relative bg-white border border-slate-200/80 rounded-[2.5rem] p-10 shadow-2xl max-w-sm w-full text-center animate-fade-in-up text-slate-900">
             <div class="relative w-24 h-24 mx-auto mb-8">
                 <div class="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
                 <div class="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                 <div class="absolute inset-0 flex items-center justify-center">
-                    <SparklesIcon class="w-10 h-10 text-indigo-400 animate-pulse" />
+                    <SparklesIcon class="w-10 h-10 text-indigo-500 animate-pulse" />
                 </div>
             </div>
-            <h3 class="text-2xl font-black text-white mb-3">{{ t('network_osint.loading_title') }}</h3>
-            <p class="text-slate-400 font-medium leading-relaxed">{{ t('network_osint.loading_desc') }}</p>
+            <h3 class="text-2xl font-black text-slate-900 mb-3">{{ t('network_osint.loading_title') }}</h3>
+            <p class="text-slate-500 font-medium leading-relaxed">{{ t('network_osint.loading_desc') }}</p>
             <div class="mt-8 flex items-center justify-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0ms"></span>
                 <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 150ms"></span>

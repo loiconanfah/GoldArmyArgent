@@ -65,8 +65,11 @@ class MentorAgent(BaseAgent):
             linkedin_text = user_input.get("linkedin_text") or user_input.get("linkedin_profile", "")
             return await self._generate_gold_profile_audit(cv_text, linkedin_text)
         elif action == "gold_profile_plan":
-            linkedin_text = user_input.get("linkedin_text") or user_input.get("linkedin_profile", "")
-            return await self._generate_gold_profile_plan(cv_text, linkedin_text)
+            cv_text = user_input.get("cv_text", "")
+            linkedin_text = user_input.get("linkedin_text", "")
+            start_day = user_input.get("start_day", 1)
+            days_count = user_input.get("days_count", 15)
+            return await self._generate_gold_profile_plan(cv_text, linkedin_text, start_day=start_day, days_count=days_count)
         elif action == "gold_profile_post":
             topic = user_input.get("topic", "")
             format_type = user_input.get("format", "Text")
@@ -682,7 +685,7 @@ Génère un JSON respectant scrupuleusement la structure :
 Réponds UNIQUEMENT en JSON valide."""
         return await self._call_llm_json(prompt, "gold_profile_audit")
 
-    async def _generate_gold_profile_plan(self, cv_text: str, linkedin_text: str = "") -> Dict[str, Any]:
+    async def _generate_gold_profile_plan(self, cv_text: str, linkedin_text: str = "", start_day: int = 1, days_count: int = 15) -> Dict[str, Any]:
         """Génère un plan de contenu structuré en funnel TOFU / MOFU / BOFU avec formats adaptés."""
         source_context = ""
         if cv_text:
@@ -690,13 +693,14 @@ Réponds UNIQUEMENT en JSON valide."""
         if linkedin_text:
             source_context += f"\n--- PROFIL LINKEDIN ---\n{linkedin_text[:1500]}\n"
 
+        end_day = start_day + days_count - 1
         prompt = f"""Tu es un stratège de contenu LinkedIn d'élite.
-Génère un plan de publication stratégique de 10 jours concis et percutant basé sur ce profil.
+Génère la suite de la matrice éditoriale du Jour {start_day} au Jour {end_day} ({days_count} jours de publications stratégiques) basée sur ce profil.
 
 {source_context}
 
 Consignes :
-1. Structurer en 10 jours (Funnel: TOFU, MOFU, BOFU).
+1. Structurer du Jour {start_day} au Jour {end_day} (Funnel: TOFU, MOFU, BOFU).
 2. Formats : "Text", "Carousel PDF", "Poll", "Story".
 3. Rédiger des angles ultra-courts (1 phrase max, < 15 mots).
 
@@ -704,7 +708,7 @@ Génère un JSON strict et valide :
 {{
   "plan": [
     {{
-      "day": 1,
+      "day": {start_day},
       "topic": "Titre court",
       "angle": "Angle en 1 phrase",
       "funnel_stage": "TOFU",

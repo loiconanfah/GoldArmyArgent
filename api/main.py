@@ -640,11 +640,14 @@ async def draft_network_email(request: EmailDraftRequest, current_user: dict = D
 
 class GoldProfileAuditRequest(BaseModel):
     linkedin_profile: Optional[str] = None
+    start_day: Optional[int] = 1
+    days_count: Optional[int] = 15
 
 class GoldProfileTopicRequest(BaseModel):
     topic: str
     format: Optional[str] = "Text"
     linkedin_profile: Optional[str] = None
+    day: Optional[int] = None
 
 @app.get("/api/network/gold-profile/results")
 async def get_gold_profile_results(current_user: dict = Depends(get_current_user)):
@@ -658,6 +661,7 @@ async def get_gold_profile_results(current_user: dict = Depends(get_current_user
         "data": {
             "audit": user.get("gold_profile_audit"),
             "plan": user.get("gold_profile_plan"),
+            "posts": user.get("gold_profile_posts", {}),
             "updated_at": user.get("gold_profile_updated_at")
         }
     }
@@ -715,21 +719,43 @@ async def gold_profile_plan(req: Optional[GoldProfileAuditRequest] = None, curre
     if not cv_text and not linkedin_text:
         raise HTTPException(status_code=400, detail="Veuillez d'abord uploader un CV ou coller votre profil LinkedIn pour générer le plan.")
 
+    start_day = req.start_day if req and req.start_day else 1
+    days_count = req.days_count if req and req.days_count else 15
+
     mentor = MentorAgent()
     await mentor.initialize()
-    result = await mentor.think({"action": "gold_profile_plan", "cv_text": cv_text, "linkedin_text": linkedin_text})
+    result = await mentor.think({
+        "action": "gold_profile_plan",
+        "cv_text": cv_text,
+        "linkedin_text": linkedin_text,
+        "start_day": start_day,
+        "days_count": days_count
+    })
     
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de la planification."))
 
-    plan_data = result.get("data")
+    new_plan_slice = result.get("data", {}).get("plan") or result.get("data") or []
     now_iso = datetime.datetime.utcnow().isoformat()
+
+    # Append to existing plan if start_day > 1
+    if start_day > 1 and user and user.get("gold_profile_plan"):
+        existing_plan = user.get("gold_profile_plan")
+        if isinstance(existing_plan, list):
+            combined_plan = existing_plan + new_plan_slice
+        elif isinstance(existing_plan, dict) and "plan" in existing_plan:
+            combined_plan = existing_plan["plan"] + new_plan_slice
+        else:
+            combined_plan = new_plan_slice
+    else:
+        combined_plan = new_plan_slice
+
     await db.users.update_one(
         {"id": current_user["id"]},
-        {"$set": {"gold_profile_plan": plan_data, "gold_profile_updated_at": now_iso}}
+        {"$set": {"gold_profile_plan": combined_plan, "gold_profile_updated_at": now_iso}}
     )
         
-    return {"status": "success", "data": plan_data}
+    return {"status": "success", "data": combined_plan}
 
 @app.post("/api/network/gold-profile/post")
 async def gold_profile_post(req: GoldProfileTopicRequest, current_user: dict = Depends(get_current_user)):
@@ -751,8 +777,14 @@ async def gold_profile_post(req: GoldProfileTopicRequest, current_user: dict = D
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de la génération du post."))
 
+    post_data = result.get("data")
+    key = str(req.day) if req.day is not None else req.topic
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {f"gold_profile_posts.{key}": post_data}}
+    )
         
-    return {"status": "success", "data": result.get("data")}
+    return {"status": "success", "data": post_data}
 
 
 
