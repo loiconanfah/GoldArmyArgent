@@ -35,7 +35,7 @@ class LinkedInScraper:
                 from duckduckgo_search import DDGS
             except ImportError:
                 from ddgs import DDGS
-            query = f'site:linkedin.com/in/ "{company_name}" recruteur OR RH OR "Talent Acquisition"'
+            query = f'site:linkedin.com/in/ "{company_name}" (CTO OR CEO OR Director OR "Talent Acquisition" OR "VP Engineering" OR DRH OR Recruteur)'
             seen = set()
             
             def _run_ddgs():
@@ -53,8 +53,10 @@ class LinkedInScraper:
                         href = href.split("?")[0].rstrip("/")
                         if href and href not in seen:
                             seen.add(href)
+                            title_clean = (r.get("title") or "Profil LinkedIn").replace(" | LinkedIn", "").replace("- LinkedIn", "").strip()
                             profiles.append({
-                                "name": (r.get("title") or "Profil LinkedIn").replace(" | LinkedIn", ""),
+                                "name": title_clean.split(" - ")[0] if " - " in title_clean else title_clean,
+                                "role": title_clean.split(" - ")[1] if " - " in title_clean else f"Décideur / Manager chez {company_name}",
                                 "url": href,
                                 "snippet": (r.get("body") or "")[:120] or f"Profil chez {company_name}"
                             })
@@ -66,7 +68,7 @@ class LinkedInScraper:
         # 2. Fallback DDG Lite HTML si vide
         if not profiles:
             try:
-                query = f'site:linkedin.com/in/ "{company_name}" Recrutement OR RH OR Recruteur'
+                query = f'site:linkedin.com/in/ "{company_name}" (CTO OR CEO OR VP OR Recruteur OR Directeurs)'
                 encoded = urllib.parse.quote_plus(query)
                 req = urllib.request.Request(f"https://lite.duckduckgo.com/lite/?q={encoded}", headers=self.headers)
                 loop = asyncio.get_event_loop()

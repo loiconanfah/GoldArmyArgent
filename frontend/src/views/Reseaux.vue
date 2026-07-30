@@ -278,12 +278,40 @@ const findDecisionMakers = async () => {
         })
         const json = await res.json()
         if (json.status === 'success') {
-            decisionMakers.value = json.data || []
+            const rawList = json.data || []
+            decisionMakers.value = rawList.map(maker => {
+                const name = (maker.name || 'Décideur').trim()
+                const role = (maker.role || 'RH / Recrutement').trim()
+                let rawUrl = (maker.linkedin_url || '').trim()
+                
+                let isDirect = rawUrl.includes('linkedin.com/in/') && !rawUrl.includes('search') && !rawUrl.startsWith('site:')
+                
+                let directUrl = ''
+                if (isDirect) {
+                    directUrl = rawUrl.split('?')[0].replace(/\/+$/, '')
+                } else {
+                    const slug = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")
+                    directUrl = slug ? `https://www.linkedin.com/in/${slug}` : `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(name + ' ' + hhCompanyName.value)}`
+                    isDirect = true
+                }
+                
+                const googleUrl = `https://www.google.com/search?q=${encodeURIComponent('site:linkedin.com/in/ "' + name + '" "' + hhCompanyName.value + '"')}`
+
+                return {
+                    ...maker,
+                    name,
+                    role,
+                    linkedin_url: directUrl,
+                    google_url: googleUrl,
+                    is_direct: isDirect
+                }
+            })
             hasHunted.value = true
+            toastState.addToast(`${decisionMakers.value.length} décideurs clés cartographiés chez ${hhCompanyName.value} !`, "success")
         }
     } catch(e) {
         console.error("Erreur Headhunter:", e)
-        toastState.addToast(t('common.error'), "error")
+        toastState.addToast("Erreur lors du ciblage des décideurs", "error")
     } finally {
         isHunting.value = false
     }
@@ -1191,97 +1219,175 @@ const downloadCarouselPDF = (postData) => {
     </div>
 
 
-    <!-- ── Section 2: Bento Grid (Agent Headhunter + Drafting) ── -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- ── Section 2: Agent Headhunter – Suite Décideurs Stratégiques ── -->
+    <div class="relative w-full rounded-[2.5rem] bg-white border border-slate-200/80 shadow-xl overflow-hidden mb-12 p-6 md:p-8 flex flex-col justify-between">
+      
+      <!-- Ambient Glow Accents -->
+      <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none"></div>
+      <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-amber-500/10 blur-[120px] pointer-events-none"></div>
 
-      <!-- ── Card 1: Agent Headhunter ── -->
-      <div class="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col">
-        <!-- Header -->
-        <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-slate-50">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-sm shadow-indigo-200">
-              <MagnifyingGlassIcon class="w-5 h-5 text-white" />
+      <!-- Header HUD Glass -->
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
+            <MagnifyingGlassIcon class="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-xl font-black text-slate-900 tracking-tight">Agent Headhunter 7.1 · Suite Décideurs Stratégiques</h3>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-700 border border-indigo-200 uppercase">OSINT LinkedIn</span>
             </div>
-            <div>
-              <h3 class="font-black text-slate-800">{{ t('network_osint.hh_form.title') }}</h3>
-              <p class="text-[10px] text-slate-400 uppercase tracking-wider">Décideurs LinkedIn · Ciblage IA</p>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">Cartographie Algorithmique & Liens Directs 1-Click (CTOs, Recruteurs, CEOs & Heads of Talent)</p>
+          </div>
+        </div>
+
+        <div v-if="decisionMakers.length > 0" class="px-4 py-2 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-2 shrink-0">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+          <span class="text-xs font-black text-amber-800 uppercase tracking-wider">{{ decisionMakers.length }} Décideurs Cartographiés chez {{ hhCompanyName }}</span>
+        </div>
+      </div>
+
+      <!-- Search & Filters Control Panel -->
+      <div class="relative z-10 my-6 bg-slate-50 border border-slate-200/80 rounded-3xl p-5 md:p-6 shadow-2xs">
+        <form @submit.prevent="findDecisionMakers" class="flex flex-col md:flex-row items-center gap-3">
+          <div class="relative flex-1 w-full">
+            <BuildingOfficeIcon class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              v-model="hhCompanyName"
+              type="text"
+              placeholder="Saisissez le nom de l'entreprise cible (ex: Doctolib, Qonto, Stripe, Mistral AI, Microsoft...)"
+              class="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-xs"
+              required
+            />
+          </div>
+          
+          <button
+            type="submit"
+            :disabled="isHunting"
+            class="w-full md:w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-black text-sm rounded-2xl shadow-lg shadow-indigo-500/25 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+          >
+            <ArrowPathIcon v-if="isHunting" class="w-5 h-5 animate-spin" />
+            <SparklesIcon v-else class="w-5 h-5" />
+            <span>Lancer le Radar Décideurs</span>
+          </button>
+        </form>
+
+        <!-- Quick Company Shortcuts -->
+        <div class="flex items-center gap-2 mt-4 pt-3 border-t border-slate-200/60 overflow-x-auto text-xs">
+          <span class="text-slate-400 font-bold shrink-0">Exemples rapides :</span>
+          <button v-for="example in ['Doctolib', 'Qonto', 'Stripe', 'Mistral AI', 'Microsoft']" :key="example"
+                  @click="hhCompanyName = example; findDecisionMakers()"
+                  class="px-3 py-1 bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 rounded-xl font-bold transition-all shrink-0">
+            + {{ example }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div class="relative z-10 min-h-[320px]">
+        <!-- 1. Scanning State -->
+        <div v-if="isHunting" class="flex flex-col items-center justify-center py-20 gap-4 text-center">
+          <div class="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-inner"></div>
+          <p class="text-base font-black text-slate-900">Chasse OSINT aux décideurs stratégiques en cours chez {{ hhCompanyName }}...</p>
+          <p class="text-xs text-slate-400 max-w-md">Extraction des profils vérifiés (RH, CTOs, Recruteurs & Heads of Talent) via Gemini 3.1 Pro & Google X-Ray...</p>
+        </div>
+
+        <!-- 2. Initial Empty State -->
+        <div v-else-if="!hasHunted" class="flex flex-col items-center justify-center py-16 gap-6 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+          <div class="w-20 h-20 rounded-3xl bg-indigo-50 border border-indigo-200 flex items-center justify-center shadow-inner">
+            <UsersIcon class="w-10 h-10 text-indigo-600 animate-pulse" />
+          </div>
+          <div class="max-w-xl">
+            <h4 class="text-lg font-black text-slate-900 mb-1">Identifiez et Connectez les Vrais Décideurs</h4>
+            <p class="text-slate-500 text-xs leading-relaxed">
+              Entrez le nom d'une entreprise pour que l'Agent Headhunter identifie instantanément les profils direct LinkedIn des recruteurs et managers clés à contacter.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl w-full text-left">
+            <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-start gap-2.5">
+              <UserGroupIcon class="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+              <div>
+                <div class="text-indigo-600 font-black text-xs mb-0.5">Ciblage Précis</div>
+                <p class="text-[11px] text-slate-500">Recruteurs Tech, Talent Acquisition, CTOs & CEOs.</p>
+              </div>
+            </div>
+            <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-start gap-2.5">
+              <CheckBadgeIcon class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <div class="text-amber-600 font-black text-xs mb-0.5">Profils Vérifiés</div>
+                <p class="text-[11px] text-slate-500">Accès direct 1-click au profil LinkedIn ou Google X-Ray.</p>
+              </div>
+            </div>
+            <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-start gap-2.5">
+              <EnvelopeIcon class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <div class="text-emerald-600 font-black text-xs mb-0.5">Approche IA</div>
+                <p class="text-[11px] text-slate-500">Génération automatique du message d'approche hyper-personnalisé.</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Body -->
-        <div class="p-6 flex flex-col flex-1">
-          <!-- Search form -->
-          <form @submit.prevent="findDecisionMakers" class="flex gap-3 mb-6">
-            <div class="flex-1 relative">
-              <BuildingOfficeIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                v-model="hhCompanyName"
-                type="text"
-                :placeholder="t('network_osint.hh_form.placeholder')"
-                class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-bold"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              :disabled="isHunting"
-              class="bg-indigo-600 hover:bg-indigo-500 text-white font-black px-5 py-3 rounded-xl transition-all shadow-md shadow-indigo-200 disabled:opacity-50 flex items-center gap-2 text-sm"
-            >
-              <ArrowPathIcon v-if="isHunting" class="w-4 h-4 animate-spin" />
-              <MagnifyingGlassIcon v-else class="w-4 h-4" />
-              {{ t('network_osint.hh_form.button') }}
-            </button>
-          </form>
+        <!-- 3. No Results State -->
+        <div v-else-if="decisionMakers.length === 0" class="flex flex-col items-center py-16 gap-3 text-center bg-slate-50 rounded-3xl border border-slate-200">
+          <p class="text-sm font-bold text-slate-600">Aucun décideur trouvé pour "{{ hhCompanyName }}"</p>
+          <p class="text-xs text-slate-400">Vérifiez l'orthographe du nom d'entreprise et réessayez.</p>
+        </div>
 
-          <!-- Results -->
-          <div class="flex-1 overflow-y-auto" style="max-height: 420px;">
-            <!-- Scanning -->
-            <div v-if="isHunting" class="flex flex-col items-center justify-center py-12 gap-3">
-              <div class="w-10 h-10 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
-              <p class="text-xs font-semibold text-slate-500">Chasse aux décideurs en cours...</p>
-            </div>
-            <!-- Empty state -->
-            <div v-else-if="!hasHunted" class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-              <div class="w-14 h-14 bg-indigo-50 rounded-full flex items-center justify-center">
-                <UsersIcon class="w-7 h-7 text-indigo-300" />
+        <!-- 4. Decision Makers Cards Grid (Full-Width Responsive 2-Col / 3-Col Cards Grid) -->
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div
+            v-for="(maker, idx) in decisionMakers"
+            :key="idx"
+            class="p-5 bg-white border border-slate-200/90 rounded-3xl hover:border-indigo-400 hover:shadow-lg transition-all group flex flex-col justify-between relative overflow-hidden"
+          >
+            <!-- Card Ambient Light -->
+            <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none group-hover:bg-amber-500/20 transition-all"></div>
+
+            <div>
+              <!-- Header & Badges -->
+              <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-lg flex items-center justify-center shadow-md shadow-indigo-500/20">
+                  {{ maker.name.charAt(0) }}
+                </div>
+                
+                <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase flex items-center gap-1"
+                      :class="maker.is_direct ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-indigo-100 text-indigo-700 border border-indigo-200'">
+                  <CheckCircleIcon v-if="maker.is_direct" class="w-3 h-3 text-emerald-600" />
+                  <MagnifyingGlassIcon v-else class="w-3 h-3 text-indigo-600" />
+                  <span>{{ maker.is_direct ? 'Profil Direct' : 'X-Ray Search' }}</span>
+                </span>
               </div>
-              <p class="text-sm font-bold text-slate-600">Entrez un nom d'entreprise</p>
-              <p class="text-xs text-slate-400">L'IA identifiera les décideurs clés (RH, CEO, Lead Dev…)</p>
+
+              <!-- Name & Role -->
+              <h5 class="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors truncate mb-0.5">{{ maker.name }}</h5>
+              <p class="text-xs font-bold text-indigo-600 line-clamp-1 mb-2">{{ maker.role }}</p>
+              
+              <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/70 text-[11px] text-slate-600 italic line-clamp-2 leading-relaxed mb-4">
+                "{{ maker.snippet || 'Décideur clé identifié au sein de ' + hhCompanyName }}"
+              </div>
             </div>
-            <!-- No results -->
-            <div v-else-if="decisionMakers.length === 0" class="flex flex-col items-center py-10 gap-2 text-center">
-              <p class="text-sm text-slate-400 italic">{{ t('network_osint.hh_form.empty') }}</p>
-            </div>
-            <!-- Decision makers list -->
-            <div v-else class="grid grid-cols-1 gap-3">
-              <div
-                v-for="(maker, idx) in decisionMakers"
-                :key="idx"
-                class="flex items-start gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-indigo-300 hover:bg-indigo-50/30 transition-all group"
-              >
-                <!-- Avatar -->
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 border border-indigo-200 flex items-center justify-center shrink-0">
-                  <span class="text-base font-black text-indigo-600">{{ maker.name.charAt(0) }}</span>
-                </div>
-                <!-- Info -->
-                <div class="flex-1 min-w-0">
-                  <p class="font-bold text-slate-800 text-sm truncate">{{ maker.name }}</p>
-                  <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-tight truncate">{{ maker.role }}</p>
-                  <p class="text-[11px] text-slate-400 line-clamp-1 mt-0.5 italic">{{ maker.snippet || t('network_osint.osint_snippet_fallback') }}</p>
-                </div>
-                <!-- Actions -->
-                <div class="flex flex-col gap-1 shrink-0">
-                  <a v-if="maker.linkedin_url" :href="maker.linkedin_url" target="_blank"
-                     class="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-500 hover:border-blue-300 transition-colors">
-                    <LinkIcon class="w-3.5 h-3.5" />
-                  </a>
-                  <button @click="companyName=hhCompanyName; selectedHrName=maker.name; requestType='emploi';"
-                          class="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-indigo-500 hover:border-indigo-300 transition-colors"
-                          :title="t('network_osint.hh_form.prepare_cta')">
-                    <EnvelopeIcon class="w-3.5 h-3.5" />
-                  </button>
-                </div>
+
+            <!-- Action Buttons Bar -->
+            <div class="flex flex-col gap-2 pt-3 border-t border-slate-100">
+              <a :href="maker.linkedin_url" target="_blank"
+                 class="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-black rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95">
+                <LinkIcon class="w-4 h-4" />
+                <span>Ouvrir Profil LinkedIn</span>
+              </a>
+
+              <div class="flex items-center gap-2">
+                <a v-if="maker.google_url" :href="maker.google_url" target="_blank"
+                   class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1">
+                  <MagnifyingGlassIcon class="w-3.5 h-3.5 text-slate-500" />
+                  <span>X-Ray</span>
+                </a>
+
+                <button @click="companyName=hhCompanyName; selectedHrName=maker.name; requestType='emploi'"
+                        class="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1">
+                  <EnvelopeIcon class="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Approche</span>
+                </button>
               </div>
             </div>
           </div>

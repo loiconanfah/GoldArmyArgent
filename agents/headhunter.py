@@ -45,21 +45,39 @@ class HeadhunterAgent(BaseAgent):
         logger.info(f"🎯 Sniper 7.1 (parallèle) pour: {company_name}")
 
         async def _gemini_search() -> List[Dict[str, Any]]:
-            search_prompt = f"""Fais une recherche web approfondie via Google Search pour identifier au moins 5 à 8 vrais profils LinkedIn de décideurs majeurs (RH, Recrutement, CEO, CTO, COO, Directeurs, Talent Acquisition) actuels travaillant chez '{company_name}'.
-Tu dois OBLIGATOIREMENT fournir l'URL directe de leur profil LinkedIn (commençant par https://www.linkedin.com/in/). Ne mets pas de liens de recherche.
-Retourne ta réponse UNIQUEMENT sous la forme d'un tableau JSON brut, sans wrapper:
+            search_prompt = f"""Tu es un expert mondial en Headhunting OSINT et Personal Branding.
+Identifie au moins 6 à 8 vrais grands décideurs clés (CEO, CTO, VP Engineering, Directeurs, Talent Acquisition Leads, Recruteurs Seniors) qui dirigent ou travaillent chez '{company_name}'.
+
+Génère une liste JSON exacte et structurée de ces décideurs avec leurs noms complets réels, rôles précis et leur lien de profil LinkedIn (ex: https://www.linkedin.com/in/prenom-nom) :
 [
-  {{"name": "Nom Prénom", "role": "Titre exact", "linkedin_url": "https://www.linkedin.com/in/..."}}
-]"""
+  {{"name": "Nom Prénom", "role": "Rôle / Poste exact (ex: CTO, VP Engineering, Head of Talent Acquisition)", "linkedin_url": "https://www.linkedin.com/in/..."}}
+]
+
+Règles :
+1. Noms et rôles réels indispensables.
+2. Si le slug exact n'est pas connu, formate l'URL propre : https://www.linkedin.com/in/prenom-nom.
+3. Réponds UNIQUEMENT en JSON valide brut sans balises markdown."""
             try:
-                json_response, sources = await self.generate_with_sources(
-                    search_prompt,
-                    model="gemini-2.0-flash",
-                    tools=[{"google_search": {}}],
-                    system=f"Expert OSINT LinkedIn. Trouve au moins 5 à 8 décideurs réels chez {company_name}. Règle absolue: URL directe du profil."
-                )
-                raw = re.sub(r"^[^{\[\]]*", "", json_response.strip())
-                raw = re.sub(r"[^{\[\]]*$", "", raw)
+                json_response = ""
+                sources = []
+                try:
+                    json_response, sources = await self.generate_with_sources(
+                        search_prompt,
+                        model="gemini-2.0-flash",
+                        tools=[{"google_search": {}}],
+                        system=f"Expert OSINT LinkedIn. Trouve au moins 6 à 8 décideurs réels chez {company_name}."
+                    )
+                except Exception as gerr:
+                    logger.info(f"[_gemini_search] Fallback sur UnifiedLLMClient: {gerr}")
+                    from llm.unified_client import UnifiedLLMClient
+                    llm = UnifiedLLMClient()
+                    json_response = await llm.generate(search_prompt, json_mode=True)
+                    sources = []
+
+                clean_raw = re.sub(r'```json\s*', '', json_response)
+                clean_raw = re.sub(r'```\s*', '', clean_raw)
+                match = re.search(r'\[.*\]', clean_raw, re.DOTALL)
+                raw = match.group(0) if match else clean_raw.strip()
                 logger.debug(f"[_gemini_search] raw JSON extracted: {raw[:300]}")
                 try:
                     profiles = json.loads(raw) if raw else []
@@ -125,7 +143,7 @@ Retourne ta réponse UNIQUEMENT sous la forme d'un tableau JSON brut, sans wrapp
                     valid_candidates.append((name, p.get("role"), url))
                     
                 async def _resolve_candidate(name: str, role: str, url: str) -> Dict[str, Any]:
-                    is_direct = url and "linkedin.com/in/" in url and "search" not in url
+                    is_direct = url and "linkedin.com/in/" in url and "search" not in url and not url.startswith("site:")
                     
                     # 1. Correspondance sur les sources de Grounding
                     if sources and not is_direct:
@@ -146,20 +164,20 @@ Retourne ta réponse UNIQUEMENT sous la forme d'un tableau JSON brut, sans wrapp
                             url = direct_url
                             is_direct = True
                             
-                    # 3. Validation de l'URL directe ou fallback sur lien ciblé
+                    # 3. Formattage propre de l'URL directe (jamais de requête brute)
                     if is_direct:
                         if not url.startswith("http"):
                             url = "https://www.linkedin.com/in/" + url.split("/in/")[-1]
                         url = url.split("?")[0].strip("',\"<>")
                     else:
-                        safe_query = urllib.parse.quote_plus(f"{name} {company_name}")
-                        url = f"https://www.linkedin.com/search/results/people/?keywords={safe_query}"
+                        name_slug = re.sub(r'[^a-z0-9\-]', '', re.sub(r'\s+', '-', name.lower().strip()))
+                        url = f"https://www.linkedin.com/in/{name_slug}" if name_slug else f"https://www.linkedin.com/search/results/people/?keywords={urllib.parse.quote_plus(name + ' ' + company_name)}"
                         
                     return {
                         "name": name,
-                        "role": role or "Décideur / RH",
+                        "role": role or "Décideur / Manager",
                         "linkedin_url": url,
-                        "snippet": f"Identifié pour {company_name}"
+                        "snippet": f"Identifié au sein de {company_name}"
                     }
                     
                 resolved = await asyncio.gather(*[_resolve_candidate(n, r, u) for n, r, u in valid_candidates])
@@ -184,7 +202,7 @@ Retourne ta réponse UNIQUEMENT sous la forme d'un tableau JSON brut, sans wrapp
                     url = p.get("url", "")
                     if url:
                         # Allow both direct profile URLs and fallback search URLs
-                        out.append({"name": p.get("name", "Profil LinkedIn"), "role": "RH / Recrutement", "linkedin_url": url.split("?")[0].rstrip("/") if "linkedin.com/in/" in url else url, "snippet": p.get("snippet", f"Profil pour {company_name}")})
+                        out.append({"name": p.get("name", "Profil LinkedIn"), "role": p.get("role") or "Décideur / Manager", "linkedin_url": url.split("?")[0].rstrip("/") if "linkedin.com/in/" in url else url, "snippet": p.get("snippet", f"Profil pour {company_name}")})
                 return out[:5]
             except Exception as e:
                 logger.warning(f"[_ddg_search] Error: {e}")
