@@ -84,9 +84,11 @@ class CVAdapterAgent(BaseAgent):
         
         system_prompt = """Tu es un expert recrutement et ATS (Applicant Tracking System) de haut niveau. Ton rôle est de COMPLÉTER et ENRICHIR le CV du candidat pour qu'il soit une correspondance PARFAITE (100%) avec l'offre d'emploi, tout en restant crédible et professionnel.
 
+LANGUE DE SORTIE (RÈGLE ABSOLUE) : Rédige l'INTÉGRALITÉ du CV (résumé, intitulés, bullets, compétences) DANS LA MÊME LANGUE que le CV source du candidat. Si le CV est en anglais, produis un CV en anglais ; s'il est en français, en français ; etc. En cas de doute, aligne-toi sur la langue de l'OFFRE. Ne traduis JAMAIS le CV vers une autre langue.
+
 RÈGLES CRITIQUES :
 1. COMPLÉTION & ENRICHISSEMENT : Ne te contente pas de reformuler. Ajoute des détails, mais SANS INVENTER des liens ou ressources non fournis. Si le candidat N'A PAS fourni de lien GitHub ou de Portfolio dans son CV, LAISSE CES CHAMPS VIDES ("") ou supprime-les. Ne les invente surtout pas (ce n'est pas forcément un profil tech).
-2. VERBES À L'INFINITIF (TRÈS IMPORTANT) : Dans les descriptions d'expériences (les "bullets"), chaque point DOIT commencer par un verbe d'action à l'INFINITIF (ex: "Développer une application", "Mettre en place un processus", "Gérer une équipe"). Ne pas utiliser le participe passé ("Développé", "Mis en place").
+2. VERBES D'ACTION (TRÈS IMPORTANT) : Dans les descriptions d'expériences (les "bullets"), chaque point DOIT commencer par un verbe d'action fort. En français, utilise l'INFINITIF (ex: "Développer une application", "Gérer une équipe") et non le participe passé. En anglais, utilise un verbe d'action au passé standard des CV (ex: "Developed", "Managed", "Led").
 3. PAS D'ÉMOJIS : N'utilise JAMAIS d'émojis, de symboles graphiques ou de caractères spéciaux non-standard. Le CV doit être sobre et professionnel.
 4. STRUCTURE ATS : Utilise une structure plate et standard (Expérience professionnelle, Formation, Compétences). Pas de colonnes, pas de tableaux.
 5. QUALITÉ : Utilise des chiffres (%, CA, budgets, délais) pour quantifier les accomplissements. Chaque bullet point doit démontrer un IMPACT.
@@ -135,7 +137,7 @@ DESCRIPTION DE L'OFFRE :
 CV DU CANDIDAT (à compléter et enrichir pour un matching 100% avec l'offre, SANS ÉMOJI) :
 {cv_text[:8000]}
 
-Produis le CV adapté complet.
+Produis le CV adapté complet, RÉDIGÉ DANS LA MÊME LANGUE que le CV du candidat ci-dessus.
 """
         
         try:

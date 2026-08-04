@@ -343,6 +343,8 @@ Texte extrait :
 Réponds UNIQUEMENT en JSON valide avec 2 clés (pas de markdown) :
 - "score": entier 0-100 (sévérité réaliste : 50-70 = moyen, >80 = très bon pour ATS).
 - "flaws": tableau de 5 à 7 objets avec "flaw" (critique courte) et "correction" (action courte). Points bloquants ATS : structure, mots-clés, chiffres, bullet points.
+
+IMPORTANT — LANGUE : rédige les textes "flaw" et "correction" DANS LA MÊME LANGUE que le CV analysé ci-dessus (anglais si le CV est en anglais, français s'il est en français, etc.).
 """
         result = await llm.chat(
             [{"role": "user", "content": prompt}],

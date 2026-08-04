@@ -889,6 +889,15 @@
     "agent_chat": {
         "title": "AI Mentor",
         "tagline": "Prepare for success",
+        "cv_from_profile": "My profile CV",
+        "audit_modal": {
+            "title": "Shock CV Audit",
+            "desc": "Ready for a military-grade optimization? Choose your strategy.",
+            "use_stored": "Use my profile CV",
+            "recommended": "Recommended · Saves time",
+            "upload_new": "Upload a new one (PDF)",
+            "auto_audit_prompt": "Please audit my CV."
+        },
         "add_cv": "Add CV (PDF)",
         "cv_context": "CV in Context",
         "extracting_text": "Extracting text...",

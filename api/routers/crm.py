@@ -78,7 +78,9 @@ async def generate_followup_email(app_id: str, current_user: dict = Depends(get_
         llm = UnifiedLLMClient()
 
         prompt = (
-            "Tu rédiges un email de relance professionnel COMPLET en français. "
+            "Tu rédiges un email de relance professionnel COMPLET. "
+            "LANGUE : rédige l'email DANS LA MÊME LANGUE que l'intitulé du poste et les notes fournis "
+            "ci-dessous (anglais si le poste/les notes sont en anglais, français sinon). "
             "Le mail doit OBLIGATOIREMENT contenir les 4 parties suivantes, dans l'ordre :\n"
             "1) Objet: [un sujet clair]\n"
             "2) Formule d'appel (ex: Bonjour, ou Bonjour M. Dupont,)\n"
