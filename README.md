@@ -1,186 +1,92 @@
-# 🪖 GoldArmyArgent
+# 🪖 GoldArmy AI
 
-**Armée d'Agents IA 100% Autonomes** - Système multi-agents utilisant Ollama en local
+**Plateforme SaaS de chasse à l'emploi propulsée par l'IA** — [goldarmyai.com](https://goldarmyai.com)
 
-## 🎯 Description
+GoldArmy AI aide les candidats à décrocher un emploi grâce à une armée d'agents IA spécialisés :
+recherche d'offres ciblée, optimisation de CV ATS, simulation d'entretien, CRM de candidatures,
+relances automatiques et prospection réseau.
 
-GoldArmyArgent est une plateforme avancée de gestion d'agents IA autonomes. Chaque agent est spécialisé dans un domaine (recherche, développement, planification) et peut collaborer avec d'autres agents pour accomplir des tâches complexes.
+> ⚠️ Ce dépôt a évolué d'un prototype multi-agents Ollama vers un produit SaaS commercial complet
+> (backend FastAPI + MongoDB, frontend Vue 3, paiements Stripe, app mobile). L'ancien README
+> décrivait le prototype ; ce document reflète le produit réel.
 
-## ✨ Fonctionnalités
+## ✨ Fonctionnalités principales
 
-- 🤖 **Agents Autonomes** - Cycle think-act-learn pour chaque agent
-- 🧠 **Mémoire Partagée** - Base vectorielle ChromaDB pour contexte persistant
-- 📡 **Communication Inter-Agents** - Bus de messages asynchrone
-- 🎭 **Orchestration Intelligente** - Gestion automatique du pool d'agents
-- 🔧 **Agents Spécialisés**:
-  - **Researcher** - Recherche et analyse d'informations
-  - **Coder** - Génération et débogage de code
-  - **Planner** - Décomposition de tâches complexes
-- 💻 **Interface CLI** - Interface en ligne de commande riche
-- 📊 **Dashboard** - Interface Streamlit (à venir)
+- **CV Sniper** — recherche d'offres + matching intelligent avec le profil du candidat
+- **Adaptation de CV** — réécriture du CV pour une offre précise (Gemini)
+- **Générateur ATS** — export PDF (Playwright) et Word, 8 templates
+- **Simulateur d'entretien** — préparation et questions personnalisées
+- **CRM Kanban** — pipeline de candidatures drag-and-drop + relances auto
+- **Réseau / Headhunter** — enrichissement de contacts, décideurs LinkedIn, emails d'approche
+- **Gold Profile** — audit de personal branding LinkedIn + plan de contenu
+- **Agents autonomes** — Ghostbuster (relance 48h), Daily Hunt, Pre-Interview (schedulers)
+- **Comptes & facturation** — Auth JWT + Google, abonnements Stripe, parrainage
 
-## 🚀 Installation
+## 🏗️ Stack technique
 
-### Prérequis
+| Couche | Technologies |
+|--------|--------------|
+| Backend | FastAPI, MongoDB Atlas (motor), JWT + Google Auth |
+| IA / LLM | Google Gemini (`gemini-2.0-flash` / `2.5-flash`), client LLM unifié |
+| Scraping / PDF | Playwright, BeautifulSoup, PyMuPDF, python-docx |
+| Frontend | Vue 3 + Vite, Vue Router, i18n (fr/en) |
+| Paiement / Email | Stripe, Resend |
+| Mémoire | ChromaDB, sentence-transformers |
+| Déploiement | Render (`render.yaml`) |
 
-- Python 3.11+
-- Ollama installé et en cours d'exécution
-
-### Étapes
-
-1. **Cloner le projet** (déjà fait !)
-
-2. **Installer les dépendances**:
-```bash
-pip install -r requirements.txt
-```
-
-3. **Configurer l'environnement**:
-```bash
-cp .env.example .env
-# Éditer .env si nécessaire
-```
-
-4. **Vérifier Ollama**:
-```bash
-python main.py test-ollama
-```
-
-5. **Télécharger les modèles** (si nécessaire):
-```bash
-ollama pull llama2
-ollama pull codellama  # Pour l'agent Coder
-```
-
-## 📖 Utilisation
-
-### Mode Interactif (Recommandé)
-
-```bash
-python main.py interactive
-```
-
-Tapez vos tâches et l'armée d'agents les exécutera automatiquement !
-
-### Commandes CLI
-
-```bash
-# Informations système
-python main.py info
-
-# Tester Ollama
-python main.py test-ollama
-
-# Créer un agent
-python main.py create-agent researcher
-
-# Exécuter une tâche
-python main.py run-task "Recherche sur l'IA" --agent-type researcher
-
-# Voir les statistiques
-python main.py stats
-```
-
-### Utilisation Programmatique
-
-```python
-import asyncio
-from core.orchestrator import orchestrator
-
-async def main():
-    await orchestrator.start()
-    
-    # Créer un agent
-    agent = await orchestrator.create_agent("researcher")
-    
-    # Soumettre une tâche
-    task = {
-        "description": "Analyser les tendances IA 2024",
-        "agent_type": "researcher"
-    }
-    
-    result = await orchestrator.execute_task(task)
-    print(result)
-    
-    await orchestrator.stop()
-
-asyncio.run(main())
-```
-
-## 🏗️ Architecture
+## 📁 Structure du dépôt
 
 ```
 GoldArmyArgent/
-├── core/               # Système central
-│   ├── agent_base.py   # Classe de base des agents
-│   ├── orchestrator.py # Orchestrateur principal
-│   ├── memory.py       # Système de mémoire
-│   └── communication.py # Bus de communication
-├── agents/             # Agents spécialisés
-│   ├── researcher.py
-│   ├── coder.py
-│   └── planner.py
-├── llm/                # Interface Ollama
-│   ├── ollama_client.py
-│   └── prompt_templates.py
-├── config/             # Configuration
-│   ├── settings.py
-│   └── agents_config.yaml
-└── main.py             # Point d'entrée
+├── api/                # Routes FastAPI (main.py, auth, interview, stripe, referral…)
+├── agents/             # Agents métier (hunter, headhunter, cv_adapter, mentor, ghostbuster…)
+├── core/               # Services transverses (database, email, CV gen, schedulers, memory)
+├── llm/                # Clients LLM (Gemini, unified client)
+├── tools/              # Outils (web_searcher, linkedin_scraper)
+├── config/             # settings.py + agents_config.yaml
+├── frontend/           # Application Vue 3 (views, components, templates de CV)
+├── MobileGoldArmy*/    # Application mobile
+├── render.yaml         # Configuration de déploiement Render
+└── requirements.txt    # Dépendances Python
+```
+
+## 🚀 Développement local
+
+### Prérequis
+- Python 3.11+
+- Node.js 18+
+- Une instance MongoDB (Atlas recommandé)
+
+### Backend
+```bash
+python -m venv .venv
+.venv\Scripts\activate        # Windows  (source .venv/bin/activate sous Unix)
+pip install -r requirements.txt
+playwright install chromium
+cp .env.example .env          # puis renseigner les variables
+uvicorn api.main:app --reload
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev                   # http://localhost:5173
+```
+
+### Lancer les deux
+```bash
+start_all.bat                 # Windows
+./start_all.sh                # Unix
 ```
 
 ## ⚙️ Configuration
 
-Éditez `config/agents_config.yaml` pour personnaliser les agents:
+Les variables sensibles vivent dans `.env` (jamais commité — voir `.env.example`) :
+clés Gemini, MongoDB URI, secret JWT, clés Stripe, clés Resend, Google OAuth.
 
-```yaml
-agents:
-  researcher:
-    model: "llama2"
-    temperature: 0.7
-    max_tokens: 2048
-```
-
-## 🔧 Développement
-
-### Ajouter un Nouvel Agent
-
-1. Créer `agents/mon_agent.py`:
-```python
-from core.agent_base import BaseAgent
-
-class MonAgent(BaseAgent):
-    async def think(self, task):
-        # Logique de réflexion
-        pass
-    
-    async def act(self, action_plan):
-        # Logique d'action
-        pass
-```
-
-2. Enregistrer dans `core/orchestrator.py`:
-```python
-self.agent_types["mon_agent"] = MonAgent
-```
-
-## 📝 TODO
-
-- [ ] Dashboard Streamlit
-- [ ] Outils de recherche web
-- [ ] Exécution de code sécurisée
-- [ ] Agents Analyst et Executor
-- [ ] Tests unitaires
-- [ ] Documentation API complète
+Les modèles et capacités des agents se règlent dans `config/agents_config.yaml`.
 
 ## 📄 Licence
 
 MIT
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une PR.
-
----
-
-**Fait avec ❤️ et Ollama 🦙**
