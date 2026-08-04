@@ -24,7 +24,8 @@ import {
   ShieldCheckIcon,
   SunIcon,
   MoonIcon,
-  GiftIcon
+  GiftIcon,
+  BuildingOffice2Icon
 } from '@heroicons/vue/24/outline'
 import { useTheme } from './composables/useTheme'
 import ToastPortal from './components/ToastPortal.vue'
@@ -57,6 +58,7 @@ const toggleLanguage = () => {
 const userEmail = ref('')
 const userAvatar = ref('')
 const userTier = ref('FREE')
+const userRole = ref(null)
 
 onMounted(async () => {
   userEmail.value = t('common.loading')
@@ -67,6 +69,7 @@ onMounted(async () => {
       userEmail.value = user.email.split('@')[0]
       userAvatar.value = user.avatar_url || ''
       userTier.value = user.subscription_tier || 'FREE'
+      userRole.value = user.role || null
     } catch(e){}
   }
 
@@ -77,6 +80,7 @@ onMounted(async () => {
       const json = await res.json()
       if (json.status === 'success') {
         userTier.value = json.data.subscription_tier || 'FREE'
+        userRole.value = json.data.role || null
         userEmail.value = json.data.full_name || json.data.email.split('@')[0]
         userAvatar.value = json.data.avatar_url || ''
         
@@ -227,6 +231,22 @@ onMounted(() => {
           <ShieldCheckIcon class="w-5 h-5 shrink-0 text-red-500" />
           <span v-if="!isSidebarCollapsed" class="whitespace-nowrap font-black italic uppercase tracking-tighter">{{ t('nav.admin') }}</span>
           <div v-if="currentRoute === '/admin-goldarmy'" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-red-500 rounded-r-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
+        </router-link>
+
+        <!-- Organization Space Link (org admins only) -->
+        <router-link
+          v-if="userRole === 'org_admin'"
+          to="/organisation"
+          class="flex items-center rounded-xl text-sm font-semibold transition-all group relative overflow-hidden bg-amber-500/5 text-amber-500 hover:bg-amber-500/10 border border-amber-500/10"
+          :class="[
+             currentRoute === '/organisation' ? 'bg-amber-500/10 border-amber-500/30' : '',
+             isSidebarCollapsed ? 'justify-center py-3 px-0' : 'gap-3 px-3 py-2.5'
+          ]"
+          :title="t('org.dashboard.title')"
+        >
+          <BuildingOffice2Icon class="w-5 h-5 shrink-0 text-amber-500" />
+          <span v-if="!isSidebarCollapsed" class="whitespace-nowrap font-black italic uppercase tracking-tighter">{{ t('org.dashboard.title') }}</span>
+          <div v-if="currentRoute === '/organisation'" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-amber-500 rounded-r-full shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
         </router-link>
       </nav>
 

@@ -40,6 +40,7 @@ from api.routers.workflows import router as workflows_router
 from api.routers.dashboard import router as dashboard_router
 from api.routers.admin import router as admin_router
 from api.routers.stripe import router as stripe_router
+from api.routers.organization import router as organization_router
 
 # Routers existants
 app.include_router(auth_router)
@@ -56,6 +57,7 @@ app.include_router(workflows_router)
 app.include_router(dashboard_router)
 app.include_router(admin_router)
 app.include_router(stripe_router)
+app.include_router(organization_router)
 
 # Enable CORS
 _cors_origins = [

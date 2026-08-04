@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
-import { ArrowLeftIcon, EnvelopeIcon, LockClosedIcon, UserIcon, GiftIcon, SparklesIcon } from '@heroicons/vue/24/outline'
+import { ArrowLeftIcon, EnvelopeIcon, LockClosedIcon, UserIcon, GiftIcon, SparklesIcon, BuildingOffice2Icon } from '@heroicons/vue/24/outline'
 import { useGoogleAuth } from '@/composables/useGoogleAuth'
 import { safeJson } from '@/utils/auth'
 import { getApiUrl } from '@/config'
@@ -21,6 +21,22 @@ const referralInfo = ref(null)
 const errorMsg = ref('')
 const isLoading = ref(false)
 const showPassword = ref(false)
+
+// ── Type de compte : candidat ou organisation ──
+const accountType = ref('candidate') // 'candidate' | 'organization'
+const orgName = ref('')
+const orgType = ref('employability')
+const orgTypeOptions = [
+  { value: 'employability', label: t('org.types.employability') },
+  { value: 'school', label: t('org.types.school') },
+  { value: 'bootcamp', label: t('org.types.bootcamp') },
+  { value: 'agency', label: t('org.types.agency') },
+  { value: 'coach', label: t('org.types.coach') },
+  { value: 'other', label: t('org.types.other') },
+]
+// Rejoindre une organisation existante via un code d'invitation (?org=CODE)
+const orgInviteCode = ref('')
+const orgInviteInfo = ref(null)
 
 useHead({
   title: computed(() => t('register.title') + ' | GoldArmy'),
@@ -46,6 +62,19 @@ onMounted(async () => {
       }
     } catch (e) {}
   }
+
+  // Check for org invite code in URL (?org=CODE) — rejoindre une cohorte
+  const orgCode = route.query.org
+  if (orgCode) {
+    orgInviteCode.value = String(orgCode).trim().toUpperCase()
+    try {
+      const res = await fetch(getApiUrl(`/api/org/invite/${orgInviteCode.value}`))
+      const data = await res.json()
+      if (data && data.valid) {
+        orgInviteInfo.value = data
+      }
+    } catch (e) {}
+  }
 })
 
 const handleRegister = async () => {
@@ -60,7 +89,11 @@ const handleRegister = async () => {
         password: password.value,
         first_name: firstName.value,
         last_name: lastName.value,
-        referral_code: referralCode.value || undefined
+        referral_code: referralCode.value || undefined,
+        account_type: accountType.value,
+        organization_name: accountType.value === 'organization' ? orgName.value : undefined,
+        organization_type: accountType.value === 'organization' ? orgType.value : undefined,
+        org_invite_code: accountType.value === 'candidate' ? (orgInviteCode.value || undefined) : undefined
       })
     })
 
@@ -72,7 +105,8 @@ const handleRegister = async () => {
     } else {
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('user', JSON.stringify(data.user))
-      router.push('/home')
+      // Rediriger les administrateurs d'organisation vers leur tableau de bord dédié
+      router.push(data.user?.role === 'org_admin' ? '/organisation' : '/home')
     }
   } catch (err) {
     errorMsg.value = t('common.error') + ': ' + t('common.server_error')
@@ -101,6 +135,46 @@ const handleRegister = async () => {
               <router-link to="/login" class="auth-form__link">{{ t('register.login_link') }}</router-link>
             </p>
           </header>
+
+          <!-- Account type selector (candidat / organisation) -->
+          <div class="auth-type-toggle" role="tablist" :aria-label="t('org.register.account_type')">
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="accountType === 'candidate'"
+              :class="['auth-type-toggle__btn', { 'auth-type-toggle__btn--active': accountType === 'candidate' }]"
+              @click="accountType = 'candidate'"
+            >
+              {{ t('org.register.candidate') }}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="accountType === 'organization'"
+              :class="['auth-type-toggle__btn', { 'auth-type-toggle__btn--active': accountType === 'organization' }]"
+              @click="accountType = 'organization'"
+            >
+              {{ t('org.register.organization') }}
+            </button>
+          </div>
+          <p v-if="accountType === 'organization'" class="auth-type-toggle__hint">
+            {{ t('org.register.org_hint') }}
+          </p>
+
+          <!-- Org invite banner (rejoindre une cohorte) -->
+          <div v-if="accountType === 'candidate' && orgInviteInfo && orgInviteInfo.valid" class="mb-4 p-3.5 bg-blue-50/90 border border-blue-200/80 rounded-2xl flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <SparklesIcon class="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p class="text-xs font-black text-slate-900 uppercase tracking-wider">
+                {{ t('org.register.invited_title') }}
+              </p>
+              <p class="text-xs text-slate-700 font-semibold mt-0.5">
+                {{ t('org.register.invited_by') }} <span class="font-bold text-blue-800">{{ orgInviteInfo.organization_name }}</span>
+              </p>
+            </div>
+          </div>
 
           <!-- Referral invitation banner -->
           <div v-if="referralInfo && referralInfo.valid" class="mb-4 p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-2xl flex items-center gap-3">
@@ -152,6 +226,31 @@ const handleRegister = async () => {
                 </div>
               </div>
             </div>
+
+            <!-- Champs organisation -->
+            <template v-if="accountType === 'organization'">
+              <div class="auth-form__field">
+                <label class="auth-form__label">{{ t('org.register.org_name') }}</label>
+                <div class="auth-form__input-wrap">
+                  <BuildingOffice2Icon class="auth-form__input-icon" />
+                  <input
+                    v-model="orgName"
+                    type="text"
+                    required
+                    :placeholder="t('org.register.org_name_placeholder')"
+                    class="auth-form__input"
+                  />
+                </div>
+              </div>
+              <div class="auth-form__field">
+                <label class="auth-form__label">{{ t('org.register.org_type') }}</label>
+                <div class="auth-form__input-wrap">
+                  <select v-model="orgType" class="auth-form__input auth-form__select">
+                    <option v-for="opt in orgTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  </select>
+                </div>
+              </div>
+            </template>
 
             <div class="auth-form__field">
               <label class="auth-form__label">{{ t('register.email') }}</label>
@@ -803,5 +902,52 @@ const handleRegister = async () => {
 }
 .auth-form__terms-text .auth-form__link {
   font-weight: 600;
+}
+
+/* Sélecteur type de compte (candidat / organisation) */
+.auth-type-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: 1rem;
+  background: rgba(28, 28, 36, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  animation: auth-fade-in 0.5s 0.18s ease-out both;
+}
+.auth-type-toggle__btn {
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: none;
+  border-radius: 0.55rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.2s, background 0.2s;
+}
+.auth-type-toggle__btn--active {
+  color: #1a1a22;
+  background: linear-gradient(135deg, #ff9a5c 0%, #ff6f00 100%);
+  box-shadow: 0 4px 14px rgba(255, 111, 0, 0.3);
+}
+.auth-type-toggle__hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: -0.5rem 0 1rem;
+  line-height: 1.4;
+}
+.auth-form__select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-left: 1rem;
+  cursor: pointer;
+}
+.auth-form__select option {
+  background: #25252f;
+  color: #fff;
 }
 </style>

@@ -3,7 +3,7 @@ from loguru import logger
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 import bcrypt
 import os
@@ -36,12 +36,24 @@ class UserCreate(BaseModel):
     email: str
     password: str
     referral_code: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    # Inscription en tant qu'organisation (espace B2B2C)
+    account_type: Optional[str] = "candidate"  # "candidate" | "organization"
+    organization_name: Optional[str] = None
+    organization_type: Optional[str] = None
+    # Rejoindre une organisation existante via code d'invitation
+    org_invite_code: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: str
     email: str
     subscription_tier: str
     is_verified: bool = False
+    full_name: Optional[str] = None
+    role: Optional[str] = None
+    account_type: Optional[str] = None
+    organization_id: Optional[str] = None
     
 class Token(BaseModel):
     access_token: str
@@ -158,19 +170,55 @@ async def register(user_data: UserCreate):
                     "created_at": datetime.now(timezone.utc)
                 })
         
+        # Nom complet à partir du prénom/nom fournis par le formulaire
+        full_name = " ".join(
+            p for p in [(user_data.first_name or "").strip(), (user_data.last_name or "").strip()] if p
+        ).strip()
+
         new_user = {
             "id": user_id,
             "email": user_data.email,
             "hashed_password": hashed_password,
+            "full_name": full_name,
             "subscription_tier": "FREE",
             "is_verified": False,
             "created_at": datetime.now(timezone.utc),
             "referral_code": own_referral_code,
             "referred_by": referred_by_id,
             "bonus_credits": initial_bonus_credits,
-            "referral_count": 0
+            "referral_count": 0,
+            "account_type": "candidate",
+            "role": None,
+            "organization_id": None,
         }
         await db.users.insert_one(new_user)
+
+        # --- Espace Organisation (B2B2C) ---
+        org_role = None
+        org_id = None
+        org_account_type = "candidate"
+        try:
+            if (user_data.account_type or "").lower() == "organization":
+                # Création d'une nouvelle organisation : l'inscrit devient org_admin
+                from core.organizations import create_organization
+                org = await create_organization(
+                    owner_id=user_id,
+                    name=user_data.organization_name or (full_name or user_data.email.split("@")[0]),
+                    org_type=(user_data.organization_type or "other"),
+                    contact_email=user_data.email,
+                )
+                org_role = "org_admin"
+                org_id = org["id"]
+                org_account_type = "organization"
+            elif user_data.org_invite_code:
+                # Rejoindre une organisation existante via code d'invitation
+                from core.organizations import join_organization
+                joined = await join_organization(user_id, user_data.org_invite_code)
+                if joined.get("status") == "success" and joined.get("organization"):
+                    org_role = "member"
+                    org_id = joined["organization"]["id"]
+        except Exception as org_err:
+            logger.warning(f"[REGISTER] Traitement organisation échoué: {org_err}")
         try:
             otp_code = str(random.randint(100000, 999999))
             expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
@@ -188,12 +236,25 @@ async def register(user_data: UserCreate):
             data={"sub": user_id, "email": user_data.email}, expires_delta=access_token_expires
         )
         refresh_token = create_refresh_token(data={"sub": user_id, "email": user_data.email})
-        
+
+        # Palier effectif (peut avoir changé si l'utilisateur a rejoint une organisation)
+        fresh = await db.users.find_one({"id": user_id}, {"_id": 0, "subscription_tier": 1})
+        effective_tier = (fresh or {}).get("subscription_tier", "FREE")
+
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "user": {"id": user_id, "email": user_data.email, "subscription_tier": "FREE", "is_verified": False}
+            "user": {
+                "id": user_id,
+                "email": user_data.email,
+                "subscription_tier": effective_tier,
+                "is_verified": False,
+                "full_name": full_name,
+                "role": org_role,
+                "account_type": org_account_type,
+                "organization_id": org_id,
+            }
         }
     except Exception as e:
         if isinstance(e, HTTPException):
@@ -225,10 +286,14 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             "refresh_token": refresh_token,
             "token_type": "bearer",
             "user": {
-                "id": user["id"], 
+                "id": user["id"],
                 "email": user["email"],
                 "subscription_tier": user.get("subscription_tier", "FREE"),
-                "is_verified": user.get("is_verified", False)
+                "is_verified": user.get("is_verified", False),
+                "full_name": user.get("full_name"),
+                "role": user.get("role"),
+                "account_type": user.get("account_type"),
+                "organization_id": user.get("organization_id"),
             }
         }
     except Exception as e:

@@ -1,4 +1,83 @@
 {
+    "org": {
+        "types": {
+            "employability": "Organisme d'employabilité",
+            "school": "École / Université",
+            "bootcamp": "Bootcamp / Formation",
+            "agency": "Agence de placement",
+            "coach": "Coach de carrière",
+            "other": "Autre"
+        },
+        "register": {
+            "account_type": "Type de compte",
+            "candidate": "Candidat",
+            "organization": "Organisation",
+            "org_hint": "Créez un espace pour accompagner une cohorte de candidats (école, organisme, bootcamp…).",
+            "org_name": "Nom de l'organisation",
+            "org_name_placeholder": "Ex : Cégep du Vieux Montréal",
+            "org_type": "Type d'organisation",
+            "invited_title": "Vous êtes invité(e) !",
+            "invited_by": "Rejoignez la cohorte de"
+        },
+        "dashboard": {
+            "title": "Espace Organisation",
+            "subtitle": "Pilotez votre cohorte de candidats"
+        },
+        "tabs": {
+            "overview": "Vue d'ensemble",
+            "members": "Membres",
+            "settings": "Paramètres"
+        },
+        "stats": {
+            "members": "Membres",
+            "active": "Actifs",
+            "with_cv": "Avec CV",
+            "applications": "Candidatures",
+            "interviews": "Entretiens",
+            "avg": "Moy./membre"
+        },
+        "invite": {
+            "title": "Inviter des membres",
+            "desc": "Partagez le lien d'invitation ou envoyez une invitation par email.",
+            "seats": "{used} / {total} places utilisées",
+            "link_label": "Lien d'invitation",
+            "copy": "Copier",
+            "copied": "Copié !",
+            "code_label": "Code d'invitation :",
+            "email_label": "Inviter par email",
+            "email_placeholder": "email@exemple.com",
+            "send": "Envoyer",
+            "sending": "Envoi…",
+            "sent": "Invitation envoyée à {email}.",
+            "error": "L'invitation n'a pas pu être envoyée.",
+            "invalid_email": "Adresse email invalide."
+        },
+        "members": {
+            "title": "Membres de la cohorte",
+            "empty": "Aucun membre pour l'instant. Invitez vos premiers candidats !",
+            "name": "Nom",
+            "cv": "CV",
+            "applications": "Candidatures",
+            "interviews": "Entretiens",
+            "last_activity": "Dernière activité",
+            "cv_yes": "Oui",
+            "cv_no": "Non",
+            "sent": "envoyées",
+            "remove": "Retirer",
+            "remove_confirm": "Retirer {name} de la cohorte ?"
+        },
+        "settings": {
+            "title": "Paramètres de l'organisation",
+            "name": "Nom de l'organisation",
+            "type": "Type",
+            "member_tier": "Forfait des membres",
+            "member_tier_hint": "Forfait automatiquement accordé aux membres qui rejoignent la cohorte.",
+            "seats": "Nombre de places",
+            "contact_email": "Email de contact",
+            "save": "Enregistrer",
+            "saved": "Paramètres enregistrés."
+        }
+    },
     "nav": {
         "home": "Accueil",
         "dashboard": "Tableau de Bord",
@@ -386,6 +465,7 @@
         "next": "Suivant",
         "finish": "Terminer",
         "refresh": "Actualiser",
+        "saving": "Enregistrement...",
         "copy": "Copier",
         "copied": "Copié !",
         "regenerate": "Régénérer",

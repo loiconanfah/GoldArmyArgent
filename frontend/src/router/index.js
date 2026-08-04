@@ -138,6 +138,12 @@ const routes = [
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
+        path: '/organisation',
+        name: 'OrgDashboard',
+        component: () => import('../views/OrgDashboard.vue'),
+        meta: { requiresAuth: true, requiresOrgAdmin: true }
+    },
+    {
         path: '/support',
         name: 'Support',
         component: () => import('../views/Support.vue')
@@ -180,6 +186,15 @@ router.beforeEach((to, from, next) => {
             ? JSON.parse(localStorage.getItem('user') || '{}')
             : {}
         if (user.subscription_tier === 'ADMIN') {
+            next()
+        } else {
+            next('/dashboard')
+        }
+    } else if (to.meta.requiresOrgAdmin) {
+        const user = typeof localStorage !== 'undefined'
+            ? JSON.parse(localStorage.getItem('user') || '{}')
+            : {}
+        if (user.role === 'org_admin') {
             next()
         } else {
             next('/dashboard')

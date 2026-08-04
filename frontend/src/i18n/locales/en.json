@@ -1,4 +1,83 @@
 {
+    "org": {
+        "types": {
+            "employability": "Employment support org",
+            "school": "School / University",
+            "bootcamp": "Bootcamp / Training",
+            "agency": "Staffing agency",
+            "coach": "Career coach",
+            "other": "Other"
+        },
+        "register": {
+            "account_type": "Account type",
+            "candidate": "Candidate",
+            "organization": "Organization",
+            "org_hint": "Create a space to support a cohort of candidates (school, org, bootcamp…).",
+            "org_name": "Organization name",
+            "org_name_placeholder": "e.g. Vieux Montréal College",
+            "org_type": "Organization type",
+            "invited_title": "You've been invited!",
+            "invited_by": "Join the cohort of"
+        },
+        "dashboard": {
+            "title": "Organization Space",
+            "subtitle": "Manage your candidate cohort"
+        },
+        "tabs": {
+            "overview": "Overview",
+            "members": "Members",
+            "settings": "Settings"
+        },
+        "stats": {
+            "members": "Members",
+            "active": "Active",
+            "with_cv": "With CV",
+            "applications": "Applications",
+            "interviews": "Interviews",
+            "avg": "Avg/member"
+        },
+        "invite": {
+            "title": "Invite members",
+            "desc": "Share the invite link or send an email invitation.",
+            "seats": "{used} / {total} seats used",
+            "link_label": "Invite link",
+            "copy": "Copy",
+            "copied": "Copied!",
+            "code_label": "Invite code:",
+            "email_label": "Invite by email",
+            "email_placeholder": "email@example.com",
+            "send": "Send",
+            "sending": "Sending…",
+            "sent": "Invitation sent to {email}.",
+            "error": "The invitation could not be sent.",
+            "invalid_email": "Invalid email address."
+        },
+        "members": {
+            "title": "Cohort members",
+            "empty": "No members yet. Invite your first candidates!",
+            "name": "Name",
+            "cv": "CV",
+            "applications": "Applications",
+            "interviews": "Interviews",
+            "last_activity": "Last activity",
+            "cv_yes": "Yes",
+            "cv_no": "No",
+            "sent": "sent",
+            "remove": "Remove",
+            "remove_confirm": "Remove {name} from the cohort?"
+        },
+        "settings": {
+            "title": "Organization settings",
+            "name": "Organization name",
+            "type": "Type",
+            "member_tier": "Member plan",
+            "member_tier_hint": "Plan automatically granted to members who join the cohort.",
+            "seats": "Number of seats",
+            "contact_email": "Contact email",
+            "save": "Save",
+            "saved": "Settings saved."
+        }
+    },
     "nav": {
         "home": "Home",
         "dashboard": "Dashboard",
@@ -433,6 +512,7 @@
         "next": "Next",
         "finish": "Finish",
         "refresh": "Refresh",
+        "saving": "Saving...",
         "copy": "Copy",
         "copied": "Copied !",
         "regenerate": "Regenerate",
