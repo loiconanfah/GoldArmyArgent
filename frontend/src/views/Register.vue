@@ -1,19 +1,23 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
-import { ArrowLeftIcon, EnvelopeIcon, LockClosedIcon, UserIcon } from '@heroicons/vue/24/outline'
+import { ArrowLeftIcon, EnvelopeIcon, LockClosedIcon, UserIcon, GiftIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import { useGoogleAuth } from '@/composables/useGoogleAuth'
 import { safeJson } from '@/utils/auth'
 import { getApiUrl } from '@/config'
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
+
 const email = ref('')
 const password = ref('')
 const firstName = ref('')
 const lastName = ref('')
+const referralCode = ref('')
+const referralInfo = ref(null)
 const errorMsg = ref('')
 const isLoading = ref(false)
 const showPassword = ref(false)
@@ -26,7 +30,23 @@ useHead({
 })
 
 const { googleLoading, googleError, initGoogle } = useGoogleAuth()
-onMounted(() => initGoogle('google-btn-register'))
+
+onMounted(async () => {
+  initGoogle('google-btn-register')
+  
+  // Check for ref parameter in URL
+  const refCode = route.query.ref
+  if (refCode) {
+    referralCode.value = String(refCode).trim().toUpperCase()
+    try {
+      const res = await fetch(getApiUrl(`/api/referral/validate/${referralCode.value}`))
+      const data = await res.json()
+      if (data && data.valid) {
+        referralInfo.value = data
+      }
+    } catch (e) {}
+  }
+})
 
 const handleRegister = async () => {
   errorMsg.value = ''
@@ -39,7 +59,8 @@ const handleRegister = async () => {
         email: email.value,
         password: password.value,
         first_name: firstName.value,
-        last_name: lastName.value
+        last_name: lastName.value,
+        referral_code: referralCode.value || undefined
       })
     })
 
@@ -80,6 +101,21 @@ const handleRegister = async () => {
               <router-link to="/login" class="auth-form__link">{{ t('register.login_link') }}</router-link>
             </p>
           </header>
+
+          <!-- Referral invitation banner -->
+          <div v-if="referralInfo && referralInfo.valid" class="mb-4 p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-2xl flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <GiftIcon class="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                <SparklesIcon class="w-3.5 h-3.5 text-amber-600" /> Vous avez été invité(e) !
+              </p>
+              <p class="text-xs text-slate-700 font-semibold mt-0.5">
+                Code <span class="font-mono font-bold text-amber-800">{{ referralCode }}</span> appliqué. Recevez <span class="font-bold text-amber-700">10 crédits bonus</span> à l'inscription.
+              </p>
+            </div>
+          </div>
 
           <Transition name="auth-shake">
             <div v-if="errorMsg" class="auth-form__error" role="alert">

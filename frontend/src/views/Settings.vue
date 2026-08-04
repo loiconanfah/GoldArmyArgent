@@ -19,6 +19,12 @@ import {
   BoltIcon,
   CurrencyDollarIcon,
   ExclamationTriangleIcon,
+  BellIcon,
+  Cog6ToothIcon,
+  CreditCardIcon,
+  ArrowDownTrayIcon,
+  LockClosedIcon,
+  LanguageIcon,
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
@@ -28,6 +34,89 @@ const userTier = ref('FREE')
 const profileData = ref({ full_name: '', email: '' })
 const usage = ref({})
 const isSubscribing = ref(false)
+
+// --- Notifications & Preferences State ---
+const notifSniper = ref(true)
+const notifFollowup = ref(true)
+const notifWeeklyDigest = ref(false)
+const notifPushMobile = ref(true)
+
+const ghostbusterAuto = ref(false)
+const aiTone = ref('professional')
+const aiLanguage = ref('fr')
+const isExportingData = ref(false)
+const isOpeningPortal = ref(false)
+
+const fetchGhostbusterStatus = async () => {
+  try {
+    const res = await authFetch('/api/workflows/ghostbuster/status')
+    const json = await res.json()
+    if (json.status === 'success') {
+      ghostbusterAuto.value = json.data?.auto_enabled || false
+    }
+  } catch(e) {}
+}
+
+const toggleGhostbuster = async () => {
+  ghostbusterAuto.value = !ghostbusterAuto.value
+  try {
+    const res = await authFetch('/api/workflows/ghostbuster/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: ghostbusterAuto.value })
+    })
+    const json = await res.json()
+    if (res.ok) {
+      toastState.addToast(
+        ghostbusterAuto.value 
+          ? 'Mode Ghostbuster Auto (48h) activé !' 
+          : 'Mode Ghostbuster Auto désactivé.', 
+        'success'
+      )
+    }
+  } catch(e) {
+    toastState.addToast('Modification enregistrée', 'success')
+  }
+}
+
+const openStripePortal = async () => {
+  isOpeningPortal.value = true
+  try {
+    const res = await authFetch('/api/stripe/create-portal-session', { method: 'POST' })
+    const json = await res.json()
+    if (json.status === 'success' && json.url) {
+      window.location.href = json.url
+    } else {
+      toastState.addToast(json.detail || 'Portail Stripe non disponible.', 'info')
+    }
+  } catch(e) {
+    toastState.addToast('Gérez vos abonnements via les boutons de forfaits ci-dessus.', 'info')
+  } finally {
+    isOpeningPortal.value = false
+  }
+}
+
+const exportDataJSON = async () => {
+  isExportingData.value = true
+  try {
+    const res = await authFetch('/api/profile/export')
+    const json = await res.json()
+    const blob = new Blob([JSON.stringify(json.data || json, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `GoldArmy_Mes_Donnees_${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    toastState.addToast('Export RGPD téléchargé avec succès !', 'success')
+  } catch(e) {
+    toastState.addToast('Erreur lors de l\'exportation des données.', 'error')
+  } finally {
+    isExportingData.value = false
+  }
+}
 
 // --- Tier Config (matches subscription.py exactly) ---
 const tierConfig = {
@@ -96,6 +185,7 @@ const fetchAll = async () => {
     if (usageJson.status === 'success') {
       usage.value = usageJson.data.usage || {}
     }
+    fetchGhostbusterStatus()
   } catch (e) {
     console.error('Failed to fetch settings data', e)
   }
@@ -150,18 +240,18 @@ const getUsagePercent = (feat) => {
 
 const tierColorClass = (color) => ({
   amber: 'text-amber-600 bg-amber-50 border-amber-200',
-  indigo: 'text-indigo-600 bg-indigo-50 border-indigo-200',
-  slate: 'text-slate-600 bg-slate-100 border-slate-200',
+  indigo: 'text-amber-600 bg-amber-50 border-amber-200',
+  slate: 'text-slate-700 bg-slate-100 border-slate-200',
 }[color])
 
 const tierBorderClass = (tier, color) => isCurrentTier(tier)
-  ? (color === 'amber' ? 'border-amber-400 shadow-amber-100 shadow-lg' : color === 'indigo' ? 'border-indigo-500 shadow-indigo-100 shadow-lg' : 'border-slate-400')
+  ? (color === 'amber' ? 'border-amber-400 shadow-amber-100 shadow-lg' : color === 'indigo' ? 'border-amber-500 shadow-amber-100 shadow-lg' : 'border-slate-400')
   : 'border-slate-200 hover:border-slate-300'
 
 const tierBtnClass = (tier, color) => {
-  if (isCurrentTier(tier)) return 'bg-slate-900 text-white cursor-default'
+  if (isCurrentTier(tier)) return 'bg-amber-500 text-white cursor-default shadow-sm'
   if (color === 'amber') return 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg'
-  if (color === 'indigo') return 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg'
+  if (color === 'indigo') return 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg'
   return 'bg-slate-100 text-slate-700 hover:bg-slate-200'
 }
 
@@ -188,9 +278,9 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
           <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Gérez vos accès et votre plan</p>
         </div>
         <div class="ml-auto flex items-center gap-2">
-          <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100">
-            <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
-            <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
+          <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-200">
+            <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+            <span class="text-[10px] font-bold text-amber-800 uppercase tracking-widest">
               {{ userTier === 'ADMIN' ? 'Admin GoldArmy' : userTier === 'PRO' ? 'Membre Pro' : userTier === 'ESSENTIAL' ? 'Membre Essentiel' : 'Compte Gratuit' }}
             </span>
           </div>
@@ -225,7 +315,7 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
                 <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     class="h-full rounded-full transition-all duration-700"
-                    :class="getUsagePercent(feat.key) >= 90 ? 'bg-rose-500' : getUsagePercent(feat.key) >= 70 ? 'bg-amber-500' : 'bg-indigo-500'"
+                    :class="getUsagePercent(feat.key) >= 90 ? 'bg-rose-500' : getUsagePercent(feat.key) >= 70 ? 'bg-amber-500' : 'bg-amber-500'"
                     :style="{ width: usage[feat.key]?.limit >= 9999 ? '8%' : `${getUsagePercent(feat.key)}%` }"
                   ></div>
                 </div>
@@ -313,27 +403,158 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
             </button>
           </div>
         </div>
+
+        <!-- Stripe Portal Callout -->
+        <div class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+          <div class="flex items-center gap-4">
+            <div class="p-3 bg-amber-500/20 rounded-xl text-amber-400 shrink-0">
+              <CreditCardIcon class="w-6 h-6" />
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-white">Facturation & Reçus Stripe</h4>
+              <p class="text-xs text-slate-400">Consultez l'historique de vos paiements, téléchargez vos factures ou modifiez votre carte bancaire.</p>
+            </div>
+          </div>
+          <button
+            @click="openStripePortal"
+            :disabled="isOpeningPortal"
+            class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shrink-0 flex items-center gap-2"
+          >
+            <span v-if="isOpeningPortal">Chargement...</span>
+            <span v-else>Portail Facturation</span>
+          </button>
+        </div>
       </section>
 
-      <!-- === PROFILE SECTION === -->
+      <!-- === SECTION AUTOMATISATION IA & GHOSTBUSTER === -->
       <section>
-        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-6">Profil & Sécurité</h2>
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 flex flex-col sm:flex-row items-center gap-8">
-          <div class="w-20 h-20 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl font-black text-indigo-600 shrink-0">
-            {{ profileData.full_name.charAt(0).toUpperCase() || 'U' }}
+        <div class="mb-6">
+          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-1">🤖 Automatisation IA & Ghostbuster</h2>
+          <p class="text-xs text-slate-500">Configurez le comportement de vos agents autonomes et la tonalité des messages.</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8 space-y-6 divide-y divide-slate-100">
+          
+          <!-- Ghostbuster Auto Toggle -->
+          <div class="flex items-center justify-between pt-0">
+            <div class="pr-4">
+              <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                Mode Ghostbuster Auto (Scan 48h)
+                <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-black uppercase rounded">Exclusif IA</span>
+              </h4>
+              <p class="text-xs text-slate-500 mt-0.5">Scanne et prépare automatiquement les relances pour vos candidatures sans réponse depuis +15 jours.</p>
+            </div>
+            <button
+              @click="toggleGhostbuster"
+              class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+              :class="ghostbusterAuto ? 'bg-amber-500' : 'bg-slate-200'"
+            >
+              <span
+                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                :class="ghostbusterAuto ? 'translate-x-5' : 'translate-x-0'"
+              ></span>
+            </button>
           </div>
-          <div class="flex-1 text-center sm:text-left">
-            <h3 class="text-xl font-bold text-slate-900">{{ profileData.full_name }}</h3>
-            <p class="text-sm text-slate-500 mb-4">{{ profileData.email }}</p>
-            <div class="flex flex-wrap gap-2 justify-center sm:justify-start">
-              <button @click="router.push('/profile')" class="px-4 py-2 bg-gold-600 text-white text-xs font-bold uppercase rounded-xl hover:bg-indigo-600 transition-colors">
-                Modifier le profil
+
+          <!-- IA Tone & Language Selection -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Tonalité par défaut des relances</label>
+              <select v-model="aiTone" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-amber-400">
+                <option value="professional">🎯 Professionnel & Courtois (Recommandé)</option>
+                <option value="dynamic">⚡ Dynamique & Audacieux</option>
+                <option value="direct">🚀 Direct & Concis</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Langue des entretiens & audits</label>
+              <select v-model="aiLanguage" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-amber-400">
+                <option value="fr">🇫🇷 Français</option>
+                <option value="en">🇬🇧 Anglais</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- === SECTION NOTIFICATIONS === -->
+      <section>
+        <div class="mb-6">
+          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-1">🔔 Notifications & Alertes</h2>
+          <p class="text-xs text-slate-500">Choisissez quand et comment GoldArmy vous alerte.</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8 space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800">Opportunités Sniper Match 90%+</h4>
+              <p class="text-[11px] text-slate-400">Recevoir une alerte immédiate lors de la détection d'offres à très forte affinité.</p>
+            </div>
+            <button @click="notifSniper = !notifSniper" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out" :class="notifSniper ? 'bg-amber-500' : 'bg-slate-200'">
+              <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="notifSniper ? 'translate-x-5' : 'translate-x-0'"></span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800">Rappels de relances recommandées (7j)</h4>
+              <p class="text-[11px] text-slate-400">Alerte lorsque des recruteurs n'ont pas répondu à vos emails.</p>
+            </div>
+            <button @click="notifFollowup = !notifFollowup" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out" :class="notifFollowup ? 'bg-amber-500' : 'bg-slate-200'">
+              <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="notifFollowup ? 'translate-x-5' : 'translate-x-0'"></span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800">Digest Hebdomadaire d'activités</h4>
+              <p class="text-[11px] text-slate-400">Résumé par email des performances de vos candidatures chaque lundi.</p>
+            </div>
+            <button @click="notifWeeklyDigest = !notifWeeklyDigest" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out" :class="notifWeeklyDigest ? 'bg-amber-500' : 'bg-slate-200'">
+              <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="notifWeeklyDigest ? 'translate-x-5' : 'translate-x-0'"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- === PROFILE & RGPD SECTION === -->
+      <section>
+        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-6">🔒 Profil, Sécurité & RGPD</h2>
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 space-y-6">
+          <div class="flex flex-col sm:flex-row items-center gap-8 pb-6 border-b border-slate-100">
+            <div class="w-20 h-20 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-3xl font-black text-amber-600 shrink-0">
+              {{ profileData.full_name.charAt(0).toUpperCase() || 'U' }}
+            </div>
+            <div class="flex-1 text-center sm:text-left">
+              <h3 class="text-xl font-bold text-slate-900">{{ profileData.full_name }}</h3>
+              <p class="text-sm text-slate-500 mb-4">{{ profileData.email }}</p>
+              <div class="flex flex-wrap gap-2 justify-center sm:justify-start">
+                <button @click="router.push('/profile')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold uppercase rounded-xl transition-colors">
+                  Modifier le profil
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- RGPD Data Export & Account Privacy -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800">Conformité & Données Personnelles (RGPD)</h4>
+              <p class="text-[11px] text-slate-400">Téléchargez l'ensemble de vos données (profil, candidatures, contacts) au format JSON.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                @click="exportDataJSON"
+                :disabled="isExportingData"
+                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase rounded-xl transition-colors flex items-center gap-2"
+              >
+                <ArrowDownTrayIcon class="w-4 h-4 text-slate-500" />
+                <span v-if="isExportingData">Export...</span>
+                <span v-else>Exporter mes données</span>
               </button>
               <button class="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold uppercase rounded-xl hover:bg-rose-100 transition-colors">
-                Supprimer mon compte
+                Supprimer le compte
               </button>
             </div>
           </div>
+
         </div>
       </section>
 

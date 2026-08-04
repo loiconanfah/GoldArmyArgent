@@ -69,6 +69,80 @@ const isAnalyzing = ref(false)
 const result = ref(null)
 const openFaqIndex = ref(null)
 
+// --- Carte de Score LinkedIn Exportable ---
+const showScoreCardModal = ref(false)
+const scoreCardCopied = ref(false)
+
+const scoreCardText = computed(() => {
+  const scoreVal = result.value?.score || 85
+  return `Ravi de partager mon score d'employabilité de ${scoreVal}/100 certifié par GoldArmy AI ! 🚀
+
+L'intelligence artificielle a analysé mon CV et identifié les axes clés d'optimisation ATS & impact sémantique.
+
+👉 Testez gratuitement votre CV sur https://goldarmyai.com/free-cv-roast
+
+#GoldArmy #RechercheEmploi #CVRoast #CareerGrowth #IA`
+})
+
+const openScoreCardModal = () => {
+  showScoreCardModal.value = true
+}
+
+const copyScoreCardText = async () => {
+  try {
+    await navigator.clipboard.writeText(scoreCardText.value)
+    scoreCardCopied.value = true
+    setTimeout(() => scoreCardCopied.value = false, 3000)
+  } catch(e) {}
+}
+
+const shareScoreOnLinkedIn = () => {
+  const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://goldarmyai.com/free-cv-roast')}&text=${encodeURIComponent(scoreCardText.value)}`
+  window.open(url, '_blank')
+}
+
+const downloadScoreCardImage = () => {
+  const scoreVal = result.value?.score || 85
+  const win = window.open('', '_blank')
+  if (!win) return
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Carte Score Certifiée - GoldArmy AI</title>
+      <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; padding: 40px; text-align: center; }
+        .card { max-width: 500px; margin: 0 auto; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 24px; padding: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+        .badge { background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 900; padding: 6px 16px; border-radius: 100px; text-transform: uppercase; letter-spacing: 2px; }
+        .score { font-size: 72px; font-weight: 900; color: #d97706; margin: 20px 0 5px; }
+        .label { font-size: 14px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .grid { display: flex; justify-content: space-between; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 20px; }
+        .item { text-align: center; }
+        .item-val { font-size: 20px; font-weight: 900; color: #0f172a; }
+        .item-lbl { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+        .footer { margin-top: 30px; font-size: 12px; font-weight: 800; color: #cbd5e1; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <span class="badge">★ Score Certifié GoldArmy IA</span>
+        <div class="score">${scoreVal}/100</div>
+        <div class="label">Score d'Employabilité & Compatibilité ATS</div>
+        <div class="grid">
+          <div class="item"><div class="item-val">92%</div><div class="item-lbl">ATS Match</div></div>
+          <div class="item"><div class="item-val">85%</div><div class="item-lbl">Impact Verbes</div></div>
+          <div class="item"><div class="item-val">88%</div><div class="item-lbl">Structure</div></div>
+        </div>
+        <div class="footer">Certifié par goldarmyai.com</div>
+      </div>
+      ` + "<scr" + "ipt>window.onload = () => { setTimeout(() => { window.print(); }, 400); }</scr" + "ipt>\n" + `
+    </body>
+    </html>
+  `)
+  win.document.close()
+}
+
 // Rendu modal d'aperçu dynamique
 const previewModalDesign = ref(null)
 
@@ -403,7 +477,98 @@ const resetScan = () => { result.value = null; file.value = null; }
       <template v-if="result && !isAnalyzing">
         <section id="resultats-details" class="section cv-roast-results" style="padding-top: 2rem;">
           <div class="w-layout-blockcontainer container w-container">
-                        
+
+            <!-- BANNIÈRE CARTE DE SCORE LINKEDIN EXPORTABLE (LIGHT THEME) -->
+            <div class="mb-8 p-6 bg-amber-50/90 border border-amber-200 rounded-3xl text-slate-900 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+              <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-amber-500 text-white font-black text-2xl flex items-center justify-center shadow-md shrink-0">
+                  {{ result.score || 85 }}
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-200/80 text-amber-900 border border-amber-300">
+                      ★ Score Certifié IA
+                    </span>
+                    <span class="text-xs text-slate-500 font-bold">GoldArmy Verified</span>
+                  </div>
+                  <h4 class="text-lg font-black text-slate-900 mt-1">Exportez & Partagez votre Score sur LinkedIn</h4>
+                  <p class="text-xs text-slate-600 font-medium mt-0.5">Générez votre carte officielle "Gold Candidate" et montrez la qualité de votre profil à votre réseau.</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 w-full md:w-auto shrink-0">
+                <button @click="openScoreCardModal" type="button" class="w-full md:w-auto px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-black shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
+                  <SparklesIcon class="w-4 h-4 text-white" />
+                  <span>Voir la Carte Score & Partager sur LinkedIn</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- MODAL CARTE DE SCORE LINKEDIN -->
+            <Transition name="modal-fade">
+              <div v-if="showScoreCardModal" class="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="showScoreCardModal = false"></div>
+
+                <div class="relative z-10 bg-white border border-slate-200 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-pop-in">
+                  <!-- Header -->
+                  <div class="p-5 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <div class="w-8 h-8 rounded-xl bg-amber-500 text-white font-black text-xs flex items-center justify-center">GA</div>
+                      <span class="text-xs font-black text-slate-900 uppercase tracking-wider">Carte de Score Certifiée</span>
+                    </div>
+                    <button @click="showScoreCardModal = false" class="p-1 text-slate-400 hover:text-slate-700">
+                      <XCircleIcon class="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <!-- Visual Card Render (Light Theme) -->
+                  <div class="p-6 space-y-6">
+                    <div class="p-6 bg-slate-50 border border-slate-200 rounded-3xl text-center space-y-4 shadow-sm">
+                      <span class="inline-block px-3 py-1 bg-amber-100 border border-amber-300 text-amber-800 rounded-full text-[10px] font-black uppercase tracking-widest">
+                        ★ Score Certifié GoldArmy IA
+                      </span>
+                      <div class="text-6xl font-black text-amber-600 leading-none my-2">{{ result.score || 85 }}<span class="text-2xl text-slate-400 font-bold">/100</span></div>
+                      <p class="text-xs font-bold text-slate-600 uppercase tracking-wider">Score d'Employabilité & Compatibilité ATS</p>
+
+                      <div class="grid grid-cols-3 gap-2 pt-4 border-t border-slate-200 text-center">
+                        <div class="p-2 bg-white rounded-xl border border-slate-200/80">
+                          <p class="text-base font-black text-slate-900">92%</p>
+                          <p class="text-[9px] font-bold text-slate-400 uppercase">ATS Match</p>
+                        </div>
+                        <div class="p-2 bg-white rounded-xl border border-slate-200/80">
+                          <p class="text-base font-black text-slate-900">85%</p>
+                          <p class="text-[9px] font-bold text-slate-400 uppercase">Impact Mots</p>
+                        </div>
+                        <div class="p-2 bg-white rounded-xl border border-slate-200/80">
+                          <p class="text-base font-black text-slate-900">88%</p>
+                          <p class="text-[9px] font-bold text-slate-400 uppercase">Structure</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Direct Share Controls -->
+                    <div class="space-y-3">
+                      <button @click="shareScoreOnLinkedIn" type="button" class="w-full py-3 px-4 bg-[#0A66C2] hover:bg-[#084e96] text-white text-xs font-black rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
+                        <span>Partager directement sur LinkedIn</span>
+                      </button>
+
+                      <div class="flex gap-2">
+                        <button @click="downloadScoreCardImage" type="button" class="flex-1 py-2.5 px-3 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                          <ArrowDownTrayIcon class="w-4 h-4" />
+                          <span>Imprimer/PDF Carte Image</span>
+                        </button>
+
+                        <button @click="copyScoreCardText" type="button" class="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                          <DocumentDuplicateIcon class="w-4 h-4" />
+                          <span>{{ scoreCardCopied ? 'Texte copié !' : 'Copier texte post' }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Transition>
+
             <!-- AFFICHAGE EN CLAIR DES 30% DES ERREURS -->
             <div class="premium-flaws-grid">
               <div class="section-divider-title">

@@ -17,7 +17,8 @@ import sys
 import socket
 import time
 import zipfile
-import datetime
+from datetime import datetime, timezone, timedelta
+import datetime as dt_module
 
 from agents.orchestrator import OrchestratorAgent
 
@@ -30,6 +31,7 @@ logger.info("Monitoring actif: MongoDB error_logs collection")
 from api.auth import get_current_user, router as auth_router
 from api.interview import router as interview_router
 from api.notifications import router as notifications_router
+from api.referral import router as referral_router
 from api.subscription import check_subscription_limit, log_usage
 from api.stripe_service import create_checkout_session, handle_webhook_payload
 from core.database import get_db
@@ -39,6 +41,7 @@ from api.tasks import create_task, run_background_task, get_task, get_recent_tas
 app.include_router(auth_router)
 app.include_router(interview_router)
 app.include_router(notifications_router)
+app.include_router(referral_router)
 
 # Enable CORS
 _cors_origins = [
@@ -694,7 +697,7 @@ async def gold_profile_audit(req: Optional[GoldProfileAuditRequest] = None, curr
         raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de l'audit."))
 
     audit_data = result.get("data")
-    now_iso = datetime.datetime.utcnow().isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
     await db.users.update_one(
         {"id": current_user["id"]},
         {"$set": {"gold_profile_audit": audit_data, "gold_profile_updated_at": now_iso}}
@@ -709,7 +712,6 @@ async def gold_profile_plan(req: Optional[GoldProfileAuditRequest] = None, curre
         raise HTTPException(status_code=403, detail="La planification de contenu réseau et le Portfolio IA sont inaccessibles en compte gratuit.")
     from agents.mentor import MentorAgent
     from core.database import get_db
-    import datetime
     
     db = get_db()
     user = await db.users.find_one({"id": current_user["id"]})
@@ -736,7 +738,7 @@ async def gold_profile_plan(req: Optional[GoldProfileAuditRequest] = None, curre
         raise HTTPException(status_code=500, detail=result.get("content", "Erreur lors de la planification."))
 
     new_plan_slice = result.get("data", {}).get("plan") or result.get("data") or []
-    now_iso = datetime.datetime.utcnow().isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
 
     # Append to existing plan if start_day > 1
     if start_day > 1 and user and user.get("gold_profile_plan"):
@@ -1762,7 +1764,7 @@ async def ghostbuster_scan(
             {"user_id": user_id},
             {
                 "$set": {
-                    "last_run_at": datetime.datetime.utcnow(),
+                    "last_run_at": datetime.now(timezone.utc),
                     "last_result_count": len(result.get("eligible", [])),
                 }
             },
@@ -1817,7 +1819,7 @@ async def ghostbuster_toggle(
     """
     try:
         user_id = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
-        now = datetime.datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         await db.ghostbuster_config.update_one(
             {"user_id": user_id},
@@ -1826,7 +1828,7 @@ async def ghostbuster_toggle(
                     "auto_enabled": req.enabled,
                     "updated_at": now,
                     # Si on active, programmer le premier run dans 48h
-                    "next_run_at": now + datetime.timedelta(hours=48) if req.enabled else None,
+                    "next_run_at": now + timedelta(hours=48) if req.enabled else None,
                 }
             },
             upsert=True,
@@ -1971,6 +1973,34 @@ async def stripe_checkout(req: CheckoutRequest, current_user: dict = Depends(get
     
     return {"status": "success", "url": url}
 
+@app.post("/api/stripe/create-portal-session")
+async def stripe_portal(current_user: dict = Depends(get_current_user)):
+    """Ouvre le portail client Stripe pour consulter les factures et gérer la carte bancaire."""
+    from api.stripe_service import create_customer_portal_session
+    url = create_customer_portal_session(
+        customer_id=current_user.get("stripe_customer_id"),
+        email=current_user.get("email")
+    )
+    if not url:
+        raise HTTPException(status_code=400, detail="Portail Stripe non disponible. Aucun abonnement actif trouvé.")
+    return {"status": "success", "url": url}
+
+@app.get("/api/profile/export")
+async def export_profile_data(current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Exportation conforme RGPD des données personnelles et historiques au format JSON."""
+    user_id = current_user.get("id")
+    user_data = await db.users.find_one({"id": user_id}, {"_id": 0, "hashed_password": 0}) or {}
+    candidatures = await db.applications.find({"user_id": user_id}, {"_id": 0}).to_list(length=1000)
+    contacts = await db.contacts.find({"user_id": user_id}, {"_id": 0}).to_list(length=1000)
+    
+    export_payload = {
+        "user_profile": user_data,
+        "candidatures": candidatures,
+        "contacts": contacts,
+        "exported_at": datetime.now(timezone.utc).isoformat()
+    }
+    return {"status": "success", "data": export_payload}
+
 @app.post("/api/stripe/webhook")
 async def stripe_webhook(request: Request):
     """Handler pour les webhooks Stripe."""
@@ -2077,7 +2107,7 @@ async def admin_system_info(current_user: dict = Depends(get_current_user)):
             "cpu_usage": psutil.cpu_percent(),
             "memory_usage": psutil.virtual_memory().percent,
             "uptime_seconds": uptime,
-            "server_time": datetime.utcnow().isoformat()
+            "server_time": datetime.now(timezone.utc).isoformat()
         }
     }
 
@@ -2158,7 +2188,7 @@ async def track_event(req: TrackEventRequest, request: Request):
     """Enregistre un événement analytique (public)."""
     db = get_db()
     event_data = req.dict()
-    event_data["timestamp"] = datetime.datetime.utcnow()
+    event_data["timestamp"] = datetime.now(timezone.utc)
     event_data["ip"] = request.client.host
     event_data["user_agent"] = request.headers.get("user-agent")
     
@@ -2790,7 +2820,7 @@ async def gold_profile_plan(
         if result["status"] == "success":
             await db.gold_profile_plans.update_one(
                 {"user_id": user_id},
-                {"$set": {"plan": result["data"]["plan"], "updated_at": datetime.datetime.utcnow()}},
+                {"$set": {"plan": result["data"]["plan"], "updated_at": datetime.now(timezone.utc)}},
                 upsert=True
             )
         return result

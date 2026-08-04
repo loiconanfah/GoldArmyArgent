@@ -1,7 +1,7 @@
 import stripe
 import os
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from loguru import logger
 from config.settings import settings
 from core.database import get_db
@@ -41,6 +41,27 @@ def create_checkout_session(user_id: str, email: str, tier: str):
         return session.url
     except Exception as e:
         logger.error(f"Erreur Stripe Session: {e}")
+        return None
+
+def create_customer_portal_session(customer_id: str = None, email: str = None):
+    """Crée une session du portail client Stripe pour gérer les abonnements et factures."""
+    try:
+        if not customer_id and email:
+            customers = stripe.Customer.list(email=email, limit=1)
+            if customers and customers.data:
+                customer_id = customers.data[0].id
+
+        if not customer_id:
+            logger.warning("Aucun customer_id Stripe trouvé pour ouvrir le portail")
+            return None
+
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=f"{settings.frontend_url}/settings",
+        )
+        return session.url
+    except Exception as e:
+        logger.error(f"Erreur Stripe Customer Portal: {e}")
         return None
 
 async def handle_webhook_payload(payload, sig_header):
@@ -110,7 +131,7 @@ async def update_user_subscription(session):
                 "type": "success",
                 "action_url": "/settings",
                 "is_read": False,
-                "created_at": datetime.utcnow().isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.notifications.insert_one(new_notif)
 
@@ -166,7 +187,7 @@ async def cancel_user_subscription(subscription):
                 "type": "warning",
                 "action_url": "/settings",
                 "is_read": False,
-                "created_at": datetime.utcnow().isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.notifications.insert_one(new_notif)
 

@@ -9,7 +9,7 @@ import {
   SparklesIcon, ArrowTopRightOnSquareIcon, CheckBadgeIcon, BellAlertIcon,
   PlusIcon, XMarkIcon, ClipboardDocumentIcon, CheckIcon, TrashIcon,
   DocumentTextIcon, ArrowUpTrayIcon, TrophyIcon, XCircleIcon,
-  ClockIcon, FireIcon, Bars3Icon,
+  ClockIcon, FireIcon, Bars3Icon, MagnifyingGlassIcon
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -28,6 +28,39 @@ const isLoading = ref(true)
 const draggedItem = ref(null)
 const dragOverCol = ref(null)
 const boardVisible = ref(false)
+
+// Instant Search & Filter Bar
+const searchQuery = ref('')
+const activeFilterTag = ref('ALL') // ALL, URGENT, LINKEDIN, WITH_NOTES
+
+const filteredCrmCards = computed(() => {
+  const result = { 'TO_APPLY': [], 'APPLIED': [], 'FOLLOW_UP': [], 'INTERVIEW': [], 'OFFER': [] }
+  const q = searchQuery.value.trim().toLowerCase()
+
+  for (const [colId, cards] of Object.entries(crmCards.value)) {
+    result[colId] = (cards || []).filter(card => {
+      // 1. Text Search
+      const titleMatch = !q || (card.job_title && card.job_title.toLowerCase().includes(q))
+      const companyMatch = !q || (card.company_name && card.company_name.toLowerCase().includes(q))
+      const notesMatch = !q || (card.notes && card.notes.toLowerCase().includes(q))
+      if (!titleMatch && !companyMatch && !notesMatch) return false
+
+      // 2. Filter Pills
+      if (activeFilterTag.value === 'URGENT') {
+        const days = daysSince(card.created_at)
+        if (colId !== 'FOLLOW_UP' || days <= 7) return false
+      } else if (activeFilterTag.value === 'LINKEDIN') {
+        if (!card.url || !card.url.toLowerCase().includes('linkedin')) return false
+      } else if (activeFilterTag.value === 'WITH_NOTES') {
+        if (!card.notes || !card.notes.trim()) return false
+      }
+
+      return true
+    })
+  }
+
+  return result
+})
 
 const showFollowupPopup = ref(false)
 const followupEmail = ref('')
@@ -130,7 +163,8 @@ const confirmDeleteCard = async () => {
 const handleDragOver = (e, colId) => { e.preventDefault(); dragOverCol.value = colId }
 const handleDragLeave = () => { dragOverCol.value = null }
 
-const daysSince = (iso) => { if (!iso) return null; return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) }
+const daysSince = (iso) => { if (!iso) return 0; return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) }
+
 const getInitial = (n) => n ? n.charAt(0).toUpperCase() : '?'
 const getCompanyLogoUrl = (companyName) => {
   if (!companyName) return null
@@ -294,6 +328,58 @@ onMounted(() => { fetchCrmData() })
           </div>
         </div>
 
+        <!-- ═══ INSTANT SEARCH & FILTER BAR (LIGHT THEME) ═══ -->
+        <div class="mt-4 bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+          <!-- Search Input -->
+          <div class="relative w-full md:w-80">
+            <MagnifyingGlassIcon class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Rechercher entreprise, poste..."
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white transition-all"
+            />
+            <button v-if="searchQuery" @click="searchQuery = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <XMarkIcon class="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <!-- Quick Filter Pills -->
+          <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto custom-scrollbar pb-1 md:pb-0">
+            <button
+              @click="activeFilterTag = 'ALL'"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+              :class="activeFilterTag === 'ALL' ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+            >
+              Tous ({{ totalCards }})
+            </button>
+
+            <button
+              @click="activeFilterTag = 'URGENT'"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5"
+              :class="activeFilterTag === 'URGENT' ? 'bg-rose-500 text-white shadow-sm' : 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200'"
+            >
+              <span>🚨</span> À relancer urgent
+            </button>
+
+            <button
+              @click="activeFilterTag = 'LINKEDIN'"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5"
+              :class="activeFilterTag === 'LINKEDIN' ? 'bg-amber-500 text-white shadow-sm' : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'"
+            >
+              <span>💼</span> LinkedIn
+            </button>
+
+            <button
+              @click="activeFilterTag = 'WITH_NOTES'"
+              class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5"
+              :class="activeFilterTag === 'WITH_NOTES' ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+            >
+              <span>📝</span> Avec notes
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -319,13 +405,13 @@ onMounted(() => { fetchCrmData() })
               </div>
               <span class="col-title">{{ col.title }}</span>
             </div>
-            <div class="col-count">{{ crmCards[col.id]?.length || 0 }}</div>
+            <div class="col-count">{{ filteredCrmCards[col.id]?.length || 0 }}</div>
           </div>
 
           <!-- Progress bar -->
           <div class="col-progress-track">
             <div class="col-progress-fill"
-              :style="`width: ${totalCards ? Math.round((crmCards[col.id]?.length||0)/totalCards*100) : 0}%; background: ${col.accent}`">
+              :style="`width: ${totalCards ? Math.round((filteredCrmCards[col.id]?.length||0)/totalCards*100) : 0}%; background: ${col.accent}`">
             </div>
           </div>
 
@@ -334,7 +420,7 @@ onMounted(() => { fetchCrmData() })
             <TransitionGroup name="card" tag="div" class="space-y-3">
 
               <div
-                v-for="(card, cardIdx) in crmCards[col.id]"
+                v-for="(card, cardIdx) in filteredCrmCards[col.id]"
                 :key="card.id"
                 draggable="true"
                 @dragstart="handleDragStart($event, card, col.id)"
@@ -617,7 +703,7 @@ onMounted(() => { fetchCrmData() })
   line-height: 1.2;
 }
 .crm-title-accent {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -641,7 +727,7 @@ onMounted(() => { fetchCrmData() })
   animation: fadeIn 0.5s ease both 0.2s;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
-.refresh-btn:hover { background: #f8fafc; border-color: #6366f1; color: #6366f1; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.15); }
+.refresh-btn:hover { background: #f8fafc; border-color: #f59e0b; color: #d97706; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245,158,11,0.15); }
 
 /* ── URL Input ── */
 .url-input-wrapper { animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both 0.15s; }
@@ -649,16 +735,16 @@ onMounted(() => { fetchCrmData() })
 .url-input {
   width: 100%;
   background: rgba(248, 250, 255, 0.9);
-  border: 1.5px solid rgba(99, 102, 241, 0.15);
+  border: 1.5px solid rgba(245, 158, 11, 0.2);
   border-radius: 14px;
   color: #0f172a;
   font-size: 14px;
   padding: 13px 160px 13px 44px;
   transition: all 0.25s ease;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.05);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.05);
   outline: none;
 }
-.url-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12), 0 2px 8px rgba(99,102,241,0.1); background: white; }
+.url-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15), 0 2px 8px rgba(245,158,11,0.1); background: white; }
 .url-submit-btn {
   position: absolute;
   right: 6px; top: 6px; bottom: 6px;
@@ -667,16 +753,16 @@ onMounted(() => { fetchCrmData() })
   gap: 6px;
   padding: 0 16px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
   font-size: 12px;
   font-weight: 800;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+  box-shadow: 0 2px 8px rgba(245,158,11,0.35);
 }
-.url-submit-btn:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(99,102,241,0.45); }
+.url-submit-btn:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(245,158,11,0.45); }
 .url-submit-btn:active { transform: scale(0.98); }
 .url-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 

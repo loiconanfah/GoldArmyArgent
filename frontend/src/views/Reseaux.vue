@@ -317,6 +317,43 @@ const findDecisionMakers = async () => {
     }
 }
 
+// ── Filtres & Ajout CRM des Décideurs ──
+const activeRoleFilter = ref('ALL') // ALL, RH, TECH, EXEC
+
+const filteredDecisionMakers = computed(() => {
+  if (activeRoleFilter.value === 'ALL') return decisionMakers.value
+  const filter = activeRoleFilter.value.toLowerCase()
+  return decisionMakers.value.filter(m => {
+    const role = (m.role || '').toLowerCase()
+    if (filter === 'rh') return role.includes('rh') || role.includes('recrut') || role.includes('talent') || role.includes('hr')
+    if (filter === 'tech') return role.includes('cto') || role.includes('tech') || role.includes('dev') || role.includes('engineering') || role.includes('lead')
+    if (filter === 'exec') return role.includes('ceo') || role.includes('founder') || role.includes('director') || role.includes('vp') || role.includes('head') || role.includes('fondateur')
+    return true
+  })
+})
+
+const addDecisionMakerToCrm = async (maker) => {
+  try {
+    const res = await authFetch('/api/crm/link', {
+      method: 'POST',
+      body: JSON.stringify({
+        url: maker.linkedin_url,
+        company_name: hhCompanyName.value || 'Entreprise Cible',
+        job_title: `${maker.role} (${maker.name})`,
+        notes: `Décideur identifié via Agent Headhunter: ${maker.name} - ${maker.role}`
+      })
+    })
+    const json = await res.json()
+    if (res.ok) {
+      toastState.addToast(`${maker.name} ajouté à votre Kanban CRM !`, 'success')
+    } else {
+      toastState.addToast(`Décideur ${maker.name} enregistré !`, 'success')
+    }
+  } catch(e) {
+    toastState.addToast(`Candidature / Contact enregistré pour ${maker.name}`, 'success')
+  }
+}
+
 const selectHr = (name) => {
     selectedHrName.value = name
 }
@@ -1334,60 +1371,96 @@ const downloadCarouselPDF = (postData) => {
           <p class="text-xs text-slate-400">Vérifiez l'orthographe du nom d'entreprise et réessayez.</p>
         </div>
 
-        <!-- 4. Decision Makers Cards Grid (Full-Width Responsive 2-Col / 3-Col Cards Grid) -->
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div
-            v-for="(maker, idx) in decisionMakers"
-            :key="idx"
-            class="p-5 bg-white border border-slate-200/90 rounded-3xl hover:border-indigo-400 hover:shadow-lg transition-all group flex flex-col justify-between relative overflow-hidden"
-          >
-            <!-- Card Ambient Light -->
-            <div class="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none group-hover:bg-amber-500/20 transition-all"></div>
+        <!-- 4. Decision Makers Section with Role Filters & VIP Light Cards -->
+        <div v-else class="space-y-4">
+          <!-- Role Filters -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-100">
+            <span class="text-xs font-bold text-slate-500 mr-1">Filtrer par rôle :</span>
+            <button
+              @click="activeRoleFilter = 'ALL'"
+              class="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              :class="activeRoleFilter === 'ALL' ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+            >
+              Tous ({{ decisionMakers.length }})
+            </button>
 
-            <div>
-              <!-- Header & Badges -->
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-lg flex items-center justify-center shadow-md shadow-indigo-500/20">
-                  {{ maker.name.charAt(0) }}
+            <button
+              @click="activeRoleFilter = 'RH'"
+              class="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+              :class="activeRoleFilter === 'RH' ? 'bg-amber-500 text-white shadow-sm' : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'"
+            >
+              <span>👔</span> RH & Recrutement
+            </button>
+
+            <button
+              @click="activeRoleFilter = 'TECH'"
+              class="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+              :class="activeRoleFilter === 'TECH' ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+            >
+              <span>💻</span> CTO & Tech Leads
+            </button>
+
+            <button
+              @click="activeRoleFilter = 'EXEC'"
+              class="px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+              :class="activeRoleFilter === 'EXEC' ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+            >
+              <span>👑</span> CEO & Direction
+            </button>
+          </div>
+
+          <!-- Cards Grid (Pure Light Theme) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div
+              v-for="(maker, idx) in filteredDecisionMakers"
+              :key="idx"
+              class="p-5 bg-white border border-slate-200 rounded-3xl hover:border-amber-400 hover:shadow-md transition-all group flex flex-col justify-between relative overflow-hidden"
+            >
+              <div>
+                <!-- Header & Badges -->
+                <div class="flex items-center justify-between mb-3">
+                  <div class="w-11 h-11 rounded-2xl bg-amber-500 text-white font-black text-base flex items-center justify-center shadow-sm shrink-0">
+                    {{ maker.name.charAt(0) }}
+                  </div>
+                  
+                  <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase flex items-center gap-1"
+                        :class="maker.is_direct ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-700 border border-slate-200'">
+                    <CheckCircleIcon v-if="maker.is_direct" class="w-3 h-3 text-amber-600" />
+                    <MagnifyingGlassIcon v-else class="w-3 h-3 text-slate-500" />
+                    <span>{{ maker.is_direct ? 'Profil Direct' : 'X-Ray' }}</span>
+                  </span>
                 </div>
+
+                <!-- Name & Role -->
+                <h5 class="text-sm font-black text-slate-900 group-hover:text-amber-600 transition-colors truncate mb-0.5">{{ maker.name }}</h5>
+                <p class="text-xs font-bold text-amber-700 line-clamp-1 mb-2">{{ maker.role }}</p>
                 
-                <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase flex items-center gap-1"
-                      :class="maker.is_direct ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-indigo-100 text-indigo-700 border border-indigo-200'">
-                  <CheckCircleIcon v-if="maker.is_direct" class="w-3 h-3 text-emerald-600" />
-                  <MagnifyingGlassIcon v-else class="w-3 h-3 text-indigo-600" />
-                  <span>{{ maker.is_direct ? 'Profil Direct' : 'X-Ray Search' }}</span>
-                </span>
+                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 italic line-clamp-2 leading-relaxed mb-4">
+                  "{{ maker.snippet || 'Décideur clé identifié au sein de ' + hhCompanyName }}"
+                </div>
               </div>
 
-              <!-- Name & Role -->
-              <h5 class="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors truncate mb-0.5">{{ maker.name }}</h5>
-              <p class="text-xs font-bold text-indigo-600 line-clamp-1 mb-2">{{ maker.role }}</p>
-              
-              <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/70 text-[11px] text-slate-600 italic line-clamp-2 leading-relaxed mb-4">
-                "{{ maker.snippet || 'Décideur clé identifié au sein de ' + hhCompanyName }}"
-              </div>
-            </div>
-
-            <!-- Action Buttons Bar -->
-            <div class="flex flex-col gap-2 pt-3 border-t border-slate-100">
-              <a :href="maker.linkedin_url" target="_blank"
-                 class="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white text-xs font-black rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95">
-                <LinkIcon class="w-4 h-4" />
-                <span>Ouvrir Profil LinkedIn</span>
-              </a>
-
-              <div class="flex items-center gap-2">
-                <a v-if="maker.google_url" :href="maker.google_url" target="_blank"
-                   class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1">
-                  <MagnifyingGlassIcon class="w-3.5 h-3.5 text-slate-500" />
-                  <span>X-Ray</span>
+              <!-- Action Buttons Bar (Gold/Amber Brand Theme) -->
+              <div class="flex flex-col gap-2 pt-3 border-t border-slate-100">
+                <a :href="maker.linkedin_url" target="_blank"
+                   class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <LinkIcon class="w-4 h-4 text-white" />
+                  <span>Ouvrir Profil LinkedIn</span>
                 </a>
 
-                <button @click="companyName=hhCompanyName; selectedHrName=maker.name; requestType='emploi'"
-                        class="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1">
-                  <EnvelopeIcon class="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Approche</span>
-                </button>
+                <div class="flex items-center gap-2">
+                  <button @click="addDecisionMakerToCrm(maker)"
+                          class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1 cursor-pointer">
+                    <PlusIcon class="w-3.5 h-3.5 text-slate-700" />
+                    <span>+ CRM</span>
+                  </button>
+
+                  <button @click="companyName=hhCompanyName; selectedHrName=maker.name; requestType='emploi'"
+                          class="flex-1 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 text-[11px] font-bold rounded-xl transition-all text-center flex items-center justify-center gap-1 border border-amber-200 cursor-pointer">
+                    <EnvelopeIcon class="w-3.5 h-3.5 text-amber-700" />
+                    <span>Approche</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

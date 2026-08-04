@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
@@ -95,7 +95,7 @@ async def create_notification(
             "type": data.type,
             "action_url": data.action_url,
             "is_read": False,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
         
         result = await db.notifications.insert_one(new_notif)
@@ -171,7 +171,7 @@ async def broadcast_notification(title: str, message: str, type: str = "info", a
     if not users:
         return 0
         
-    created_at = datetime.utcnow().isoformat()
+    created_at = datetime.now(timezone.utc).isoformat()
     
     # 2. Créer les notifications en DB (bulk insert)
     notifications = []

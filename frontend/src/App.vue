@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { authFetch } from './utils/auth'
 import Clarity from '@microsoft/clarity'
+import ReferralModal from './components/ReferralModal.vue'
 import { 
   HomeIcon, 
   MapIcon,
@@ -22,10 +23,13 @@ import {
   SparklesIcon,
   ShieldCheckIcon,
   SunIcon,
-  MoonIcon
+  MoonIcon,
+  GiftIcon
 } from '@heroicons/vue/24/outline'
 import { useTheme } from './composables/useTheme'
 import ToastPortal from './components/ToastPortal.vue'
+
+const showReferralModal = ref(false)
 
 const route = useRoute()
 const router = useRouter()
@@ -267,6 +271,16 @@ onMounted(() => {
 
         <!-- Right: Actions & User Profile -->
         <div class="flex items-center gap-3 sm:gap-5">
+            <!-- Viral Referral Button -->
+            <button 
+                @click="showReferralModal = true"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm hover:shadow transition-all cursor-pointer border border-amber-400/40"
+                title="Gagnez 15 crédits bonus par ami invité"
+            >
+                <GiftIcon class="w-4 h-4 text-white" />
+                <span class="hidden sm:inline">Parrainer (+15 cr.)</span>
+            </button>
+
             <!-- Language Switcher -->
             <button 
                 @click="toggleLanguage" 
@@ -356,6 +370,7 @@ onMounted(() => {
         </div>
       </main>
       <ToastPortal />
+      <ReferralModal :show="showReferralModal" @close="showReferralModal = false" />
     </div>
   </div>
 </template>

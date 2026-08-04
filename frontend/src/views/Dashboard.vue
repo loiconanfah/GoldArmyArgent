@@ -3,6 +3,7 @@ import { authFetch } from '../utils/auth'
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import WorkflowPipelineBuilder from '../components/WorkflowPipelineBuilder.vue'
+import ReferralModal from '../components/ReferralModal.vue'
 import { useI18n } from 'vue-i18n'
 import { 
   PlayIcon, 
@@ -35,8 +36,11 @@ import {
   SparklesIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  GiftIcon
 } from '@heroicons/vue/24/outline'
+
+const showReferralModal = ref(false)
 
 // Dimensions pour le graphique principal
 const W = 800, H = 250
@@ -996,6 +1000,10 @@ const saveWorkflowStatus = async (pb) => {
           <div class="date-str">{{ todayStr }}</div>
           <div class="date-divider"></div>
           <button @click="$router.push('/crm')" class="btn-gold">{{ t('dashboard.show_tasks') }} &rarr;</button>
+          <button @click="showReferralModal = true" class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer ml-2 border border-amber-400/30">
+            <GiftIcon class="w-4 h-4 text-white" />
+            <span>Parrainer (+15 cr.)</span>
+          </button>
       </div>
       
       <div class="header-greeting">
@@ -2362,6 +2370,7 @@ const saveWorkflowStatus = async (pb) => {
       </div>
     </Transition>
 
+    <ReferralModal :show="showReferralModal" @close="showReferralModal = false" />
   </div>
 </template>
 

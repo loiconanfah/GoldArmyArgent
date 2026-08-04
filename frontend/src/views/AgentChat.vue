@@ -1222,7 +1222,7 @@ const restoreCvFromHistory = (entry) => {
             ></iframe>
             
             <!-- CODE EDITOR (Pre) -->
-            <div v-else-if="activeWorkspaceTab === 'code'" class="h-full bg-[#0d1117] flex flex-col">
+            <div v-else-if="activeWorkspaceTab === 'code'" class="h-full bg-slate-900 flex flex-col">
                 <!-- File Selector Tabs -->
                 <div class="flex items-center gap-1 p-2 bg-[#F9FAFB] border-b border-slate-200">
                     <button @click="activeFileTab = 'html'" :class="activeFileTab === 'html' ? 'bg-white text-gold-400' : 'text-slate-500'" class="px-3 py-1 text-[10px] font-bold rounded flex items-center gap-2">
@@ -1237,7 +1237,7 @@ const restoreCvFromHistory = (entry) => {
                 </div>
 
                 <!-- Editor -->
-                <div class="flex-1 overflow-hidden p-0 font-mono text-xs text-slate-300 bg-[#0d1117]">
+                <div class="flex-1 overflow-hidden p-0 font-mono text-xs text-slate-300 bg-slate-900">
                     <textarea 
                         v-if="activeFileTab === 'html'" 
                         v-model="workspaceProject.html"

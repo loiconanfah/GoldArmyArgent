@@ -6,7 +6,7 @@
   :root {
     --bg-primary: #F7F8FC;
     --bg-secondary: #EEF1F8;
-    --text-primary: #0D1117;
+    --text-primary: #0F172A;
     --text-secondary: #374151;
     --accent-primary: #7c3aed;
     --accent-secondary: #6d28d9;
@@ -166,7 +166,7 @@ body {
 .theme-light,
 .theme-light .text-slate-200,
 .theme-light .text-white {
-  color: #0D1117 !important;
+  color: #0F172A !important;
 }
 /* Texte secondaire thème clair: contraste élevé (WCAG AA) sur fond clair */
 .theme-light .text-slate-400,

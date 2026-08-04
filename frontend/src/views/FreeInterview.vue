@@ -369,7 +369,7 @@ const endCall = () => {
                         <div class="absolute inset-0 bg-indigo-500 rounded-full animate-ping opacity-10 scale-150" v-if="(step === 'interviewing' && userAnswer === '') || step === 'feedback'"></div>
                         <div class="absolute inset-0 bg-fuchsia-400 rounded-full animate-pulse opacity-5 scale-[1.2]" v-if="(step === 'interviewing' && userAnswer === '') || step === 'feedback'"></div>
                         
-                        <img src="/avatars/tech.png" :alt="t('free_interview.recruiter_alt')" class="w-full h-full rounded-full object-cover border-[4px] border-indigo-500/20 relative z-10 shadow-[0_0_50px_rgba(99,102,241,0.2)] bg-[#0d1117] p-2" />
+                        <img src="/avatars/tech.png" :alt="t('free_interview.recruiter_alt')" class="w-full h-full rounded-full object-cover border-[4px] border-indigo-500/20 relative z-10 shadow-[0_0_50px_rgba(99,102,241,0.2)] bg-white p-2" />
                     </div>
                 </div>
                 

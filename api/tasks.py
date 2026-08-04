@@ -1,6 +1,6 @@
 import uuid
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional
 from pydantic import BaseModel
 from loguru import logger
@@ -20,7 +20,7 @@ class TaskEntry(BaseModel):
 async def create_task(user_id: str, task_type: str) -> str:
     task_id = str(uuid.uuid4())
     db = get_db()
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     
     task_data = {
         "id": task_id,
@@ -38,7 +38,7 @@ async def create_task(user_id: str, task_type: str) -> str:
 
 async def update_task(task_id: str, status: str, result: Any = None, error: str = None):
     db = get_db()
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     
     update_data = {
         "status": status,
