@@ -44,6 +44,7 @@ const isPublicRoute = computed(() => {
   return publicPaths.includes(route.path) || route.path.startsWith('/blog/')
 })
 const isImmersive = computed(() => route.path === '/interview')
+const isOrgRoute = computed(() => route.path.startsWith('/organisation'))
 const isMobileMenuOpen = ref(false)
 const isSidebarCollapsed = ref(false)
 
@@ -158,7 +159,7 @@ onMounted(() => {
     <div v-show="isMobileMenuOpen && !isPublicRoute" class="fixed inset-0 bg-surface-950/80 backdrop-blur-sm z-40 md:hidden" @click="isMobileMenuOpen = false"></div>
 
     <!-- Sidebar (Left Col) -->
-    <aside v-if="!isPublicRoute && !isImmersive" :class="[
+    <aside v-if="!isPublicRoute && !isImmersive && !isOrgRoute" :class="[
       'fixed inset-y-0 left-0 bg-surface-900 border-r border-surface-800 flex flex-col z-50 transition-all duration-300 ease-in-out md:static shadow-sm',
       isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
       isSidebarCollapsed ? 'w-20' : 'w-64'
@@ -268,7 +269,7 @@ onMounted(() => {
     <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden relative w-full" :class="!isImmersive ? 'z-10' : 'z-[100]'">
       
       <!-- Topbar (Header) -->
-      <header v-if="!isPublicRoute && !isImmersive" class="h-16 bg-surface-900 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4 shadow-sm">
+      <header v-if="!isPublicRoute && !isImmersive && !isOrgRoute" class="h-16 bg-surface-900 w-full border-b border-surface-800 flex items-center justify-between px-4 lg:px-8 relative z-20 shrink-0 gap-4 shadow-sm">
         
         <!-- Left: Mobile Toggle & Page Title (Optional) -->
         <div class="flex items-center gap-4">

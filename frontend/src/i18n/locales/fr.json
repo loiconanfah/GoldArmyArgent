@@ -8,6 +8,109 @@
             "coach": "Coach de carrière",
             "other": "Autre"
         },
+        "nav": {
+            "mentors": "Mentors",
+            "network": "Réseau",
+            "community": "Communauté",
+            "billing": "Facturation",
+            "back_to_app": "Retour à l'app",
+            "admin_badge": "Administrateur",
+            "logout": "Déconnexion",
+            "group_pilot": "Pilotage",
+            "group_community": "Vie de la cohorte",
+            "group_manage": "Gestion"
+        },
+        "billing": {
+            "sub": "Abonnement de votre organisation — 1 $ par membre et par mois",
+            "month": "mois",
+            "members": "membres",
+            "admin_excluded": "L'administrateur principal n'est pas facturé.",
+            "subscribe": "Activer la facturation",
+            "manage": "Gérer l'abonnement",
+            "status_active": "Actif",
+            "status_canceled": "Résilié",
+            "status_inactive": "Inactif",
+            "billable_seats": "Sièges facturables",
+            "per_member": "Par membre / mois",
+            "checkout_success": "Paiement confirmé ! La facturation de votre organisation est active.",
+            "how_title": "Comment ça marche",
+            "how_1": "Chaque membre actif de votre cohorte coûte 1 $/mois.",
+            "how_2": "Le nombre de sièges s'ajuste automatiquement quand des membres rejoignent ou quittent.",
+            "how_3": "Vous pouvez gérer ou résilier à tout moment via le portail Stripe."
+        },
+        "home": {
+            "sub": "Vue d'ensemble de votre cohorte",
+            "monthly": "Candidatures par mois",
+            "cv_rate": "Taux de CV complétés",
+            "funnel": "Progression des candidatures",
+            "top_members": "Membres les plus actifs",
+            "apps": "cand."
+        },
+        "funnel": {
+            "to_apply": "À postuler",
+            "applied": "Postulé",
+            "follow_up": "Relance",
+            "interview": "Entretien",
+            "rejected": "Refusé"
+        },
+        "roles": {
+            "member": "Membre",
+            "mentor": "Mentor",
+            "advisor": "Conseiller"
+        },
+        "network": {
+            "sub": "Le carnet de contacts partagé de votre organisation",
+            "add": "Ajouter",
+            "name": "Nom",
+            "company": "Entreprise",
+            "role": "Fonction",
+            "email": "Email",
+            "linkedin": "LinkedIn",
+            "notes": "Notes",
+            "save": "Enregistrer",
+            "empty": "Aucun contact pour l'instant.",
+            "remove_confirm": "Supprimer {name} du réseau ?"
+        },
+        "mentors": {
+            "sub": "Vos mentors, conseillers et les événements de la cohorte",
+            "no_mentors": "Aucun mentor désigné.",
+            "no_advisors": "Aucun conseiller désigné.",
+            "assign_hint": "Désignez des mentors et conseillers depuis l'onglet Membres."
+        },
+        "events": {
+            "title": "Événements",
+            "add": "Nouveau",
+            "name": "Titre de l'événement",
+            "description": "Description",
+            "location": "Lieu",
+            "link": "Lien (visio…)",
+            "create": "Créer l'événement",
+            "empty": "Aucun événement planifié.",
+            "join": "Rejoindre",
+            "by": "Par",
+            "remove_confirm": "Supprimer cet événement ?",
+            "link_label": "Ouvrir le lien",
+            "rsvp": "Participer",
+            "attending": "Inscrit ✓"
+        },
+        "community": {
+            "sub": "Échangez et partagez des ressources entre membres",
+            "type_message": "Message",
+            "type_cv": "Modèle de CV",
+            "type_portfolio": "Portfolio",
+            "type_offer": "Offre d'emploi",
+            "type_interview": "Résultat d'entretien",
+            "title_ph": "Titre (optionnel)",
+            "content_ph": "Partagez quelque chose avec la communauté…",
+            "link_ph": "Lien (optionnel)",
+            "publish": "Publier",
+            "publishing": "Publication…",
+            "empty": "Aucune publication. Lancez la conversation !",
+            "remove_confirm": "Supprimer cette publication ?",
+            "all": "Tout",
+            "comment_ph": "Écrire un commentaire…",
+            "comment_send": "Envoyer"
+        },
         "register": {
             "account_type": "Type de compte",
             "candidate": "Candidat",
@@ -34,7 +137,8 @@
             "with_cv": "Avec CV",
             "applications": "Candidatures",
             "interviews": "Entretiens",
-            "avg": "Moy./membre"
+            "avg": "Moy./membre",
+            "placement": "Taux d'entretien"
         },
         "invite": {
             "title": "Inviter des membres",
@@ -64,7 +168,16 @@
             "cv_no": "Non",
             "sent": "envoyées",
             "remove": "Retirer",
-            "remove_confirm": "Retirer {name} de la cohorte ?"
+            "remove_confirm": "Retirer {name} de la cohorte ?",
+            "sub": "Suivi individuel de chaque membre",
+            "search": "Rechercher un membre…",
+            "joined": "Inscrit le",
+            "assign_role": "Rôle dans l'organisation",
+            "no_apps": "Aucune candidature.",
+            "applications_list": "Candidatures",
+            "simulations": "Simulations d'entretien",
+            "simulation": "Simulation",
+            "no_sims": "Aucune simulation."
         },
         "settings": {
             "title": "Paramètres de l'organisation",

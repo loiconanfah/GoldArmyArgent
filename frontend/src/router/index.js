@@ -139,9 +139,17 @@ const routes = [
     },
     {
         path: '/organisation',
-        name: 'OrgDashboard',
-        component: () => import('../views/OrgDashboard.vue'),
-        meta: { requiresAuth: true, requiresOrgAdmin: true }
+        component: () => import('../views/org/OrgLayout.vue'),
+        meta: { requiresAuth: true, requiresOrgAdmin: true },
+        children: [
+            { path: '', name: 'OrgDashboard', component: () => import('../views/org/OrgHome.vue') },
+            { path: 'membres', name: 'OrgMembers', component: () => import('../views/org/OrgMembers.vue') },
+            { path: 'mentors', name: 'OrgMentors', component: () => import('../views/org/OrgMentors.vue') },
+            { path: 'reseau', name: 'OrgNetwork', component: () => import('../views/org/OrgNetwork.vue') },
+            { path: 'communaute', name: 'OrgCommunity', component: () => import('../views/org/OrgCommunity.vue') },
+            { path: 'facturation', name: 'OrgBilling', component: () => import('../views/org/OrgBilling.vue') },
+            { path: 'parametres', name: 'OrgSettings', component: () => import('../views/org/OrgSettings.vue') },
+        ]
     },
     {
         path: '/support',

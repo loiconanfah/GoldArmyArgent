@@ -8,6 +8,109 @@
             "coach": "Career coach",
             "other": "Other"
         },
+        "nav": {
+            "mentors": "Mentors",
+            "network": "Network",
+            "community": "Community",
+            "billing": "Billing",
+            "back_to_app": "Back to app",
+            "admin_badge": "Administrator",
+            "logout": "Log out",
+            "group_pilot": "Steering",
+            "group_community": "Cohort life",
+            "group_manage": "Management"
+        },
+        "billing": {
+            "sub": "Your organization's subscription — $1 per member per month",
+            "month": "month",
+            "members": "members",
+            "admin_excluded": "The main administrator is not billed.",
+            "subscribe": "Activate billing",
+            "manage": "Manage subscription",
+            "status_active": "Active",
+            "status_canceled": "Canceled",
+            "status_inactive": "Inactive",
+            "billable_seats": "Billable seats",
+            "per_member": "Per member / month",
+            "checkout_success": "Payment confirmed! Your organization billing is active.",
+            "how_title": "How it works",
+            "how_1": "Each active member of your cohort costs $1/month.",
+            "how_2": "The seat count adjusts automatically as members join or leave.",
+            "how_3": "You can manage or cancel anytime via the Stripe portal."
+        },
+        "home": {
+            "sub": "Overview of your cohort",
+            "monthly": "Applications per month",
+            "cv_rate": "CV completion rate",
+            "funnel": "Application progress",
+            "top_members": "Most active members",
+            "apps": "apps"
+        },
+        "funnel": {
+            "to_apply": "To apply",
+            "applied": "Applied",
+            "follow_up": "Follow-up",
+            "interview": "Interview",
+            "rejected": "Rejected"
+        },
+        "roles": {
+            "member": "Member",
+            "mentor": "Mentor",
+            "advisor": "Advisor"
+        },
+        "network": {
+            "sub": "Your organization's shared contact book",
+            "add": "Add",
+            "name": "Name",
+            "company": "Company",
+            "role": "Position",
+            "email": "Email",
+            "linkedin": "LinkedIn",
+            "notes": "Notes",
+            "save": "Save",
+            "empty": "No contacts yet.",
+            "remove_confirm": "Remove {name} from the network?"
+        },
+        "mentors": {
+            "sub": "Your mentors, advisors and cohort events",
+            "no_mentors": "No mentor assigned yet.",
+            "no_advisors": "No advisor assigned yet.",
+            "assign_hint": "Assign mentors and advisors from the Members tab."
+        },
+        "events": {
+            "title": "Events",
+            "add": "New",
+            "name": "Event title",
+            "description": "Description",
+            "location": "Location",
+            "link": "Link (video call…)",
+            "create": "Create event",
+            "empty": "No events scheduled.",
+            "join": "Join",
+            "by": "By",
+            "remove_confirm": "Delete this event?",
+            "link_label": "Open link",
+            "rsvp": "Attend",
+            "attending": "Attending ✓"
+        },
+        "community": {
+            "sub": "Chat and share resources between members",
+            "type_message": "Message",
+            "type_cv": "CV template",
+            "type_portfolio": "Portfolio",
+            "type_offer": "Job offer",
+            "type_interview": "Interview result",
+            "title_ph": "Title (optional)",
+            "content_ph": "Share something with the community…",
+            "link_ph": "Link (optional)",
+            "publish": "Publish",
+            "publishing": "Publishing…",
+            "empty": "No posts yet. Start the conversation!",
+            "remove_confirm": "Delete this post?",
+            "all": "All",
+            "comment_ph": "Write a comment…",
+            "comment_send": "Send"
+        },
         "register": {
             "account_type": "Account type",
             "candidate": "Candidate",
@@ -34,7 +137,8 @@
             "with_cv": "With CV",
             "applications": "Applications",
             "interviews": "Interviews",
-            "avg": "Avg/member"
+            "avg": "Avg/member",
+            "placement": "Interview rate"
         },
         "invite": {
             "title": "Invite members",
@@ -64,7 +168,16 @@
             "cv_no": "No",
             "sent": "sent",
             "remove": "Remove",
-            "remove_confirm": "Remove {name} from the cohort?"
+            "remove_confirm": "Remove {name} from the cohort?",
+            "sub": "Individual tracking of each member",
+            "search": "Search a member…",
+            "joined": "Joined on",
+            "assign_role": "Role in the organization",
+            "no_apps": "No applications.",
+            "applications_list": "Applications",
+            "simulations": "Interview simulations",
+            "simulation": "Simulation",
+            "no_sims": "No simulations."
         },
         "settings": {
             "title": "Organization settings",

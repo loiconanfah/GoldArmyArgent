@@ -64,6 +64,97 @@ def create_customer_portal_session(customer_id: str = None, email: str = None):
         logger.error(f"Erreur Stripe Customer Portal: {e}")
         return None
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Facturation par siège des Organisations (1 $/mois par membre, admin exclu)
+# ─────────────────────────────────────────────────────────────────────────────
+
+PRICE_PER_SEAT_USD = 1  # 1 $ par membre / mois
+
+
+def create_org_seat_checkout(org_id: str, admin_user_id: str, email: str, quantity: int):
+    """Crée une session Checkout d'abonnement par siège pour une organisation.
+
+    La quantité correspond au nombre de membres facturables (hors administrateur).
+    Nécessite settings.stripe_price_org_seat (prix récurrent 1$/mois « par unité »).
+    """
+    if not settings.stripe_price_org_seat:
+        logger.error("stripe_price_org_seat non configuré")
+        return None
+    try:
+        session = stripe.checkout.Session.create(
+            customer_email=email,
+            payment_method_types=['card'],
+            line_items=[{
+                'price': settings.stripe_price_org_seat,
+                'quantity': max(1, int(quantity)),
+            }],
+            mode='subscription',
+            success_url=f"{settings.frontend_url}/organisation/facturation?status=success",
+            cancel_url=f"{settings.frontend_url}/organisation/facturation?status=cancel",
+            metadata={'org_id': org_id, 'admin_user_id': admin_user_id, 'type': 'org_seats'},
+            subscription_data={'metadata': {'org_id': org_id, 'type': 'org_seats'}},
+        )
+        return session.url
+    except Exception as e:
+        logger.error(f"Erreur Stripe Org Checkout: {e}")
+        return None
+
+
+def _sync_seats_sync(subscription_id: str, quantity: int) -> bool:
+    """Met à jour la quantité (nombre de sièges) de l'abonnement Stripe (appel bloquant)."""
+    try:
+        sub = stripe.Subscription.retrieve(subscription_id)
+        item_id = sub['items']['data'][0]['id']
+        stripe.SubscriptionItem.modify(
+            item_id, quantity=max(1, int(quantity)), proration_behavior='none'
+        )
+        return True
+    except Exception as e:
+        logger.warning(f"Sync sièges Stripe échoué ({subscription_id}): {e}")
+        return False
+
+
+async def sync_org_seat_quantity(org_id: str):
+    """Synchronise le nombre de sièges facturés avec le nombre réel de membres."""
+    db = get_db()
+    org = await db.organizations.find_one({"id": org_id})
+    if not org or not org.get("stripe_subscription_id") or org.get("billing_status") != "active":
+        return
+    count = await db.users.count_documents({"organization_id": org_id, "role": "member"})
+    await asyncio.to_thread(_sync_seats_sync, org["stripe_subscription_id"], count)
+
+
+async def update_org_billing(session):
+    """Active la facturation d'une organisation après un paiement réussi."""
+    org_id = session.get('metadata', {}).get('org_id')
+    if not org_id:
+        return
+    db = get_db()
+    await db.organizations.update_one(
+        {"id": org_id},
+        {"$set": {
+            "billing_status": "active",
+            "stripe_subscription_id": session.get('subscription'),
+            "stripe_customer_id": session.get('customer'),
+            "billing_activated_at": datetime.now(timezone.utc),
+        }},
+    )
+    logger.info(f"✅ Facturation organisation activée: {org_id}")
+    # Aligne immédiatement la quantité sur le nombre réel de membres
+    await sync_org_seat_quantity(org_id)
+
+
+async def cancel_org_billing(subscription):
+    """Désactive la facturation d'une organisation après résiliation."""
+    org_id = subscription.get('metadata', {}).get('org_id')
+    db = get_db()
+    query = {"id": org_id} if org_id else {"stripe_subscription_id": subscription.get('id')}
+    await db.organizations.update_one(
+        query, {"$set": {"billing_status": "canceled", "stripe_subscription_id": None}}
+    )
+    logger.info(f"⚠️ Facturation organisation résiliée: {org_id or subscription.get('id')}")
+
+
 async def handle_webhook_payload(payload, sig_header):
     """Gère les événements envoyés par Stripe (Webhooks)."""
     try:
@@ -77,13 +168,21 @@ async def handle_webhook_payload(payload, sig_header):
         # Invalid signature
         return False, "Signature invalide"
 
+    etype = event['type']
+    obj = event['data']['object']
+    meta_type = (obj.get('metadata') or {}).get('type')
+
     # Handle the event
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        await update_user_subscription(session)
-    elif event['type'] == 'customer.subscription.deleted':
-        subscription = event['data']['object']
-        await cancel_user_subscription(subscription)
+    if etype == 'checkout.session.completed':
+        if meta_type == 'org_seats':
+            await update_org_billing(obj)
+        else:
+            await update_user_subscription(obj)
+    elif etype == 'customer.subscription.deleted':
+        if meta_type == 'org_seats':
+            await cancel_org_billing(obj)
+        else:
+            await cancel_user_subscription(obj)
 
     return True, "Event processed"
 

@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     stripe_webhook_secret: Optional[str] = Field(default=None, description="Secret Webhook Stripe")
     stripe_price_essential: str = Field(default="price_1T5Xf6PvxExBNm38EHU1rkhq", description="ID Price Stripe Essentiel")
     stripe_price_pro: str = Field(default="price_1T5Xf7PvxExBNm38iixC2ipQ", description="ID Price Stripe Pro")
+    stripe_price_org_seat: Optional[str] = Field(default=None, description="ID Price Stripe récurrent 1$/mois par siège (membre d'organisation)")
 
     # Google OAuth Configuration
     google_client_id: Optional[str] = Field(default=None, description="Client ID Google OAuth (Web)")

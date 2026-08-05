@@ -182,6 +182,149 @@ async def list_members_with_progress(org_id: str) -> List[Dict[str, Any]]:
     return result
 
 
+async def set_member_role(org_id: str, user_id: str, member_role: str) -> bool:
+    """Définit le rôle interne d'un membre : 'member' | 'mentor' | 'advisor'."""
+    db = get_db()
+    if member_role not in ("member", "mentor", "advisor"):
+        member_role = "member"
+    res = await db.users.update_one(
+        {"id": user_id, "organization_id": org_id, "role": "member"},
+        {"$set": {"org_member_role": member_role}},
+    )
+    return res.modified_count > 0
+
+
+async def member_detail(org_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+    """Détail complet d'un membre : profil, candidatures, simulations d'entretien."""
+    db = get_db()
+    user = await db.users.find_one(
+        {"id": user_id, "organization_id": org_id},
+        {"_id": 0, "hashed_password": 0},
+    )
+    if not user:
+        return None
+
+    applications = await db.applications.find(
+        {"user_id": user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(length=200)
+
+    simulations = await db.simulations.find(
+        {"user_id": user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(length=50)
+
+    # Répartition par statut (funnel individuel)
+    funnel: Dict[str, int] = {}
+    for a in applications:
+        st = a.get("status", "TO_APPLY")
+        funnel[st] = funnel.get(st, 0) + 1
+
+    return {
+        "profile": {
+            "id": user["id"],
+            "email": user.get("email", ""),
+            "full_name": user.get("full_name", ""),
+            "has_cv": bool(user.get("cv_text")),
+            "org_member_role": user.get("org_member_role", "member"),
+            "joined_at": user.get("org_joined_at") or user.get("created_at"),
+            "subscription_tier": user.get("subscription_tier", "FREE"),
+        },
+        "funnel": funnel,
+        "applications": applications,
+        "simulations": simulations,
+    }
+
+
+async def analytics(org_id: str) -> Dict[str, Any]:
+    """Analytics riches pour le dashboard : KPIs, série mensuelle, funnel, top membres."""
+    db = get_db()
+    members = await db.users.find(
+        {"organization_id": org_id, "role": "member"},
+        {"_id": 0, "id": 1, "full_name": 1, "email": 1, "cv_text": 1},
+    ).to_list(length=None)
+    member_ids = [m["id"] for m in members]
+    total_members = len(member_ids)
+
+    base = await cohort_stats(org_id)
+
+    empty_series = []
+    import datetime as _dt
+    from dateutil.relativedelta import relativedelta
+    months_fr = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"]
+    now = _dt.datetime.now()
+
+    funnel = {"TO_APPLY": 0, "APPLIED": 0, "FOLLOW_UP": 0, "INTERVIEW": 0, "REJECTED": 0}
+    monthly = {}
+    per_member = {}
+
+    if member_ids:
+        # Funnel global par statut
+        async for row in db.applications.aggregate([
+            {"$match": {"user_id": {"$in": member_ids}}},
+            {"$group": {"_id": "$status", "count": {"$sum": 1}}},
+        ]):
+            key = row["_id"] or "TO_APPLY"
+            funnel[key] = funnel.get(key, 0) + row["count"]
+
+        # Série mensuelle des candidatures
+        async for row in db.applications.aggregate([
+            {"$match": {"user_id": {"$in": member_ids}, "created_at": {"$exists": True, "$ne": None}}},
+            {"$group": {"_id": {"$dateToString": {"format": "%Y-%m", "date": {"$toDate": "$created_at"}}}, "count": {"$sum": 1}}},
+        ]):
+            if row["_id"]:
+                monthly[row["_id"]] = row["count"]
+
+        # Candidatures + entretiens par membre (pour le top)
+        async for row in db.applications.aggregate([
+            {"$match": {"user_id": {"$in": member_ids}}},
+            {"$group": {
+                "_id": "$user_id",
+                "apps": {"$sum": 1},
+                "interviews": {"$sum": {"$cond": [{"$eq": ["$status", "INTERVIEW"]}, 1, 0]}},
+            }},
+        ]):
+            per_member[row["_id"]] = row
+
+    # Construit la série des 8 derniers mois
+    max_val = max(monthly.values()) if monthly else 10
+    if max_val < 10:
+        max_val = 10
+    for i in range(7, -1, -1):
+        d = now - relativedelta(months=i)
+        key = d.strftime("%Y-%m")
+        count = monthly.get(key, 0)
+        pct = int((count / max_val) * 100) if max_val else 0
+        empty_series.append({"label": months_fr[d.month - 1], "count": count, "pct": max(pct, 3 if count else 0)})
+
+    # Top 5 membres les plus actifs
+    name_by_id = {m["id"]: (m.get("full_name") or m.get("email", "").split("@")[0]) for m in members}
+    top = sorted(
+        [{"id": uid, "name": name_by_id.get(uid, "?"), "apps": v["apps"], "interviews": v["interviews"]}
+         for uid, v in per_member.items()],
+        key=lambda x: x["apps"], reverse=True,
+    )[:5]
+
+    # Compteurs additionnels (mentors, conseillers, événements, réseau, communauté)
+    mentors_count = await db.users.count_documents({"organization_id": org_id, "org_member_role": "mentor"})
+    advisors_count = await db.users.count_documents({"organization_id": org_id, "org_member_role": "advisor"})
+    events_count = await db.org_events.count_documents({"organization_id": org_id})
+    network_count = await db.org_network.count_documents({"organization_id": org_id})
+    posts_count = await db.org_posts.count_documents({"organization_id": org_id})
+
+    return {
+        "kpis": base,
+        "funnel": funnel,
+        "monthly": empty_series,
+        "top_members": top,
+        "counts": {
+            "mentors": mentors_count,
+            "advisors": advisors_count,
+            "events": events_count,
+            "network": network_count,
+            "posts": posts_count,
+        },
+    }
+
+
 async def cohort_stats(org_id: str) -> Dict[str, Any]:
     """KPIs agrégés de la cohorte pour le tableau de bord organisme."""
     db = get_db()
