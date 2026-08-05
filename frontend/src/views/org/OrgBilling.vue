@@ -127,7 +127,7 @@ onMounted(load)
 .ob__banner--ok { background: #D1FAE5; color: #059669; border: 1px solid #A7F3D0; }
 
 .ob__grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 1rem; align-items: start; }
-.ob__card { background: #fff; border: 1px solid #E2E8F0; border-radius: 1.2rem; padding: 1.6rem; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 12px 32px -22px rgba(15,23,42,0.3); }
+.ob__card { background: #fff; border: 1px solid #EEF0F3; border-radius: 1.2rem; padding: 1.6rem; box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 12px 32px -22px rgba(15,23,42,0.3); }
 .ob__card--hero { position: relative; overflow: hidden; background: linear-gradient(150deg, #FFFBEB 0%, #fff 55%); }
 .ob__card--hero::after { content: ''; position: absolute; right: -40px; top: -40px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(245,158,11,0.18), transparent 70%); }
 .ob__hero-badge { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.7rem; border-radius: 999px; margin-bottom: 1.2rem; }
@@ -146,7 +146,7 @@ onMounted(load)
 .ob__btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .ob__side { display: flex; flex-direction: column; gap: 1rem; }
-.ob__mini { display: flex; align-items: center; gap: 0.8rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 1rem; padding: 1rem 1.1rem; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+.ob__mini { display: flex; align-items: center; gap: 0.8rem; background: #fff; border: 1px solid #EEF0F3; border-radius: 1rem; padding: 1rem 1.1rem; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
 .ob__mini-icon { width: 2.4rem; height: 2.4rem; border-radius: 0.7rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .ob__mini-icon--gold { background: #FEF3C7; color: #D97706; }
 .ob__mini-icon--indigo { background: #EEF2FF; color: #4F46E5; }

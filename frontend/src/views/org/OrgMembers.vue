@@ -189,12 +189,12 @@ onMounted(load)
 .om__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
 .om__title { font-size: 1.7rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
 .om__sub { color: #64748B; font-size: 0.9rem; margin: 0.3rem 0 0; }
-.om__search { padding: 0.65rem 0.95rem; border-radius: 0.7rem; background: #fff; border: 1px solid #E2E8F0; color: #1E293B; font-size: 0.85rem; min-width: 240px; outline: none; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+.om__search { padding: 0.65rem 0.95rem; border-radius: 0.7rem; background: #fff; border: 1px solid #EEF0F3; color: #1E293B; font-size: 0.85rem; min-width: 240px; outline: none; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
 .om__search:focus { border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
 .om__loading, .om__empty { padding: 3rem; text-align: center; color: #94A3B8; }
 
 .om__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 0.9rem; }
-.om__card { display: flex; align-items: center; gap: 0.8rem; padding: 1.1rem; border-radius: 1rem; background: #fff; border: 1px solid #E2E8F0; cursor: pointer; text-align: left; color: inherit; box-shadow: 0 1px 2px rgba(15,23,42,0.04); transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
+.om__card { display: flex; align-items: center; gap: 0.8rem; padding: 1.2rem; border-radius: 1.4rem; background: #fff; border: 1px solid #EEF0F3; cursor: pointer; text-align: left; color: inherit; box-shadow: 0 1px 2px rgba(15,23,42,0.04); transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
 .om__card:hover { border-color: #FCD34D; transform: translateY(-3px); box-shadow: 0 14px 30px -18px rgba(245,158,11,0.4); }
 .om__avatar { width: 2.7rem; height: 2.7rem; border-radius: 50%; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0; box-shadow: 0 4px 12px -3px rgba(245,158,11,0.5); }
 .om__avatar--lg { width: 3.6rem; height: 3.6rem; font-size: 1.35rem; }
@@ -210,8 +210,8 @@ onMounted(load)
 .om__pill--off { background: #F1F5F9; color: #94A3B8; }
 
 .om__drawer-wrap { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 70; display: flex; justify-content: flex-end; }
-.om__drawer { width: min(500px, 100%); height: 100%; background: #F8FAFC; border-left: 1px solid #E2E8F0; padding: 1.6rem; overflow-y: auto; position: relative; box-shadow: -20px 0 50px -20px rgba(15,23,42,0.3); }
-.om__drawer-close { position: absolute; top: 1rem; right: 1rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.5rem; padding: 0.3rem; color: #64748B; cursor: pointer; }
+.om__drawer { width: min(500px, 100%); height: 100%; background: #F8FAFC; border-left: 1px solid #EEF0F3; padding: 1.6rem; overflow-y: auto; position: relative; box-shadow: -20px 0 50px -20px rgba(15,23,42,0.3); }
+.om__drawer-close { position: absolute; top: 1rem; right: 1rem; background: #fff; border: 1px solid #EEF0F3; border-radius: 0.5rem; padding: 0.3rem; color: #64748B; cursor: pointer; }
 .om__drawer-head { display: flex; gap: 1rem; align-items: center; margin: 0.25rem 0 1.5rem; }
 .om__drawer-name { font-size: 1.2rem; font-weight: 800; color: #0F172A; }
 .om__drawer-email { font-size: 0.8rem; color: #64748B; }
@@ -221,10 +221,10 @@ onMounted(load)
 .om__role-tag--advisor { background: #D1FAE5; color: #059669; }
 .om__role-tag--member { background: #F1F5F9; color: #64748B; }
 
-.om__section { margin-bottom: 1.3rem; background: #fff; border: 1px solid #E2E8F0; border-radius: 0.9rem; padding: 1rem 1.1rem; }
+.om__section { margin-bottom: 1.3rem; background: #fff; border: 1px solid #EEF0F3; border-radius: 0.9rem; padding: 1rem 1.1rem; }
 .om__section-title { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #94A3B8; margin: 0 0 0.7rem; }
 .om__roles { display: flex; gap: 0.4rem; }
-.om__role-btn { flex: 1; padding: 0.55rem; border-radius: 0.55rem; border: 1px solid #E2E8F0; background: #F8FAFC; color: #475569; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.om__role-btn { flex: 1; padding: 0.55rem; border-radius: 0.55rem; border: 1px solid #EEF0F3; background: #F8FAFC; color: #475569; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
 .om__role-btn:hover { border-color: #CBD5E1; }
 .om__role-btn--active { background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #fff; border: none; box-shadow: 0 4px 12px -3px rgba(245,158,11,0.5); }
 .om__funnel { display: flex; flex-wrap: wrap; gap: 0.4rem; }

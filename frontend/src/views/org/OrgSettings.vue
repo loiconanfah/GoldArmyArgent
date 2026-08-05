@@ -125,20 +125,20 @@ onMounted(load)
 .os__title { font-size: 1.7rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
 .os__loading { padding: 3rem; text-align: center; color: #94A3B8; }
 .os__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
-.os__card { background: #fff; border: 1px solid #E2E8F0; border-radius: 1.1rem; padding: 1.5rem; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+.os__card { background: #fff; border: 1px solid #EEF0F3; border-radius: 1.5rem; padding: 1.6rem; box-shadow: 0 1px 2px rgba(16,24,40,0.03); }
 .os__card-title { font-size: 1.02rem; font-weight: 800; color: #0F172A; margin: 0 0 0.35rem; }
 .os__desc { font-size: 0.82rem; color: #64748B; margin: 0 0 1rem; }
 .os__seats { font-size: 0.78rem; font-weight: 700; color: #D97706; background: #FEF3C7; display: inline-block; padding: 0.3rem 0.7rem; border-radius: 999px; margin-bottom: 1rem; }
 .os__label { display: block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin-bottom: 0.35rem; }
 .os__label.mt { margin-top: 0.9rem; }
 .os__row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.os__input { flex: 1; min-width: 160px; padding: 0.7rem 0.85rem; border-radius: 0.6rem; background: #F8FAFC; border: 1px solid #E2E8F0; color: #1E293B; font-size: 0.85rem; outline: none; }
+.os__input { flex: 1; min-width: 160px; padding: 0.7rem 0.85rem; border-radius: 0.6rem; background: #F8FAFC; border: 1px solid #EEF0F3; color: #1E293B; font-size: 0.85rem; outline: none; }
 .os__input:focus { border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245,158,11,0.12); background: #fff; }
 .os__input--mono { font-family: monospace; font-size: 0.76rem; }
 .os__input--full { width: 100%; flex: none; }
 .os__code { font-size: 0.78rem; color: #64748B; margin-top: 0.6rem; }
 .os__code strong { font-family: monospace; letter-spacing: 0.1em; color: #D97706; }
-.os__btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.7rem 1rem; border-radius: 0.6rem; border: 1px solid #E2E8F0; background: #fff; color: #334155; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.os__btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.7rem 1rem; border-radius: 0.6rem; border: 1px solid #EEF0F3; background: #fff; color: #334155; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
 .os__btn:hover { border-color: #CBD5E1; }
 .os__btn--primary { background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #fff; border: none; box-shadow: 0 6px 16px -6px rgba(245,158,11,0.6); }
 .os__btn--primary:hover { border: none; }

@@ -324,6 +324,7 @@ class NetworkContactRequest(BaseModel):
     email: Optional[str] = ""
     linkedin: Optional[str] = ""
     notes: Optional[str] = ""
+    category: Optional[str] = "partner"  # partner | recruiter | company | mentor | other
 
 
 @router.get("/network")
@@ -341,6 +342,7 @@ async def list_org_network(member: dict = Depends(get_current_org_member)):
 async def add_org_network(req: NetworkContactRequest, admin: dict = Depends(get_current_org_admin)):
     """Ajoute un contact au réseau de l'organisation."""
     db = get_db()
+    valid_cats = {"partner", "recruiter", "company", "mentor", "other"}
     contact = {
         "id": str(uuid.uuid4()),
         "organization_id": admin["organization_id"],
@@ -350,11 +352,115 @@ async def add_org_network(req: NetworkContactRequest, admin: dict = Depends(get_
         "email": req.email,
         "linkedin": req.linkedin,
         "notes": req.notes,
+        "category": req.category if req.category in valid_cats else "other",
+        "status": "to_contact",
+        "last_contact": None,
         "created_at": datetime.now(timezone.utc),
     }
     await db.org_network.insert_one(contact)
     contact.pop("_id", None)
     return {"status": "success", "data": contact}
+
+
+class NetworkStatusRequest(BaseModel):
+    status: str  # to_contact | contacted | responded
+
+
+@router.put("/network/{contact_id}/status")
+async def update_network_status(contact_id: str, req: NetworkStatusRequest, admin: dict = Depends(get_current_org_admin)):
+    """Met à jour le statut de relance d'un contact (suivi)."""
+    valid = {"to_contact", "contacted", "responded"}
+    st = req.status if req.status in valid else "to_contact"
+    db = get_db()
+    res = await db.org_network.update_one(
+        {"id": contact_id, "organization_id": admin["organization_id"]},
+        {"$set": {"status": st, "last_contact": datetime.now(timezone.utc) if st != "to_contact" else None}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contact introuvable.")
+    return {"status": "success"}
+
+
+class NetworkImportRequest(BaseModel):
+    contacts: list  # liste d'objets {name, company, role, email, linkedin, notes, category}
+
+
+@router.post("/network/import")
+async def import_network(req: NetworkImportRequest, admin: dict = Depends(get_current_org_admin)):
+    """Import en masse de contacts (ex: depuis un CSV). Ignore les doublons nom+email."""
+    org_id = admin["organization_id"]
+    db = get_db()
+    valid_cats = {"partner", "recruiter", "company", "mentor", "other"}
+
+    # Index des contacts existants pour la déduplication
+    existing = await db.org_network.find({"organization_id": org_id}, {"_id": 0, "name": 1, "email": 1}).to_list(length=None)
+    seen = {((e.get("name") or "").strip().lower(), (e.get("email") or "").strip().lower()) for e in existing}
+
+    docs = []
+    for row in req.contacts:
+        if not isinstance(row, dict):
+            continue
+        name = str(row.get("name", "")).strip()
+        if not name:
+            continue
+        email = str(row.get("email", "")).strip()
+        key = (name.lower(), email.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        cat = str(row.get("category", "other")).strip().lower()
+        docs.append({
+            "id": str(uuid.uuid4()),
+            "organization_id": org_id,
+            "name": name,
+            "company": str(row.get("company", "")).strip(),
+            "role": str(row.get("role", "")).strip(),
+            "email": email,
+            "linkedin": str(row.get("linkedin", "")).strip(),
+            "notes": str(row.get("notes", "")).strip(),
+            "category": cat if cat in valid_cats else "other",
+            "status": "to_contact",
+            "last_contact": None,
+            "created_at": datetime.now(timezone.utc),
+        })
+
+    if docs:
+        await db.org_network.insert_many(docs)
+    return {"status": "success", "imported": len(docs), "skipped": len(req.contacts) - len(docs)}
+
+
+@router.get("/network/suggestions")
+async def network_suggestions(admin: dict = Depends(get_current_org_admin)):
+    """Suggère des entreprises à ajouter au réseau, tirées des candidatures des membres."""
+    org_id = admin["organization_id"]
+    db = get_db()
+
+    member_ids = [u["id"] async for u in db.users.find(
+        {"organization_id": org_id, "role": "member"}, {"_id": 0, "id": 1})]
+    if not member_ids:
+        return {"status": "success", "data": []}
+
+    # Entreprises déjà présentes dans le réseau (pour les exclure)
+    existing = await db.org_network.find({"organization_id": org_id}, {"_id": 0, "company": 1}).to_list(length=None)
+    known = {(e.get("company") or "").strip().lower() for e in existing if e.get("company")}
+
+    # Agrège les entreprises depuis les candidatures des membres
+    pipeline = [
+        {"$match": {"user_id": {"$in": member_ids}, "company_name": {"$exists": True, "$ne": ""}}},
+        {"$group": {"_id": "$company_name", "applicants": {"$addToSet": "$user_id"}}},
+    ]
+    rows = await db.applications.aggregate(pipeline).to_list(length=None)
+    suggestions = []
+    for r in rows:
+        company = (r["_id"] or "").strip()
+        if not company or company.lower() in known:
+            continue
+        if company.lower() in ("confidentiel", "anonyme", "entreprise non identifiée"):
+            continue
+        suggestions.append({"company": company, "applicants": len(r.get("applicants", []))})
+
+    suggestions.sort(key=lambda x: x["applicants"], reverse=True)
+    return {"status": "success", "data": suggestions[:12]}
 
 
 @router.delete("/network/{contact_id}")
@@ -372,6 +478,24 @@ class CommunityPostRequest(BaseModel):
     content: str
     title: Optional[str] = ""
     link: Optional[str] = ""
+
+
+@router.get("/community/members")
+async def community_members(member: dict = Depends(get_current_org_member)):
+    """Roster des membres de l'organisation pour le panneau latéral (façon Discord)."""
+    db = get_db()
+    users = await db.users.find(
+        {"organization_id": member["organization_id"]},
+        {"_id": 0, "id": 1, "full_name": 1, "email": 1, "role": 1, "org_member_role": 1},
+    ).to_list(length=None)
+    roster = []
+    for u in users:
+        roster.append({
+            "id": u["id"],
+            "name": u.get("full_name") or (u.get("email", "").split("@")[0]),
+            "role": "org_admin" if u.get("role") == "org_admin" else (u.get("org_member_role") or "member"),
+        })
+    return {"status": "success", "data": roster}
 
 
 @router.get("/community/posts")
