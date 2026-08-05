@@ -423,11 +423,21 @@ async def google_login(payload: GoogleTokenRequest):
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         refresh_token = create_refresh_token(data={"sub": user_id, "email": email})
+        _u = await db.users.find_one({"id": user_id}, {"_id": 0}) or {}
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "user": {"id": user_id, "email": email, "subscription_tier": tier}
+            "user": {
+                "id": user_id,
+                "email": email,
+                "subscription_tier": _u.get("subscription_tier", tier),
+                "is_verified": _u.get("is_verified", True),
+                "full_name": _u.get("full_name"),
+                "role": _u.get("role"),
+                "account_type": _u.get("account_type"),
+                "organization_id": _u.get("organization_id"),
+            }
         }
     except Exception as e:
         if isinstance(e, HTTPException):
@@ -481,11 +491,21 @@ async def apple_login(payload: AppleTokenRequest):
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         refresh_token = create_refresh_token(data={"sub": user_id, "email": email})
+        _u = await db.users.find_one({"id": user_id}, {"_id": 0}) or {}
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "user": {"id": user_id, "email": email, "subscription_tier": tier}
+            "user": {
+                "id": user_id,
+                "email": email,
+                "subscription_tier": _u.get("subscription_tier", tier),
+                "is_verified": _u.get("is_verified", True),
+                "full_name": _u.get("full_name"),
+                "role": _u.get("role"),
+                "account_type": _u.get("account_type"),
+                "organization_id": _u.get("organization_id"),
+            }
         }
     except Exception as e:
         logger.exception(f"Erreur oauth apple: {e}")

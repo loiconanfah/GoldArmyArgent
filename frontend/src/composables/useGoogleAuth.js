@@ -134,7 +134,7 @@ export function useGoogleAuth() {
 
             localStorage.setItem('token', data.access_token)
             localStorage.setItem('user', JSON.stringify(data.user))
-            router.push('/home')
+            router.push(data.user?.role === 'org_admin' ? '/organisation' : '/home')
         } catch (err) {
             googleError.value = err.message
         } finally {
