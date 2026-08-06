@@ -5,10 +5,11 @@ import { useI18n } from 'vue-i18n'
 import { authFetch } from './utils/auth'
 import Clarity from '@microsoft/clarity'
 import ReferralModal from './components/ReferralModal.vue'
-import { 
-  HomeIcon, 
+import {
+  HomeIcon,
   MapIcon,
-  ChatBubbleBottomCenterTextIcon, 
+  ShoppingBagIcon,
+  ChatBubbleBottomCenterTextIcon,
   UserGroupIcon, 
   BriefcaseIcon,
   Cog6ToothIcon,
@@ -111,6 +112,7 @@ const navigation = computed(() => [
   { name: t('nav.crm'), href: '/crm', icon: BriefcaseIcon },
   { name: t('nav.network'), href: '/network', icon: UserGroupIcon },
   { name: t('nav.profile'), href: '/profile', icon: UserIcon },
+  { name: t('nav.shop'), href: '/boutique', icon: ShoppingBagIcon },
 ])
 
 // --- Notification Center ---

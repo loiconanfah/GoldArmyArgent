@@ -139,32 +139,29 @@ useHead({
             </div>
           </div>
 
-          <!-- FORFAIT PRO -->
-          <div class="pricing-card-light card--pro">
+          <!-- FORFAIT PRO retiré — remplacé par la Boutique de Gold (packs de jetons) -->
+          <!-- BOUTIQUE GOLD -->
+          <div class="pricing-card-light card--gold">
             <div class="card-header-light">
-              <h2>Pro</h2>
-              <p class="tagline-light">Puissance maximale pour l'élite.</p>
-              <p class="price-light">19,99 €<span class="period-light">/mois</span></p>
+              <h2>Gold</h2>
+              <p class="tagline-light">Payez à l'usage, sans engagement.</p>
+              <p class="price-light">dès 4,99 €<span class="period-light">/pack</span></p>
             </div>
-            
+
             <div class="features-wrapper">
-              <p class="features-title pro">Domination totale du sourcing :</p>
+              <p class="features-title">Des jetons pour tout débloquer :</p>
               <ul class="features-list-light">
-                <li><span class="check pro">✓</span> Recherches Sniper : <strong>Priorité absolue</strong></li>
-                <li><span class="check pro">✓</span> Audits CV approfondis (Refonte IA)</li>
-                <li><span class="check pro">✓</span> Entretiens RH IA pro-actifs</li>
-                <li><span class="check pro">✓</span> Headhunter dédié &amp; Sourcing VIP</li>
-                <li><span class="check pro">✓</span> Carnet d'adresses enrichi en continu</li>
-                <li><span class="check pro">✓</span> Relances multicanales automatisées</li>
-                <li><span class="check pro">✓</span> Adaptations CV instantanées en masse</li>
-                <li><span class="check pro">✓</span> Recherche d'emploi matinale autonome</li>
-                <li><span class="check pro">✓</span> Accès illimité au réseau &amp; Post-Interview</li>
+                <li><span class="check">✓</span> Packs de <strong>100 à 2000 Gold</strong></li>
+                <li><span class="check">✓</span> Utilisable sur <strong>toutes</strong> les fonctionnalités</li>
+                <li><span class="check">✓</span> Recherches Sniper, adaptations CV, entretiens…</li>
+                <li><span class="check">✓</span> Bonus offerts sur les gros packs</li>
+                <li><span class="check">✓</span> Le Gold ne périme pas</li>
               </ul>
             </div>
-            
+
             <div class="card-cta-light">
-              <router-link to="/register" class="btn-light-pro">Choisir Pro</router-link>
-              <span class="subtext-light">Serveurs dédiés haute performance</span>
+              <router-link to="/boutique" class="btn-light-pro">Ouvrir la Boutique</router-link>
+              <span class="subtext-light">50 Gold offerts à l'inscription</span>
             </div>
           </div>
 

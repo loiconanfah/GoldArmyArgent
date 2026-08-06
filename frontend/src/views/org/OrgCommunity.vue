@@ -5,7 +5,7 @@ import { authFetch } from '@/utils/auth'
 import {
   HashtagIcon, PaperAirplaneIcon, HeartIcon, ChatBubbleOvalLeftIcon,
   TrashIcon, LinkIcon, DocumentTextIcon, BriefcaseIcon, SparklesIcon,
-  MegaphoneIcon, UsersIcon
+  MegaphoneIcon, UsersIcon, DocumentArrowUpIcon, ArrowDownTrayIcon
 } from '@heroicons/vue/24/outline'
 
 const { t } = useI18n()
@@ -19,7 +19,27 @@ const myId = ref('')
 const openComments = ref({})
 const commentBox = ref({})
 const streamRef = ref(null)
+const cvInput = ref(null)
+const uploading = ref(false)
 let poll = null
+
+function scoreClass(s) { return s >= 75 ? 'ok' : s >= 55 ? 'mid' : 'low' }
+
+async function uploadCv(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  if (!file.name.toLowerCase().endsWith('.pdf')) { alert(t('org.community.cv_pdf_only')); return }
+  uploading.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await authFetch('/api/org/community/cv', { method: 'POST', body: fd })
+    const json = await res.safeJson()
+    if (res.ok && json?.status === 'success') { posts.value.push(json.data); scrollBottom() }
+    else alert(json?.detail || t('common.error'))
+  } catch (err) { alert(t('common.error')) }
+  finally { uploading.value = false; if (cvInput.value) cvInput.value.value = '' }
+}
 
 const channels = computed(() => [
   { key: 'message', name: t('org.community.ch_general'), icon: HashtagIcon },
@@ -159,8 +179,22 @@ onUnmounted(() => { if (poll) clearInterval(poll) })
                 <button v-if="p.author_id === myId" class="oc__msg-del" @click="remove(p)"><TrashIcon class="w-3.5 h-3.5" /></button>
               </div>
 
+              <!-- CV file card: preview + ATS score + download -->
+              <div v-if="p.file_url" class="oc__cv">
+                <div class="oc__cv-head">
+                  <div class="oc__cv-name">📄 {{ p.file_name || p.title }}</div>
+                  <div :class="['oc__cv-score', 'oc__cv-score--' + scoreClass(p.ats_score || 0)]">
+                    <span class="oc__cv-score-num">{{ p.ats_score || 0 }}</span><span class="oc__cv-score-lbl">ATS</span>
+                  </div>
+                </div>
+                <iframe :src="p.file_url + '#toolbar=0&view=FitH'" class="oc__cv-preview" loading="lazy" :title="p.file_name"></iframe>
+                <a :href="p.file_url" :download="p.file_name" target="_blank" class="oc__cv-dl">
+                  <ArrowDownTrayIcon class="w-4 h-4" /> {{ t('org.community.cv_download') }}
+                </a>
+              </div>
+
               <!-- Resource card for non-general channels -->
-              <div v-if="p.title || p.link" class="oc__resource">
+              <div v-else-if="p.title || p.link" class="oc__resource">
                 <div v-if="p.title" class="oc__resource-title">{{ p.title }}</div>
                 <p v-if="p.content" class="oc__resource-desc">{{ p.content }}</p>
                 <a v-if="p.link" :href="p.link" target="_blank" class="oc__resource-link"><LinkIcon class="w-3.5 h-3.5" /> {{ p.link }}</a>
@@ -189,7 +223,14 @@ onUnmounted(() => { if (poll) clearInterval(poll) })
 
         <!-- Composer -->
         <div class="oc__composer">
-          <div v-if="isResourceChannel" class="oc__composer-extra">
+          <div v-if="activeChannel === 'cv'" class="oc__cv-upload">
+            <input ref="cvInput" type="file" accept=".pdf,application/pdf" class="oc__file-hidden" @change="uploadCv" />
+            <button class="oc__cv-upbtn" :disabled="uploading" @click="cvInput?.click()">
+              <DocumentArrowUpIcon class="w-4 h-4" /> {{ uploading ? t('org.community.cv_uploading') : t('org.community.cv_upload') }}
+            </button>
+            <span class="oc__cv-hint">{{ t('org.community.cv_hint') }}</span>
+          </div>
+          <div v-else-if="isResourceChannel" class="oc__composer-extra">
             <input v-model="draft.title" :placeholder="t('org.community.title_ph')" class="oc__cinput" />
             <input v-model="draft.link" :placeholder="t('org.community.link_ph')" class="oc__cinput" />
           </div>
@@ -257,6 +298,26 @@ onUnmounted(() => { if (poll) clearInterval(poll) })
 .oc__resource-title { font-weight: 700; font-size: 0.88rem; color: #101828; }
 .oc__resource-desc { font-size: 0.82rem; color: #475467; margin: 0.3rem 0 0; white-space: pre-wrap; }
 .oc__resource-link { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #D97706; font-weight: 600; text-decoration: none; margin-top: 0.5rem; word-break: break-all; }
+/* CV file card */
+.oc__cv { margin-top: 0.4rem; border: 1px solid #EEF0F3; border-radius: 1rem; overflow: hidden; background: #fff; max-width: 420px; }
+.oc__cv-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.7rem 0.9rem; background: #F9FAFB; border-bottom: 1px solid #EEF0F3; }
+.oc__cv-name { font-weight: 700; font-size: 0.82rem; color: #101828; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oc__cv-score { display: flex; align-items: baseline; gap: 0.2rem; padding: 0.2rem 0.55rem; border-radius: 999px; flex-shrink: 0; }
+.oc__cv-score-num { font-weight: 800; font-size: 0.95rem; }
+.oc__cv-score-lbl { font-size: 0.55rem; font-weight: 800; text-transform: uppercase; opacity: 0.7; }
+.oc__cv-score--ok { background: #D1FAE5; color: #059669; }
+.oc__cv-score--mid { background: #FEF3C7; color: #B45309; }
+.oc__cv-score--low { background: #FEE2E2; color: #DC2626; }
+.oc__cv-preview { width: 100%; height: 300px; border: none; display: block; background: #F1F3F6; }
+.oc__cv-dl { display: flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.6rem; background: #fff; border-top: 1px solid #EEF0F3; color: #D97706; font-weight: 700; font-size: 0.8rem; text-decoration: none; }
+.oc__cv-dl:hover { background: #FFFBEB; }
+
+.oc__cv-upload { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+.oc__file-hidden { display: none; }
+.oc__cv-upbtn { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.65rem 1.1rem; border-radius: 999px; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #fff; border: none; font-weight: 700; font-size: 0.82rem; cursor: pointer; box-shadow: 0 8px 18px -8px rgba(245,158,11,0.6); }
+.oc__cv-upbtn:disabled { opacity: 0.6; cursor: not-allowed; }
+.oc__cv-hint { font-size: 0.72rem; color: #98A2B3; }
+
 .oc__msg-foot { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
 .oc__react { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.6rem; border-radius: 999px; background: #F9FAFB; border: 1px solid #EEF0F3; color: #667085; font-size: 0.72rem; font-weight: 600; cursor: pointer; }
 .oc__react:hover { border-color: #D0D5DD; color: #101828; }

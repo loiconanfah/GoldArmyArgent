@@ -22,6 +22,80 @@ ORG_TYPES = {"school", "employability", "bootcamp", "agency", "coach", "other"}
 DEFAULT_MEMBER_TIER = "ESSENTIAL"
 DEFAULT_SEATS_LIMIT = 50
 
+# Forfaits Organisation par palier — le palier dépend du nombre de MEMBRES ACTIFS.
+# max_active = plafond de membres actifs inclus ; None = sur devis (Enterprise).
+# member_tier = niveau d'accès offert aux membres SPONSORISÉS de ce palier.
+ORG_PLANS = [
+    {"key": "free", "name": "Découverte", "max_active": 5, "monthly": 0, "annual": 0,
+     "member_tier": "ESSENTIAL", "tagline": "tagline_free",
+     "features": ["f_dashboard", "f_community", "f_cv_ats", "f_network_manual"]},
+    {"key": "starter", "name": "Starter", "max_active": 25, "monthly": 149, "annual": 1490,
+     "member_tier": "ESSENTIAL", "tagline": "tagline_starter",
+     "features": ["f_dashboard", "f_community", "f_cv_ats", "f_network_manual", "f_member_tracking"]},
+    {"key": "growth", "name": "Growth", "max_active": 75, "monthly": 399, "annual": 3990,
+     "member_tier": "ESSENTIAL", "tagline": "tagline_growth",
+     "features": ["f_all_starter", "f_mentors_events", "f_network_import", "f_analytics_adv", "f_advisors"]},
+    {"key": "scale", "name": "Scale", "max_active": 200, "monthly": 899, "annual": 8990,
+     "member_tier": "PRO", "tagline": "tagline_scale",
+     "features": ["f_all_growth", "f_reports_export", "f_priority_support", "f_onboarding"]},
+    {"key": "enterprise", "name": "Enterprise", "max_active": None, "monthly": None, "annual": None,
+     "member_tier": "PRO", "tagline": "tagline_enterprise",
+     "features": ["f_all_scale", "f_unlimited", "f_sso_api", "f_white_label", "f_dedicated"]},
+]
+PLAN_BY_KEY = {p["key"]: p for p in ORG_PLANS}
+
+
+def get_plan(key: str) -> Optional[Dict[str, Any]]:
+    return PLAN_BY_KEY.get(key)
+
+
+def org_plan_state(org: Dict[str, Any]) -> Dict[str, Any]:
+    """Palier effectif d'une organisation : payant si abonnement actif, sinon Découverte.
+
+    Retourne {plan, tier (niveau membre sponsorisé), cap (sièges premium)}.
+    """
+    if org and org.get("billing_status") == "active" and org.get("billing_plan"):
+        p = PLAN_BY_KEY.get(org["billing_plan"], PLAN_BY_KEY["free"])
+    else:
+        p = PLAN_BY_KEY["free"]
+    return {"plan": p["key"], "tier": p["member_tier"], "cap": p["max_active"]}
+
+
+def recommend_plan(active_count: int) -> str:
+    """Plus petit forfait dont le plafond couvre le nombre de membres actifs."""
+    for p in ORG_PLANS:
+        if p["max_active"] is not None and active_count <= p["max_active"]:
+            return p["key"]
+    return "enterprise"
+
+
+async def active_member_count(org_id: str) -> int:
+    """Nombre de membres ACTIFS : ≥ 1 candidature OU adhésion dans les 30 derniers jours."""
+    from datetime import timedelta
+    db = get_db()
+    member_ids = [u["id"] async for u in db.users.find(
+        {"organization_id": org_id, "role": "member"}, {"_id": 0, "id": 1})]
+    if not member_ids:
+        return 0
+
+    active = set()
+    # Actifs par candidature
+    async for row in db.applications.aggregate([
+        {"$match": {"user_id": {"$in": member_ids}}},
+        {"$group": {"_id": "$user_id"}},
+    ]):
+        active.add(row["_id"])
+
+    # Grâce de 30 jours pour les nouveaux membres
+    cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+    async for u in db.users.find(
+        {"organization_id": org_id, "role": "member", "org_joined_at": {"$gte": cutoff}},
+        {"_id": 0, "id": 1},
+    ):
+        active.add(u["id"])
+
+    return len(active)
+
 
 def generate_invite_code(length: int = 8) -> str:
     """Code d'invitation court, lisible, sans caractères ambigus."""
@@ -113,17 +187,81 @@ async def join_organization(user_id: str, code: str) -> Dict[str, Any]:
     if current >= org.get("seats_limit", DEFAULT_SEATS_LIMIT):
         return {"status": "error", "message": "Cette organisation a atteint sa limite de places."}
 
+    # L'adhésion ne débloque PAS le premium : l'admin sponsorise ensuite (siège premium).
     await db.users.update_one(
         {"id": user_id},
         {"$set": {
             "organization_id": org["id"],
             "role": "member",
             "account_type": "candidate",
-            "subscription_tier": org.get("member_tier", DEFAULT_MEMBER_TIER),
+            "subscription_tier": "FREE",
+            "sponsored": False,
             "org_joined_at": datetime.now(timezone.utc),
         }},
     )
     return {"status": "success", "organization": org}
+
+
+async def sponsored_count(org_id: str) -> int:
+    db = get_db()
+    return await db.users.count_documents(
+        {"organization_id": org_id, "role": "member", "sponsored": True})
+
+
+async def set_sponsorship(org_id: str, user_id: str, sponsored: bool) -> Dict[str, Any]:
+    """Sponsorise (ou retire) un membre : règle son subscription_tier en conséquence.
+
+    Respecte le plafond de sièges du palier effectif de l'organisation.
+    """
+    db = get_db()
+    org = await get_organization(org_id)
+    state = org_plan_state(org or {})
+
+    member = await db.users.find_one({"id": user_id, "organization_id": org_id, "role": "member"})
+    if not member:
+        return {"status": "error", "message": "Membre introuvable."}
+
+    if sponsored:
+        if not member.get("sponsored"):
+            cap = state["cap"]
+            if cap is not None:
+                current = await sponsored_count(org_id)
+                if current >= cap:
+                    return {"status": "error", "message": "cap_reached", "cap": cap}
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"sponsored": True, "subscription_tier": state["tier"]}},
+        )
+    else:
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"sponsored": False, "subscription_tier": "FREE"}},
+        )
+    return {"status": "success", "sponsored": sponsored, "tier": state["tier"] if sponsored else "FREE"}
+
+
+async def resync_sponsored_tiers(org_id: str) -> int:
+    """Réaligne le tier des membres sponsorisés sur le palier effectif (après changement
+    de facturation). Si l'orga n'est plus active, les sponsorisés retombent au niveau
+    Découverte ; utilisé aussi pour appliquer un upgrade (ex: Scale → PRO)."""
+    db = get_db()
+    org = await get_organization(org_id)
+    state = org_plan_state(org or {})
+    res = await db.users.update_many(
+        {"organization_id": org_id, "role": "member", "sponsored": True},
+        {"$set": {"subscription_tier": state["tier"]}},
+    )
+    return res.modified_count
+
+
+async def downgrade_all_members(org_id: str) -> int:
+    """Rétrograde tous les membres en FREE (facturation résiliée)."""
+    db = get_db()
+    res = await db.users.update_many(
+        {"organization_id": org_id, "role": "member"},
+        {"$set": {"subscription_tier": "FREE"}},
+    )
+    return res.modified_count
 
 
 async def remove_member(org_id: str, user_id: str) -> bool:
@@ -142,7 +280,7 @@ async def list_members_with_progress(org_id: str) -> List[Dict[str, Any]]:
     members = await db.users.find(
         {"organization_id": org_id, "role": "member"},
         {"_id": 0, "id": 1, "email": 1, "full_name": 1, "cv_text": 1,
-         "created_at": 1, "org_joined_at": 1},
+         "created_at": 1, "org_joined_at": 1, "sponsored": 1, "subscription_tier": 1},
     ).to_list(length=None)
 
     if not members:
@@ -176,6 +314,8 @@ async def list_members_with_progress(org_id: str) -> List[Dict[str, Any]]:
             "interviews": stats.get("interviews", 0),
             "last_activity": stats.get("last_activity"),
             "joined_at": m.get("org_joined_at") or m.get("created_at"),
+            "sponsored": bool(m.get("sponsored")),
+            "tier": m.get("subscription_tier", "FREE"),
         })
     # Trie par activité décroissante (plus actifs d'abord)
     result.sort(key=lambda x: x["applications"], reverse=True)

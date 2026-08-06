@@ -186,6 +186,7 @@ async def register(user_data: UserCreate):
             "referral_code": own_referral_code,
             "referred_by": referred_by_id,
             "bonus_credits": initial_bonus_credits,
+            "gold_balance": 50 + initial_bonus_credits,  # 50 Gold offerts à l'inscription
             "referral_count": 0,
             "account_type": "candidate",
             "role": None,

@@ -100,6 +100,86 @@ def create_org_seat_checkout(org_id: str, admin_user_id: str, email: str, quanti
         return None
 
 
+def create_gold_pack_checkout(user_id: str, email: str, pack: dict):
+    """Crée un Checkout Stripe PAIEMENT UNIQUE pour un pack de Gold (boutique).
+
+    Prix défini en ligne (price_data) : aucun produit à créer d'avance.
+    """
+    from core.gold import pack_total_gold
+    total_gold = pack_total_gold(pack)
+    amount_cents = int(round(float(pack["price_eur"]) * 100))
+    try:
+        session = stripe.checkout.Session.create(
+            customer_email=email,
+            payment_method_types=['card'],
+            mode='payment',
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'unit_amount': amount_cents,
+                    'product_data': {'name': f"GoldArmy — {total_gold} Gold ({pack.get('name', pack['key'])})"},
+                },
+                'quantity': 1,
+            }],
+            success_url=f"{settings.frontend_url}/boutique?status=success",
+            cancel_url=f"{settings.frontend_url}/boutique?status=cancel",
+            metadata={'user_id': user_id, 'type': 'gold_pack', 'pack': pack['key'], 'gold': str(total_gold)},
+        )
+        return session.url
+    except Exception as e:
+        logger.error(f"Erreur Stripe Gold Pack Checkout: {e}")
+        return None
+
+
+async def credit_gold_pack(session):
+    """Crédite le Gold après paiement réussi d'un pack (webhook)."""
+    meta = session.get('metadata', {}) or {}
+    user_id = meta.get('user_id')
+    gold = int(meta.get('gold', 0) or 0)
+    if not user_id or gold <= 0:
+        return
+    from core.gold import grant_gold
+    await grant_gold(user_id, gold, f"pack:{meta.get('pack','?')}", meta={"stripe_session": session.get('id')})
+    logger.info(f"🪙 {gold} Gold crédités à {user_id} (pack {meta.get('pack')})")
+
+
+def create_org_plan_checkout(org_id: str, admin_user_id: str, email: str,
+                             plan: str, plan_name: str, amount: int, interval: str,
+                             currency: str = "cad"):
+    """Crée une session Checkout d'abonnement pour un FORFAIT Organisation.
+
+    Le prix est défini EN LIGNE (price_data) : aucun produit/prix à créer d'avance
+    dans le dashboard Stripe — seule la clé API suffit.
+    """
+    if not amount:
+        logger.error(f"Montant invalide pour le forfait {plan}/{interval}")
+        return None
+    stripe_interval = "year" if interval == "annual" else "month"
+    try:
+        session = stripe.checkout.Session.create(
+            customer_email=email,
+            payment_method_types=['card'],
+            mode='subscription',
+            line_items=[{
+                'price_data': {
+                    'currency': currency,
+                    'unit_amount': int(amount) * 100,
+                    'recurring': {'interval': stripe_interval},
+                    'product_data': {'name': f"GoldArmy Organisation — {plan_name} ({'annuel' if interval=='annual' else 'mensuel'})"},
+                },
+                'quantity': 1,
+            }],
+            success_url=f"{settings.frontend_url}/organisation/facturation?status=success",
+            cancel_url=f"{settings.frontend_url}/organisation/facturation?status=cancel",
+            metadata={'org_id': org_id, 'admin_user_id': admin_user_id, 'type': 'org_plan', 'plan': plan, 'interval': interval},
+            subscription_data={'metadata': {'org_id': org_id, 'type': 'org_plan', 'plan': plan, 'interval': interval}},
+        )
+        return session.url
+    except Exception as e:
+        logger.error(f"Erreur Stripe Org Plan Checkout: {e}")
+        return None
+
+
 def _sync_seats_sync(subscription_id: str, quantity: int) -> bool:
     """Met à jour la quantité (nombre de sièges) de l'abonnement Stripe (appel bloquant)."""
     try:
@@ -126,22 +206,29 @@ async def sync_org_seat_quantity(org_id: str):
 
 async def update_org_billing(session):
     """Active la facturation d'une organisation après un paiement réussi."""
-    org_id = session.get('metadata', {}).get('org_id')
+    meta = session.get('metadata', {}) or {}
+    org_id = meta.get('org_id')
     if not org_id:
         return
     db = get_db()
-    await db.organizations.update_one(
-        {"id": org_id},
-        {"$set": {
-            "billing_status": "active",
-            "stripe_subscription_id": session.get('subscription'),
-            "stripe_customer_id": session.get('customer'),
-            "billing_activated_at": datetime.now(timezone.utc),
-        }},
-    )
-    logger.info(f"✅ Facturation organisation activée: {org_id}")
-    # Aligne immédiatement la quantité sur le nombre réel de membres
-    await sync_org_seat_quantity(org_id)
+    fields = {
+        "billing_status": "active",
+        "stripe_subscription_id": session.get('subscription'),
+        "stripe_customer_id": session.get('customer'),
+        "billing_activated_at": datetime.now(timezone.utc),
+    }
+    if meta.get('plan'):
+        fields["billing_plan"] = meta['plan']
+    if meta.get('interval'):
+        fields["billing_interval"] = meta['interval']
+    await db.organizations.update_one({"id": org_id}, {"$set": fields})
+    logger.info(f"✅ Facturation organisation activée: {org_id} (plan={meta.get('plan')})")
+    # Applique le niveau d'accès du palier aux membres sponsorisés (ex: Scale → PRO)
+    try:
+        from core.organizations import resync_sponsored_tiers
+        await resync_sponsored_tiers(org_id)
+    except Exception as e:
+        logger.warning(f"Resync sponsorisés échoué: {e}")
 
 
 async def cancel_org_billing(subscription):
@@ -149,9 +236,20 @@ async def cancel_org_billing(subscription):
     org_id = subscription.get('metadata', {}).get('org_id')
     db = get_db()
     query = {"id": org_id} if org_id else {"stripe_subscription_id": subscription.get('id')}
+    # Récupère l'id AVANT la mise à jour (qui vide stripe_subscription_id)
+    if not org_id:
+        target = await db.organizations.find_one(query, {"_id": 0, "id": 1})
+        org_id = target.get("id") if target else None
     await db.organizations.update_one(
-        query, {"$set": {"billing_status": "canceled", "stripe_subscription_id": None}}
+        query, {"$set": {"billing_status": "canceled", "stripe_subscription_id": None, "billing_plan": None}}
     )
+    # Rétrograde les membres en FREE (accès premium suspendu)
+    if org_id:
+        try:
+            from core.organizations import downgrade_all_members
+            await downgrade_all_members(org_id)
+        except Exception as e:
+            logger.warning(f"Rétrogradation membres échouée: {e}")
     logger.info(f"⚠️ Facturation organisation résiliée: {org_id or subscription.get('id')}")
 
 
@@ -174,12 +272,14 @@ async def handle_webhook_payload(payload, sig_header):
 
     # Handle the event
     if etype == 'checkout.session.completed':
-        if meta_type == 'org_seats':
+        if meta_type in ('org_seats', 'org_plan'):
             await update_org_billing(obj)
+        elif meta_type == 'gold_pack':
+            await credit_gold_pack(obj)
         else:
             await update_user_subscription(obj)
     elif etype == 'customer.subscription.deleted':
-        if meta_type == 'org_seats':
+        if meta_type in ('org_seats', 'org_plan'):
             await cancel_org_billing(obj)
         else:
             await cancel_user_subscription(obj)

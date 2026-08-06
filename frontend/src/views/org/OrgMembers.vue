@@ -2,12 +2,16 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { authFetch } from '@/utils/auth'
-import { XMarkIcon, TrashIcon, AcademicCapIcon, DocumentTextIcon, BriefcaseIcon, ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline'
+import { XMarkIcon, TrashIcon, AcademicCapIcon, DocumentTextIcon, BriefcaseIcon, ChatBubbleLeftRightIcon, SparklesIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
+import { useRouter } from 'vue-router'
 
 const { t } = useI18n()
+const router = useRouter()
 const loading = ref(true)
 const members = ref([])
 const search = ref('')
+const seat = ref({ tier: 'ESSENTIAL', cap: 5, used: 0 })
+const sponsoring = ref('')
 
 const detailOpen = ref(false)
 const detailLoading = ref(false)
@@ -20,15 +24,39 @@ const filtered = computed(() => {
   return members.value.filter(m =>
     (m.full_name || '').toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q))
 })
+const usedSeats = computed(() => members.value.filter(m => m.sponsored).length)
+const capReached = computed(() => seat.value.cap != null && usedSeats.value >= seat.value.cap)
 
 async function load() {
   loading.value = true
   try {
-    const res = await authFetch('/api/org/members')
-    const json = await res.safeJson()
-    if (json?.status === 'success') members.value = json.data
+    const [mRes, bRes] = await Promise.all([authFetch('/api/org/members'), authFetch('/api/org/billing')])
+    const mJson = await mRes.safeJson()
+    const bJson = await bRes.safeJson()
+    if (mJson?.status === 'success') members.value = mJson.data
+    if (bJson?.status === 'success') {
+      seat.value = { tier: bJson.data.sponsored_tier, cap: bJson.data.sponsored_seats_cap, used: bJson.data.sponsored_seats_used }
+    }
   } catch (e) {}
   finally { loading.value = false }
+}
+
+async function toggleSponsor(m) {
+  const next = !m.sponsored
+  if (next && capReached.value) { alert(t('org.sponsor.cap_reached', { cap: seat.value.cap })); return }
+  sponsoring.value = m.id
+  try {
+    const res = await authFetch(`/api/org/members/${m.id}/sponsor`, { method: 'PUT', body: JSON.stringify({ sponsored: next }) })
+    const json = await res.safeJson()
+    if (res.ok && json?.status === 'success') {
+      m.sponsored = next
+      m.tier = json.data.tier
+      if (detail.value && detail.value.profile.id === m.id) { detail.value.profile.sponsored = next; detail.value.profile.subscription_tier = json.data.tier }
+    } else {
+      alert(json?.detail || t('common.error'))
+    }
+  } catch (e) { alert(t('common.error')) }
+  finally { sponsoring.value = '' }
 }
 
 async function openDetail(m) {
@@ -85,7 +113,14 @@ onMounted(load)
         <h1 class="om__title">{{ t('org.tabs.members') }}</h1>
         <p class="om__sub">{{ t('org.members.sub') }}</p>
       </div>
-      <input v-model="search" class="om__search" :placeholder="t('org.members.search')" />
+      <div class="om__head-right">
+        <button class="om__seats" @click="router.push('/organisation/facturation')" :title="t('org.sponsor.manage')">
+          <SparklesIcon class="w-4 h-4" />
+          <span><b>{{ usedSeats }}</b> / {{ seat.cap ?? '∞' }} {{ t('org.sponsor.seats') }}</span>
+          <span class="om__seats-tier">{{ seat.tier }}</span>
+        </button>
+        <input v-model="search" class="om__search" :placeholder="t('org.members.search')" />
+      </div>
     </header>
 
     <div v-if="loading" class="om__loading">{{ t('common.loading') }}…</div>
@@ -102,8 +137,15 @@ onMounted(load)
           <div class="om__mini-item"><strong>{{ m.applications }}</strong><span>{{ t('org.stats.applications') }}</span></div>
           <div class="om__mini-item"><strong>{{ m.interviews }}</strong><span>{{ t('org.stats.interviews') }}</span></div>
         </div>
-        <span :class="['om__pill', m.has_cv ? 'om__pill--ok' : 'om__pill--off']">
-          {{ m.has_cv ? t('org.members.cv_yes') : t('org.members.cv_no') }}
+        <span
+          :class="['om__spon', m.sponsored ? 'om__spon--on' : 'om__spon--off']"
+          role="button" :aria-disabled="sponsoring === m.id"
+          @click.stop="toggleSponsor(m)"
+          :title="m.sponsored ? t('org.sponsor.remove') : t('org.sponsor.give')"
+        >
+          <SparklesIcon v-if="m.sponsored" class="w-3.5 h-3.5" />
+          <LockClosedIcon v-else class="w-3.5 h-3.5" />
+          {{ m.sponsored ? m.tier : t('org.sponsor.free') }}
         </span>
       </button>
     </div>
@@ -126,6 +168,28 @@ onMounted(load)
                   <span :class="['om__role-tag', 'om__role-tag--' + detail.profile.org_member_role]">{{ roleBadge(detail.profile.org_member_role) }}</span>
                 </div>
               </div>
+            </div>
+
+            <!-- Sponsorship (accès premium) -->
+            <div class="om__section om__section--spon" :class="{ 'om__section--spon-on': detail.profile.sponsored }">
+              <div class="om__spon-row">
+                <div>
+                  <h3 class="om__section-title om__section-title--tight"><SparklesIcon class="w-4 h-4" /> {{ t('org.sponsor.title') }}</h3>
+                  <p class="om__spon-desc">
+                    {{ detail.profile.sponsored
+                        ? t('org.sponsor.on_desc', { tier: detail.profile.subscription_tier })
+                        : t('org.sponsor.off_desc') }}
+                  </p>
+                </div>
+                <button
+                  :class="['om__spon-toggle', { 'om__spon-toggle--on': detail.profile.sponsored }]"
+                  :disabled="sponsoring === detail.profile.id || (!detail.profile.sponsored && capReached)"
+                  @click="toggleSponsor(detail.profile)"
+                >
+                  <span class="om__spon-knob"></span>
+                </button>
+              </div>
+              <p v-if="!detail.profile.sponsored && capReached" class="om__spon-cap">{{ t('org.sponsor.cap_note', { cap: seat.cap }) }}</p>
             </div>
 
             <!-- Role assign -->
@@ -191,6 +255,29 @@ onMounted(load)
 .om__sub { color: #64748B; font-size: 0.9rem; margin: 0.3rem 0 0; }
 .om__search { padding: 0.65rem 0.95rem; border-radius: 0.7rem; background: #fff; border: 1px solid #EEF0F3; color: #1E293B; font-size: 0.85rem; min-width: 240px; outline: none; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
 .om__search:focus { border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+.om__head-right { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.om__seats { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.9rem; border-radius: 999px; background: #FFFBEB; border: 1px solid #FDE68A; color: #B45309; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.om__seats b { color: #92400E; }
+.om__seats-tier { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; background: #F59E0B; color: #fff; padding: 0.1rem 0.4rem; border-radius: 999px; }
+
+/* Sponsor badge on member cards */
+.om__spon { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; padding: 0.28rem 0.6rem; border-radius: 999px; cursor: pointer; user-select: none; transition: all 0.15s; }
+.om__spon--on { background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #fff; box-shadow: 0 4px 10px -4px rgba(245,158,11,0.6); }
+.om__spon--off { background: #F1F3F6; color: #98A2B3; }
+.om__spon--off:hover { background: #FEF3C7; color: #B45309; }
+
+/* Sponsorship section in drawer */
+.om__section--spon { border-color: #FDE68A; background: #FFFBEB; }
+.om__section--spon-on { border-color: #F59E0B; }
+.om__spon-row { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; }
+.om__section-title--tight { margin: 0 0 0.3rem; }
+.om__spon-desc { font-size: 0.76rem; color: #92400E; margin: 0; }
+.om__spon-toggle { width: 3rem; height: 1.7rem; border-radius: 999px; border: none; background: #E2E8F0; position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; }
+.om__spon-toggle--on { background: linear-gradient(135deg, #FBBF24, #F59E0B); }
+.om__spon-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+.om__spon-knob { position: absolute; top: 0.2rem; left: 0.2rem; width: 1.3rem; height: 1.3rem; border-radius: 50%; background: #fff; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.om__spon-toggle--on .om__spon-knob { transform: translateX(1.3rem); }
+.om__spon-cap { font-size: 0.72rem; color: #B45309; margin: 0.6rem 0 0; }
 .om__loading, .om__empty { padding: 3rem; text-align: center; color: #94A3B8; }
 
 .om__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 0.9rem; }

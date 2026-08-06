@@ -2,9 +2,12 @@
 
 Toutes les routes d'administration exigent le rôle org_admin.
 """
+import io
+import os
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, Any, Dict
 from loguru import logger
@@ -79,12 +82,6 @@ async def delete_member(user_id: str, admin: dict = Depends(get_current_org_admi
     ok = await orgs.remove_member(admin["organization_id"], user_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Membre introuvable dans cette organisation.")
-    # Met à jour la facturation par siège (best-effort)
-    try:
-        from api.stripe_service import sync_org_seat_quantity
-        await sync_org_seat_quantity(admin["organization_id"])
-    except Exception as e:
-        logger.warning(f"[ORG] Sync sièges après retrait échoué: {e}")
     return {"status": "success"}
 
 
@@ -92,33 +89,68 @@ async def delete_member(user_id: str, admin: dict = Depends(get_current_org_admi
 
 @router.get("/billing")
 async def get_billing(admin: dict = Depends(get_current_org_admin)):
-    """État de facturation : sièges facturables, coût mensuel, statut de l'abonnement."""
-    from api.stripe_service import PRICE_PER_SEAT_USD
+    """État de facturation par palier : membres actifs, forfait recommandé, plan courant, grille."""
     org = await orgs.get_organization(admin["organization_id"])
-    seats = await orgs.count_members(admin["organization_id"])
+    active = await orgs.active_member_count(admin["organization_id"])
+    recommended = orgs.recommend_plan(active)
+    current_plan = (org or {}).get("billing_plan")
+    state = orgs.org_plan_state(org or {})
+    seats_used = await orgs.sponsored_count(admin["organization_id"])
+
+    # Alerte de dépassement : le plan courant ne couvre plus les membres actifs
+    over_cap = False
+    if current_plan:
+        cur = orgs.get_plan(current_plan)
+        if cur and cur.get("max_active") is not None and active > cur["max_active"]:
+            over_cap = True
+
     return {
         "status": "success",
         "data": {
-            "billable_seats": seats,
-            "price_per_seat": PRICE_PER_SEAT_USD,
-            "monthly_total": seats * PRICE_PER_SEAT_USD,
-            "currency": "USD",
+            "active_members": active,
+            "recommended_plan": recommended,
+            "current_plan": current_plan,
+            "billing_interval": (org or {}).get("billing_interval"),
             "billing_status": (org or {}).get("billing_status", "inactive"),
             "has_subscription": bool((org or {}).get("stripe_subscription_id")),
+            "over_cap": over_cap,
+            "sponsored_tier": state["tier"],
+            "sponsored_seats_used": seats_used,
+            "sponsored_seats_cap": state["cap"],
+            "currency": "CAD",
+            "plans": [
+                {"key": p["key"], "name": p["name"], "max_active": p["max_active"],
+                 "monthly": p["monthly"], "annual": p["annual"], "member_tier": p.get("member_tier"),
+                 "tagline": p.get("tagline"), "features": p.get("features", [])}
+                for p in orgs.ORG_PLANS
+            ],
         },
     }
 
 
+class BillingCheckoutRequest(BaseModel):
+    plan: str
+    interval: str = "monthly"
+
+
 @router.post("/billing/checkout")
-async def billing_checkout(admin: dict = Depends(get_current_org_admin)):
-    """Crée une session Stripe Checkout d'abonnement par siège pour l'organisation."""
-    from api.stripe_service import create_org_seat_checkout
-    seats = await orgs.count_members(admin["organization_id"])
-    url = create_org_seat_checkout(
+async def billing_checkout(req: BillingCheckoutRequest, admin: dict = Depends(get_current_org_admin)):
+    """Crée une session Stripe Checkout pour le forfait choisi (mensuel ou annuel)."""
+    from api.stripe_service import create_org_plan_checkout
+    plan = orgs.get_plan(req.plan)
+    if not plan or plan["key"] in ("free", "enterprise"):
+        raise HTTPException(status_code=400, detail="Ce forfait n'est pas facturable via Checkout.")
+    interval = "annual" if req.interval == "annual" else "monthly"
+    amount = plan["annual"] if interval == "annual" else plan["monthly"]
+    url = create_org_plan_checkout(
         org_id=admin["organization_id"],
         admin_user_id=admin["id"],
         email=admin.get("email", ""),
-        quantity=max(1, seats),
+        plan=req.plan,
+        plan_name=plan["name"],
+        amount=amount,
+        interval=interval,
+        currency="cad",
     )
     if not url:
         raise HTTPException(status_code=500, detail="Facturation indisponible (Stripe non configuré).")
@@ -219,6 +251,21 @@ async def set_member_role(user_id: str, req: MemberRoleRequest, admin: dict = De
     if not ok:
         raise HTTPException(status_code=404, detail="Membre introuvable.")
     return {"status": "success"}
+
+
+class SponsorRequest(BaseModel):
+    sponsored: bool
+
+
+@router.put("/members/{user_id}/sponsor")
+async def sponsor_member(user_id: str, req: SponsorRequest, admin: dict = Depends(get_current_org_admin)):
+    """Attribue (ou retire) un siège premium à un membre : débloque son accès complet."""
+    result = await orgs.set_sponsorship(admin["organization_id"], user_id, req.sponsored)
+    if result["status"] == "error":
+        if result.get("message") == "cap_reached":
+            raise HTTPException(status_code=403, detail=f"Plafond de sièges premium atteint ({result.get('cap')}). Passez au forfait supérieur.")
+        raise HTTPException(status_code=404, detail=result["message"])
+    return {"status": "success", "data": result}
 
 
 @router.get("/mentors")
@@ -533,6 +580,113 @@ async def create_community_post(req: CommunityPostRequest, member: dict = Depend
     return {"status": "success", "data": post}
 
 
+async def _score_cv_ats(text: str) -> int:
+    """Score ATS 0-100 : règles objectives + affinage LLM (avec repli sur les règles)."""
+    from api.routers.cv import _ats_rule_score
+    snippet = (text or "")[:2500]
+    rule = _ats_rule_score(snippet)
+    try:
+        import re as _re, json as _json
+        from llm.unified_client import UnifiedLLMClient
+        llm = UnifiedLLMClient()
+        prompt = (
+            "Tu es un expert ATS. Évalue la compatibilité ATS de ce CV (0-100, sévérité réaliste). "
+            "Réponds UNIQUEMENT en JSON: {\"score\": <entier>}\n\n---\n" + snippet
+        )
+        raw = await llm.chat([{"role": "user", "content": prompt}], json_mode=True, model="gemini-2.0-flash", max_tokens=200)
+        cleaned = _re.sub(r"```json\s*|```", "", raw or "").strip()
+        m = _re.search(r"\{.*\}", cleaned, _re.DOTALL)
+        llm_score = int(_json.loads(m.group(0)).get("score", rule)) if m else rule
+        llm_score = max(0, min(100, llm_score))
+        return max(0, min(100, int(0.45 * rule + 0.55 * llm_score)))
+    except Exception as e:
+        logger.warning(f"[ORG CV] LLM scoring fallback (rule only): {e}")
+        return rule
+
+
+@router.post("/community/cv")
+async def upload_community_cv(
+    file: UploadFile = File(...),
+    member: dict = Depends(get_current_org_member),
+):
+    """Upload d'un modèle de CV (PDF) : extrait le texte, calcule le score ATS,
+    stocke le fichier dans MongoDB (GridFS, persistant) et publie un post
+    consultable/téléchargeable par tous les membres."""
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Seuls les fichiers PDF sont acceptés.")
+
+    content = await file.read()
+    if len(content) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Fichier trop volumineux (max 8 Mo).")
+
+    # Extraction du texte
+    try:
+        import fitz  # PyMuPDF
+        doc = fitz.open(stream=content, filetype="pdf")
+        text = "".join(page.get_text() for page in doc)
+        doc.close()
+    except Exception as e:
+        logger.warning(f"[ORG CV] Extraction PDF échouée: {e}")
+        text = ""
+
+    ats_score = await _score_cv_ats(text)
+
+    # Stockage persistant dans MongoDB via GridFS
+    post_id = str(uuid.uuid4())
+    db = get_db()
+    from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+    bucket = AsyncIOMotorGridFSBucket(db, bucket_name="org_cv")
+    grid_id = await bucket.upload_from_stream(
+        file.filename, content,
+        metadata={"post_id": post_id, "organization_id": member["organization_id"], "content_type": "application/pdf"},
+    )
+
+    post = {
+        "id": post_id,
+        "organization_id": member["organization_id"],
+        "type": "cv",
+        "title": file.filename.rsplit(".", 1)[0][:120],
+        "content": "",
+        "link": "",
+        "file_url": f"/api/org/community/cv/{post_id}/file",
+        "file_name": file.filename,
+        "grid_id": str(grid_id),
+        "ats_score": ats_score,
+        "author_id": member["id"],
+        "author_name": member.get("full_name") or member.get("email", "").split("@")[0],
+        "author_role": member.get("org_member_role") or ("org_admin" if member.get("role") == "org_admin" else "member"),
+        "likes": 0,
+        "comments": [],
+        "created_at": datetime.now(timezone.utc),
+    }
+    await db.org_posts.insert_one(post)
+    post.pop("_id", None)
+    return {"status": "success", "data": post}
+
+
+@router.get("/community/cv/{post_id}/file")
+async def download_community_cv(post_id: str):
+    """Streame le PDF depuis GridFS (URL à UUID indevinable, sert l'aperçu et le téléchargement)."""
+    db = get_db()
+    post = await db.org_posts.find_one({"id": post_id, "type": "cv"}, {"_id": 0, "grid_id": 1, "file_name": 1})
+    if not post or not post.get("grid_id"):
+        raise HTTPException(status_code=404, detail="Fichier introuvable.")
+    from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+    from bson import ObjectId
+    bucket = AsyncIOMotorGridFSBucket(db, bucket_name="org_cv")
+    try:
+        stream = await bucket.open_download_stream(ObjectId(post["grid_id"]))
+        data = await stream.read()
+    except Exception:
+        raise HTTPException(status_code=404, detail="Fichier introuvable.")
+    safe_name = (post.get("file_name") or "cv.pdf").replace('"', "")
+    return StreamingResponse(
+        io.BytesIO(data),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{safe_name}"', "Cache-Control": "private, max-age=3600"},
+    )
+
+
 @router.post("/community/posts/{post_id}/like")
 async def like_community_post(post_id: str, member: dict = Depends(get_current_org_member)):
     db = get_db()
@@ -575,9 +729,19 @@ async def delete_community_post(post_id: str, member: dict = Depends(get_current
     q = {"id": post_id, "organization_id": member["organization_id"]}
     if member.get("role") != "org_admin":
         q["author_id"] = member["id"]  # un membre ne supprime que ses propres posts
+    post = await db.org_posts.find_one(q, {"_id": 0, "grid_id": 1})
     res = await db.org_posts.delete_one(q)
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Publication introuvable ou non autorisée.")
+    # Supprime le fichier GridFS associé (le cas échéant)
+    if post and post.get("grid_id"):
+        try:
+            from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+            from bson import ObjectId
+            bucket = AsyncIOMotorGridFSBucket(db, bucket_name="org_cv")
+            await bucket.delete(ObjectId(post["grid_id"]))
+        except Exception as e:
+            logger.warning(f"[ORG CV] Suppression fichier GridFS échouée: {e}")
     return {"status": "success"}
 
 
@@ -602,12 +766,4 @@ async def join_org(req: JoinRequest, current_user: dict = Depends(get_current_us
     result = await orgs.join_organization(current_user["id"], req.code)
     if result["status"] == "error":
         raise HTTPException(status_code=400, detail=result["message"])
-    # Ajuste la facturation par siège de l'organisation (best-effort)
-    org = result.get("organization") or {}
-    if org.get("id"):
-        try:
-            from api.stripe_service import sync_org_seat_quantity
-            await sync_org_seat_quantity(org["id"])
-        except Exception as e:
-            logger.warning(f"[ORG] Sync sièges après adhésion échoué: {e}")
-    return {"status": "success", "data": org}
+    return {"status": "success", "data": result.get("organization") or {}}
