@@ -223,12 +223,12 @@ async def update_org_billing(session):
         fields["billing_interval"] = meta['interval']
     await db.organizations.update_one({"id": org_id}, {"$set": fields})
     logger.info(f"✅ Facturation organisation activée: {org_id} (plan={meta.get('plan')})")
-    # Applique le niveau d'accès du palier aux membres sponsorisés (ex: Scale → PRO)
+    # Recharge immédiate en Gold des membres sponsorisés au niveau du nouveau palier
     try:
-        from core.organizations import resync_sponsored_tiers
-        await resync_sponsored_tiers(org_id)
+        from core.organizations import monthly_org_refill
+        await monthly_org_refill(org_id)
     except Exception as e:
-        logger.warning(f"Resync sponsorisés échoué: {e}")
+        logger.warning(f"Recharge Gold sponsorisés échouée: {e}")
 
 
 async def cancel_org_billing(subscription):
@@ -243,13 +243,7 @@ async def cancel_org_billing(subscription):
     await db.organizations.update_one(
         query, {"$set": {"billing_status": "canceled", "stripe_subscription_id": None, "billing_plan": None}}
     )
-    # Rétrograde les membres en FREE (accès premium suspendu)
-    if org_id:
-        try:
-            from core.organizations import downgrade_all_members
-            await downgrade_all_members(org_id)
-        except Exception as e:
-            logger.warning(f"Rétrogradation membres échouée: {e}")
+    # Note : le Gold déjà crédité reste acquis ; seules les recharges mensuelles futures s'arrêtent.
     logger.info(f"⚠️ Facturation organisation résiliée: {org_id or subscription.get('id')}")
 
 
@@ -309,6 +303,17 @@ async def update_user_subscription(session):
             }
         )
         logger.info(f"✅ Abonnement mis à jour (Stripe) pour {user_id}: {tier}")
+
+        # Crédite immédiatement les tokens mensuels du forfait (Essentiel 200 / Pro 500)
+        try:
+            from core.gold import MONTHLY_REFILL, grant_gold
+            from datetime import datetime as _dt, timezone as _tz
+            amount = MONTHLY_REFILL.get(tier, 0)
+            if amount:
+                await grant_gold(user_id, amount, f"subscription_{tier.lower()}")
+                await db.users.update_one({"id": user_id}, {"$set": {"last_free_refill": _dt.now(_tz.utc)}})
+        except Exception as ge:
+            logger.warning(f"Crédit tokens abonnement échoué: {ge}")
 
         # Récupérer l'utilisateur pour l'e-mail et les notifications
         user = await db.users.find_one({"id": user_id})

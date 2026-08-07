@@ -26,7 +26,8 @@ import {
   SunIcon,
   MoonIcon,
   GiftIcon,
-  BuildingOffice2Icon
+  BuildingOffice2Icon,
+  BoltIcon
 } from '@heroicons/vue/24/outline'
 import { useTheme } from './composables/useTheme'
 import ToastPortal from './components/ToastPortal.vue'
@@ -59,6 +60,16 @@ const toggleLanguage = () => {
 }
 const userEmail = ref('')
 const userAvatar = ref('')
+const goldBalance = ref(null)
+
+const fetchGold = async () => {
+    if (!localStorage.getItem('token')) return
+    try {
+        const r = await authFetch('/api/gold/balance')
+        const j = await r.json()
+        if (j?.status === 'success') goldBalance.value = j.data.balance
+    } catch (e) {}
+}
 const userTier = ref('FREE')
 const userRole = ref(null)
 
@@ -149,9 +160,12 @@ const toggleNotifications = () => {
 
 onMounted(() => {
     fetchNotifications()
+    fetchGold()
     const timer = setInterval(fetchNotifications, 60000 * 5) // Toutes les 5 min
     return () => clearInterval(timer)
 })
+
+watch(() => route.path, () => { fetchGold() })
 </script>
 
 <template>
@@ -294,6 +308,17 @@ onMounted(() => {
 
         <!-- Right: Actions & User Profile -->
         <div class="flex items-center gap-3 sm:gap-5">
+            <!-- Gold balance -->
+            <router-link
+                to="/boutique"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-black shadow-sm hover:shadow-md hover:brightness-105 transition-all border border-amber-300/40"
+                :title="t('shop.your_gold')"
+            >
+                <BoltIcon class="w-4 h-4" />
+                <span>{{ goldBalance ?? '—' }}</span>
+                <span class="hidden sm:inline opacity-80 font-bold">Gold</span>
+            </router-link>
+
             <!-- Viral Referral Button -->
             <button 
                 @click="showReferralModal = true"

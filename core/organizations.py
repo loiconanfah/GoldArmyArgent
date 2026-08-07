@@ -24,22 +24,22 @@ DEFAULT_SEATS_LIMIT = 50
 
 # Forfaits Organisation par palier — le palier dépend du nombre de MEMBRES ACTIFS.
 # max_active = plafond de membres actifs inclus ; None = sur devis (Enterprise).
-# member_tier = niveau d'accès offert aux membres SPONSORISÉS de ce palier.
+# member_gold = Gold mensuel offert à chaque membre SPONSORISÉ de ce palier.
 ORG_PLANS = [
     {"key": "free", "name": "Découverte", "max_active": 5, "monthly": 0, "annual": 0,
-     "member_tier": "ESSENTIAL", "tagline": "tagline_free",
+     "member_gold": 100, "tagline": "tagline_free",
      "features": ["f_dashboard", "f_community", "f_cv_ats", "f_network_manual"]},
     {"key": "starter", "name": "Starter", "max_active": 25, "monthly": 149, "annual": 1490,
-     "member_tier": "ESSENTIAL", "tagline": "tagline_starter",
+     "member_gold": 300, "tagline": "tagline_starter",
      "features": ["f_dashboard", "f_community", "f_cv_ats", "f_network_manual", "f_member_tracking"]},
     {"key": "growth", "name": "Growth", "max_active": 75, "monthly": 399, "annual": 3990,
-     "member_tier": "ESSENTIAL", "tagline": "tagline_growth",
+     "member_gold": 300, "tagline": "tagline_growth",
      "features": ["f_all_starter", "f_mentors_events", "f_network_import", "f_analytics_adv", "f_advisors"]},
     {"key": "scale", "name": "Scale", "max_active": 200, "monthly": 899, "annual": 8990,
-     "member_tier": "PRO", "tagline": "tagline_scale",
+     "member_gold": 600, "tagline": "tagline_scale",
      "features": ["f_all_growth", "f_reports_export", "f_priority_support", "f_onboarding"]},
     {"key": "enterprise", "name": "Enterprise", "max_active": None, "monthly": None, "annual": None,
-     "member_tier": "PRO", "tagline": "tagline_enterprise",
+     "member_gold": 1000, "tagline": "tagline_enterprise",
      "features": ["f_all_scale", "f_unlimited", "f_sso_api", "f_white_label", "f_dedicated"]},
 ]
 PLAN_BY_KEY = {p["key"]: p for p in ORG_PLANS}
@@ -52,13 +52,13 @@ def get_plan(key: str) -> Optional[Dict[str, Any]]:
 def org_plan_state(org: Dict[str, Any]) -> Dict[str, Any]:
     """Palier effectif d'une organisation : payant si abonnement actif, sinon Découverte.
 
-    Retourne {plan, tier (niveau membre sponsorisé), cap (sièges premium)}.
+    Retourne {plan, gold (Gold mensuel par membre sponsorisé), cap (sièges premium)}.
     """
     if org and org.get("billing_status") == "active" and org.get("billing_plan"):
         p = PLAN_BY_KEY.get(org["billing_plan"], PLAN_BY_KEY["free"])
     else:
         p = PLAN_BY_KEY["free"]
-    return {"plan": p["key"], "tier": p["member_tier"], "cap": p["max_active"]}
+    return {"plan": p["key"], "gold": p["member_gold"], "cap": p["max_active"]}
 
 
 def recommend_plan(active_count: int) -> str:
@@ -222,7 +222,8 @@ async def set_sponsorship(org_id: str, user_id: str, sponsored: bool) -> Dict[st
         return {"status": "error", "message": "Membre introuvable."}
 
     if sponsored:
-        if not member.get("sponsored"):
+        newly = not member.get("sponsored")
+        if newly:
             cap = state["cap"]
             if cap is not None:
                 current = await sponsored_count(org_id)
@@ -230,38 +231,55 @@ async def set_sponsorship(org_id: str, user_id: str, sponsored: bool) -> Dict[st
                     return {"status": "error", "message": "cap_reached", "cap": cap}
         await db.users.update_one(
             {"id": user_id},
-            {"$set": {"sponsored": True, "subscription_tier": state["tier"]}},
+            {"$set": {"sponsored": True, "last_org_refill": datetime.now(timezone.utc)}},
         )
+        if newly:
+            # Crédite immédiatement le Gold mensuel du palier
+            from core.gold import grant_gold
+            await grant_gold(user_id, state["gold"], "org_sponsor", meta={"org_id": org_id})
     else:
-        await db.users.update_one(
-            {"id": user_id},
-            {"$set": {"sponsored": False, "subscription_tier": "FREE"}},
-        )
-    return {"status": "success", "sponsored": sponsored, "tier": state["tier"] if sponsored else "FREE"}
+        await db.users.update_one({"id": user_id}, {"$set": {"sponsored": False}})
+    return {"status": "success", "sponsored": sponsored, "gold": state["gold"] if sponsored else 0}
 
 
-async def resync_sponsored_tiers(org_id: str) -> int:
-    """Réaligne le tier des membres sponsorisés sur le palier effectif (après changement
-    de facturation). Si l'orga n'est plus active, les sponsorisés retombent au niveau
-    Découverte ; utilisé aussi pour appliquer un upgrade (ex: Scale → PRO)."""
+async def monthly_org_refill(org_id: str) -> int:
+    """Recharge mensuelle des membres sponsorisés en Gold (idempotent, > 30 j).
+
+    À déclencher par un cron mensuel (ou l'endpoint dédié). Retourne le nb de membres rechargés.
+    """
+    from datetime import timedelta
+    from core.gold import grant_gold
     db = get_db()
     org = await get_organization(org_id)
     state = org_plan_state(org or {})
-    res = await db.users.update_many(
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=30)
+
+    members = await db.users.find(
         {"organization_id": org_id, "role": "member", "sponsored": True},
-        {"$set": {"subscription_tier": state["tier"]}},
-    )
-    return res.modified_count
+        {"_id": 0, "id": 1, "last_org_refill": 1},
+    ).to_list(length=None)
+
+    n = 0
+    for m in members:
+        last = m.get("last_org_refill")
+        if last and getattr(last, "tzinfo", None) is None:
+            last = last.replace(tzinfo=timezone.utc)
+        if last is None or last < cutoff:
+            await db.users.update_one({"id": m["id"]}, {"$set": {"last_org_refill": now}})
+            await grant_gold(m["id"], state["gold"], "org_monthly", meta={"org_id": org_id})
+            n += 1
+    return n
 
 
-async def downgrade_all_members(org_id: str) -> int:
-    """Rétrograde tous les membres en FREE (facturation résiliée)."""
+async def monthly_refill_all() -> int:
+    """Recharge toutes les organisations (pour un cron global). Retourne le total rechargé."""
     db = get_db()
-    res = await db.users.update_many(
-        {"organization_id": org_id, "role": "member"},
-        {"$set": {"subscription_tier": "FREE"}},
-    )
-    return res.modified_count
+    total = 0
+    org_ids = [o["id"] async for o in db.organizations.find({}, {"_id": 0, "id": 1})]
+    for oid in org_ids:
+        total += await monthly_org_refill(oid)
+    return total
 
 
 async def remove_member(org_id: str, user_id: str) -> bool:

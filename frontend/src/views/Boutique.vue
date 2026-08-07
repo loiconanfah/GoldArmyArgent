@@ -17,8 +17,8 @@ const buying = ref('')
 useHead({ title: computed(() => t('shop.title') + ' | GoldArmy') })
 
 const costs = computed(() => [
-  { key: 'cv_audit', gold: 3 }, { key: 'follow_up', gold: 2 }, { key: 'sniper_search', gold: 5 },
-  { key: 'cv_adaptation', gold: 8 }, { key: 'hr_interview', gold: 10 }, { key: 'portfolio', gold: 15 },
+  { key: 'cv_audit', gold: 10 }, { key: 'follow_up', gold: 5 }, { key: 'sniper_search', gold: 15 },
+  { key: 'cv_adaptation', gold: 18 }, { key: 'hr_interview', gold: 10 }, { key: 'portfolio', gold: 15 },
 ])
 
 async function load() {
@@ -93,6 +93,18 @@ onMounted(load)
         </div>
       </div>
 
+      <!-- Subscription callout (tokens récurrents) -->
+      <router-link to="/tarifs" class="shop__sub-cta">
+        <div class="shop__sub-cta-left">
+          <SparklesIcon class="w-5 h-5" />
+          <div>
+            <div class="shop__sub-cta-title">{{ t('shop.sub_cta_title') }}</div>
+            <div class="shop__sub-cta-desc">{{ t('shop.sub_cta_desc') }}</div>
+          </div>
+        </div>
+        <span class="shop__sub-cta-btn">{{ t('shop.sub_cta_btn') }} →</span>
+      </router-link>
+
       <div class="shop__cols">
         <!-- How it works / costs -->
         <section class="shop__card">
@@ -150,6 +162,13 @@ onMounted(load)
 .shop__pack-btn { width: 100%; padding: 0.7rem; border-radius: 0.9rem; border: none; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #fff; font-weight: 800; font-size: 0.88rem; cursor: pointer; box-shadow: 0 8px 18px -8px rgba(245,158,11,0.6); }
 .shop__pack-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
+.shop__sub-cta { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.4rem; border-radius: 1.4rem; margin-bottom: 1.3rem; background: linear-gradient(135deg, #1E293B, #0F172A); color: #fff; text-decoration: none; box-shadow: 0 12px 28px -16px rgba(15,23,42,0.6); transition: transform 0.15s; }
+.shop__sub-cta:hover { transform: translateY(-2px); }
+.shop__sub-cta-left { display: flex; align-items: center; gap: 0.9rem; }
+.shop__sub-cta-left svg { color: #FBBF24; flex-shrink: 0; }
+.shop__sub-cta-title { font-weight: 800; font-size: 0.95rem; }
+.shop__sub-cta-desc { font-size: 0.8rem; color: #94A3B8; margin-top: 0.15rem; }
+.shop__sub-cta-btn { flex-shrink: 0; font-weight: 800; font-size: 0.85rem; color: #FBBF24; white-space: nowrap; }
 .shop__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .shop__card { background: #fff; border: 1px solid #E2E8F0; border-radius: 1.4rem; padding: 1.4rem; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
 .shop__card-head { display: flex; align-items: center; justify-content: space-between; }

@@ -31,6 +31,8 @@ const router = useRouter()
 
 // --- State ---
 const userTier = ref('FREE')
+const goldBalance = ref(null)
+const monthlyRefill = { FREE: 100, ESSENTIAL: 200, PRO: 500 }
 const profileData = ref({ full_name: '', email: '' })
 const usage = ref({})
 const isSubscribing = ref(false)
@@ -121,7 +123,7 @@ const exportDataJSON = async () => {
 // --- Tier Config (matches subscription.py exactly) ---
 const tierConfig = {
   FREE: {
-    label: 'Gratuit', price: '0€', icon: ShieldCheckIcon, color: 'slate',
+    label: 'Gratuit', price: '0€', icon: ShieldCheckIcon, color: 'slate', gold: 100,
     description: 'Pour débuter votre conquête.',
     features: [
       { key: 'sniper_search', label: 'Recherches Sniper', icon: MagnifyingGlassIcon },
@@ -133,7 +135,7 @@ const tierConfig = {
     unavailable: ['Headhunter', 'Carnet d\'adresses', 'Portfolio IA']
   },
   ESSENTIAL: {
-    label: 'Essentiel', price: '9.99€', icon: StarIcon, color: 'amber',
+    label: 'Essentiel', price: '9.99€', icon: StarIcon, color: 'amber', gold: 200,
     description: 'Le choix des vainqueurs (Conseillé).',
     features: [
       { key: 'sniper_search', label: 'Recherches Sniper', icon: MagnifyingGlassIcon },
@@ -147,7 +149,7 @@ const tierConfig = {
     unavailable: ['Portfolio IA personnalisé']
   },
   PRO: {
-    label: 'Pro', price: '19.99€', icon: RocketLaunchIcon, color: 'indigo',
+    label: 'Pro', price: '19.99€', icon: RocketLaunchIcon, color: 'indigo', gold: 500,
     description: 'Puissance maximale pour l\'élite.',
     features: [
       { key: 'sniper_search', label: 'Recherches Sniper', icon: MagnifyingGlassIcon },
@@ -167,12 +169,14 @@ const tierOrder = ['FREE', 'ESSENTIAL', 'PRO']
 // --- Fetch ---
 const fetchAll = async () => {
   try {
-    const [profileRes, usageRes] = await Promise.all([
+    const [profileRes, usageRes, goldRes] = await Promise.all([
       authFetch('/api/profile'),
-      authFetch('/api/profile/usage')
+      authFetch('/api/profile/usage'),
+      authFetch('/api/gold/balance')
     ])
     const profileJson = await profileRes.json()
     const usageJson = await usageRes.json()
+    try { const gj = await goldRes.json(); if (gj?.status === 'success') goldBalance.value = gj.data.balance } catch (e) {}
 
     if (profileJson.status === 'success') {
       const d = profileJson.data
@@ -290,6 +294,30 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
 
     <div class="max-w-6xl mx-auto px-6 lg:px-10 py-10 space-y-12">
 
+      <!-- === SOLDE GOLD === -->
+      <section>
+        <div class="flex items-center gap-3 mb-6">
+          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight">Mon Gold</h2>
+        </div>
+        <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row items-center gap-6">
+          <div class="flex items-center gap-4 flex-1">
+            <div class="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center">
+              <BoltIcon class="w-7 h-7 text-amber-400" />
+            </div>
+            <div>
+              <div class="text-3xl font-black text-white leading-none">{{ goldBalance ?? '—' }} <span class="text-base text-amber-400 font-bold">Gold</span></div>
+              <div class="text-xs text-slate-400 mt-1">
+                Recharge mensuelle : <strong class="text-amber-400">{{ monthlyRefill[userTier] || 100 }} Gold</strong>
+                <span v-if="userTier !== 'FREE'"> ({{ userTier }})</span>
+              </div>
+            </div>
+          </div>
+          <router-link to="/boutique" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow transition-all whitespace-nowrap">
+            Recharger en Boutique →
+          </router-link>
+        </div>
+      </section>
+
       <!-- === CURRENT PLAN USAGE === -->
       <section>
         <div class="flex items-center gap-3 mb-6">
@@ -369,6 +397,9 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
               <div class="flex items-baseline gap-1">
                 <span class="text-4xl font-black text-slate-900">{{ tierConfig[tier].price }}</span>
                 <span class="text-xs text-slate-400 font-bold uppercase">/mois</span>
+              </div>
+              <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-black">
+                <BoltIcon class="w-4 h-4" /> {{ tierConfig[tier].gold }} Gold / mois
               </div>
             </div>
 

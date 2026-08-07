@@ -10,7 +10,7 @@ const router = useRouter()
 const loading = ref(true)
 const members = ref([])
 const search = ref('')
-const seat = ref({ tier: 'ESSENTIAL', cap: 5, used: 0 })
+const seat = ref({ gold: 300, cap: 5, used: 0 })
 const sponsoring = ref('')
 
 const detailOpen = ref(false)
@@ -35,7 +35,7 @@ async function load() {
     const bJson = await bRes.safeJson()
     if (mJson?.status === 'success') members.value = mJson.data
     if (bJson?.status === 'success') {
-      seat.value = { tier: bJson.data.sponsored_tier, cap: bJson.data.sponsored_seats_cap, used: bJson.data.sponsored_seats_used }
+      seat.value = { gold: bJson.data.member_gold, cap: bJson.data.sponsored_seats_cap, used: bJson.data.sponsored_seats_used }
     }
   } catch (e) {}
   finally { loading.value = false }
@@ -50,8 +50,7 @@ async function toggleSponsor(m) {
     const json = await res.safeJson()
     if (res.ok && json?.status === 'success') {
       m.sponsored = next
-      m.tier = json.data.tier
-      if (detail.value && detail.value.profile.id === m.id) { detail.value.profile.sponsored = next; detail.value.profile.subscription_tier = json.data.tier }
+      if (detail.value && detail.value.profile.id === m.id) { detail.value.profile.sponsored = next }
     } else {
       alert(json?.detail || t('common.error'))
     }
@@ -117,7 +116,7 @@ onMounted(load)
         <button class="om__seats" @click="router.push('/organisation/facturation')" :title="t('org.sponsor.manage')">
           <SparklesIcon class="w-4 h-4" />
           <span><b>{{ usedSeats }}</b> / {{ seat.cap ?? '∞' }} {{ t('org.sponsor.seats') }}</span>
-          <span class="om__seats-tier">{{ seat.tier }}</span>
+          <span class="om__seats-tier">{{ seat.gold }} Gold/mois</span>
         </button>
         <input v-model="search" class="om__search" :placeholder="t('org.members.search')" />
       </div>
@@ -145,7 +144,7 @@ onMounted(load)
         >
           <SparklesIcon v-if="m.sponsored" class="w-3.5 h-3.5" />
           <LockClosedIcon v-else class="w-3.5 h-3.5" />
-          {{ m.sponsored ? m.tier : t('org.sponsor.free') }}
+          {{ m.sponsored ? t('org.sponsor.premium') : t('org.sponsor.free') }}
         </span>
       </button>
     </div>
@@ -177,7 +176,7 @@ onMounted(load)
                   <h3 class="om__section-title om__section-title--tight"><SparklesIcon class="w-4 h-4" /> {{ t('org.sponsor.title') }}</h3>
                   <p class="om__spon-desc">
                     {{ detail.profile.sponsored
-                        ? t('org.sponsor.on_desc', { tier: detail.profile.subscription_tier })
+                        ? t('org.sponsor.on_desc', { gold: seat.gold })
                         : t('org.sponsor.off_desc') }}
                   </p>
                 </div>

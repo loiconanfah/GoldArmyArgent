@@ -82,28 +82,21 @@ useHead({
             <div class="features-wrapper">
               <p class="features-title">Inclus dans votre plan :</p>
               <ul class="features-list-light">
-                <li><span class="check">✓</span> Recherches Sniper : <strong>2 / jour</strong></li>
-                <li><span class="check">✓</span> Audits CV (Mentor IA) : <strong>5 au total</strong></li>
-                <li><span class="check">✓</span> Entretiens RH vocaux : <strong>1 essai</strong></li>
-                <li><span class="check">✓</span> Relances auto : <strong>10</strong></li>
-                <li><span class="check">✓</span> Adaptations de CV : <strong>5</strong></li>
-                <li><span class="check">✓</span> Lettres de motivation : <strong>2</strong></li>
-                <li><span class="check">✓</span> Relance Anti-fantôme : <strong>Active</strong></li>
-                
-                <!-- Limites explicites barrées -->
-                <li class="disabled"><span class="cross">✗</span> Usages Headhunter</li>
-                <li class="disabled"><span class="cross">✗</span> Carnet d'adresses</li>
-                <li class="disabled"><span class="cross">✗</span> Portfolio IA personnalisé</li>
-                <li class="disabled"><span class="cross">✗</span> Accès direct au réseau</li>
-                <li class="disabled"><span class="cross">✗</span> Candidature automatique</li>
-                <li class="disabled"><span class="cross">✗</span> Module Post-Interview</li>
-                <li class="disabled"><span class="cross">✗</span> Recherche d'emploi matinale</li>
+                <li><span class="check">✓</span> <strong>50 Gold</strong> offerts à l'inscription</li>
+                <li><span class="check">✓</span> <strong>+100 Gold</strong> gratuits chaque mois</li>
+                <li><span class="check">✓</span> Rechargez à volonté via la <strong>Boutique</strong></li>
+                <li><span class="check">✓</span> Recherches Sniper, audits, adaptations…</li>
+                <li><span class="check">✓</span> Le Gold ne périme pas</li>
+
+                <!-- Réservé aux abonnements -->
+                <li class="disabled"><span class="cross">✗</span> Accès à l'espace Réseau (Essentiel)</li>
+                <li class="disabled"><span class="cross">✗</span> Portfolio IA &amp; fonctions avancées (Pro)</li>
               </ul>
             </div>
-            
+
             <div class="card-cta-light">
-              <router-link to="/register" class="btn-light-outline">Rétrograder</router-link>
-              <span class="subtext-light">Plan actuel par défaut</span>
+              <router-link to="/boutique" class="btn-light-outline">Ouvrir la Boutique</router-link>
+              <span class="subtext-light">Sans abonnement, payez à l'usage</span>
             </div>
           </div>
 
@@ -118,50 +111,46 @@ useHead({
             </div>
             
             <div class="features-wrapper">
-              <p class="features-title accent">Accès illimité aux piliers :</p>
+              <p class="features-title accent">Tokens mensuels + Réseau :</p>
               <ul class="features-list-light">
-                <li><span class="check accent">✓</span> Recherches Sniper : <strong>Illimitées</strong></li>
-                <li><span class="check accent">✓</span> Audits CV ATS : <strong>Illimités</strong></li>
-                <li><span class="check accent">✓</span> Entretiens RH vocaux : <strong>Illimités</strong></li>
-                <li><span class="check accent">✓</span> Usages Headhunter : <strong>Inclus</strong></li>
-                <li><span class="check accent">✓</span> Carnet d'adresses : <strong>Débloqué</strong></li>
-                <li><span class="check accent">✓</span> Relances automatisées : <strong>Illimitées</strong></li>
-                <li><span class="check accent">✓</span> Adaptations CV : <strong>Illimitées</strong></li>
-                <li><span class="check accent">✓</span> Portfolio IA personnalisé : <strong>Inclus</strong></li>
-                <li><span class="check accent">✓</span> Candidatures &amp; Lettres auto : <strong>Incluses</strong></li>
-                <li><span class="check accent">✓</span> Relance Anti-fantôme : <strong>Prioritaire</strong></li>
+                <li><span class="check accent">✓</span> <strong>200 Gold</strong> crédités chaque mois</li>
+                <li><span class="check accent">✓</span> Accès à l'<strong>espace Réseau</strong> (Headhunter, carnet)</li>
+                <li><span class="check accent">✓</span> Recherches Sniper, adaptations CV, entretiens…</li>
+                <li><span class="check accent">✓</span> Relances &amp; lettres de motivation</li>
+                <li><span class="check accent">✓</span> Achat de Gold en Boutique quand vous voulez</li>
+                <li class="disabled"><span class="cross">✗</span> Portfolio IA &amp; fonctions avancées (Pro)</li>
               </ul>
             </div>
-            
+
             <div class="card-cta-light">
               <router-link to="/register" class="btn-light-accent">Choisir Essentiel</router-link>
-              <span class="subtext-light accent-sub">Sans engagement • Activation immédiate</span>
+              <span class="subtext-light accent-sub">9,99 € / mois • Sans engagement</span>
             </div>
           </div>
 
-          <!-- FORFAIT PRO retiré — remplacé par la Boutique de Gold (packs de jetons) -->
-          <!-- BOUTIQUE GOLD -->
-          <div class="pricing-card-light card--gold">
+          <!-- FORFAIT PRO -->
+          <div class="pricing-card-light card--pro">
             <div class="card-header-light">
-              <h2>Gold</h2>
-              <p class="tagline-light">Payez à l'usage, sans engagement.</p>
-              <p class="price-light">dès 4,99 €<span class="period-light">/pack</span></p>
+              <h2>Pro</h2>
+              <p class="tagline-light">Le maximum de tokens et de puissance.</p>
+              <p class="price-light">19,99 €<span class="period-light">/mois</span></p>
             </div>
 
             <div class="features-wrapper">
-              <p class="features-title">Des jetons pour tout débloquer :</p>
+              <p class="features-title pro">Tout Essentiel, décuplé :</p>
               <ul class="features-list-light">
-                <li><span class="check">✓</span> Packs de <strong>100 à 2000 Gold</strong></li>
-                <li><span class="check">✓</span> Utilisable sur <strong>toutes</strong> les fonctionnalités</li>
-                <li><span class="check">✓</span> Recherches Sniper, adaptations CV, entretiens…</li>
-                <li><span class="check">✓</span> Bonus offerts sur les gros packs</li>
-                <li><span class="check">✓</span> Le Gold ne périme pas</li>
+                <li><span class="check pro">✓</span> <strong>500 Gold</strong> crédités chaque mois</li>
+                <li><span class="check pro">✓</span> <strong>Portfolio IA / Gold Profile</strong> débloqué</li>
+                <li><span class="check pro">✓</span> Candidature automatique &amp; Sourcing matinal</li>
+                <li><span class="check pro">✓</span> Module Post-Interview</li>
+                <li><span class="check pro">✓</span> Tout l'espace Réseau (Essentiel inclus)</li>
+                <li><span class="check pro">✓</span> Achat de Gold en Boutique à volonté</li>
               </ul>
             </div>
 
             <div class="card-cta-light">
-              <router-link to="/boutique" class="btn-light-pro">Ouvrir la Boutique</router-link>
-              <span class="subtext-light">50 Gold offerts à l'inscription</span>
+              <router-link to="/register" class="btn-light-pro">Choisir Pro</router-link>
+              <span class="subtext-light">19,99 € / mois • Fonctions avancées</span>
             </div>
           </div>
 

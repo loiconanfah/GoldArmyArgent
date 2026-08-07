@@ -107,7 +107,7 @@ onMounted(load)
           <div v-else-if="isCurrent(p)" class="ob__plan-tag ob__plan-tag--current">{{ t('org.billing.current') }}</div>
 
           <div class="ob__plan-name">{{ p.name }}</div>
-          <div v-if="p.member_tier" class="ob__plan-tier">{{ t('org.billing.members_in', { tier: p.member_tier }) }}</div>
+          <div v-if="p.member_gold" class="ob__plan-tier">{{ t('org.billing.members_gold', { gold: p.member_gold }) }}</div>
           <div v-if="p.tagline" class="ob__plan-tagline">{{ t('org.billing.' + p.tagline) }}</div>
           <div class="ob__plan-price">
             <span class="ob__plan-amount">${{ priceFor(p) }}</span>

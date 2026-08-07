@@ -114,13 +114,13 @@ async def get_billing(admin: dict = Depends(get_current_org_admin)):
             "billing_status": (org or {}).get("billing_status", "inactive"),
             "has_subscription": bool((org or {}).get("stripe_subscription_id")),
             "over_cap": over_cap,
-            "sponsored_tier": state["tier"],
+            "member_gold": state["gold"],
             "sponsored_seats_used": seats_used,
             "sponsored_seats_cap": state["cap"],
             "currency": "CAD",
             "plans": [
                 {"key": p["key"], "name": p["name"], "max_active": p["max_active"],
-                 "monthly": p["monthly"], "annual": p["annual"], "member_tier": p.get("member_tier"),
+                 "monthly": p["monthly"], "annual": p["annual"], "member_gold": p.get("member_gold"),
                  "tagline": p.get("tagline"), "features": p.get("features", [])}
                 for p in orgs.ORG_PLANS
             ],
@@ -155,6 +155,13 @@ async def billing_checkout(req: BillingCheckoutRequest, admin: dict = Depends(ge
     if not url:
         raise HTTPException(status_code=500, detail="Facturation indisponible (Stripe non configuré).")
     return {"status": "success", "url": url}
+
+
+@router.post("/billing/refill")
+async def billing_refill(admin: dict = Depends(get_current_org_admin)):
+    """Recharge en Gold les membres sponsorisés dont la mensualité est due (idempotent 30 j)."""
+    n = await orgs.monthly_org_refill(admin["organization_id"])
+    return {"status": "success", "refilled": n}
 
 
 @router.post("/billing/portal")

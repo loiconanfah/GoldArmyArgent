@@ -10,7 +10,8 @@ router = APIRouter(tags=["Shop"])
 
 @router.get("/api/gold/balance")
 async def get_gold_balance(current_user: dict = Depends(get_current_user)):
-    balance = await gold_mod.get_balance(current_user["id"])
+    # Recharge mensuelle gratuite paresseuse (si due), puis renvoie le solde
+    balance = await gold_mod.maybe_monthly_free_refill(current_user["id"])
     return {"status": "success", "data": {"balance": balance}}
 
 

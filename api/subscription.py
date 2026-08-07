@@ -74,94 +74,58 @@ SUBSCRIPTION_LIMITS = {
 
 async def check_subscription_limit(user_id: str, feature: str) -> Dict[str, Any]:
     """
-    Vérifie si un utilisateur a atteint sa limite pour une fonctionnalité donnée.
-    Retourne {'allowed': bool, 'current': int, 'limit': int, 'message': str}
+    Vérifie l'accès à une fonctionnalité :
+    1. Déverrouillage par forfait (certaines fonctions réservées Essentiel/Pro).
+    2. Coût en Gold (le solde doit couvrir le coût).
+    ADMIN : accès total gratuit.
+    Retourne {'allowed', 'current', 'limit', 'message', 'mode'?, 'need_upgrade'?, 'required_tier'?}
     """
     db = get_db()
     try:
-        # 1. Récupérer le tier de l'utilisateur
         user = await db.users.find_one({"id": user_id})
         tier = user.get('subscription_tier', 'FREE') if user else 'FREE'
-        
-        # Bypass pour l'ADMIN
+
         if tier == 'ADMIN':
             return {'allowed': True, 'current': 0, 'limit': 999999}
 
-        limits = SUBSCRIPTION_LIMITS.get(tier, SUBSCRIPTION_LIMITS['FREE'])
-        config = limits.get(feature)
-        
-        if not config:
-            return {'allowed': True} # Feature non limitée
-            
-        limit = config['limit']
-        period = config['period']
-        
-        # 2. Compter l'usage actuel
-        count = 0
-        
-        if period == 'day':
-            today_str = date.today().isoformat()
-            pipeline = [
-                {"$match": {"user_id": user_id, "feature": feature, "used_at": today_str}},
-                {"$group": {"_id": None, "total": {"$sum": "$count"}}}
-            ]
-            result = await db.usage_logs.aggregate(pipeline).to_list(length=1)
-            count = result[0]["total"] if result else 0
+        from core.gold import GOLD_COSTS, FEATURE_MIN_TIER, TIER_RANK, get_balance
 
-        elif period == 'month':
-            month_str = date.today().strftime("%Y-%m")
-            pipeline = [
-                {"$match": {
-                    "user_id": user_id, 
-                    "feature": feature, 
-                    "used_at": {"$regex": f"^{month_str}"}
-                }},
-                {"$group": {"_id": None, "total": {"$sum": "$count"}}}
-            ]
-            result = await db.usage_logs.aggregate(pipeline).to_list(length=1)
-            count = result[0]["total"] if result else 0
-
-        elif period == 'total':
-             # Cas spécial pour address_book qui compte les lignes réelles
-            if feature == 'address_book':
-                count = await db.contacts.count_documents({"user_id": user_id})
-            else:
-                pipeline = [
-                    {"$match": {"user_id": user_id, "feature": feature}},
-                    {"$group": {"_id": None, "total": {"$sum": "$count"}}}
-                ]
-                result = await db.usage_logs.aggregate(pipeline).to_list(length=1)
-                count = result[0]["total"] if result else 0
-
-        if count >= limit:
+        # 1. Déverrouillage par forfait
+        min_tier = FEATURE_MIN_TIER.get(feature)
+        if min_tier and TIER_RANK.get(tier, 0) < TIER_RANK.get(min_tier, 99):
             return {
-                'allowed': False,
-                'current': count,
-                'limit': limit,
-                'message': f"Limite atteinte pour {feature} ({count}/{limit}). Passez au forfait supérieur !"
+                'allowed': False, 'need_upgrade': True, 'required_tier': min_tier,
+                'message': f"Fonctionnalité réservée au forfait {min_tier}. Améliorez votre abonnement pour la débloquer."
             }
-            
-        return {'allowed': True, 'current': count, 'limit': limit}
+
+        # 2. Coût en Gold
+        cost = GOLD_COSTS.get(feature)
+        if not cost:
+            return {'allowed': True}  # fonctionnalité gratuite (non facturée)
+        balance = await get_balance(user_id)
+        if balance < cost:
+            return {
+                'allowed': False, 'current': balance, 'limit': cost, 'mode': 'gold',
+                'message': f"Gold insuffisant ({balance}/{cost}). Rechargez dans la Boutique pour continuer."
+            }
+        return {'allowed': True, 'current': balance, 'limit': cost, 'mode': 'gold'}
     except Exception as e:
         from loguru import logger
-        logger.error(f"Erreur vérification limite: {e}")
-        return {'allowed': False, 'message': 'Erreur interne de vérification des limites.'}
+        logger.error(f"Erreur vérification accès: {e}")
+        return {'allowed': False, 'message': "Erreur interne de vérification de l'accès."}
+
 
 async def log_usage(user_id: str, feature: str, count: int = 1):
-    """Enregistre une utilisation de fonctionnalité."""
+    """Consomme le Gold correspondant à l'usage (sauf ADMIN)."""
     db = get_db()
     try:
-        today_str = date.today().isoformat()
-        
-        # Upsert: if a log for today exists, increment it. Otherwise, create it.
-        await db.usage_logs.update_one(
-            {"user_id": user_id, "feature": feature, "used_at": today_str},
-            {
-                "$inc": {"count": count},
-                "$setOnInsert": {"id": str(uuid.uuid4())}
-            },
-            upsert=True
-        )
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "subscription_tier": 1})
+        if (user or {}).get('subscription_tier') == 'ADMIN':
+            return
+        from core.gold import GOLD_COSTS, spend_gold
+        cost = GOLD_COSTS.get(feature)
+        if cost:
+            await spend_gold(user_id, cost * max(1, count), f"feature:{feature}")
     except Exception as e:
         from loguru import logger
-        logger.error(f"Erreur lors de l'enregistrement de l'utilisation SaaS: {e}")
+        logger.error(f"Erreur consommation Gold: {e}")

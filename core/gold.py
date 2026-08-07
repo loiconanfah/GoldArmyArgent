@@ -14,7 +14,30 @@ from typing import Any, Dict, List, Optional
 from core.database import get_db
 
 GOLD_SIGNUP_BONUS = 50
-GOLD_MONTHLY_FREE = 20
+
+# Recharge mensuelle de Gold selon le forfait de l'abonné (auto, une fois par mois).
+MONTHLY_REFILL = {"FREE": 100, "ESSENTIAL": 200, "PRO": 500}
+GOLD_MONTHLY_FREE = MONTHLY_REFILL["FREE"]
+
+# Incrémente ce numéro chaque fois que tu changes les montants ci-dessus :
+# tous les utilisateurs seront rechargés au nouveau montant dès leur prochaine visite
+# (au lieu d'attendre la fin de leur cycle de 30 jours).
+REFILL_VERSION = 2
+
+# Fonctionnalités réservées à un forfait (déverrouillage) — en plus du coût en Gold.
+TIER_RANK = {"FREE": 0, "ESSENTIAL": 1, "PRO": 2, "ADMIN": 3}
+FEATURE_MIN_TIER = {
+    # Espace Réseau → Essentiel
+    "network_access": "ESSENTIAL",
+    "headhunter": "ESSENTIAL",
+    "address_book": "ESSENTIAL",
+    # Fonctions avancées → Pro
+    "portfolio": "PRO",
+    "morning_sourcing": "PRO",
+    "post_interview": "PRO",
+    "sniper_apply": "PRO",
+    "auto_apply": "PRO",
+}
 
 # Packs vendus en boutique (paiement unique). Prix en EUR.
 GOLD_PACKS: List[Dict[str, Any]] = [
@@ -27,17 +50,64 @@ PACK_BY_KEY = {p["key"]: p for p in GOLD_PACKS}
 
 # Coût en Gold par fonctionnalité (à caler sur le coût marginal réel).
 GOLD_COSTS: Dict[str, int] = {
-    "cv_audit": 3,
-    "follow_up": 2,
-    "cover_letter": 4,
-    "sniper_search": 5,
-    "cv_adaptation": 8,
-    "headhunter": 8,
+    "cv_audit": 10,
+    "follow_up": 5,
+    "sniper_search": 15,
+    "cv_adaptation": 18,
     "hr_interview": 10,
-    "network_access": 5,
     "portfolio": 15,
-    "sniper_apply": 20,
+    # Autres fonctionnalités (valeurs alignées)
+    "cover_letter": 8,
+    "headhunter": 15,
+    "network_access": 5,
+    "morning_sourcing": 15,
+    "post_interview": 10,
+    "sniper_apply": 25,
+    "auto_apply": 25,
+    # address_book : consultation gratuite (non facturée)
 }
+
+# Recharge mensuelle gratuite (jours entre deux recharges)
+FREE_REFILL_DAYS = 30
+
+
+async def maybe_monthly_refill(user_id: str) -> int:
+    """Recharge mensuelle paresseuse selon le forfait (FREE 20 / ESSENTIAL 200 / PRO 500).
+
+    Idempotent (> 30 j), sans cron : appelé à l'ouverture de la boutique / check du solde.
+    """
+    from datetime import timedelta
+    db = get_db()
+    u = await db.users.find_one({"id": user_id}, {"_id": 0, "last_free_refill": 1, "subscription_tier": 1, "refill_version": 1})
+    if not u:
+        return await get_balance(user_id)
+    tier = u.get("subscription_tier", "FREE")
+    amount = MONTHLY_REFILL.get(tier, MONTHLY_REFILL["FREE"])
+    last = u.get("last_free_refill")
+    now = datetime.now(timezone.utc)
+
+    # Recharge due si : montants modifiés (nouvelle version), jamais rechargé, ou cycle de 30 j écoulé
+    due = (u.get("refill_version") != REFILL_VERSION) or (last is None)
+    if last and not due:
+        try:
+            if last.tzinfo is None:
+                last = last.replace(tzinfo=timezone.utc)
+            due = (now - last) >= timedelta(days=FREE_REFILL_DAYS)
+        except Exception:
+            due = True
+
+    if due:
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"last_free_refill": now, "refill_version": REFILL_VERSION}},
+        )
+        reason = "monthly_free" if tier == "FREE" else f"monthly_{tier.lower()}"
+        return await grant_gold(user_id, amount, reason)
+    return await get_balance(user_id)
+
+
+# Alias rétro-compatibilité
+maybe_monthly_free_refill = maybe_monthly_refill
 
 
 def pack_total_gold(pack: Dict[str, Any]) -> int:

@@ -56,6 +56,7 @@
             "contact": "Contact us",
             "foot": "Prices in CAD, taxes extra. Cancel anytime.",
             "members_in": "Members on {tier}",
+            "members_gold": "{gold} Gold/mo per member",
             "tagline_free": "To try with a small group.",
             "tagline_starter": "For a small cohort getting started.",
             "tagline_growth": "To support several cohorts.",
@@ -127,10 +128,11 @@
             "seats": "premium seats",
             "manage": "Manage plans",
             "free": "Free",
+            "premium": "Premium",
             "give": "Unlock premium access",
             "remove": "Remove premium access",
-            "on_desc": "Full {tier} access, sponsored by your organization.",
-            "off_desc": "Limited free access. Turn on to grant them premium.",
+            "on_desc": "Receives {gold} Gold/month, sponsored by your organization.",
+            "off_desc": "Limited free access. Turn on to grant monthly Gold.",
             "cap_reached": "All your premium seats are in use ({cap}). Upgrade your plan.",
             "cap_note": "Cap reached ({cap} seats). Upgrade to sponsor more members."
         },
@@ -334,7 +336,10 @@
         "feat_sniper_search": "Sniper search",
         "feat_cv_adaptation": "CV adaptation",
         "feat_hr_interview": "AI HR interview",
-        "feat_portfolio": "Portfolio / Gold Profile"
+        "feat_portfolio": "Portfolio / Gold Profile",
+        "sub_cta_title": "Need Gold every month?",
+        "sub_cta_desc": "Essential: 200 Gold/mo + Network. Pro: 500 Gold/mo + Portfolio and more.",
+        "sub_cta_btn": "See subscriptions"
     },
     "nav": {
         "home": "Home",

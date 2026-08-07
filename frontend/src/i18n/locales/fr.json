@@ -56,6 +56,7 @@
             "contact": "Nous contacter",
             "foot": "Prix en CAD, taxes en sus. Résiliable à tout moment.",
             "members_in": "Membres en {tier}",
+            "members_gold": "{gold} Gold/mois par membre",
             "tagline_free": "Pour tester avec un petit groupe.",
             "tagline_starter": "Pour une petite cohorte qui démarre.",
             "tagline_growth": "Pour accompagner plusieurs cohortes.",
@@ -127,10 +128,11 @@
             "seats": "sièges premium",
             "manage": "Gérer les forfaits",
             "free": "Gratuit",
+            "premium": "Premium",
             "give": "Débloquer l'accès premium",
             "remove": "Retirer l'accès premium",
-            "on_desc": "Accès {tier} complet, offert par votre organisation.",
-            "off_desc": "Accès gratuit limité. Activez pour lui offrir le premium.",
+            "on_desc": "Reçoit {gold} Gold/mois, offert par votre organisation.",
+            "off_desc": "Accès gratuit limité. Activez pour lui verser du Gold mensuel.",
             "cap_reached": "Tous vos sièges premium sont utilisés ({cap}). Passez au forfait supérieur.",
             "cap_note": "Plafond atteint ({cap} sièges). Montez de forfait pour sponsoriser plus de membres."
         },
@@ -334,7 +336,10 @@
         "feat_sniper_search": "Recherche Sniper",
         "feat_cv_adaptation": "Adaptation CV",
         "feat_hr_interview": "Entretien RH IA",
-        "feat_portfolio": "Portfolio / Gold Profile"
+        "feat_portfolio": "Portfolio / Gold Profile",
+        "sub_cta_title": "Besoin de Gold chaque mois ?",
+        "sub_cta_desc": "Essentiel : 200 Gold/mois + Réseau. Pro : 500 Gold/mois + Portfolio et plus.",
+        "sub_cta_btn": "Voir les abonnements"
     },
     "nav": {
         "home": "Accueil",

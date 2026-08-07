@@ -7,7 +7,7 @@ import { ClipboardDocumentIcon, EnvelopeIcon } from '@heroicons/vue/24/outline'
 const { t } = useI18n()
 const org = ref(null)
 const loading = ref(true)
-const form = ref({ name: '', type: 'employability', member_tier: 'ESSENTIAL', seats_limit: 50, contact_email: '' })
+const form = ref({ name: '', type: 'employability', seats_limit: 50, contact_email: '' })
 const saving = ref(false)
 const savedMsg = ref('')
 
@@ -28,7 +28,6 @@ async function load() {
       org.value = json.data
       form.value = {
         name: json.data.name || '', type: json.data.type || 'employability',
-        member_tier: json.data.member_tier || 'ESSENTIAL',
         seats_limit: json.data.seats_limit || 50, contact_email: json.data.contact_email || '',
       }
     }
@@ -103,11 +102,6 @@ onMounted(load)
         <select v-model="form.type" class="os__input os__input--full">
           <option v-for="ot in orgTypes" :key="ot" :value="ot">{{ t('org.types.' + ot) }}</option>
         </select>
-        <label class="os__label mt">{{ t('org.settings.member_tier') }}</label>
-        <select v-model="form.member_tier" class="os__input os__input--full">
-          <option value="ESSENTIAL">ESSENTIAL</option><option value="PRO">PRO</option><option value="FREE">FREE</option>
-        </select>
-        <p class="os__hint">{{ t('org.settings.member_tier_hint') }}</p>
         <label class="os__label mt">{{ t('org.settings.seats') }}</label>
         <input v-model.number="form.seats_limit" type="number" min="1" class="os__input os__input--full" />
         <label class="os__label mt">{{ t('org.settings.contact_email') }}</label>
