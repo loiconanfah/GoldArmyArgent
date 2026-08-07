@@ -16,11 +16,11 @@ const { t } = useI18n()
 const router = useRouter()
 
 const columns = [
-  { id: 'TO_APPLY',  title: 'À Postuler',         icon: EnvelopeIcon,   accent: '#f59e0b', accentRgb: '245,158,11',  accentBg: 'rgba(245,158,11,0.08)',  label: 'À postuler',  gradient: 'from-amber-500/5 to-orange-400/0' },
-  { id: 'APPLIED',   title: 'Candidature Envoyée', icon: ChartBarIcon,   accent: '#6366f1', accentRgb: '99,102,241',  accentBg: 'rgba(99,102,241,0.08)',  label: 'Envoyée',     gradient: 'from-indigo-500/5 to-purple-400/0' },
-  { id: 'FOLLOW_UP', title: 'Relance Requise',     icon: BellAlertIcon,  accent: '#ef4444', accentRgb: '239,68,68',   accentBg: 'rgba(239,68,68,0.08)',   label: 'Relance',     gradient: 'from-red-500/5 to-rose-400/0' },
-  { id: 'INTERVIEW', title: 'Entretien',           icon: CheckBadgeIcon, accent: '#10b981', accentRgb: '16,185,129',  accentBg: 'rgba(16,185,129,0.08)',  label: 'Entretien',   gradient: 'from-emerald-500/5 to-teal-400/0' },
-  { id: 'OFFER',     title: 'Offre Reçue',         icon: TrophyIcon,     accent: '#8b5cf6', accentRgb: '139,92,246',  accentBg: 'rgba(139,92,246,0.08)', label: 'Offre',       gradient: 'from-violet-500/5 to-purple-400/0' },
+  { id: 'TO_APPLY',  tk: 'crm.col_to_apply',  lk: 'crm.lbl_to_apply',  icon: EnvelopeIcon,   accent: '#f59e0b', accentRgb: '245,158,11',  accentBg: 'rgba(245,158,11,0.08)',  gradient: 'from-amber-500/5 to-orange-400/0' },
+  { id: 'APPLIED',   tk: 'crm.col_applied',   lk: 'crm.lbl_applied',   icon: ChartBarIcon,   accent: '#6366f1', accentRgb: '99,102,241',  accentBg: 'rgba(99,102,241,0.08)',  gradient: 'from-indigo-500/5 to-purple-400/0' },
+  { id: 'FOLLOW_UP', tk: 'crm.col_follow_up', lk: 'crm.lbl_follow_up', icon: BellAlertIcon,  accent: '#ef4444', accentRgb: '239,68,68',   accentBg: 'rgba(239,68,68,0.08)',   gradient: 'from-red-500/5 to-rose-400/0' },
+  { id: 'INTERVIEW', tk: 'crm.col_interview', lk: 'crm.lbl_interview', icon: CheckBadgeIcon, accent: '#10b981', accentRgb: '16,185,129',  accentBg: 'rgba(16,185,129,0.08)',  gradient: 'from-emerald-500/5 to-teal-400/0' },
+  { id: 'OFFER',     tk: 'crm.col_offer',     lk: 'crm.lbl_offer',     icon: TrophyIcon,     accent: '#8b5cf6', accentRgb: '139,92,246',  accentBg: 'rgba(139,92,246,0.08)', gradient: 'from-violet-500/5 to-purple-400/0' },
 ]
 
 const crmCards = ref({ 'TO_APPLY': [], 'APPLIED': [], 'FOLLOW_UP': [], 'INTERVIEW': [], 'OFFER': [] })
@@ -123,7 +123,7 @@ const addFromLink = async () => {
     const res = await authFetch('/api/crm/link', { method: 'POST', body: JSON.stringify({ url: newLinkUrl.value.trim() }) })
     const json = await res.json()
     if (res.ok && json.status === 'success') {
-      toastState.addToast('Candidature ajoutée !', 'success')
+      toastState.addToast(t('crm.toast_added'), 'success')
       newLinkUrl.value = ''
       await fetchCrmData()
     } else { toastState.addToast(`Erreur : ${json.detail || json.message || t('common.error')}`, 'error') }
@@ -157,7 +157,7 @@ const confirmDeleteCard = async () => {
   try {
     const res = await authFetch(`/api/crm/${cardId}`, { method: 'DELETE' })
     if (!res.ok) throw new Error()
-    toastState.addToast('Supprimé.', 'success')
+    toastState.addToast(t('crm.toast_deleted'), 'success')
   } catch { crmCards.value[colId] = prev; toastState.addToast(t('common.error'), 'error') }
 }
 const handleDragOver = (e, colId) => { e.preventDefault(); dragOverCol.value = colId }
@@ -183,7 +183,7 @@ const generateFollowup = async (card) => {
     if (!res.ok) { const e = await res.json().catch(() => ({})); followupEmail.value = e.detail || e.message || t('common.error'); return }
     const data = await res.json()
     if (data.status === 'success') {
-      followupEmail.value = (data.email && String(data.email).trim()) || 'Aucun texte. Réessayez.'
+      followupEmail.value = (data.email && String(data.email).trim()) || t('crm.followup_empty')
       followupCount.value = data.followUpCount
       const col = crmCards.value['FOLLOW_UP']; const idx = col.findIndex(c => c.id === card.id)
       if (idx !== -1) col[idx].follow_up_count = data.followUpCount
@@ -265,17 +265,17 @@ onMounted(() => { fetchCrmData() })
           <div class="header-title-block">
             <div class="live-badge">
               <span class="live-dot"></span>
-              Pipeline Actif
+              {{ t('crm.badge_active') }}
             </div>
             <h1 class="crm-title">
-              Central <span class="crm-title-accent">CRM</span>
-              <span class="crm-title-sub"> Candidatures</span>
+              {{ t('crm.title') }} <span class="crm-title-accent">{{ t('crm.title_accent') }}</span>
+              <span class="crm-title-sub"> {{ t('crm.title_sub') }}</span>
             </h1>
-            <p class="crm-subtitle">Glissez-déposez vos opportunités · {{ totalCards }} candidature{{ totalCards !== 1 ? 's' : '' }} en cours</p>
+            <p class="crm-subtitle">{{ t('crm.subtitle') }} · {{ totalCards }} {{ t('crm.in_progress') }}</p>
           </div>
           <button @click="fetchCrmData" class="refresh-btn" :class="{ spinning: isLoading }">
             <ArrowPathIcon class="w-4 h-4" :class="{ 'animate-spin': isLoading }" />
-            <span>Sync</span>
+            <span>{{ t('crm.sync') }}</span>
           </button>
         </div>
 
@@ -287,14 +287,14 @@ onMounted(() => { fetchCrmData() })
             </div>
             <input
               v-model="newLinkUrl" type="url"
-              placeholder="Collez une URL d'offre LinkedIn, Indeed, WTTJ…"
+              :placeholder="t('crm.url_placeholder')"
               class="url-input"
               :disabled="isAddingLink" required
             />
             <button type="submit" :disabled="isAddingLink || !newLinkUrl.trim()" class="url-submit-btn">
               <ArrowPathIcon v-if="isAddingLink" class="w-4 h-4 animate-spin" />
               <SparklesIcon v-else class="w-4 h-4" />
-              {{ isAddingLink ? 'Analyse…' : 'Ajouter au CRM' }}
+              {{ isAddingLink ? t('crm.analyzing') : t('crm.add') }}
             </button>
           </form>
         </div>
@@ -310,7 +310,7 @@ onMounted(() => { fetchCrmData() })
             </div>
             <div>
               <div class="stat-number">{{ crmCards[col.id]?.length || 0 }}</div>
-              <div class="stat-label">{{ col.title }}</div>
+              <div class="stat-label">{{ t(col.tk) }}</div>
             </div>
             <div class="stat-bar-track">
               <div class="stat-bar-fill" :style="`width: ${totalCards ? Math.round((crmCards[col.id]?.length||0)/totalCards*100) : 0}%; background: ${col.accent}`"></div>
@@ -323,7 +323,7 @@ onMounted(() => { fetchCrmData() })
             </div>
             <div>
               <div class="stat-number">{{ conversionRate }}<span class="text-lg text-slate-400 font-bold">%</span></div>
-              <div class="stat-label">Taux de conversion</div>
+              <div class="stat-label">{{ t('crm.conversion_rate') }}</div>
             </div>
           </div>
         </div>
@@ -336,7 +336,7 @@ onMounted(() => { fetchCrmData() })
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Rechercher entreprise, poste..."
+              :placeholder="t('crm.search_placeholder')"
               class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white transition-all"
             />
             <button v-if="searchQuery" @click="searchQuery = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -351,7 +351,7 @@ onMounted(() => { fetchCrmData() })
               class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
               :class="activeFilterTag === 'ALL' ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
             >
-              Tous ({{ totalCards }})
+              {{ t('crm.filter_all') }} ({{ totalCards }})
             </button>
 
             <button
@@ -359,7 +359,7 @@ onMounted(() => { fetchCrmData() })
               class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5"
               :class="activeFilterTag === 'URGENT' ? 'bg-rose-500 text-white shadow-sm' : 'bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200'"
             >
-              <span>🚨</span> À relancer urgent
+              <span>🚨</span> {{ t('crm.filter_urgent') }}
             </button>
 
             <button
@@ -375,7 +375,7 @@ onMounted(() => { fetchCrmData() })
               class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5"
               :class="activeFilterTag === 'WITH_NOTES' ? 'bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
             >
-              <span>📝</span> Avec notes
+              <span>📝</span> {{ t('crm.filter_notes') }}
             </button>
           </div>
         </div>
@@ -403,7 +403,7 @@ onMounted(() => { fetchCrmData() })
               <div class="col-icon">
                 <component :is="col.icon" class="w-4 h-4" />
               </div>
-              <span class="col-title">{{ col.title }}</span>
+              <span class="col-title">{{ t(col.tk) }}</span>
             </div>
             <div class="col-count">{{ filteredCrmCards[col.id]?.length || 0 }}</div>
           </div>
@@ -447,12 +447,12 @@ onMounted(() => { fetchCrmData() })
                         <span v-else class="card-logo-fallback" :style="`color: ${col.accent}`">{{ getInitial(card.company_name) }}</span>
                       </div>
                       <div class="card-company-info">
-                        <p class="card-company-name">{{ card.company_name || 'Entreprise' }}</p>
+                        <p class="card-company-name">{{ card.company_name || t('crm.company_fallback') }}</p>
                         <p class="card-age">
                           <ClockIcon class="w-3 h-3 inline" />
-                          {{ daysSince(card.created_at) === 0 ? "Aujourd'hui" : daysSince(card.created_at) === 1 ? 'Hier' : `Il y a ${daysSince(card.created_at)}j` }}
+                          {{ daysSince(card.created_at) === 0 ? t('crm.today') : daysSince(card.created_at) === 1 ? t('crm.yesterday') : t('crm.days_ago', { n: daysSince(card.created_at) }) }}
                           <span v-if="col.id === 'FOLLOW_UP' && daysSince(card.created_at) > 7" class="urgent-tag">
-                            <FireIcon class="w-2.5 h-2.5" /> Urgent
+                            <FireIcon class="w-2.5 h-2.5" /> {{ t('crm.urgent') }}
                           </span>
                         </p>
                       </div>
@@ -477,24 +477,24 @@ onMounted(() => { fetchCrmData() })
                   <div class="card-footer">
                     <span class="card-status-pill">
                       <component :is="col.icon" class="w-3 h-3" />
-                      {{ col.label }}
+                      {{ t(col.lk) }}
                     </span>
 
                     <button v-if="col.id === 'TO_APPLY'" @click.stop="openAdaptCvModal(card)" class="card-cta">
-                      <SparklesIcon class="w-3 h-3" />Adapter CV
+                      <SparklesIcon class="w-3 h-3" />{{ t('crm.cta_adapt') }}
                     </button>
                     <button v-else-if="col.id === 'FOLLOW_UP'" @click.stop="generateFollowup(card)" class="card-cta">
-                      <BellAlertIcon class="w-3 h-3" />Relancer
+                      <BellAlertIcon class="w-3 h-3" />{{ t('crm.cta_followup') }}
                       <span v-if="card.follow_up_count" class="opacity-60 ml-0.5">×{{ card.follow_up_count }}</span>
                     </button>
                     <button v-else-if="col.id === 'INTERVIEW'" @click.stop="goToInterview(card)" class="card-cta">
-                      <CheckBadgeIcon class="w-3 h-3" />Préparer
+                      <CheckBadgeIcon class="w-3 h-3" />{{ t('crm.cta_prepare') }}
                     </button>
                     <div v-else-if="col.id === 'APPLIED'" class="card-cta card-cta-passive">
-                      <ClockIcon class="w-3 h-3" />En attente
+                      <ClockIcon class="w-3 h-3" />{{ t('crm.cta_waiting') }}
                     </div>
                     <div v-else-if="col.id === 'OFFER'" class="card-cta card-cta-passive">
-                      <TrophyIcon class="w-3 h-3" />Résultat
+                      <TrophyIcon class="w-3 h-3" />{{ t('crm.cta_result') }}
                     </div>
                   </div>
                 </div>
@@ -514,7 +514,7 @@ onMounted(() => { fetchCrmData() })
                 <div class="col-empty-icon">
                   <PlusIcon class="w-6 h-6" />
                 </div>
-                <p>{{ dragOverCol === col.id ? 'Déposer ici' : 'Glissez une carte ici' }}</p>
+                <p>{{ dragOverCol === col.id ? t('crm.drop_here') : t('crm.drag_here') }}</p>
               </div>
             </Transition>
           </div>
@@ -532,9 +532,9 @@ onMounted(() => { fetchCrmData() })
               <BellAlertIcon class="w-5 h-5 text-red-500" />
             </div>
             <div>
-              <h3 class="modal-title">Email de relance généré</h3>
+              <h3 class="modal-title">{{ t('crm.followup_title') }}</h3>
               <p class="modal-subtitle">{{ followupCard?.job_title }} · {{ followupCard?.company_name }}
-                <span v-if="followupCount" class="text-red-500 font-bold"> · Relance #{{ followupCount }}</span>
+                <span v-if="followupCount" class="text-red-500 font-bold"> · {{ t('crm.followup_n', { n: followupCount }) }}</span>
               </p>
             </div>
             <button @click="closeFollowup" class="modal-close"><XMarkIcon class="w-5 h-5" /></button>
@@ -542,7 +542,7 @@ onMounted(() => { fetchCrmData() })
           <div class="modal-body">
             <div v-if="isGeneratingFollowup" class="modal-loading">
               <div class="modal-spinner"></div>
-              <p>L'IA rédige votre relance…</p>
+              <p>{{ t('crm.followup_loading') }}</p>
             </div>
             <div v-else>
               <div class="modal-email-preview">{{ followupEmail }}</div>
@@ -550,9 +550,9 @@ onMounted(() => { fetchCrmData() })
                 <button @click="copyEmail" class="modal-btn" :class="copied ? 'modal-btn-success' : 'modal-btn-secondary'">
                   <CheckIcon v-if="copied" class="w-4 h-4" />
                   <ClipboardDocumentIcon v-else class="w-4 h-4" />
-                  {{ copied ? 'Copié !' : 'Copier' }}
+                  {{ copied ? t('crm.copied') : t('crm.copy') }}
                 </button>
-                <button @click="closeFollowup" class="modal-btn modal-btn-ghost">Fermer</button>
+                <button @click="closeFollowup" class="modal-btn modal-btn-ghost">{{ t('crm.close') }}</button>
               </div>
             </div>
           </div>
@@ -569,7 +569,7 @@ onMounted(() => { fetchCrmData() })
               <SparklesIcon class="w-5 h-5 text-indigo-500" />
             </div>
             <div>
-              <h3 class="modal-title">Adapter votre CV avec l'IA</h3>
+              <h3 class="modal-title">{{ t('crm.adapt_title') }}</h3>
               <p class="modal-subtitle">{{ adaptCvCard?.job_title }} · {{ adaptCvCard?.company_name }}</p>
             </div>
             <button @click="closeAdaptCvModal" class="modal-close"><XMarkIcon class="w-5 h-5" /></button>
@@ -577,17 +577,17 @@ onMounted(() => { fetchCrmData() })
           <div class="modal-body">
             <div v-if="isAdaptingCv" class="modal-loading">
               <div class="modal-spinner modal-spinner-indigo"></div>
-              <p>L'IA adapte votre CV à l'offre…</p>
+              <p>{{ t('crm.adapt_loading') }}</p>
             </div>
             <div v-else class="space-y-3">
-              <p class="text-sm font-semibold text-slate-600 mb-3">Choisissez votre source :</p>
+              <p class="text-sm font-semibold text-slate-600 mb-3">{{ t('crm.adapt_source') }}</p>
               <button @click="useProfileCv" class="adapt-option-btn">
                 <div class="adapt-option-icon bg-indigo-600"><BriefcaseIcon class="w-5 h-5 text-white" /></div>
-                <div><p class="font-bold text-slate-900 text-sm">Mon profil GoldArmy</p><p class="text-xs text-slate-500">CV enregistré dans votre compte</p></div>
+                <div><p class="font-bold text-slate-900 text-sm">{{ t('crm.adapt_profile') }}</p><p class="text-xs text-slate-500">{{ t('crm.adapt_profile_desc') }}</p></div>
               </button>
               <label class="adapt-option-btn cursor-pointer">
                 <div class="adapt-option-icon bg-slate-200"><ArrowUpTrayIcon class="w-5 h-5 text-slate-600" /></div>
-                <div><p class="font-bold text-slate-900 text-sm">Uploader un PDF</p><p class="text-xs text-slate-500">Choisissez depuis votre ordinateur</p></div>
+                <div><p class="font-bold text-slate-900 text-sm">{{ t('crm.adapt_upload') }}</p><p class="text-xs text-slate-500">{{ t('crm.adapt_upload_desc') }}</p></div>
                 <input ref="adaptCvFileInput" type="file" accept=".pdf" class="hidden" @change="onAdaptFileSelected" />
               </label>
             </div>
@@ -604,11 +604,11 @@ onMounted(() => { fetchCrmData() })
             <div class="modal-header-icon" style="background: rgba(16,185,129,0.1)">
               <DocumentTextIcon class="w-5 h-5 text-emerald-500" />
             </div>
-            <div><h3 class="modal-title">CV adapté prêt !</h3><p class="modal-subtitle">Choisissez un thème et téléchargez</p></div>
+            <div><h3 class="modal-title">{{ t('crm.adapt_ready') }}</h3><p class="modal-subtitle">{{ t('crm.adapt_ready_desc') }}</p></div>
             <button @click="closeDownloadCvModal" class="modal-close"><XMarkIcon class="w-5 h-5" /></button>
           </div>
           <div class="modal-body">
-            <p class="text-sm font-bold text-slate-700 mb-3">Thème :</p>
+            <p class="text-sm font-bold text-slate-700 mb-3">{{ t('crm.theme_label') }}</p>
             <div class="grid grid-cols-2 gap-2 mb-5">
               <button v-for="theme in CV_THEMES" :key="theme.id" @click="selectedCvTheme = theme.id"
                 class="theme-btn" :class="{ 'theme-btn-active': selectedCvTheme === theme.id }">
@@ -618,11 +618,11 @@ onMounted(() => { fetchCrmData() })
               </button>
             </div>
             <div class="modal-footer-row">
-              <button @click="openCrmEditor" class="modal-btn modal-btn-secondary"><DocumentTextIcon class="w-4 h-4" />Modifier</button>
+              <button @click="openCrmEditor" class="modal-btn modal-btn-secondary"><DocumentTextIcon class="w-4 h-4" />{{ t('crm.edit') }}</button>
               <button @click="downloadAdaptedPdf" :disabled="isDownloadingPdf" class="modal-btn modal-btn-primary">
                 <ArrowPathIcon v-if="isDownloadingPdf" class="w-4 h-4 animate-spin" />
                 <ArrowUpTrayIcon v-else class="w-4 h-4" />
-                {{ isDownloadingPdf ? 'Génération…' : 'Télécharger PDF' }}
+                {{ isDownloadingPdf ? t('crm.generating') : t('crm.download_pdf') }}
               </button>
             </div>
           </div>
@@ -637,11 +637,11 @@ onMounted(() => { fetchCrmData() })
           <div class="w-14 h-14 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4">
             <TrashIcon class="w-7 h-7 text-red-500" />
           </div>
-          <h3 class="text-lg font-black text-slate-900 mb-2">Supprimer cette candidature ?</h3>
-          <p class="text-sm text-slate-500 mb-6">Cette action est irréversible.</p>
+          <h3 class="text-lg font-black text-slate-900 mb-2">{{ t('crm.delete_confirm_title') }}</h3>
+          <p class="text-sm text-slate-500 mb-6">{{ t('crm.delete_confirm_desc') }}</p>
           <div class="flex gap-3">
-            <button @click="showDeletePopup = false; itemToDelete = null" class="modal-btn modal-btn-ghost flex-1">Annuler</button>
-            <button @click="confirmDeleteCard" class="modal-btn modal-btn-danger flex-1"><TrashIcon class="w-4 h-4" />Supprimer</button>
+            <button @click="showDeletePopup = false; itemToDelete = null" class="modal-btn modal-btn-ghost flex-1">{{ t('crm.cancel') }}</button>
+            <button @click="confirmDeleteCard" class="modal-btn modal-btn-danger flex-1"><TrashIcon class="w-4 h-4" />{{ t('crm.delete') }}</button>
           </div>
         </div>
       </div>

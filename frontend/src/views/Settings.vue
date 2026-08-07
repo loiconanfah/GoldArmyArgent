@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { authFetch } from '../utils/auth'
 import { toastState } from '../store/toastState'
 import {
@@ -28,6 +29,7 @@ import {
 } from '@heroicons/vue/24/outline'
 
 const router = useRouter()
+const { t } = useI18n()
 
 // --- State ---
 const userTier = ref('FREE')
@@ -123,42 +125,42 @@ const exportDataJSON = async () => {
 // --- Tier Config (matches subscription.py exactly) ---
 const tierConfig = {
   FREE: {
-    label: 'Gratuit', price: '0€', icon: ShieldCheckIcon, color: 'slate', gold: 100,
-    description: 'Pour débuter votre conquête.',
+    labelKey: 'settings.tier_free', price: '0€', icon: ShieldCheckIcon, color: 'slate', gold: 100,
+    descKey: 'settings.desc_free',
     features: [
-      { key: 'sniper_search', label: 'Recherches Sniper', icon: MagnifyingGlassIcon },
-      { key: 'cv_audit', label: 'Audits CV (Mentor IA)', icon: DocumentTextIcon },
-      { key: 'hr_interview', label: 'Entretiens RH vocaux', icon: MicrophoneIcon },
-      { key: 'follow_up', label: 'Relances auto', icon: BoltIcon },
-      { key: 'cv_adaptation', label: 'Adaptations de CV', icon: DocumentTextIcon },
+      { key: 'sniper_search', lk: 'settings.feat_sniper', icon: MagnifyingGlassIcon },
+      { key: 'cv_audit', lk: 'settings.feat_cv_audit', icon: DocumentTextIcon },
+      { key: 'hr_interview', lk: 'settings.feat_hr', icon: MicrophoneIcon },
+      { key: 'follow_up', lk: 'settings.feat_followup', icon: BoltIcon },
+      { key: 'cv_adaptation', lk: 'settings.feat_cv_adapt', icon: DocumentTextIcon },
     ],
-    unavailable: ['Headhunter', 'Carnet d\'adresses', 'Portfolio IA']
+    unavailable: ['settings.feat_headhunter', 'settings.feat_address', 'settings.feat_portfolio']
   },
   ESSENTIAL: {
-    label: 'Essentiel', price: '9.99€', icon: StarIcon, color: 'amber', gold: 200,
-    description: 'Le choix des vainqueurs (Conseillé).',
+    labelKey: 'settings.tier_essential', price: '9.99€', icon: StarIcon, color: 'amber', gold: 200,
+    descKey: 'settings.desc_essential',
     features: [
-      { key: 'sniper_search', label: 'Recherches Sniper', icon: MagnifyingGlassIcon },
-      { key: 'cv_audit', label: 'Audits CV ATS', icon: DocumentTextIcon },
-      { key: 'hr_interview', label: 'Entretiens RH vocaux', icon: MicrophoneIcon },
-      { key: 'headhunter', label: 'Usages Headhunter', icon: UsersIcon },
-      { key: 'address_book', label: 'Carnet d\'adresses', icon: BriefcaseIcon },
-      { key: 'follow_up', label: 'Relances', icon: BoltIcon },
-      { key: 'cv_adaptation', label: 'Adaptations CV', icon: DocumentTextIcon },
+      { key: 'sniper_search', lk: 'settings.feat_sniper', icon: MagnifyingGlassIcon },
+      { key: 'cv_audit', lk: 'settings.feat_cv_audit', icon: DocumentTextIcon },
+      { key: 'hr_interview', lk: 'settings.feat_hr', icon: MicrophoneIcon },
+      { key: 'headhunter', lk: 'settings.feat_headhunter', icon: UsersIcon },
+      { key: 'address_book', lk: 'settings.feat_address', icon: BriefcaseIcon },
+      { key: 'follow_up', lk: 'settings.feat_followup', icon: BoltIcon },
+      { key: 'cv_adaptation', lk: 'settings.feat_cv_adapt', icon: DocumentTextIcon },
     ],
-    unavailable: ['Portfolio IA personnalisé']
+    unavailable: ['settings.feat_portfolio']
   },
   PRO: {
-    label: 'Pro', price: '19.99€', icon: RocketLaunchIcon, color: 'indigo', gold: 500,
-    description: 'Puissance maximale pour l\'élite.',
+    labelKey: 'settings.tier_pro', price: '19.99€', icon: RocketLaunchIcon, color: 'indigo', gold: 500,
+    descKey: 'settings.desc_pro',
     features: [
-      { key: 'sniper_search', label: 'Recherches Sniper', icon: MagnifyingGlassIcon },
-      { key: 'cv_audit', label: 'Audits CV approfondis', icon: DocumentTextIcon },
-      { key: 'hr_interview', label: 'Entretiens RH IA', icon: MicrophoneIcon },
-      { key: 'headhunter', label: 'Headhunter', icon: UsersIcon },
-      { key: 'address_book', label: 'Carnet d\'adresses', icon: BriefcaseIcon },
-      { key: 'follow_up', label: 'Relances', icon: BoltIcon },
-      { key: 'cv_adaptation', label: 'Adaptations CV', icon: DocumentTextIcon },
+      { key: 'sniper_search', lk: 'settings.feat_sniper', icon: MagnifyingGlassIcon },
+      { key: 'cv_audit', lk: 'settings.feat_cv_audit', icon: DocumentTextIcon },
+      { key: 'hr_interview', lk: 'settings.feat_hr', icon: MicrophoneIcon },
+      { key: 'headhunter', lk: 'settings.feat_headhunter', icon: UsersIcon },
+      { key: 'address_book', lk: 'settings.feat_address', icon: BriefcaseIcon },
+      { key: 'follow_up', lk: 'settings.feat_followup', icon: BoltIcon },
+      { key: 'cv_adaptation', lk: 'settings.feat_cv_adapt', icon: DocumentTextIcon },
     ],
     unavailable: []
   }
@@ -260,9 +262,9 @@ const tierBtnClass = (tier, color) => {
 }
 
 const tierBtnLabel = (tier) => {
-  if (isCurrentTier(tier)) return tier === 'FREE' ? 'Plan actuel' : '✓ Votre plan'
-  if (tier === 'FREE') return 'Rétrograder'
-  return tier === 'ESSENTIAL' ? 'Choisir Essentiel' : 'Devenir Pro'
+  if (isCurrentTier(tier)) return tier === 'FREE' ? t('settings.btn_current_free') : t('settings.btn_current')
+  if (tier === 'FREE') return t('settings.btn_downgrade')
+  return tier === 'ESSENTIAL' ? t('settings.btn_essential') : t('settings.btn_pro')
 }
 
 const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PRO' : userTier.value] || tierConfig.FREE)
@@ -278,8 +280,8 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
           <ArrowLeftIcon class="w-5 h-5" />
         </button>
         <div>
-          <h1 class="text-base font-bold text-slate-900">Paramètres & Abonnements</h1>
-          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Gérez vos accès et votre plan</p>
+          <h1 class="text-base font-bold text-slate-900">{{ t('settings.title') }}</h1>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{{ t('settings.subtitle') }}</p>
         </div>
         <div class="ml-auto flex items-center gap-2">
           <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-200">
@@ -297,7 +299,7 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
       <!-- === SOLDE GOLD === -->
       <section>
         <div class="flex items-center gap-3 mb-6">
-          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight">Mon Gold</h2>
+          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight">{{ t('settings.my_gold') }}</h2>
         </div>
         <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row items-center gap-6">
           <div class="flex items-center gap-4 flex-1">
@@ -307,13 +309,13 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
             <div>
               <div class="text-3xl font-black text-white leading-none">{{ goldBalance ?? '—' }} <span class="text-base text-amber-400 font-bold">Gold</span></div>
               <div class="text-xs text-slate-400 mt-1">
-                Recharge mensuelle : <strong class="text-amber-400">{{ monthlyRefill[userTier] || 100 }} Gold</strong>
+                {{ t('settings.monthly_refill') }} : <strong class="text-amber-400">{{ monthlyRefill[userTier] || 100 }} Gold</strong>
                 <span v-if="userTier !== 'FREE'"> ({{ userTier }})</span>
               </div>
             </div>
           </div>
           <router-link to="/boutique" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow transition-all whitespace-nowrap">
-            Recharger en Boutique →
+            {{ t('settings.recharge') }} →
           </router-link>
         </div>
       </section>
@@ -321,7 +323,7 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
       <!-- === CURRENT PLAN USAGE === -->
       <section>
         <div class="flex items-center gap-3 mb-6">
-          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight">Mon Utilisation</h2>
+          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight">{{ t('settings.usage') }}</h2>
           <span class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded border border-slate-200 uppercase">{{ userTier }}</span>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -357,7 +359,7 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
                 <BriefcaseIcon class="w-4 h-4 text-slate-400" />
               </div>
               <span class="text-xs font-bold text-slate-500 line-through">{{ unav }}</span>
-              <span class="ml-auto text-[9px] font-bold text-slate-300 uppercase">Non disponible</span>
+              <span class="ml-auto text-[9px] font-bold text-slate-300 uppercase">{{ t('settings.unavailable') }}</span>
             </div>
           </div>
         </div>
@@ -366,8 +368,8 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
       <!-- === PLANS === -->
       <section>
         <div class="mb-6">
-          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-1">Choisir un plan</h2>
-          <p class="text-xs text-slate-500">Montez en puissance selon vos ambitions professionnelles.</p>
+          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-1">{{ t('settings.choose_plan') }}</h2>
+          <p class="text-xs text-slate-500">{{ t('settings.plans_sub') }}</p>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div
@@ -379,7 +381,7 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
             <div v-if="isCurrentTier(tier)" class="absolute -top-3 left-6">
               <span class="px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full border shadow-sm"
                 :class="tierColorClass(tierConfig[tier].color)">
-                Plan actuel
+                {{ t('settings.current_plan') }}
               </span>
             </div>
 
@@ -390,16 +392,16 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
                   <component :is="tierConfig[tier].icon" class="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 class="text-base font-bold text-slate-900">{{ tierConfig[tier].label }}</h3>
-                  <p class="text-[10px] text-slate-400 font-medium">{{ tierConfig[tier].description }}</p>
+                  <h3 class="text-base font-bold text-slate-900">{{ t(tierConfig[tier].labelKey) }}</h3>
+                  <p class="text-[10px] text-slate-400 font-medium">{{ t(tierConfig[tier].descKey) }}</p>
                 </div>
               </div>
               <div class="flex items-baseline gap-1">
                 <span class="text-4xl font-black text-slate-900">{{ tierConfig[tier].price }}</span>
-                <span class="text-xs text-slate-400 font-bold uppercase">/mois</span>
+                <span class="text-xs text-slate-400 font-bold uppercase">{{ t('settings.per_month') }}</span>
               </div>
               <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-black">
-                <BoltIcon class="w-4 h-4" /> {{ tierConfig[tier].gold }} Gold / mois
+                <BoltIcon class="w-4 h-4" /> {{ tierConfig[tier].gold }} {{ t('settings.gold_per_month') }}
               </div>
             </div>
 
@@ -409,13 +411,13 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
                 <div class="w-4 h-4 rounded-full flex items-center justify-center shrink-0 bg-emerald-50 border border-emerald-200">
                   <CheckIcon class="w-2.5 h-2.5 text-emerald-600" />
                 </div>
-                <span class="text-xs text-slate-700 font-semibold">{{ feat.label }}</span>
+                <span class="text-xs text-slate-700 font-semibold">{{ t(feat.lk) }}</span>
               </div>
               <div v-for="unav in tierConfig[tier].unavailable" :key="unav" class="flex items-center gap-3 opacity-40">
                 <div class="w-4 h-4 rounded-full flex items-center justify-center shrink-0 bg-slate-100 border border-slate-200">
                   <div class="w-1.5 h-px bg-slate-400"></div>
                 </div>
-                <span class="text-xs text-slate-500 font-medium line-through">{{ unav }}</span>
+                <span class="text-xs text-slate-500 font-medium line-through">{{ t(unav) }}</span>
               </div>
             </div>
 
@@ -428,7 +430,7 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
             >
               <span v-if="isSubscribing && !isCurrentTier(tier)" class="flex items-center justify-center gap-2">
                 <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                Chargement...
+                {{ t('settings.loading') }}
               </span>
               <span v-else>{{ tierBtnLabel(tier) }}</span>
             </button>
@@ -442,8 +444,8 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
               <CreditCardIcon class="w-6 h-6" />
             </div>
             <div>
-              <h4 class="text-sm font-bold text-white">Facturation & Reçus Stripe</h4>
-              <p class="text-xs text-slate-400">Consultez l'historique de vos paiements, téléchargez vos factures ou modifiez votre carte bancaire.</p>
+              <h4 class="text-sm font-bold text-white">{{ t('settings.stripe_title') }}</h4>
+              <p class="text-xs text-slate-400">{{ t('settings.stripe_desc') }}</p>
             </div>
           </div>
           <button
@@ -451,8 +453,8 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
             :disabled="isOpeningPortal"
             class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shrink-0 flex items-center gap-2"
           >
-            <span v-if="isOpeningPortal">Chargement...</span>
-            <span v-else>Portail Facturation</span>
+            <span v-if="isOpeningPortal">{{ t('settings.loading') }}</span>
+            <span v-else>{{ t('settings.billing_portal') }}</span>
           </button>
         </div>
       </section>
@@ -460,8 +462,8 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
       <!-- === SECTION AUTOMATISATION IA & GHOSTBUSTER === -->
       <section>
         <div class="mb-6">
-          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-1">🤖 Automatisation IA & Ghostbuster</h2>
-          <p class="text-xs text-slate-500">Configurez le comportement de vos agents autonomes et la tonalité des messages.</p>
+          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-1">{{ t('settings.ai_title') }}</h2>
+          <p class="text-xs text-slate-500">{{ t('settings.ai_sub') }}</p>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8 space-y-6 divide-y divide-slate-100">
           
@@ -470,7 +472,7 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
             <div class="pr-4">
               <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
                 Mode Ghostbuster Auto (Scan 48h)
-                <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-black uppercase rounded">Exclusif IA</span>
+                <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-black uppercase rounded">{{ t('settings.exclusive_ai') }}</span>
               </h4>
               <p class="text-xs text-slate-500 mt-0.5">Scanne et prépare automatiquement les relances pour vos candidatures sans réponse depuis +15 jours.</p>
             </div>
@@ -489,18 +491,18 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
           <!-- IA Tone & Language Selection -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6">
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Tonalité par défaut des relances</label>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">{{ t('settings.tone_label') }}</label>
               <select v-model="aiTone" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-amber-400">
-                <option value="professional">🎯 Professionnel & Courtois (Recommandé)</option>
-                <option value="dynamic">⚡ Dynamique & Audacieux</option>
-                <option value="direct">🚀 Direct & Concis</option>
+                <option value="professional">{{ t('settings.tone_pro') }}</option>
+                <option value="dynamic">{{ t('settings.tone_dynamic') }}</option>
+                <option value="direct">{{ t('settings.tone_direct') }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Langue des entretiens & audits</label>
+              <label class="block text-xs font-bold text-slate-700 uppercase mb-2">{{ t('settings.lang_label') }}</label>
               <select v-model="aiLanguage" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-amber-400">
-                <option value="fr">🇫🇷 Français</option>
-                <option value="en">🇬🇧 Anglais</option>
+                <option value="fr">{{ t('settings.lang_fr') }}</option>
+                <option value="en">{{ t('settings.lang_en') }}</option>
               </select>
             </div>
           </div>
@@ -511,14 +513,14 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
       <!-- === SECTION NOTIFICATIONS === -->
       <section>
         <div class="mb-6">
-          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-1">🔔 Notifications & Alertes</h2>
-          <p class="text-xs text-slate-500">Choisissez quand et comment GoldArmy vous alerte.</p>
+          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-1">{{ t('settings.notif_title') }}</h2>
+          <p class="text-xs text-slate-500">{{ t('settings.notif_sub') }}</p>
         </div>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8 space-y-5">
           <div class="flex items-center justify-between">
             <div>
-              <h4 class="text-xs font-bold text-slate-800">Opportunités Sniper Match 90%+</h4>
-              <p class="text-[11px] text-slate-400">Recevoir une alerte immédiate lors de la détection d'offres à très forte affinité.</p>
+              <h4 class="text-xs font-bold text-slate-800">{{ t('settings.notif_sniper') }}</h4>
+              <p class="text-[11px] text-slate-400">{{ t('settings.notif_sniper_desc') }}</p>
             </div>
             <button @click="notifSniper = !notifSniper" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out" :class="notifSniper ? 'bg-amber-500' : 'bg-slate-200'">
               <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="notifSniper ? 'translate-x-5' : 'translate-x-0'"></span>
@@ -526,8 +528,8 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
           </div>
           <div class="flex items-center justify-between pt-3 border-t border-slate-100">
             <div>
-              <h4 class="text-xs font-bold text-slate-800">Rappels de relances recommandées (7j)</h4>
-              <p class="text-[11px] text-slate-400">Alerte lorsque des recruteurs n'ont pas répondu à vos emails.</p>
+              <h4 class="text-xs font-bold text-slate-800">{{ t('settings.notif_followup') }}</h4>
+              <p class="text-[11px] text-slate-400">{{ t('settings.notif_followup_desc') }}</p>
             </div>
             <button @click="notifFollowup = !notifFollowup" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out" :class="notifFollowup ? 'bg-amber-500' : 'bg-slate-200'">
               <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="notifFollowup ? 'translate-x-5' : 'translate-x-0'"></span>
@@ -535,8 +537,8 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
           </div>
           <div class="flex items-center justify-between pt-3 border-t border-slate-100">
             <div>
-              <h4 class="text-xs font-bold text-slate-800">Digest Hebdomadaire d'activités</h4>
-              <p class="text-[11px] text-slate-400">Résumé par email des performances de vos candidatures chaque lundi.</p>
+              <h4 class="text-xs font-bold text-slate-800">{{ t('settings.notif_digest') }}</h4>
+              <p class="text-[11px] text-slate-400">{{ t('settings.notif_digest_desc') }}</p>
             </div>
             <button @click="notifWeeklyDigest = !notifWeeklyDigest" class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out" :class="notifWeeklyDigest ? 'bg-amber-500' : 'bg-slate-200'">
               <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" :class="notifWeeklyDigest ? 'translate-x-5' : 'translate-x-0'"></span>
@@ -547,7 +549,7 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
 
       <!-- === PROFILE & RGPD SECTION === -->
       <section>
-        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-6">🔒 Profil, Sécurité & RGPD</h2>
+        <h2 class="text-sm font-bold text-slate-900 uppercase tracking-tight mb-6">{{ t('settings.security_title') }}</h2>
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8 space-y-6">
           <div class="flex flex-col sm:flex-row items-center gap-8 pb-6 border-b border-slate-100">
             <div class="w-20 h-20 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-3xl font-black text-amber-600 shrink-0">
@@ -567,8 +569,8 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
           <!-- RGPD Data Export & Account Privacy -->
           <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
             <div>
-              <h4 class="text-xs font-bold text-slate-800">Conformité & Données Personnelles (RGPD)</h4>
-              <p class="text-[11px] text-slate-400">Téléchargez l'ensemble de vos données (profil, candidatures, contacts) au format JSON.</p>
+              <h4 class="text-xs font-bold text-slate-800">{{ t('settings.rgpd_title') }}</h4>
+              <p class="text-[11px] text-slate-400">{{ t('settings.rgpd_desc') }}</p>
             </div>
             <div class="flex items-center gap-2">
               <button
@@ -577,8 +579,8 @@ const currentConfig = computed(() => tierConfig[userTier.value === 'ADMIN' ? 'PR
                 class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase rounded-xl transition-colors flex items-center gap-2"
               >
                 <ArrowDownTrayIcon class="w-4 h-4 text-slate-500" />
-                <span v-if="isExportingData">Export...</span>
-                <span v-else>Exporter mes données</span>
+                <span v-if="isExportingData">{{ t('settings.exporting') }}</span>
+                <span v-else>{{ t('settings.export_data') }}</span>
               </button>
               <button class="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold uppercase rounded-xl hover:bg-rose-100 transition-colors">
                 Supprimer le compte
