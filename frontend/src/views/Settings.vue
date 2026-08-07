@@ -73,13 +73,13 @@ const toggleGhostbuster = async () => {
     if (res.ok) {
       toastState.addToast(
         ghostbusterAuto.value 
-          ? 'Mode Ghostbuster Auto (48h) activé !' 
-          : 'Mode Ghostbuster Auto désactivé.', 
+          ? t('settings.toast_gb_on') 
+          : t('settings.toast_gb_off'), 
         'success'
       )
     }
   } catch(e) {
-    toastState.addToast('Modification enregistrée', 'success')
+    toastState.addToast(t('settings.toast_saved'), 'success')
   }
 }
 
@@ -91,10 +91,10 @@ const openStripePortal = async () => {
     if (json.status === 'success' && json.url) {
       window.location.href = json.url
     } else {
-      toastState.addToast(json.detail || 'Portail Stripe non disponible.', 'info')
+      toastState.addToast(json.detail || t('settings.toast_portal_na'), 'info')
     }
   } catch(e) {
-    toastState.addToast('Gérez vos abonnements via les boutons de forfaits ci-dessus.', 'info')
+    toastState.addToast(t('settings.toast_manage_plans'), 'info')
   } finally {
     isOpeningPortal.value = false
   }
@@ -114,9 +114,9 @@ const exportDataJSON = async () => {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    toastState.addToast('Export RGPD téléchargé avec succès !', 'success')
+    toastState.addToast(t('settings.toast_export_ok'), 'success')
   } catch(e) {
-    toastState.addToast('Erreur lors de l\'exportation des données.', 'error')
+    toastState.addToast(t('settings.toast_export_err'), 'error')
   } finally {
     isExportingData.value = false
   }
@@ -204,7 +204,7 @@ const handleSubscribe = async (targetTier) => {
   if (isSubscribing.value) return
   if (targetTier === 'FREE') { router.push('/dashboard'); return }
   if (targetTier === userTier.value || (userTier.value === 'ADMIN' && targetTier === 'PRO')) {
-    toastState.addToast('Vous êtes déjà sur ce forfait.', 'info')
+    toastState.addToast(t('settings.toast_already'), 'info')
     return
   }
   isSubscribing.value = true

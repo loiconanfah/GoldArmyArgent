@@ -418,7 +418,12 @@
         "notif_followup": "Rappels de relances recommandées (7j)", "notif_followup_desc": "Alerte lorsque des recruteurs n'ont pas répondu à vos emails.",
         "notif_digest": "Digest Hebdomadaire d'activités", "notif_digest_desc": "Résumé par email des performances de vos candidatures chaque lundi.",
         "security_title": "🔒 Profil, Sécurité & RGPD",
-        "rgpd_title": "Conformité & Données Personnelles (RGPD)", "rgpd_desc": "Téléchargez l'ensemble de vos données (profil, candidatures, contacts) au format JSON."
+        "rgpd_title": "Conformité & Données Personnelles (RGPD)", "rgpd_desc": "Téléchargez l'ensemble de vos données (profil, candidatures, contacts) au format JSON.",
+        "toast_gb_on": "Mode Ghostbuster Auto (48h) activé !", "toast_gb_off": "Mode Ghostbuster Auto désactivé.",
+        "toast_saved": "Modification enregistrée", "toast_portal_na": "Portail Stripe non disponible.",
+        "toast_manage_plans": "Gérez vos abonnements via les boutons de forfaits ci-dessus.",
+        "toast_export_ok": "Export RGPD téléchargé avec succès !", "toast_export_err": "Erreur lors de l'exportation des données.",
+        "toast_already": "Vous êtes déjà sur ce forfait."
     },
     "nav": {
         "home": "Accueil",

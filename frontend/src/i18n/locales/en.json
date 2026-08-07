@@ -418,7 +418,12 @@
         "notif_followup": "Recommended follow-up reminders (7d)", "notif_followup_desc": "Alert when recruiters haven't replied to your emails.",
         "notif_digest": "Weekly activity digest", "notif_digest_desc": "Weekly email summary of your applications' performance every Monday.",
         "security_title": "🔒 Profile, Security & GDPR",
-        "rgpd_title": "Compliance & Personal Data (GDPR)", "rgpd_desc": "Download all your data (profile, applications, contacts) in JSON format."
+        "rgpd_title": "Compliance & Personal Data (GDPR)", "rgpd_desc": "Download all your data (profile, applications, contacts) in JSON format.",
+        "toast_gb_on": "Ghostbuster Auto mode (48h) enabled!", "toast_gb_off": "Ghostbuster Auto mode disabled.",
+        "toast_saved": "Change saved", "toast_portal_na": "Stripe portal unavailable.",
+        "toast_manage_plans": "Manage your subscriptions via the plan buttons above.",
+        "toast_export_ok": "GDPR export downloaded successfully!", "toast_export_err": "Error exporting data.",
+        "toast_already": "You are already on this plan."
     },
     "nav": {
         "home": "Home",
