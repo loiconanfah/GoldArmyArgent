@@ -116,7 +116,7 @@ onMounted(load)
         <button class="om__seats" @click="router.push('/organisation/facturation')" :title="t('org.sponsor.manage')">
           <SparklesIcon class="w-4 h-4" />
           <span><b>{{ usedSeats }}</b> / {{ seat.cap ?? '∞' }} {{ t('org.sponsor.seats') }}</span>
-          <span class="om__seats-tier">{{ seat.gold }} Gold/mois</span>
+          <span class="om__seats-tier">{{ seat.gold }} {{ t('org.sponsor.per_month') }}</span>
         </button>
         <input v-model="search" class="om__search" :placeholder="t('org.members.search')" />
       </div>

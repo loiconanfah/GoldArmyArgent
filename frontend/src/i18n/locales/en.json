@@ -129,6 +129,7 @@
             "manage": "Manage plans",
             "free": "Free",
             "premium": "Premium",
+            "per_month": "Gold/mo",
             "give": "Unlock premium access",
             "remove": "Remove premium access",
             "on_desc": "Receives {gold} Gold/month, sponsored by your organization.",
@@ -340,6 +341,15 @@
         "sub_cta_title": "Need Gold every month?",
         "sub_cta_desc": "Essential: 200 Gold/mo + Network. Pro: 500 Gold/mo + Portfolio and more.",
         "sub_cta_btn": "See subscriptions"
+    },
+    "lock": {
+        "gold_title": "Not enough Gold",
+        "gold_desc": "Top up your Gold to use this feature.",
+        "upgrade_title": "Feature locked",
+        "upgrade_desc": "Upgrade to a higher plan to unlock this feature.",
+        "recharge": "Top up",
+        "see_plans": "See plans",
+        "later": "Later"
     },
     "nav": {
         "home": "Home",

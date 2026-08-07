@@ -36,6 +36,21 @@ export const authFetch = async (url, options = {}) => {
         }
     }
 
+    // Verrouillage de fonctionnalité : Gold insuffisant ou forfait requis → popup globale
+    if (response.status === 403) {
+        try {
+            const data = await response.clone().json();
+            const detail = (data && (data.detail || data.message)) || '';
+            if (/gold insuffisant|insufficient gold/i.test(detail)) {
+                const { lockState } = await import('../store/lockState');
+                lockState.show({ kind: 'gold', message: detail });
+            } else if (/réservé au forfait|reserved for|améliorez|upgrade your/i.test(detail)) {
+                const { lockState } = await import('../store/lockState');
+                lockState.show({ kind: 'upgrade', message: detail });
+            }
+        } catch (e) { /* corps non-JSON : on ignore */ }
+    }
+
     // Attach safeJson helper to the response so callers can use it:
     //   const data = await authFetch(...).then(r => r.safeJson())
     response.safeJson = () => safeJson(response);

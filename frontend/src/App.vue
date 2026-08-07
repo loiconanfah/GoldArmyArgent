@@ -31,6 +31,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { useTheme } from './composables/useTheme'
 import ToastPortal from './components/ToastPortal.vue'
+import LockModal from './components/LockModal.vue'
 
 const showReferralModal = ref(false)
 
@@ -418,6 +419,7 @@ watch(() => route.path, () => { fetchGold() })
         </div>
       </main>
       <ToastPortal />
+      <LockModal />
       <ReferralModal :show="showReferralModal" @close="showReferralModal = false" />
     </div>
   </div>
