@@ -425,6 +425,17 @@
         "toast_export_ok": "GDPR export downloaded successfully!", "toast_export_err": "Error exporting data.",
         "toast_already": "You are already on this plan."
     },
+    "ihist": {
+        "back": "Back to simulator", "progression": "Progress", "loading": "God Mode sync...",
+        "empty_title": "The field is empty.", "empty_sub": "Your future wins are just one AI session away.",
+        "performance": "Performance", "verdict": "Verdict", "scores": "Detailed scores",
+        "strengths": "Strengths", "improvements": "Areas to improve", "verdict_ai": "GoldArmy AI Verdict",
+        "confidential": "Confidential", "solid": "Solid performance.",
+        "role_tech": "CTO / Tech Lead", "role_hr": "HR Manager", "role_ceo": "Founder / CEO", "role_default": "GoldArmy Recruiter",
+        "stat_interviews": "Interviews", "stat_avg": "Avg Score", "stat_success": "Success Rate", "stat_minutes": "Min. Trained",
+        "your": "Your", "header_sub": "Review every interview, analyze your weaknesses and dominate the job market.",
+        "start_training": "Start training"
+    },
     "nav": {
         "home": "Home",
         "dashboard": "Dashboard",

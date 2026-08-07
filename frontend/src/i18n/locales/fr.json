@@ -425,6 +425,17 @@
         "toast_export_ok": "Export RGPD téléchargé avec succès !", "toast_export_err": "Erreur lors de l'exportation des données.",
         "toast_already": "Vous êtes déjà sur ce forfait."
     },
+    "ihist": {
+        "back": "Retour au simulateur", "progression": "Progression", "loading": "Synchronisation God Mode...",
+        "empty_title": "Le terrain est vide.", "empty_sub": "Vos futures victoires n'attendent que votre premier passage devant l'IA.",
+        "performance": "Performance", "verdict": "Verdict", "scores": "Scores détaillés",
+        "strengths": "Points Forts", "improvements": "Axes d'amélioration", "verdict_ai": "Verdict GoldArmy AI",
+        "confidential": "Confidentiel", "solid": "Performance solide.",
+        "role_tech": "CTO / Tech Lead", "role_hr": "Responsable RH", "role_ceo": "Fondatrice / CEO", "role_default": "Recruteur GoldArmy",
+        "stat_interviews": "Entretiens", "stat_avg": "Score Moyen", "stat_success": "Taux Succès", "stat_minutes": "Min. Entraînés",
+        "your": "Votre", "header_sub": "Retrouvez chaque entretien, analysez vos faiblesses et dominez le marché du travail.",
+        "start_training": "Démarrer l'entraînement"
+    },
     "nav": {
         "home": "Accueil",
         "dashboard": "Tableau de Bord",

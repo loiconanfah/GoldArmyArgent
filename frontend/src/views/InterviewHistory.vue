@@ -11,34 +11,34 @@
       <div class="flex flex-col items-center text-center space-y-6 mb-20">
         <button @click="router.push('/interview')" class="group flex items-center gap-3 px-6 py-3 bg-white/50 backdrop-blur-xl border border-white/80 rounded-full text-slate-500 hover:text-[#F59E0B] transition-all hover:px-8 shadow-sm">
           <ArrowLeftIcon class="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          <span class="text-xs font-black uppercase tracking-widest">Retour au simulateur</span>
+          <span class="text-xs font-black uppercase tracking-widest">{{ t('ihist.back') }}</span>
         </button>
         
         <div class="space-y-4">
           <h1 class="text-5xl md:text-7xl font-black tracking-tighter text-slate-900 leading-[0.9]">
-            Votre <span class="text-transparent bg-clip-text bg-gradient-to-br from-[#F59E0B] to-[#FF8C6B]">Progression</span>
+            {{ t('ihist.your') }} <span class="text-transparent bg-clip-text bg-gradient-to-br from-[#F59E0B] to-[#FF8C6B]">{{ t('ihist.progression') }}</span>
           </h1>
           <p class="text-slate-400 font-medium text-lg md:text-xl max-w-2xl mx-auto">
-            Retrouvez chaque entretien, analysez vos faiblesses et dominez le marché du travail.
+            {{ t('ihist.header_sub') }}
           </p>
         </div>
       </div>
 
       <!-- FLOATING STATS GRID -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-20 stagger-item">
-        <div v-for="stat in stats" :key="stat.label" class="bg-white/40 backdrop-blur-2xl border border-white/60 p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] hover:shadow-xl transition-all hover:-translate-y-1">
+        <div v-for="stat in stats" :key="stat.labelKey" class="bg-white/40 backdrop-blur-2xl border border-white/60 p-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] hover:shadow-xl transition-all hover:-translate-y-1">
           <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-sm text-[#F59E0B]">
             <component :is="stat.icon" class="w-6 h-6" />
           </div>
           <div class="text-3xl font-black text-slate-900 mb-1 tracking-tight">{{ stat.value }}</div>
-          <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{{ stat.label }}</div>
+          <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{{ t(stat.labelKey) }}</div>
         </div>
       </div>
 
       <!-- CONTENT -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-20 gap-6">
         <div class="w-16 h-16 border-4 border-slate-100 border-t-[#F59E0B] rounded-full animate-spin"></div>
-        <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] animate-pulse">Synchronisation God Mode...</p>
+        <p class="text-slate-400 font-black text-xs uppercase tracking-[0.3em] animate-pulse">{{ t('ihist.loading') }}</p>
       </div>
 
       <div v-else-if="sessions.length === 0" class="max-w-xl mx-auto text-center space-y-8 py-20 stagger-item">
@@ -46,11 +46,11 @@
           <VideoCameraSlashIcon class="w-16 h-16 text-slate-200" />
         </div>
         <div class="space-y-4">
-          <h2 class="text-3xl font-black text-slate-900">Le terrain est vide.</h2>
-          <p class="text-slate-400 font-medium">Vos futures victoires n'attendent que votre premier passage devant l'IA.</p>
+          <h2 class="text-3xl font-black text-slate-900">{{ t('ihist.empty_title') }}</h2>
+          <p class="text-slate-400 font-medium">{{ t('ihist.empty_sub') }}</p>
         </div>
         <router-link to="/interview" class="inline-flex px-10 py-5 bg-[#F59E0B] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-2xl shadow-[#F59E0B]/30 hover:scale-105 active:scale-95">
-          Démarrer l'entraînement
+          {{ t('ihist.start_training') }}
         </router-link>
       </div>
 
@@ -81,7 +81,7 @@
               <div class="flex items-center gap-2">
                 <div class="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-[#F59E0B]/30 transition-colors"></div>
                 <p class="text-slate-400 font-bold text-[9px] uppercase tracking-[0.2em]">
-                  {{ session.company || 'Confidentiel' }}
+                  {{ session.company || t('ihist.confidential') }}
                 </p>
               </div>
             </div>
@@ -92,7 +92,7 @@
                   <span class="text-2xl font-black text-slate-900 tabular-nums">{{ session.scores?.overall || 0 }}</span>
                   <span class="text-[9px] font-black text-slate-300">/10</span>
                 </div>
-                <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-0.5">Performance</span>
+                <span class="text-[8px] font-black text-slate-300 uppercase tracking-widest mt-0.5">{{ t('ihist.performance') }}</span>
               </div>
 
               <div class="flex items-center gap-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
@@ -122,20 +122,20 @@
               </div>
               <div class="flex-1">
                 <h3 class="text-base font-black text-slate-900 tracking-tight">{{ getRecruiter(selected.recruiter_id).name }}</h3>
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{{ getRecruiter(selected.recruiter_id).role }}</p>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{{ t(getRecruiter(selected.recruiter_id).roleKey) }}</p>
               </div>
             </div>
 
             <div class="space-y-6">
               <div class="p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div class="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-3">Verdict</div>
+                <div class="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-3">{{ t('ihist.verdict') }}</div>
                 <div :class="decisionClassRaw(selected.decision)" class="w-full py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-center border">
                   {{ selected.decision }}
                 </div>
               </div>
 
               <div class="space-y-3">
-                <div class="text-[8px] font-black text-slate-300 uppercase tracking-widest px-1">Scores détaillés</div>
+                <div class="text-[8px] font-black text-slate-300 uppercase tracking-widest px-1">{{ t('ihist.scores') }}</div>
                 <div v-for="(val, cat) in selected.scores" :key="cat" v-show="['technical', 'communication', 'soft_skills', 'overall'].includes(cat)" 
                   class="p-4 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
                   <div class="flex flex-col">
@@ -171,7 +171,7 @@
                   {{ selected.job_title }}
                 </h2>
                 <div class="flex items-center gap-2 text-slate-400 font-bold text-xs">
-                  <BuildingOfficeIcon class="w-4 h-4 text-[#F59E0B]/50" /> {{ selected.company || 'Confidentiel' }}
+                  <BuildingOfficeIcon class="w-4 h-4 text-[#F59E0B]/50" /> {{ selected.company || t('ihist.confidential') }}
                 </div>
               </div>
 
@@ -180,7 +180,7 @@
                 <div class="p-8 bg-emerald-50/20 rounded-3xl border border-emerald-100/30">
                   <div class="flex items-center gap-3 text-emerald-600 mb-6">
                     <CheckCircleIcon class="w-5 h-5" />
-                    <h4 class="text-[10px] font-black uppercase tracking-widest">Points Forts</h4>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest">{{ t('ihist.strengths') }}</h4>
                   </div>
                   <ul class="space-y-4">
                     <li v-for="p in selected.feedback?.points_forts" :key="p" class="flex gap-3 text-emerald-900/70 text-sm font-bold leading-snug">
@@ -192,7 +192,7 @@
                 <div class="p-8 bg-amber-50/20 rounded-3xl border border-amber-100/30">
                   <div class="flex items-center gap-3 text-amber-600 mb-6">
                     <AcademicCapIcon class="w-5 h-5" />
-                    <h4 class="text-[10px] font-black uppercase tracking-widest">Axes d'amélioration</h4>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest">{{ t('ihist.improvements') }}</h4>
                   </div>
                   <ul class="space-y-4">
                     <li v-for="p in selected.feedback?.points_amelioration" :key="p" class="flex gap-3 text-amber-900/70 text-sm font-bold leading-snug">
@@ -207,10 +207,10 @@
                 <div class="relative z-10 space-y-6">
                   <div class="flex items-center gap-3 text-[#F59E0B]">
                     <StarIcon class="w-5 h-5" />
-                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Verdict GoldArmy AI</span>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">{{ t('ihist.verdict_ai') }}</span>
                   </div>
                   <p class="text-xl md:text-2xl font-bold text-slate-900 leading-tight tracking-tight italic">
-                    "{{ selected.feedback?.conseils || 'Performance solide.' }}"
+                    "{{ selected.feedback?.conseils || t('ihist.solid') }}"
                   </p>
                   <div class="pt-6 border-t border-slate-200/50 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div class="flex items-center gap-3">
@@ -240,6 +240,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { authFetch } from '../utils/auth'
 import { 
   ArrowLeftIcon, SparklesIcon, PlusIcon, BriefcaseIcon, ChartBarIcon, 
@@ -250,18 +251,19 @@ import {
 import gsap from 'gsap'
 
 const router  = useRouter()
+const { t } = useI18n()
 const sessions = ref([])
 const total    = ref(0)
 const loading  = ref(true)
 const selected = ref(null)
 
 const RECRUITERS = {
-  tech: { name: 'Sophie', role: 'CTO / Tech Lead', icon: CpuChipIcon, color: 'text-indigo-500' },
-  hr: { name: 'Marc', role: 'Responsable RH', icon: UserGroupIcon, color: 'text-emerald-500' },
-  ceo: { name: 'Alice', role: 'Fondatrice / CEO', icon: StarIcon, color: 'text-amber-500' }
+  tech: { name: 'Sophie', roleKey: 'ihist.role_tech', icon: CpuChipIcon, color: 'text-indigo-500' },
+  hr: { name: 'Marc', roleKey: 'ihist.role_hr', icon: UserGroupIcon, color: 'text-emerald-500' },
+  ceo: { name: 'Alice', roleKey: 'ihist.role_ceo', icon: StarIcon, color: 'text-amber-500' }
 }
 
-const getRecruiter = (id) => RECRUITERS[id] || { name: 'IA Expert', role: 'Recruteur GoldArmy', icon: SparklesIcon, color: 'text-[#F59E0B]' }
+const getRecruiter = (id) => RECRUITERS[id] || { name: 'IA Expert', roleKey: 'ihist.role_default', icon: SparklesIcon, color: 'text-[#F59E0B]' }
 
 // Calculated Stats
 const avgScore = computed(() => {
@@ -281,10 +283,10 @@ const totalDuration = computed(() => {
 })
 
 const stats = computed(() => [
-  { label: 'Entretiens', value: total.value, icon: BriefcaseIcon },
-  { label: 'Score Moyen', value: avgScore.value + '/10', icon: ChartBarIcon },
-  { label: 'Taux Succès', value: favorableRate.value + '%', icon: CheckCircleIcon },
-  { label: 'Min. Entraînés', value: totalDuration.value, icon: ClockIcon }
+  { labelKey: 'ihist.stat_interviews', value: total.value, icon: BriefcaseIcon },
+  { labelKey: 'ihist.stat_avg', value: avgScore.value + '/10', icon: ChartBarIcon },
+  { labelKey: 'ihist.stat_success', value: favorableRate.value + '%', icon: CheckCircleIcon },
+  { labelKey: 'ihist.stat_minutes', value: totalDuration.value, icon: ClockIcon }
 ])
 
 async function fetchHistory() {
