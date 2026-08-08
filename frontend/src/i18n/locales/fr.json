@@ -274,7 +274,7 @@
             "copied": "Copié !",
             "code_label": "Code d'invitation :",
             "email_label": "Inviter par email",
-            "email_placeholder": "email@exemple.com",
+            "email_placeholder": "email{'@'}exemple.com",
             "send": "Envoyer",
             "sending": "Envoi…",
             "sent": "Invitation envoyée à {email}.",
