@@ -905,39 +905,39 @@
             "description": "Find your dream job 10x faster with GoldArmy AI — Sniper Search, AI Interview Simulation, Mentor AI & Job CRM. Free trial with no credit card required."
         },
         "home": {
-            "title": "Dashboard | GoldArmy AI",
+            "title": "Dashboard {'|'} GoldArmy AI",
             "description": "Your personal command center to manage AI agents and supercharge your job search pipeline."
         },
         "free_cv": {
-            "title": "Free AI Resume Scanner | ATS Optimization | GoldArmy AI",
+            "title": "Free AI Resume Scanner {'|'} ATS Optimization {'|'} GoldArmy AI",
             "description": "Scan your resume for free with GoldArmy AI. Instantly find out if your PDF is readable by recruiters and automated ATS tracking systems.",
-            "og_title": "ATS Checker & AI Resume Scanner | GoldArmy AI",
+            "og_title": "ATS Checker & AI Resume Scanner {'|'} GoldArmy AI",
             "og_description": "Pass the ATS test. Upload your PDF resume to get a score out of 100 and discover the fatal mistake blocking your interviews."
         },
         "free_interview": {
-            "title": "AI Interview Simulator | Free Voice Practice | GoldArmy AI",
+            "title": "AI Interview Simulator {'|'} Free Voice Practice {'|'} GoldArmy AI",
             "description": "Practice job interviews for free with our voice AI. The simulator generates tailored behavioral and technical questions for your specific target role.",
-            "og_title": "AI Job Interview Voice Simulator | GoldArmy AI",
+            "og_title": "AI Job Interview Voice Simulator {'|'} GoldArmy AI",
             "og_description": "Don't discover your weaknesses on the big day. Take a mock video interview with our highly demanding AI Recruiter."
         },
         "blog": {
-            "title": "AI & Job Search Blog — Career Advice | GoldArmy AI",
+            "title": "AI & Job Search Blog — Career Advice {'|'} GoldArmy AI",
             "description": "Strategies, actionable guides, and insights to supercharge your job search with artificial intelligence. By the GoldArmy AI team."
         },
         "sniper_search": {
-            "title": "Sniper Search — Find Hidden Jobs with AI | GoldArmy AI",
+            "title": "Sniper Search — Find Hidden Jobs with AI {'|'} GoldArmy AI",
             "description": "Discover hidden job opportunities that other candidates miss. GoldArmy's AI Sniper Search scans 50+ real-time sources to put you first."
         },
         "mentor_ia": {
-            "title": "Career Mentor AI — 24/7 Job Coaching | GoldArmy AI",
+            "title": "Career Mentor AI — 24/7 Job Coaching {'|'} GoldArmy AI",
             "description": "Your personal AI career mentor. Get instant resume reviews, tailored cover letters, and strategic career guidance available 24/7."
         },
         "simulation_entretien": {
-            "title": "AI Interview Simulation — Practice Like a Pro | GoldArmy AI",
+            "title": "AI Interview Simulation — Practice Like a Pro {'|'} GoldArmy AI",
             "description": "Simulate your job interview with an ultra-realistic voice AI. Technical questions, behavioral testing, and instant critical feedback. Try for free."
         },
         "crm_emploi": {
-            "title": "Job Search CRM — Organize Your Applications | GoldArmy AI",
+            "title": "Job Search CRM — Organize Your Applications {'|'} GoldArmy AI",
             "description": "Track all your job applications on a smart Kanban board. Get automated follow-up reminders, AI predictive scoring, and stay organized."
         },
         "tarifs": {
