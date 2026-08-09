@@ -29,6 +29,8 @@ SERVICE_TYPES = [
 
 AVAILABILITY = {"available", "busy", "offline"}
 REQUEST_STATUSES = {"pending", "accepted", "declined", "completed", "cancelled"}
+DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+LINK_KEYS = ["linkedin", "website", "portfolio", "calendar", "twitter", "github"]
 
 
 def _now():
@@ -68,6 +70,21 @@ async def get_mentor_profile(user_id):
     return _clean_profile(await db.mentor_profiles.find_one({"user_id": user_id}))
 
 
+def _clean_links(raw):
+    """Ne garde que les liens connus, nettoyés (http(s) forcé)."""
+    links = {}
+    if not isinstance(raw, dict):
+        return links
+    for k in LINK_KEYS:
+        v = (raw.get(k) or "").strip()[:300]
+        if not v:
+            continue
+        if not v.startswith("http://") and not v.startswith("https://"):
+            v = "https://" + v
+        links[k] = v
+    return links
+
+
 async def upsert_mentor_profile(user, data):
     """Crée ou met à jour le profil mentor de l'utilisateur courant."""
     db = get_db()
@@ -80,16 +97,36 @@ async def upsert_mentor_profile(user, data):
 
     specialties = [s.strip() for s in (data.get("specialties") or []) if s and s.strip()][:8]
     languages = [l.strip() for l in (data.get("languages") or []) if l and l.strip()][:6]
+    availability_days = [d for d in (data.get("availability_days") or []) if d in DAYS]
+
+    try:
+        experience_years = int(data.get("experience_years") or 0)
+    except (TypeError, ValueError):
+        experience_years = 0
+    experience_years = max(0, min(60, experience_years))
+
+    # Photo : priorité à la valeur fournie, sinon on conserve l'existante, sinon l'avatar du compte
+    avatar_url = (data.get("avatar_url") or "").strip()
+    if not avatar_url:
+        avatar_url = (existing or {}).get("avatar_url") or user.get("avatar_url") or ""
 
     doc = {
         "user_id": user_id,
         "full_name": user.get("full_name") or (user.get("email", "").split("@")[0]),
-        "avatar_url": user.get("avatar_url") or "",
+        "avatar_url": avatar_url,
         "headline": (data.get("headline") or "").strip()[:120],
+        "role": (data.get("role") or "").strip()[:120],
+        "company": (data.get("company") or "").strip()[:120],
+        "experience_years": experience_years,
+        "location": (data.get("location") or "").strip()[:120],
+        "timezone": (data.get("timezone") or "").strip()[:60],
         "bio": (data.get("bio") or "").strip()[:1500],
         "specialties": specialties,
         "languages": languages,
         "availability": availability,
+        "availability_days": availability_days,
+        "availability_note": (data.get("availability_note") or "").strip()[:200],
+        "links": _clean_links(data.get("links")),
         "is_active": bool(data.get("is_active", True)),
         "updated_at": _now(),
     }
@@ -105,6 +142,61 @@ async def upsert_mentor_profile(user, data):
         await db.mentor_profiles.insert_one(doc)
 
     return await get_mentor_profile(user_id)
+
+
+# ── Photo de profil (GridFS, persistant) ─────────────────────────────────────
+
+async def set_mentor_photo(user, content, filename, content_type):
+    """Stocke la photo dans GridFS et met à jour l'avatar du profil mentor."""
+    from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+    db = get_db()
+    user_id = user["id"]
+    bucket = AsyncIOMotorGridFSBucket(db, bucket_name="mentor_photos")
+
+    # Supprime l'ancienne photo si présente
+    existing = await db.mentor_profiles.find_one({"user_id": user_id}, {"photo_grid_id": 1})
+    if existing and existing.get("photo_grid_id"):
+        try:
+            from bson import ObjectId
+            await bucket.delete(ObjectId(existing["photo_grid_id"]))
+        except Exception:
+            pass
+
+    grid_id = await bucket.upload_from_stream(
+        filename or "photo", content,
+        metadata={"user_id": user_id, "content_type": content_type},
+    )
+    avatar_url = f"/api/mentors/photo/{user_id}?v={str(grid_id)[-8:]}"
+
+    await db.mentor_profiles.update_one(
+        {"user_id": user_id},
+        {"$set": {
+            "photo_grid_id": str(grid_id),
+            "avatar_url": avatar_url,
+            "full_name": user.get("full_name") or user.get("email", "").split("@")[0],
+            "updated_at": _now(),
+        }},
+        upsert=True,
+    )
+    return avatar_url
+
+
+async def get_mentor_photo(user_id):
+    """Retourne (bytes, content_type) de la photo du mentor, ou None."""
+    from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+    from bson import ObjectId
+    db = get_db()
+    profile = await db.mentor_profiles.find_one({"user_id": user_id}, {"photo_grid_id": 1})
+    if not profile or not profile.get("photo_grid_id"):
+        return None
+    bucket = AsyncIOMotorGridFSBucket(db, bucket_name="mentor_photos")
+    try:
+        stream = await bucket.open_download_stream(ObjectId(profile["photo_grid_id"]))
+        data = await stream.read()
+        ctype = (stream.metadata or {}).get("content_type", "image/jpeg")
+        return data, ctype
+    except Exception:
+        return None
 
 
 async def list_mentors(q=None, specialty=None, exclude_user_id=None):

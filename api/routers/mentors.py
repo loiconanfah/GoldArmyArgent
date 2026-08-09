@@ -6,9 +6,12 @@ Ouvert à tout utilisateur authentifié :
 - Événements / ateliers avec RSVP
 - Avis après session
 """
-from fastapi import APIRouter, HTTPException, Depends
+import io
+
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from api.auth import get_current_user
 from core.database import get_db
@@ -30,10 +33,19 @@ async def _full_user(current_user: dict) -> dict:
 
 class MentorProfileRequest(BaseModel):
     headline: Optional[str] = None
+    role: Optional[str] = None
+    company: Optional[str] = None
+    experience_years: Optional[int] = None
+    location: Optional[str] = None
+    timezone: Optional[str] = None
     bio: Optional[str] = None
     specialties: Optional[List[str]] = None
     languages: Optional[List[str]] = None
     availability: Optional[str] = None
+    availability_days: Optional[List[str]] = None
+    availability_note: Optional[str] = None
+    links: Optional[Dict[str, str]] = None
+    avatar_url: Optional[str] = None
     is_active: Optional[bool] = True
 
 
@@ -87,6 +99,31 @@ async def update_my_mentor_profile(req: MentorProfileRequest, current_user: dict
     user = await _full_user(current_user)
     profile = await m.upsert_mentor_profile(user, req.dict())
     return {"status": "success", "data": profile}
+
+
+@router.post("/me/photo")
+async def upload_mentor_photo(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    """Upload de la photo de profil mentor (persistée dans GridFS)."""
+    allowed = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
+    if (file.content_type or "") not in allowed:
+        raise HTTPException(status_code=400, detail="Formats acceptés : PNG, JPG, WEBP.")
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image trop volumineuse (max 5 Mo).")
+    user = await _full_user(current_user)
+    avatar_url = await m.set_mentor_photo(user, content, file.filename, file.content_type)
+    return {"status": "success", "data": {"avatar_url": avatar_url}}
+
+
+@router.get("/photo/{user_id}")
+async def get_mentor_photo(user_id: str):
+    """Sert la photo du mentor (public, pour affichage dans <img>)."""
+    res = await m.get_mentor_photo(user_id)
+    if not res:
+        raise HTTPException(status_code=404, detail="Photo introuvable.")
+    data, ctype = res
+    return StreamingResponse(io.BytesIO(data), media_type=ctype,
+                             headers={"Cache-Control": "private, max-age=3600"})
 
 
 @router.get("/{mentor_id}")

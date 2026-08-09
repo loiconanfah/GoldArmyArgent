@@ -9,7 +9,8 @@ import { toastState } from '@/store/toastState'
 import {
   MagnifyingGlassIcon, MapPinIcon, CalendarDaysIcon, PlusIcon, TrashIcon,
   XMarkIcon, PaperAirplaneIcon, AcademicCapIcon, ClockIcon, VideoCameraIcon,
-  UsersIcon, SparklesIcon, ChatBubbleLeftRightIcon, CheckCircleIcon
+  UsersIcon, SparklesIcon, ChatBubbleLeftRightIcon, CheckCircleIcon, LinkIcon,
+  BriefcaseIcon
 } from '@heroicons/vue/24/outline'
 import { StarIcon } from '@heroicons/vue/24/solid'
 
@@ -124,10 +125,29 @@ async function submitReview() {
 }
 
 // ── Espace mentor ────────────────────────────────────────────────────────────
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+function dayLabel(d) { return t('mentorhub.day_' + d) }
 const myProfile = ref(null)
-const profileForm = ref({ headline: '', bio: '', specialtiesText: '', languagesText: '', availability: 'available', is_active: true })
+function emptyProfileForm() {
+  return {
+    headline: '', role: '', company: '', experience_years: '', location: '', timezone: '',
+    bio: '', specialtiesText: '', languagesText: '',
+    availability: 'available', availability_days: [], availability_note: '',
+    links: { linkedin: '', website: '', portfolio: '', calendar: '' },
+    avatar_url: '', is_active: true,
+  }
+}
+const profileForm = ref(emptyProfileForm())
 const savingProfile = ref(false)
 const receivedRequests = ref([])
+const photoInput = ref(null)
+const uploadingPhoto = ref(false)
+
+function toggleDay(d) {
+  const a = profileForm.value.availability_days
+  const i = a.indexOf(d)
+  if (i >= 0) a.splice(i, 1); else a.push(d)
+}
 
 async function loadProfile() {
   try {
@@ -136,11 +156,16 @@ async function loadProfile() {
     if (j?.status === 'success' && j.data) {
       myProfile.value = j.data
       profileForm.value = {
-        headline: j.data.headline || '', bio: j.data.bio || '',
+        headline: j.data.headline || '', role: j.data.role || '', company: j.data.company || '',
+        experience_years: j.data.experience_years || '', location: j.data.location || '', timezone: j.data.timezone || '',
+        bio: j.data.bio || '',
         specialtiesText: (j.data.specialties || []).join(', '),
         languagesText: (j.data.languages || []).join(', '),
         availability: j.data.availability || 'available',
-        is_active: j.data.is_active !== false,
+        availability_days: [...(j.data.availability_days || [])],
+        availability_note: j.data.availability_note || '',
+        links: { linkedin: '', website: '', portfolio: '', calendar: '', ...(j.data.links || {}) },
+        avatar_url: j.data.avatar_url || '', is_active: j.data.is_active !== false,
       }
     }
   } catch (e) {}
@@ -148,19 +173,41 @@ async function loadProfile() {
 async function saveProfile() {
   savingProfile.value = true
   try {
+    const f = profileForm.value
     const body = {
-      headline: profileForm.value.headline,
-      bio: profileForm.value.bio,
-      specialties: profileForm.value.specialtiesText.split(',').map(s => s.trim()).filter(Boolean),
-      languages: profileForm.value.languagesText.split(',').map(s => s.trim()).filter(Boolean),
-      availability: profileForm.value.availability,
-      is_active: profileForm.value.is_active,
+      headline: f.headline, role: f.role, company: f.company,
+      experience_years: parseInt(f.experience_years) || 0,
+      location: f.location, timezone: f.timezone, bio: f.bio,
+      specialties: f.specialtiesText.split(',').map(s => s.trim()).filter(Boolean),
+      languages: f.languagesText.split(',').map(s => s.trim()).filter(Boolean),
+      availability: f.availability,
+      availability_days: f.availability_days,
+      availability_note: f.availability_note,
+      links: f.links,
+      avatar_url: f.avatar_url,
+      is_active: f.is_active,
     }
     const r = await authFetch('/api/mentors/me', { method: 'PUT', body: JSON.stringify(body) })
     const j = await r.safeJson()
     if (r.ok && j?.status === 'success') { myProfile.value = j.data; toastState.addToast(t('mentorhub.profile_saved'), 'success'); loadMentors() }
     else toastState.addToast(j?.detail || t('common.error'), 'error')
   } catch (e) { toastState.addToast(t('common.error'), 'error') } finally { savingProfile.value = false }
+}
+async function uploadPhoto(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  uploadingPhoto.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', file)
+    const r = await authFetch('/api/mentors/me/photo', { method: 'POST', body: fd })
+    const j = await r.safeJson()
+    if (r.ok && j?.status === 'success') {
+      profileForm.value.avatar_url = j.data.avatar_url
+      if (myProfile.value) myProfile.value.avatar_url = j.data.avatar_url
+      toastState.addToast(t('mentorhub.photo_updated'), 'success')
+    } else toastState.addToast(j?.detail || t('common.error'), 'error')
+  } catch (e) { toastState.addToast(t('common.error'), 'error') } finally { uploadingPhoto.value = false; if (photoInput.value) photoInput.value.value = '' }
 }
 async function loadReceived() {
   try {
@@ -220,6 +267,10 @@ async function deleteEvent(ev) {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function initials(n) { return (n || '?').trim()[0]?.toUpperCase() || '?' }
 function availLabel(a) { return t('mentorhub.avail_' + (a || 'available')) }
+function hasLinks(m) { return m.links && Object.keys(m.links).length > 0 }
+const LINK_PROPER = { linkedin: 'LinkedIn', portfolio: 'Portfolio', twitter: 'X', github: 'GitHub' }
+function linkName(key) { return LINK_PROPER[key] || t('mentorhub.link_name_' + key) }
+function roleLine(m) { return [m.role, m.company].filter(Boolean).join(' · ') }
 function statusLabel(s) { return t('mentorhub.status_' + s) }
 function fmtDate(d) { try { return new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) } catch { return '' } }
 const MONTHS = ['JAN', 'FÉV', 'MAR', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛ', 'SEP', 'OCT', 'NOV', 'DÉC']
@@ -288,6 +339,12 @@ onMounted(() => { loadMentors() })
             </div>
           </div>
 
+          <div v-if="roleLine(m) || m.location || m.experience_years" class="mh__card-sub">
+            <span v-if="roleLine(m)" class="mh__card-role"><BriefcaseIcon class="w-3 h-3" /> {{ roleLine(m) }}</span>
+            <span v-if="m.location" class="mh__card-loc"><MapPinIcon class="w-3 h-3" /> {{ m.location }}</span>
+            <span v-if="m.experience_years" class="mh__card-exp">{{ m.experience_years }} {{ t('mentorhub.years_exp') }}</span>
+          </div>
+
           <div class="mh__tags">
             <span v-for="s in (m.specialties || []).slice(0, 4)" :key="s" class="mh__tag">{{ s }}</span>
           </div>
@@ -296,6 +353,16 @@ onMounted(() => { loadMentors() })
             <span class="mh__rating"><StarIcon class="w-3.5 h-3.5" /> {{ m.rating_avg || '—' }}<i v-if="m.rating_count">({{ m.rating_count }})</i></span>
             <span class="mh__sessions">{{ m.sessions_count || 0 }} {{ t('mentorhub.sessions') }}</span>
             <span :class="['mh__avail', 'mh__avail--' + (m.availability || 'available')]">{{ availLabel(m.availability) }}</span>
+          </div>
+
+          <div v-if="(m.availability_days || []).length || m.availability_note" class="mh__card-when">
+            <ClockIcon class="w-3.5 h-3.5" />
+            <span v-if="(m.availability_days || []).length" class="mh__when-days">{{ (m.availability_days || []).map(dayLabel).join(' · ') }}</span>
+            <span v-if="m.availability_note" class="mh__when-note">{{ m.availability_note }}</span>
+          </div>
+
+          <div v-if="hasLinks(m)" class="mh__card-links">
+            <a v-for="(url, key) in m.links" :key="key" :href="url" target="_blank" class="mh__link-chip"><LinkIcon class="w-3 h-3" /> {{ linkName(key) }}</a>
           </div>
 
           <button class="mh__request-btn" @click="openRequest(m)" :disabled="m.availability === 'offline'">
@@ -391,8 +458,45 @@ onMounted(() => { loadMentors() })
         <h2 class="mh__section-title"><AcademicCapIcon class="w-5 h-5" /> {{ myProfile ? t('mentorhub.your_profile') : t('mentorhub.become_title') }}</h2>
         <p class="mh__block-sub">{{ t('mentorhub.become_sub') }}</p>
 
-        <label class="mh__label">{{ t('mentorhub.headline_label') }}</label>
+        <!-- Photo -->
+        <div class="mh__photo-row">
+          <div class="mh__photo">
+            <img v-if="profileForm.avatar_url" :src="profileForm.avatar_url" alt="" />
+            <AcademicCapIcon v-else class="w-7 h-7" />
+          </div>
+          <div class="mh__photo-actions">
+            <input ref="photoInput" type="file" accept="image/png,image/jpeg,image/webp" class="mh__file-hidden" @change="uploadPhoto" />
+            <button class="mh__btn-ghost" :disabled="uploadingPhoto" @click="photoInput?.click()">
+              {{ uploadingPhoto ? t('mentorhub.photo_uploading') : t('mentorhub.photo_upload') }}
+            </button>
+            <p class="mh__hint">{{ t('mentorhub.photo_hint') }}</p>
+          </div>
+        </div>
+
+        <label class="mh__label mt">{{ t('mentorhub.headline_label') }}</label>
         <input v-model="profileForm.headline" :placeholder="t('mentorhub.headline_ph')" class="mh__input mh__input--full" />
+
+        <div class="mh__form-row">
+          <div>
+            <label class="mh__label mt">{{ t('mentorhub.role_label') }}</label>
+            <input v-model="profileForm.role" :placeholder="t('mentorhub.role_ph')" class="mh__input mh__input--full" />
+          </div>
+          <div>
+            <label class="mh__label mt">{{ t('mentorhub.company_label') }}</label>
+            <input v-model="profileForm.company" :placeholder="t('mentorhub.company_ph')" class="mh__input mh__input--full" />
+          </div>
+        </div>
+
+        <div class="mh__form-row">
+          <div>
+            <label class="mh__label mt">{{ t('mentorhub.experience_label') }}</label>
+            <input v-model="profileForm.experience_years" type="number" min="0" :placeholder="t('mentorhub.experience_ph')" class="mh__input mh__input--full" />
+          </div>
+          <div>
+            <label class="mh__label mt">{{ t('mentorhub.location_label') }}</label>
+            <input v-model="profileForm.location" :placeholder="t('mentorhub.location_ph')" class="mh__input mh__input--full" />
+          </div>
+        </div>
 
         <label class="mh__label mt">{{ t('mentorhub.bio_label') }}</label>
         <textarea v-model="profileForm.bio" :placeholder="t('mentorhub.bio_ph')" class="mh__input mh__input--full mh__textarea"></textarea>
@@ -413,6 +517,30 @@ onMounted(() => { loadMentors() })
           <button v-for="a in ['available', 'busy', 'offline']" :key="a" :class="['mh__avail-opt', 'mh__avail-opt--' + a, { 'mh__avail-opt--on': profileForm.availability === a }]" @click="profileForm.availability = a">
             <span :class="['mh__dot', 'mh__dot--' + a]"></span> {{ availLabel(a) }}
           </button>
+        </div>
+
+        <label class="mh__label mt">{{ t('mentorhub.availability_days_label') }}</label>
+        <div class="mh__days">
+          <button v-for="d in DAYS" :key="d" type="button" :class="['mh__day', { 'mh__day--on': profileForm.availability_days.includes(d) }]" @click="toggleDay(d)">{{ dayLabel(d) }}</button>
+        </div>
+
+        <div class="mh__form-row">
+          <div>
+            <label class="mh__label mt">{{ t('mentorhub.availability_note_label') }}</label>
+            <input v-model="profileForm.availability_note" :placeholder="t('mentorhub.availability_note_ph')" class="mh__input mh__input--full" />
+          </div>
+          <div>
+            <label class="mh__label mt">{{ t('mentorhub.timezone_label') }}</label>
+            <input v-model="profileForm.timezone" :placeholder="t('mentorhub.timezone_ph')" class="mh__input mh__input--full" />
+          </div>
+        </div>
+
+        <label class="mh__label mt">{{ t('mentorhub.links_label') }}</label>
+        <div class="mh__links-form">
+          <input v-model="profileForm.links.linkedin" :placeholder="t('mentorhub.link_linkedin')" class="mh__input mh__input--full" />
+          <input v-model="profileForm.links.website" :placeholder="t('mentorhub.link_website')" class="mh__input mh__input--full" />
+          <input v-model="profileForm.links.portfolio" :placeholder="t('mentorhub.link_portfolio')" class="mh__input mh__input--full" />
+          <input v-model="profileForm.links.calendar" :placeholder="t('mentorhub.link_calendar')" class="mh__input mh__input--full" />
         </div>
 
         <label class="mh__switch">
@@ -629,6 +757,32 @@ onMounted(() => { loadMentors() })
 .mh__switch { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.85rem; font-weight: 700; color: #344054; cursor: pointer; }
 .mh__switch input { width: 1.1rem; height: 1.1rem; accent-color: #F59E0B; }
 .mh__hint { font-size: 0.72rem; color: #98A2B3; margin: 0.3rem 0 0; }
+
+/* Photo */
+.mh__photo-row { display: flex; align-items: center; gap: 1rem; margin: 0.4rem 0 0.2rem; }
+.mh__photo { width: 4.5rem; height: 4.5rem; border-radius: 1rem; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.mh__photo img { width: 100%; height: 100%; object-fit: cover; }
+.mh__photo-actions { flex: 1; }
+.mh__file-hidden { display: none; }
+.mh__btn-ghost { padding: 0.55rem 1rem; border-radius: 0.7rem; background: #fff; border: 1px solid #EEF0F3; color: #344054; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+.mh__btn-ghost:hover { border-color: #F59E0B; color: #B45309; }
+.mh__btn-ghost:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Jours de disponibilité */
+.mh__days { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.mh__day { padding: 0.4rem 0.7rem; border-radius: 0.6rem; border: 1px solid #EEF0F3; background: #fff; color: #475467; font-size: 0.75rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
+.mh__day--on { background: #FEF6E7; border-color: #FDE68A; color: #B45309; }
+.mh__links-form { display: flex; flex-direction: column; gap: 0.5rem; }
+
+/* Carte : sous-lignes */
+.mh__card-sub { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.6rem; font-size: 0.74rem; color: #667085; }
+.mh__card-role, .mh__card-loc, .mh__card-exp { display: inline-flex; align-items: center; gap: 0.25rem; }
+.mh__card-when { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.9rem; font-size: 0.72rem; color: #667085; flex-wrap: wrap; }
+.mh__when-days { font-weight: 700; color: #475467; }
+.mh__when-note { color: #98A2B3; }
+.mh__card-links { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.9rem; }
+.mh__link-chip { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 999px; background: #F1F3F6; color: #475467; text-decoration: none; }
+.mh__link-chip:hover { background: #E4E7EC; color: #101828; }
 
 /* Modales */
 .mh__modal { position: fixed; inset: 0; z-index: 200; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 1rem; }
