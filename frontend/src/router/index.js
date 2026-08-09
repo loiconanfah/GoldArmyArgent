@@ -108,6 +108,18 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
+        path: '/communaute',
+        name: 'Community',
+        component: () => import('../views/Community.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/hub-mentors',
+        name: 'MentorHub',
+        component: () => import('../views/MentorHub.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/interview',
         name: 'Interview',
         component: Interview,

@@ -27,7 +27,9 @@ import {
   MoonIcon,
   GiftIcon,
   BuildingOffice2Icon,
-  BoltIcon
+  BoltIcon,
+  ChatBubbleLeftRightIcon,
+  AcademicCapIcon
 } from '@heroicons/vue/24/outline'
 import { useTheme } from './composables/useTheme'
 import ToastPortal from './components/ToastPortal.vue'
@@ -73,6 +75,7 @@ const fetchGold = async () => {
 }
 const userTier = ref('FREE')
 const userRole = ref(null)
+const userOrgId = ref(null)
 
 onMounted(async () => {
   userEmail.value = t('common.loading')
@@ -84,6 +87,7 @@ onMounted(async () => {
       userAvatar.value = user.avatar_url || ''
       userTier.value = user.subscription_tier || 'FREE'
       userRole.value = user.role || null
+      userOrgId.value = user.organization_id || null
     } catch(e){}
   }
 
@@ -95,6 +99,7 @@ onMounted(async () => {
       if (json.status === 'success') {
         userTier.value = json.data.subscription_tier || 'FREE'
         userRole.value = json.data.role || null
+        userOrgId.value = json.data.organization_id || null
         userEmail.value = json.data.full_name || json.data.email.split('@')[0]
         userAvatar.value = json.data.avatar_url || ''
         
@@ -115,17 +120,25 @@ const handleLogout = () => {
     router.push('/login')
 }
 
-const navigation = computed(() => [
-  { name: t('nav.home'), href: '/home', icon: SparklesIcon },
-  { name: t('nav.dashboard'), href: '/dashboard', icon: HomeIcon, exact: false },
-  { name: t('nav.sniper'), href: '/opportunities', icon: MapIcon },
-  { name: t('nav.mentor'), href: '/mentor', icon: ChatBubbleBottomCenterTextIcon },
-  { name: t('nav.interview'), href: '/interview', icon: MicrophoneIcon },
-  { name: t('nav.crm'), href: '/crm', icon: BriefcaseIcon },
-  { name: t('nav.network'), href: '/network', icon: UserGroupIcon },
-  { name: t('nav.profile'), href: '/profile', icon: UserIcon },
-  { name: t('nav.shop'), href: '/boutique', icon: ShoppingBagIcon },
-])
+const navigation = computed(() => {
+  const items = [
+    { name: t('nav.home'), href: '/home', icon: SparklesIcon },
+    { name: t('nav.dashboard'), href: '/dashboard', icon: HomeIcon, exact: false },
+    { name: t('nav.sniper'), href: '/opportunities', icon: MapIcon },
+    { name: t('nav.mentor'), href: '/mentor', icon: ChatBubbleBottomCenterTextIcon },
+    { name: t('nav.interview'), href: '/interview', icon: MicrophoneIcon },
+    { name: t('nav.crm'), href: '/crm', icon: BriefcaseIcon },
+    { name: t('nav.network'), href: '/network', icon: UserGroupIcon },
+  ]
+  // Membres affiliés à une organisation (les org_admin passent par le portail dédié)
+  if (userOrgId.value && userRole.value !== 'org_admin') {
+    items.push({ name: t('nav.community'), href: '/communaute', icon: ChatBubbleLeftRightIcon })
+    items.push({ name: t('nav.mentors_hub'), href: '/hub-mentors', icon: AcademicCapIcon })
+  }
+  items.push({ name: t('nav.profile'), href: '/profile', icon: UserIcon })
+  items.push({ name: t('nav.shop'), href: '/boutique', icon: ShoppingBagIcon })
+  return items
+})
 
 // --- Notification Center ---
 const notifications = ref([])

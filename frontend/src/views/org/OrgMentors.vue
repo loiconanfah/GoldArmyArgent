@@ -10,6 +10,8 @@ import {
 
 const { t } = useI18n()
 const router = useRouter()
+// memberMode: vue "consultation" côté app candidat (masque les contrôles admin)
+const props = defineProps({ memberMode: { type: Boolean, default: false } })
 const loading = ref(true)
 const mentors = ref([])
 const advisors = ref([])
@@ -73,7 +75,7 @@ onMounted(load)
         <h1 class="ome__title">{{ t('org.nav.mentors') }}</h1>
         <p class="ome__sub">{{ t('org.mentors.sub') }}</p>
       </div>
-      <button class="ome__cta" @click="showForm = !showForm"><PlusIcon class="w-4 h-4" /> {{ t('org.events.add') }}</button>
+      <button v-if="!memberMode" class="ome__cta" @click="showForm = !showForm"><PlusIcon class="w-4 h-4" /> {{ t('org.events.add') }}</button>
     </header>
 
     <!-- Quick stats -->
@@ -91,7 +93,7 @@ onMounted(load)
         <section class="ome__card">
           <div class="ome__card-head">
             <h2 class="ome__card-title"><AcademicCapIcon class="w-4 h-4" /> {{ t('org.mentors.team') }}</h2>
-            <button class="ome__link-btn" @click="router.push('/organisation/membres')"><UserPlusIcon class="w-3.5 h-3.5" /> {{ t('org.mentors.assign') }}</button>
+            <button v-if="!memberMode" class="ome__link-btn" @click="router.push('/organisation/membres')"><UserPlusIcon class="w-3.5 h-3.5" /> {{ t('org.mentors.assign') }}</button>
           </div>
 
           <div v-if="totalPeople" class="ome__people">
@@ -109,7 +111,7 @@ onMounted(load)
           <div v-else class="ome__empty-block">
             <AcademicCapIcon class="ome__empty-ic" />
             <p>{{ t('org.mentors.empty_team') }}</p>
-            <button class="ome__empty-btn" @click="router.push('/organisation/membres')">{{ t('org.mentors.assign') }}</button>
+            <button v-if="!memberMode" class="ome__empty-btn" @click="router.push('/organisation/membres')">{{ t('org.mentors.assign') }}</button>
           </div>
         </section>
 
@@ -120,7 +122,7 @@ onMounted(load)
           </div>
 
           <transition name="ome-form">
-            <div v-if="showForm" class="ome__form">
+            <div v-if="showForm && !memberMode" class="ome__form">
               <div class="ome__form-head">{{ t('org.events.new') }}<button class="ome__form-close" @click="showForm = false"><XMarkIcon class="w-4 h-4" /></button></div>
               <input v-model="form.title" :placeholder="t('org.events.name')" class="ome__input" />
               <textarea v-model="form.description" :placeholder="t('org.events.description')" class="ome__input ome__textarea"></textarea>
@@ -136,7 +138,7 @@ onMounted(load)
           <div v-if="!events.length && !showForm" class="ome__empty-block">
             <CalendarDaysIcon class="ome__empty-ic" />
             <p>{{ t('org.events.empty') }}</p>
-            <button class="ome__empty-btn" @click="showForm = true">{{ t('org.events.add') }}</button>
+            <button v-if="!memberMode" class="ome__empty-btn" @click="showForm = true">{{ t('org.events.add') }}</button>
           </div>
 
           <div class="ome__events">
@@ -158,7 +160,7 @@ onMounted(load)
                     {{ ev.is_attending ? t('org.events.attending') : t('org.events.rsvp') }}
                   </button>
                   <span class="ome__attendees"><UsersIcon class="w-3.5 h-3.5" /> {{ ev.attendees_count || 0 }}</span>
-                  <button class="ome__event-del" @click="removeEvent(ev)"><TrashIcon class="w-4 h-4" /></button>
+                  <button v-if="!memberMode" class="ome__event-del" @click="removeEvent(ev)"><TrashIcon class="w-4 h-4" /></button>
                 </div>
               </div>
             </div>
