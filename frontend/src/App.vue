@@ -130,8 +130,8 @@ const navigation = computed(() => {
     { name: t('nav.crm'), href: '/crm', icon: BriefcaseIcon },
     { name: t('nav.network'), href: '/network', icon: UserGroupIcon },
   ]
-  // Membres affiliés à une organisation (les org_admin passent par le portail dédié)
-  if (userOrgId.value && userRole.value !== 'org_admin') {
+  // Tout utilisateur affilié à une organisation (membre OU admin)
+  if (userOrgId.value) {
     items.push({ name: t('nav.community'), href: '/communaute', icon: ChatBubbleLeftRightIcon })
     items.push({ name: t('nav.mentors_hub'), href: '/hub-mentors', icon: AcademicCapIcon })
   }
