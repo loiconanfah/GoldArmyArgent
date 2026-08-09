@@ -130,10 +130,11 @@ const navigation = computed(() => {
     { name: t('nav.crm'), href: '/crm', icon: BriefcaseIcon },
     { name: t('nav.network'), href: '/network', icon: UserGroupIcon },
   ]
-  // Tout utilisateur affilié à une organisation (membre OU admin)
+  // Hub Mentors : marketplace ouvert à tous les utilisateurs
+  items.push({ name: t('nav.mentors_hub'), href: '/hub-mentors', icon: AcademicCapIcon })
+  // Communauté : réservée aux utilisateurs affiliés à une organisation
   if (userOrgId.value) {
     items.push({ name: t('nav.community'), href: '/communaute', icon: ChatBubbleLeftRightIcon })
-    items.push({ name: t('nav.mentors_hub'), href: '/hub-mentors', icon: AcademicCapIcon })
   }
   items.push({ name: t('nav.profile'), href: '/profile', icon: UserIcon })
   items.push({ name: t('nav.shop'), href: '/boutique', icon: ShoppingBagIcon })
