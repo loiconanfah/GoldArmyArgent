@@ -115,7 +115,9 @@
         "day_thu": "Thu",
         "day_fri": "Fri",
         "day_sat": "Sat",
-        "day_sun": "Sun"
+        "day_sun": "Sun",
+        "reviews_title": "Reviews",
+        "no_reviews": "No reviews yet."
     },
     "org": {
         "types": {

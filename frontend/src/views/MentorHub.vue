@@ -57,6 +57,26 @@ async function loadMentors() {
   } catch (e) {} finally { loadingMentors.value = false }
 }
 
+// ── Fiche mentor détaillée ─────────────────────────────────────────────────
+const showDetail = ref(false)
+const detailMentor = ref(null)
+const loadingDetail = ref(false)
+async function openDetail(m) {
+  detailMentor.value = m
+  showDetail.value = true
+  loadingDetail.value = true
+  try {
+    const r = await authFetch(`/api/mentors/${m.user_id}`)
+    const j = await r.safeJson()
+    if (j?.status === 'success') detailMentor.value = j.data
+  } catch (e) {} finally { loadingDetail.value = false }
+}
+function requestFromDetail() {
+  const m = detailMentor.value
+  showDetail.value = false
+  openRequest(m)
+}
+
 // ── Demande de session ───────────────────────────────────────────────────────
 const showRequest = ref(false)
 const requestMentor = ref(null)
@@ -326,7 +346,7 @@ onMounted(() => { loadMentors() })
       </div>
 
       <div v-else class="mh__grid">
-        <article v-for="m in filteredMentors" :key="m.user_id" class="mh__card">
+        <article v-for="m in filteredMentors" :key="m.user_id" class="mh__card mh__card--clickable" @click="openDetail(m)">
           <div class="mh__card-top">
             <div class="mh__avatar">
               <img v-if="m.avatar_url" :src="m.avatar_url" alt="" />
@@ -365,7 +385,7 @@ onMounted(() => { loadMentors() })
             <a v-for="(url, key) in m.links" :key="key" :href="url" target="_blank" class="mh__link-chip"><LinkIcon class="w-3 h-3" /> {{ linkName(key) }}</a>
           </div>
 
-          <button class="mh__request-btn" @click="openRequest(m)" :disabled="m.availability === 'offline'">
+          <button class="mh__request-btn" @click.stop="openRequest(m)" :disabled="m.availability === 'offline'">
             <PaperAirplaneIcon class="w-4 h-4" /> {{ t('mentorhub.request_btn') }}
           </button>
         </article>
@@ -588,6 +608,74 @@ onMounted(() => { loadMentors() })
       </div>
     </section>
 
+    <!-- ═══ MODALE : fiche mentor ═══ -->
+    <div v-if="showDetail" class="mh__modal" @click.self="showDetail = false">
+      <div class="mh__dialog mh__dialog--wide">
+        <button class="mh__form-close mh__dialog-x" @click="showDetail = false"><XMarkIcon class="w-5 h-5" /></button>
+        <div class="mh__detail-head">
+          <div class="mh__detail-avatar">
+            <img v-if="detailMentor?.avatar_url" :src="detailMentor.avatar_url" alt="" />
+            <span v-else>{{ initials(detailMentor?.full_name) }}</span>
+            <span :class="['mh__dot', 'mh__dot--' + (detailMentor?.availability || 'available')]"></span>
+          </div>
+          <div class="mh__detail-id">
+            <h2 class="mh__detail-name">{{ detailMentor?.full_name }}</h2>
+            <p class="mh__detail-headline">{{ detailMentor?.headline || t('mentorhub.no_headline') }}</p>
+            <div class="mh__detail-facts">
+              <span v-if="roleLine(detailMentor || {})"><BriefcaseIcon class="w-3.5 h-3.5" /> {{ roleLine(detailMentor) }}</span>
+              <span v-if="detailMentor?.location"><MapPinIcon class="w-3.5 h-3.5" /> {{ detailMentor.location }}</span>
+              <span v-if="detailMentor?.experience_years">{{ detailMentor.experience_years }} {{ t('mentorhub.years_exp') }}</span>
+              <span class="mh__rating"><StarIcon class="w-3.5 h-3.5" /> {{ detailMentor?.rating_avg || '—' }}<i v-if="detailMentor?.rating_count">({{ detailMentor.rating_count }})</i></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mh__detail-meta">
+          <span :class="['mh__avail', 'mh__avail--' + (detailMentor?.availability || 'available')]">{{ availLabel(detailMentor?.availability) }}</span>
+          <span class="mh__sessions">{{ detailMentor?.sessions_count || 0 }} {{ t('mentorhub.sessions') }}</span>
+        </div>
+
+        <div v-if="(detailMentor?.availability_days || []).length || detailMentor?.availability_note" class="mh__detail-when">
+          <ClockIcon class="w-4 h-4" />
+          <span v-if="(detailMentor?.availability_days || []).length" class="mh__when-days">{{ (detailMentor.availability_days || []).map(dayLabel).join(' · ') }}</span>
+          <span v-if="detailMentor?.availability_note" class="mh__when-note">{{ detailMentor.availability_note }}</span>
+          <span v-if="detailMentor?.timezone" class="mh__when-note">· {{ detailMentor.timezone }}</span>
+        </div>
+
+        <div v-if="(detailMentor?.specialties || []).length" class="mh__tags mh__tags--detail">
+          <span v-for="s in detailMentor.specialties" :key="s" class="mh__tag">{{ s }}</span>
+        </div>
+
+        <p v-if="(detailMentor?.languages || []).length" class="mh__detail-langs">🗣 {{ detailMentor.languages.join(', ') }}</p>
+
+        <p v-if="detailMentor?.bio" class="mh__detail-bio">{{ detailMentor.bio }}</p>
+
+        <div v-if="hasLinks(detailMentor || {})" class="mh__card-links mh__card-links--detail">
+          <a v-for="(url, key) in detailMentor.links" :key="key" :href="url" target="_blank" class="mh__link-chip"><LinkIcon class="w-3 h-3" /> {{ linkName(key) }}</a>
+        </div>
+
+        <!-- Avis -->
+        <div class="mh__reviews">
+          <div class="mh__reviews-head"><StarIcon class="w-4 h-4" /> {{ t('mentorhub.reviews_title') }} <span v-if="detailMentor?.rating_count">({{ detailMentor.rating_count }})</span></div>
+          <div v-if="loadingDetail" class="mh__loading">{{ t('common.loading') }}…</div>
+          <div v-else-if="!(detailMentor?.reviews || []).length" class="mh__reviews-empty">{{ t('mentorhub.no_reviews') }}</div>
+          <div v-else class="mh__review-list">
+            <div v-for="rv in detailMentor.reviews" :key="rv.id" class="mh__review">
+              <div class="mh__review-top">
+                <span class="mh__review-author">{{ rv.reviewer_name }}</span>
+                <span class="mh__review-stars"><StarIcon v-for="n in rv.rating" :key="n" class="w-3 h-3" /></span>
+              </div>
+              <p v-if="rv.comment" class="mh__review-comment">{{ rv.comment }}</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="mh__save mh__save--block mt" @click="requestFromDetail" :disabled="detailMentor?.availability === 'offline'">
+          <PaperAirplaneIcon class="w-4 h-4" /> {{ t('mentorhub.request_btn') }}
+        </button>
+      </div>
+    </div>
+
     <!-- ═══ MODALE : demande de session ═══ -->
     <div v-if="showRequest" class="mh__modal" @click.self="showRequest = false">
       <div class="mh__dialog">
@@ -793,6 +881,35 @@ onMounted(() => { loadMentors() })
 .mh__star { background: none; border: none; cursor: pointer; padding: 0; }
 .mh__star--on { color: #F59E0B; }
 .mh__star--off { color: #E4E7EC; }
+
+.mh__card--clickable { cursor: pointer; }
+
+/* Fiche mentor (modale) */
+.mh__dialog--wide { max-width: 560px; position: relative; }
+.mh__dialog-x { position: absolute; top: 1.1rem; right: 1.1rem; }
+.mh__detail-head { display: flex; gap: 1rem; align-items: center; padding-right: 2rem; }
+.mh__detail-avatar { position: relative; width: 4.5rem; height: 4.5rem; border-radius: 1.1rem; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.4rem; overflow: hidden; flex-shrink: 0; }
+.mh__detail-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.mh__detail-id { min-width: 0; }
+.mh__detail-name { font-size: 1.3rem; font-weight: 800; margin: 0; }
+.mh__detail-headline { font-size: 0.85rem; color: #667085; margin: 0.15rem 0 0.4rem; }
+.mh__detail-facts { display: flex; flex-wrap: wrap; gap: 0.7rem; font-size: 0.75rem; color: #667085; }
+.mh__detail-facts span { display: inline-flex; align-items: center; gap: 0.25rem; }
+.mh__detail-meta { display: flex; align-items: center; gap: 0.7rem; margin: 1rem 0 0.6rem; }
+.mh__detail-when { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: #667085; margin-bottom: 0.7rem; flex-wrap: wrap; }
+.mh__tags--detail { margin: 0.4rem 0; }
+.mh__detail-langs { font-size: 0.82rem; color: #475467; margin: 0.5rem 0; }
+.mh__detail-bio { font-size: 0.88rem; line-height: 1.55; color: #344054; white-space: pre-wrap; margin: 0.7rem 0; }
+.mh__card-links--detail { margin: 0.6rem 0 0.2rem; }
+.mh__reviews { margin-top: 1rem; border-top: 1px solid #EEF0F3; padding-top: 1rem; }
+.mh__reviews-head { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; font-weight: 800; color: #101828; margin-bottom: 0.7rem; }
+.mh__reviews-empty { font-size: 0.82rem; color: #98A2B3; }
+.mh__review-list { display: flex; flex-direction: column; gap: 0.7rem; max-height: 240px; overflow-y: auto; }
+.mh__review { background: #F9FAFB; border: 1px solid #EEF0F3; border-radius: 0.9rem; padding: 0.7rem 0.9rem; }
+.mh__review-top { display: flex; align-items: center; justify-content: space-between; }
+.mh__review-author { font-weight: 700; font-size: 0.82rem; color: #101828; }
+.mh__review-stars { display: inline-flex; color: #F59E0B; }
+.mh__review-comment { font-size: 0.82rem; color: #475467; margin: 0.35rem 0 0; white-space: pre-wrap; }
 
 .mh-fade-enter-active, .mh-fade-leave-active { transition: opacity 0.2s; }
 .mh-fade-enter-from, .mh-fade-leave-to { opacity: 0; }

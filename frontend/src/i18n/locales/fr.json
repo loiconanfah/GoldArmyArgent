@@ -115,7 +115,9 @@
         "day_thu": "Jeu",
         "day_fri": "Ven",
         "day_sat": "Sam",
-        "day_sun": "Dim"
+        "day_sun": "Dim",
+        "reviews_title": "Avis",
+        "no_reviews": "Aucun avis pour le moment."
     },
     "org": {
         "types": {
