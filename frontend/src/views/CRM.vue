@@ -73,6 +73,7 @@ const showDeletePopup = ref(false)
 const itemToDelete = ref(null)
 
 const showAdaptCvModal = ref(false)
+const showCvQuestions = ref(false)
 const adaptCvCard = ref(null)
 const cvTextForAdapt = ref('')
 const isAdaptingCv = ref(false)
@@ -84,6 +85,7 @@ const isDownloadingPdf = ref(false)
 
 import { CV_TEMPLATES } from '../utils/cvTemplates/index'
 import CvEditorModal from '../components/CvEditorModal.vue'
+import CvQuestionsModal from '../components/CvQuestionsModal.vue'
 
 const CV_THEMES = CV_TEMPLATES.map(t => ({ id: t.id, name: t.label, colors: [t.accentColor, t.accentColor], build: t.build }))
 
@@ -197,21 +199,26 @@ const closeFollowup = () => { showFollowupPopup.value = false; followupEmail.val
 const openAdaptCvModal = (card) => { adaptCvCard.value = card; cvTextForAdapt.value = ''; adaptedData.value = null; showAdaptCvModal.value = true; showDownloadCvModal.value = false }
 const useProfileCv = async () => {
   if (!adaptCvCard.value) return
-  try { const res = await authFetch('/api/profile'); const json = await res.json(); const cvText = json?.data?.cv_text; if (!cvText || cvText.length < 50) { toastState.addToast('Aucun CV enregistré.', 'info'); return }; cvTextForAdapt.value = cvText; await runAdapt() }
+  try { const res = await authFetch('/api/profile'); const json = await res.json(); const cvText = json?.data?.cv_text; if (!cvText || cvText.length < 50) { toastState.addToast('Aucun CV enregistré.', 'info'); return }; cvTextForAdapt.value = cvText; openCvQuestions() }
   catch { toastState.addToast(t('common.network_error'), 'error') }
 }
 const onAdaptFileSelected = async (e) => {
   const file = e.target?.files?.[0]; if (!file || !file.name.toLowerCase().endsWith('.pdf')) { toastState.addToast('PDF requis.', 'info'); return }
   const formData = new FormData(); formData.append('file', file)
-  try { const res = await authFetch('/api/parse-pdf', { method: 'POST', body: formData }); const json = await res.json(); const text = json?.text; if (!text || text.length < 50) { toastState.addToast('Impossible de lire le PDF.', 'error'); return }; cvTextForAdapt.value = text; await runAdapt() }
+  try { const res = await authFetch('/api/parse-pdf', { method: 'POST', body: formData }); const json = await res.json(); const text = json?.text; if (!text || text.length < 50) { toastState.addToast('Impossible de lire le PDF.', 'error'); return }; cvTextForAdapt.value = text; openCvQuestions() }
   catch { toastState.addToast(t('common.network_error'), 'error') }
   e.target.value = ''
 }
-const runAdapt = async () => {
+const openCvQuestions = () => {
+  if (!cvTextForAdapt.value || cvTextForAdapt.value.length < 50) { toastState.addToast('CV manquant.', 'info'); return }
+  showCvQuestions.value = true
+}
+const onCvQuestionsSubmit = (answers) => { showCvQuestions.value = false; runAdapt(answers) }
+const runAdapt = async (answers = null) => {
   if (!adaptCvCard.value || !cvTextForAdapt.value || cvTextForAdapt.value.length < 50) { toastState.addToast('CV manquant.', 'info'); return }
   isAdaptingCv.value = true
   try {
-    const res = await authFetch('/api/adapt-cv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ job_title: adaptCvCard.value.job_title, job_description: adaptCvCard.value.notes || '', cv_text: cvTextForAdapt.value }) })
+    const res = await authFetch('/api/adapt-cv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ job_title: adaptCvCard.value.job_title, job_description: adaptCvCard.value.notes || '', cv_text: cvTextForAdapt.value, answers: answers || undefined }) })
     const json = await res.json()
     if (json.status === 'success' && json.data) { adaptedData.value = json.data; showAdaptCvModal.value = false; showDownloadCvModal.value = true; selectedCvTheme.value = 'goldarmy' }
     else { toastState.addToast(json.detail || "Erreur.", 'error') }
@@ -648,6 +655,7 @@ onMounted(() => { fetchCrmData() })
     </Transition>
 
     <CvEditorModal :show="showCrmEditor" :cv-data="crmEditorData" @close="showCrmEditor = false" @save="saveCrmEditor" />
+    <CvQuestionsModal :show="showCvQuestions" :job-title="adaptCvCard?.job_title || ''" :job-description="adaptCvCard?.notes || ''" :cv-text="cvTextForAdapt" @close="showCvQuestions = false" @submit="onCvQuestionsSubmit" />
   </div>
 </template>
 

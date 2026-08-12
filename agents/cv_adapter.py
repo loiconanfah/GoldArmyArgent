@@ -45,6 +45,23 @@ def _detect_lang_from_text(text: str) -> str:
     return "en" if en > fr else "fr"
 
 
+def _fallback_questions(lang: str) -> list:
+    """Jeu de questions par défaut si le LLM échoue (dans la langue du CV)."""
+    if lang == "en":
+        return [
+            {"id": "q1", "category": "metrics", "question": "What real, verifiable numbers can you share (performance gains, volumes, budget, team size, deadlines)?", "hint": "Only figures you can back up."},
+            {"id": "q2", "category": "achievement", "question": "What are your 2-3 most concrete achievements for this kind of role?", "hint": "With the context and outcome."},
+            {"id": "q3", "category": "seniority", "question": "What is your exact official job title and real level of responsibility?", "hint": "Avoid inflating (Lead/Senior)."},
+            {"id": "q4", "category": "focus", "question": "For THIS offer, what should we highlight and what should we downplay?", "hint": ""},
+        ]
+    return [
+        {"id": "q1", "category": "metrics", "question": "Quels chiffres réels et vérifiables peux-tu donner (gains de performance, volumes, budget, taille d'équipe, délais) ?", "hint": "Uniquement ce que tu peux justifier."},
+        {"id": "q2", "category": "achievement", "question": "Quelles sont tes 2-3 réalisations les plus concrètes pour ce type de poste ?", "hint": "Avec le contexte et le résultat."},
+        {"id": "q3", "category": "seniority", "question": "Quel est ton intitulé de poste officiel exact et ton niveau réel de responsabilité ?", "hint": "Évite de gonfler (Lead/Senior)."},
+        {"id": "q4", "category": "focus", "question": "Pour CETTE offre, qu'est-ce qu'on met en avant et qu'est-ce qu'on minimise ?", "hint": ""},
+    ]
+
+
 def _clean_factual(v):
     """Vide les valeurs placeholder sur les champs factuels (dates, années)."""
     if not isinstance(v, str):
@@ -260,10 +277,63 @@ class CVAdapterAgent(BaseAgent):
         """Méthode abstraite requise par BaseAgent"""
         return {}
         
-    async def adapt(self, job_title: str, job_desc: str, cv_text: str) -> Dict[str, Any]:
+    async def generate_questions(self, job_title: str, job_desc: str, cv_text: str) -> list:
+        """Génère 4 à 6 questions ciblées à poser au candidat AVANT de générer le CV.
+        Objectif : récupérer des faits réels (chiffres, réalisations, niveau, focus) pour
+        rédiger un CV juste et personnalisé — sans rien inventer."""
+        lang = _detect_lang_from_text(cv_text)
+        system_prompt = (
+            "Tu es un coach carrière expert. À partir du CV du candidat et de l'offre visée, "
+            "tu poses des questions courtes et précises pour obtenir les informations MANQUANTES "
+            "qui rendront le CV plus fort et crédible, SANS jamais inventer. "
+            f"Rédige les questions dans la langue du CV (ici: {'anglais' if lang == 'en' else 'français'})."
+        )
+        user_prompt = f"""OFFRE : {job_title}
+DESCRIPTION : {job_desc[:1500]}
+
+CV DU CANDIDAT :
+{cv_text[:6000]}
+
+Génère 4 à 6 questions, chacune dans une de ces catégories :
+- "metrics" : chiffres réels et vérifiables (performance, volumes, budget, taille d'équipe, délais)
+- "achievement" : 1-2 réalisations concrètes marquantes, avec le contexte
+- "seniority" : intitulé de poste officiel exact et niveau réel de responsabilité
+- "focus" : ce que le candidat veut mettre en avant ou minimiser pour CETTE offre
+
+Réponds UNIQUEMENT en JSON valide :
+{{"questions": [{{"id": "q1", "category": "metrics", "question": "…", "hint": "…"}}]}}"""
+        try:
+            response = await self.generate_response(
+                prompt=user_prompt, system=system_prompt,
+                model="gemini-2.0-flash", max_tokens=1024,
+            )
+            raw = response.replace("```json", "").replace("```", "").strip()
+            match = re.search(r'\{.*\}', raw, re.DOTALL)
+            data = json.loads(match.group(0)) if match else json.loads(raw)
+            questions = data.get("questions") or []
+            clean = []
+            for i, q in enumerate(questions[:6]):
+                if isinstance(q, dict) and q.get("question"):
+                    clean.append({
+                        "id": q.get("id") or f"q{i+1}",
+                        "category": q.get("category") or "focus",
+                        "question": str(q["question"]).strip(),
+                        "hint": str(q.get("hint") or "").strip(),
+                    })
+            if clean:
+                return clean
+        except Exception as e:
+            logger.warning(f"generate_questions fallback: {e}")
+        # Filet de secours : questions génériques dans la bonne langue
+        return _fallback_questions(lang)
+
+    async def adapt(self, job_title: str, job_desc: str, cv_text: str, answers: list = None) -> Dict[str, Any]:
         """
-        Analyse l'offre et le CV, puis génère un CV adapté en Markdown 
+        Analyse l'offre et le CV, puis génère un CV adapté en Markdown
         et des projets recommandés en JSON.
+
+        answers : réponses du candidat aux questions ciblées (source de vérité pour
+        les chiffres et faits — l'IA doit s'en servir plutôt que d'inventer).
         """
         
         system_prompt = """Tu es un expert recrutement et ATS de haut niveau. Ton rôle est d'ADAPTER et RÉORGANISER le CV du candidat pour le poste ciblé, de façon CRÉDIBLE. Un CV crédible et ciblé bat toujours un CV « parfait » sur-optimisé : les recruteurs (et Reddit) détectent immédiatement un CV généré par IA. Tu ne dois JAMAIS inventer de faits.
@@ -329,15 +399,35 @@ FORMAT DE RÉPONSE OBLIGATOIRE :
 ---END JSON---
 """
 
+        # Réponses du candidat = faits réels autorisés (chiffres, réalisations…)
+        answers_block = ""
+        answers_text = ""
+        if answers:
+            lines = []
+            for a in answers:
+                if not isinstance(a, dict):
+                    continue
+                q = str(a.get("question", "")).strip()
+                r = str(a.get("answer", "")).strip()
+                if r:
+                    lines.append(f"- {q} → {r}")
+                    answers_text += " " + r
+            if lines:
+                answers_block = (
+                    "\n\nRÉPONSES DU CANDIDAT (SOURCE DE VÉRITÉ — utilise ces chiffres et faits "
+                    "RÉELS pour rédiger les bullets ; n'invente RIEN au-delà de ces réponses et du CV) :\n"
+                    + "\n".join(lines)
+                )
+
         user_prompt = f"""
 POSTE CIBLÉ : {job_title}
 DESCRIPTION DE L'OFFRE :
 {job_desc[:3000]}
 
 CV SOURCE DU CANDIDAT (seule source de vérité pour l'identité, les dates, les intitulés et la formation — ne rien inventer) :
-{cv_text[:8000]}
+{cv_text[:8000]}{answers_block}
 
-Produis un CV CIBLÉ pour ce poste : priorise et réorganise les expériences pertinentes, résume/omets le hors-sujet, applique la dégressivité (10-12 bullets max), quantifie au maximum 40% des bullets sans jamais inventer de chiffre, et recopie fidèlement les faits (dates, formation, intitulés). RÉDIGE DANS LA MÊME LANGUE que le CV source ci-dessus.
+Produis un CV CIBLÉ pour ce poste : priorise et réorganise les expériences pertinentes, résume/omets le hors-sujet, applique la dégressivité (10-12 bullets max), quantifie au maximum 40% des bullets sans jamais inventer de chiffre (utilise en priorité les chiffres RÉELS fournis par le candidat), et recopie fidèlement les faits (dates, formation, intitulés). RÉDIGE DANS LA MÊME LANGUE que le CV source ci-dessus.
 """
         
         try:
@@ -419,10 +509,11 @@ Produis un CV CIBLÉ pour ce poste : priorise et réorganise les expériences pe
             if not cv_json and markdown:
                 cv_json = _markdown_to_minimal_cv_json(markdown)
 
-            # Garde-fous déterministes (dédup, plafonds dégressifs, dates figées, titres)
+            # Garde-fous déterministes (dédup, plafonds, dates, titres, anti-fabrication).
+            # La source inclut les réponses du candidat → leurs chiffres RÉELS sont conservés.
             if cv_json:
                 try:
-                    cv_json = _postprocess_cv_json(cv_json, cv_text)
+                    cv_json = _postprocess_cv_json(cv_json, cv_text + " " + answers_text)
                 except Exception as pe:
                     logger.warning(f"Post-traitement cv_json ignoré: {pe}")
 

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 from loguru import logger
 
+from typing import List, Dict, Any
 from api.auth import get_current_user
 from api.subscription import check_subscription_limit, log_usage
 
@@ -15,6 +16,14 @@ router = APIRouter()
 
 
 class CVAdaptRequest(BaseModel):
+    job_title: str
+    job_description: str
+    cv_text: str
+    # Réponses aux questions ciblées (mode conversationnel) — optionnel
+    answers: Optional[List[Dict[str, Any]]] = None
+
+
+class CVQuestionsRequest(BaseModel):
     job_title: str
     job_description: str
     cv_text: str
@@ -274,7 +283,8 @@ async def adapt_cv_endpoint(request: CVAdaptRequest, current_user: dict = Depend
         result = await adapter.adapt(
             job_title=request.job_title,
             job_desc=request.job_description,
-            cv_text=request.cv_text
+            cv_text=request.cv_text,
+            answers=request.answers,
         )
 
         await log_usage(current_user["id"], "cv_adaptation")
@@ -283,6 +293,31 @@ async def adapt_cv_endpoint(request: CVAdaptRequest, current_user: dict = Depend
         raise
     except Exception as e:
         logger.error(f"Error in adapt_cv_endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/adapt-cv/questions")
+async def adapt_cv_questions_endpoint(request: CVQuestionsRequest, current_user: dict = Depends(get_current_user)):
+    """Mode conversationnel : génère 4-6 questions ciblées à poser au candidat
+    AVANT de générer le CV (chiffres réels, réalisations, niveau, focus)."""
+    try:
+        if not request.cv_text or len(request.cv_text) < 50:
+            raise HTTPException(status_code=400, detail="Le texte du CV est introuvable ou trop court. Veuillez uploader un CV d'abord.")
+
+        from agents.cv_adapter import CVAdapterAgent
+        adapter = CVAdapterAgent()
+        await adapter.initialize()
+
+        questions = await adapter.generate_questions(
+            job_title=request.job_title,
+            job_desc=request.job_description,
+            cv_text=request.cv_text,
+        )
+        return {"status": "success", "data": {"questions": questions}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in adapt_cv_questions_endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

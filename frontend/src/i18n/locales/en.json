@@ -1,4 +1,16 @@
 {
+    "cvq": {
+        "title": "Let's sharpen your résumé",
+        "subtitle": "Answer these questions: the AI will write an accurate résumé with your real numbers — no inventing.",
+        "loading": "The AI is preparing your questions…",
+        "answer_ph": "Your answer (optional)…",
+        "skip": "Skip and generate",
+        "generate": "Generate my résumé",
+        "cat_metrics": "Real numbers",
+        "cat_achievement": "Achievement",
+        "cat_seniority": "Level & title",
+        "cat_focus": "Role focus"
+    },
     "mentorhub": {
         "title": "Mentor Hub",
         "subtitle": "Mentorship on demand — find a mentor and request a session.",

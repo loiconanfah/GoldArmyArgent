@@ -1,4 +1,16 @@
 {
+    "cvq": {
+        "title": "Affinons ton CV ensemble",
+        "subtitle": "Réponds à ces questions : l'IA rédigera un CV juste, avec tes vrais chiffres — sans rien inventer.",
+        "loading": "L'IA prépare tes questions…",
+        "answer_ph": "Ta réponse (optionnelle)…",
+        "skip": "Passer et générer",
+        "generate": "Générer mon CV",
+        "cat_metrics": "Chiffres réels",
+        "cat_achievement": "Réalisation",
+        "cat_seniority": "Niveau & intitulé",
+        "cat_focus": "Focus du poste"
+    },
     "mentorhub": {
         "title": "Hub Mentors",
         "subtitle": "Le mentorat à la demande — trouvez un mentor et demandez une session.",

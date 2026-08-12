@@ -23,6 +23,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import { CV_TEMPLATES } from '../utils/cvTemplates/index'
 import CvEditorModal from '../components/CvEditorModal.vue'
+import CvQuestionsModal from '../components/CvQuestionsModal.vue'
 
 const {
     filter, searchQuery, inputLocation, cvText, isUploading, isLoading, isParsingPdf, 
@@ -38,6 +39,7 @@ const CV_THEMES = CV_TEMPLATES.map(t => ({
 }))
 
 const showAdaptCvModal = ref(false)
+const showCvQuestions = ref(false)
 const adaptCvCard = ref(null)
 const cvTextForAdapt = ref('')
 const isAdaptingCv = ref(false)
@@ -254,7 +256,7 @@ const useProfileCv = async () => {
       return
     }
     cvTextForAdapt.value = cvText
-    await runAdapt()
+    openCvQuestions()
   } catch (e) {
     toastState.addToast(t('common.network_error'), 'error')
   }
@@ -277,14 +279,27 @@ const onAdaptFileSelected = async (e) => {
       return
     }
     cvTextForAdapt.value = text
-    await runAdapt()
+    openCvQuestions()
   } catch (err) {
     toastState.addToast(t('common.network_error'), 'error')
   }
   e.target.value = ''
 }
 
-const runAdapt = async () => {
+// Ouvre l'étape conversationnelle (questions ciblées) avant de générer
+const openCvQuestions = () => {
+  if (!cvTextForAdapt.value || cvTextForAdapt.value.length < 50) {
+    toastState.addToast('CV manquant ou trop court.', 'info')
+    return
+  }
+  showCvQuestions.value = true
+}
+const onCvQuestionsSubmit = (answers) => {
+  showCvQuestions.value = false
+  runAdapt(answers)
+}
+
+const runAdapt = async (answers = null) => {
   if (!adaptCvCard.value || !cvTextForAdapt.value || cvTextForAdapt.value.length < 50) {
     toastState.addToast('CV manquant ou trop court.', 'info')
     return
@@ -297,7 +312,8 @@ const runAdapt = async () => {
       body: JSON.stringify({
         job_title: adaptCvCard.value.title,
         job_description: adaptCvCard.value.desc,
-        cv_text: cvTextForAdapt.value
+        cv_text: cvTextForAdapt.value,
+        answers: answers || undefined
       })
     })
     const json = await res.json()
@@ -857,6 +873,16 @@ const addToCrmAndApply = async (job) => {
       :cv-data="opportunitiesEditorData"
       @close="showOpportunitiesEditor = false"
       @save="saveOpportunitiesEditor"
+    />
+
+    <!-- MODAL: Étape conversationnelle (questions ciblées avant génération) -->
+    <CvQuestionsModal
+      :show="showCvQuestions"
+      :job-title="adaptCvCard?.title || ''"
+      :job-description="adaptCvCard?.desc || ''"
+      :cv-text="cvTextForAdapt"
+      @close="showCvQuestions = false"
+      @submit="onCvQuestionsSubmit"
     />
 
     <!-- MODAL: PREVIEW CV -->
