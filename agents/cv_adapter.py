@@ -52,6 +52,47 @@ def _clean_factual(v):
     return "" if _norm_text(v) in _PLACEHOLDER_VALUES or v.strip().lower() in _PLACEHOLDER_VALUES else v.strip()
 
 
+def _source_numbers(cv_text: str) -> set:
+    """Ensemble des nombres réellement présents dans le CV source."""
+    return set(re.findall(r'\d+(?:[.,]\d+)?', cv_text or ""))
+
+
+def _strip_fabricated_metrics(text: str, src_nums: set) -> str:
+    """Retire tout chiffre/metric ABSENT du CV source (anti-invention), en gardant
+    la phrase grammaticale. Ne touche pas aux nombres réellement présents dans la source."""
+    if not text:
+        return text
+
+    def foreign(frag: str) -> bool:
+        nums = re.findall(r'\d+(?:[.,]\d+)?', frag)
+        return any(n.replace(',', '.') not in src_nums and n not in src_nums for n in nums)
+
+    def drop(m):
+        return '' if foreign(m.group(0)) else m.group(0)
+
+    t = text
+    # 1) Parenthèses contenant un nombre étranger : (de 500ms à 350ms), (-66%)
+    t = re.sub(r'\s*\([^)]*\d[^)]*\)', drop, t)
+    # 2) Plages "de X à Y" (unités/heures) étrangères
+    t = re.sub(r'\s*\bde\s+\d[\d.,]*\s*\w*\s+à\s+\d[\d.,]*\s*\w*', drop, t, flags=re.I)
+    # 3) "... de/of/by X%" étranger
+    t = re.sub(r'\s*\b(?:de|of|by|d[\'’]|à|to)\s*[-+]?\d[\d.,]*\s*%', drop, t, flags=re.I)
+    # 4) Pourcentages restants étrangers
+    t = re.sub(r'\s*[-+]?\d[\d.,]*\s*%', drop, t)
+    # 5) Valeurs à unité étrangères : 5000€, 500ms, 8h, 50k, 12Go
+    t = re.sub(r'\s*\b\d[\d.,]*\s*(?:ms|€|\$|k|h|Mo|Go|s)\b', drop, t, flags=re.I)
+    # Nettoyage : espaces/ponctuation orphelins (sans casser ".NET")
+    t = re.sub(r'\s{2,}', ' ', t)
+    t = re.sub(r'\s+([,;:])', r'\1', t)
+    t = re.sub(r'\s+\.(?=\s|$)', '.', t)         # point de fin seulement → préserve " .NET"
+    t = re.sub(r'([,;:])\s*\.', '.', t)
+    t = re.sub(r'\bde\s+et\b', 'et', t, flags=re.I)
+    t = re.sub(r'\s*,\s*$', '', t).strip()
+    if t and t[-1] not in '.!?':
+        t += '.'
+    return t
+
+
 def _guard_title(title: str, source_tokens: set) -> str:
     """Retire un mot de séniorité d'un intitulé s'il n'est pas présent dans le CV source."""
     if not title:
@@ -80,8 +121,13 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
     cv_json["lang"] = _detect_lang_from_text(cv_text)
 
     source_tokens = set(_norm_text(cv_text).split())
+    src_nums = _source_numbers(cv_text)
     seen = set()
     total = 0
+
+    # Résumé : retire les métriques inventées (absentes de la source)
+    if cv_json.get("summary"):
+        cv_json["summary"] = _strip_fabricated_metrics(cv_json["summary"], src_nums)
 
     experiences = cv_json.get("experiences") or []
     for idx, exp in enumerate(experiences):
@@ -94,13 +140,14 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
         cap = _BULLET_CAPS[idx] if idx < len(_BULLET_CAPS) else 2
         kept = []
         for b in (exp.get("bullets") or []):
-            nb = _norm_text(str(b))
+            b = _strip_fabricated_metrics(str(b).strip(), src_nums)
+            nb = _norm_text(b)
             if len(nb) < 4 or nb in seen:
                 continue
             if total >= _BULLET_GLOBAL_CAP or len(kept) >= cap:
                 continue
             seen.add(nb)
-            kept.append(str(b).strip())
+            kept.append(b)
             total += 1
         exp["bullets"] = kept
 
@@ -110,11 +157,12 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
             continue
         kept = []
         for b in (proj.get("bullets") or []):
-            nb = _norm_text(str(b))
+            b = _strip_fabricated_metrics(str(b).strip(), src_nums)
+            nb = _norm_text(b)
             if len(nb) < 4 or nb in seen:
                 continue
             seen.add(nb)
-            kept.append(str(b).strip())
+            kept.append(b)
             if len(kept) >= 3:
                 break
         proj["bullets"] = kept
