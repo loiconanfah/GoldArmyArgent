@@ -946,6 +946,7 @@
         "interviews_chart": "Entretiens"
     },
     "common": {
+        "draft": "Brouillon",
         "processing": "Traitement en cours",
         "loading": "Chargement...",
         "error": "Erreur",
@@ -1466,6 +1467,7 @@
             "restored_project": "Projet Portfolio (Restauré)"
         },
         "audit": {
+                "status": "Statut",
             "candidate": "Candidat",
             "title": "Titre",
             "ats_report": "Rapport ATS",

@@ -270,7 +270,8 @@ Génère le `correction_mapping` listant UNE faille par clé et sa correction ap
     "ats_score": 92,
     "scores": { "mots_cles": 90, "impact_resultats": 88, "mise_en_forme": 95, "lisibilite": 93, "experience_pertinence": 91 },
     "correction_mapping": { "[Faille 1 trouvée en Phase 1]": "[Comment elle est corrigée dans le nouveau CV]", "[Faille 2]": "[Correction 2]" },
-    "tech_ajoutees": ["Technologies injectées dans le CV optimisé"]
+    "tech_ajoutees": ["Technologies injectées dans le CV optimisé"],
+    "actions": ["3 à 5 actions CONCRÈTES que le candidat doit faire LUI-MÊME pour aller plus loin (ex: fournir ses vrais chiffres, compléter les URLs, ajouter une certification) — dans la langue du CV"]
   }
 }"""
 
@@ -378,6 +379,17 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
             current_cv_data = _postprocess_cv_json(current_cv_data, cv_text)
         except Exception as e:
             logger.warning(f"[Mentor] Post-traitement CV ignoré: {e}")
+
+        # Score ATS RÉEL (déterministe) — remplace le score halluciné par le LLM
+        try:
+            from core.ats_score import score_text, score_cv
+            real_before = score_text(cv_text, job_text)
+            real_after = score_cv(current_cv_data, job_text)
+            original_ats_score = real_before["ats_score"]
+            last_audit["ats_score"] = real_after["ats_score"]
+            last_audit["scores"] = real_after["scores"]
+        except Exception as e:
+            logger.warning(f"[Mentor] Scoring ATS réel ignoré: {e}")
 
         last_audit["original_ats_score"] = original_ats_score
         last_audit["original_failles"] = original_failles
