@@ -4,9 +4,43 @@ Utilise python-docx pour créer un fichier Word propre et parsable par les ATS.
 """
 import io
 import json
+import re
+import unicodedata
 from typing import Dict, Any, List
 
 from docx import Document
+
+
+# Labels de sections bilingues (le CV sort dans la langue de sa source)
+_DOCX_LABELS = {
+    "fr": {"summary": "Résumé Professionnel", "experience": "Expériences Professionnelles",
+           "skills": "Compétences Techniques", "education": "Formation",
+           "certs": "Certifications", "languages": "Langues", "present": "Présent"},
+    "en": {"summary": "Professional Summary", "experience": "Work Experience",
+           "skills": "Technical Skills", "education": "Education",
+           "certs": "Certifications", "languages": "Languages", "present": "Present"},
+}
+_FR_TOKENS = {"le", "la", "les", "des", "une", "un", "et", "de", "du", "avec", "pour",
+              "dans", "sur", "au", "aux", "experience", "competences", "formation", "ans", "gestion"}
+_EN_TOKENS = {"the", "and", "with", "for", "of", "to", "in", "on", "years", "experience",
+              "skills", "management", "developer", "team", "project"}
+
+
+def _docx_lang(cv_data: Dict[str, Any]) -> str:
+    """Détermine la langue du CV : champ explicite (posé par l'adaptateur) sinon heuristique."""
+    lf = str(cv_data.get("lang", "") or cv_data.get("language", "")).lower()
+    if lf.startswith("en") or "english" in lf:
+        return "en"
+    if lf.startswith("fr") or "french" in lf or "fran" in lf:
+        return "fr"
+    sample = " ".join([cv_data.get("summary", "") or ""] +
+                      [b for e in (cv_data.get("experiences") or []) for b in (e.get("bullets") or [])])
+    sample = unicodedata.normalize("NFKD", sample.lower())
+    sample = "".join(c for c in sample if not unicodedata.combining(c))
+    toks = re.findall(r"[a-z]+", sample)
+    fr = sum(1 for t in toks if t in _FR_TOKENS)
+    en = sum(1 for t in toks if t in _EN_TOKENS)
+    return "en" if en > fr else "fr"
 
 
 def normalize_cv_json(cv_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -130,6 +164,7 @@ def generate_cv_docx(cv_data: Dict[str, Any]) -> bytes:
     Retourne les bytes du fichier.
     """
     cv_data = normalize_cv_json(cv_data)
+    L = _DOCX_LABELS[_docx_lang(cv_data)]
     doc = Document()
 
     # ── Marges serrées (ATS friendly) ──────────────────────────────────
@@ -184,7 +219,7 @@ def generate_cv_docx(cv_data: Dict[str, Any]) -> bytes:
     # ═══════════════════════════════════════════════════════════════════
     summary = cv_data.get("summary", "")
     if summary:
-        _add_heading(doc, "Résumé Professionnel")
+        _add_heading(doc, L["summary"])
         p = doc.add_paragraph()
         p.paragraph_format.space_after = Pt(4)
         run = p.add_run(summary)
@@ -195,7 +230,7 @@ def generate_cv_docx(cv_data: Dict[str, Any]) -> bytes:
     # ═══════════════════════════════════════════════════════════════════
     experiences = cv_data.get("experiences", [])
     if experiences:
-        _add_heading(doc, "Expériences Professionnelles")
+        _add_heading(doc, L["experience"])
         for exp in experiences:
             # Titre du poste | Entreprise
             exp_para = doc.add_paragraph()
@@ -210,12 +245,14 @@ def generate_cv_docx(cv_data: Dict[str, Any]) -> bytes:
                 run2 = exp_para.add_run(f"  —  {company}")
                 _set_font(run2, size=11, color=(89, 89, 89))
             
-            # Dates | Lieu
+            # Dates | Lieu — sans tiret orphelin quand une borne manque
             date_parts = []
             start = exp.get("start_date", "")
-            end = exp.get("end_date", "Présent")
-            if start:
+            end = exp.get("end_date", "")
+            if start and end:
                 date_parts.append(f"{start} – {end}")
+            elif start or end:
+                date_parts.append(start or end)
             if location:
                 date_parts.append(location)
             
@@ -236,7 +273,7 @@ def generate_cv_docx(cv_data: Dict[str, Any]) -> bytes:
     # ═══════════════════════════════════════════════════════════════════
     skills = cv_data.get("skills", {})
     if skills:
-        _add_heading(doc, "Compétences Techniques")
+        _add_heading(doc, L["skills"])
         for category, items in skills.items():
             if not items:
                 continue
@@ -253,7 +290,7 @@ def generate_cv_docx(cv_data: Dict[str, Any]) -> bytes:
     # ═══════════════════════════════════════════════════════════════════
     education = cv_data.get("education", [])
     if education:
-        _add_heading(doc, "Formation")
+        _add_heading(doc, L["education"])
         for edu in education:
             edu_para = doc.add_paragraph()
             edu_para.paragraph_format.space_before = Pt(4)
@@ -285,7 +322,7 @@ def generate_cv_docx(cv_data: Dict[str, Any]) -> bytes:
     # ═══════════════════════════════════════════════════════════════════
     certifications = cv_data.get("certifications", [])
     if certifications:
-        _add_heading(doc, "Certifications")
+        _add_heading(doc, L["certs"])
         for cert in certifications:
             if cert.strip():
                 _add_bullet(doc, cert)
@@ -295,7 +332,7 @@ def generate_cv_docx(cv_data: Dict[str, Any]) -> bytes:
     # ═══════════════════════════════════════════════════════════════════
     languages = cv_data.get("languages", [])
     if languages:
-        _add_heading(doc, "Langues")
+        _add_heading(doc, L["languages"])
         lang_para = doc.add_paragraph()
         lang_para.paragraph_format.space_after = Pt(4)
         run = lang_para.add_run("  |  ".join(languages))

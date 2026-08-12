@@ -3,6 +3,7 @@ CV HTML Templates — Python port of the 8 TypeScript mobile templates.
 Each build_* function returns a full HTML string for Playwright→PDF conversion.
 """
 import html as _html
+import re
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -11,6 +12,28 @@ def esc(v) -> str:
         return ", ".join(esc(i) for i in v)
     return _html.escape(str(v or ""))
 
+_HTML_TR = {
+    "Profil": "Profile", "Expériences": "Experience", "Projets": "Projects",
+    "Formation": "Education", "Compétences": "Skills", "Langues": "Languages",
+    "Certifications": "Certifications", "Parcours": "Career", "Résumé": "Summary",
+}
+_FR_TOK = {"le","la","les","des","une","un","et","de","du","avec","pour","dans","sur","experience","competences","formation","ans","gestion"}
+_EN_TOK = {"the","and","with","for","of","to","in","on","years","experience","skills","management","developer","team","project"}
+
+def _html_lang(d: dict) -> str:
+    import unicodedata as _u
+    lf = str(d.get("lang","") or d.get("language","")).lower()
+    if lf.startswith("en") or "english" in lf: return "en"
+    if lf.startswith("fr") or "fran" in lf or "french" in lf: return "fr"
+    sample = " ".join([d.get("summary","") or ""] + [b for e in (d.get("experiences") or []) for b in (e.get("bullets") or [])])
+    sample = _u.normalize("NFKD", sample.lower()); sample = "".join(c for c in sample if not _u.combining(c))
+    toks = re.findall(r"[a-z]+", sample)
+    fr = sum(1 for t in toks if t in _FR_TOK); en = sum(1 for t in toks if t in _EN_TOK)
+    return "en" if en > fr else "fr"
+
+def _tr(label: str, lang: str) -> str:
+    return _HTML_TR.get(label, label) if lang == "en" else label
+
 def _fields(d: dict) -> dict:
     raw = d
     linkedin = (d.get("linkedin") or raw.get("linkedin_url") or
@@ -18,6 +41,7 @@ def _fields(d: dict) -> dict:
     github   = d.get("github") or raw.get("github_url") or ""
     skills_html = _build_skills(d.get("skills", {}))
     return dict(
+        lang      = _html_lang(d),
         full_name = d.get("full_name") or "Prénom Nom",
         job_title = d.get("title") or "",
         email     = d.get("email") or "",
@@ -178,14 +202,14 @@ body{{font-family:'Inter',sans-serif;font-size:9.5px;line-height:1.45;background
         <div class="contact-row">{contact}</div>
       </div>
       <div class="main">
-        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">Profil</div></div><p class="summary-text">{esc(f["summary"])}</p>' if f["summary"] else ""}
-        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">Expériences</div></div>{exp_html}' if exp_html else ""}
-        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">Projets</div></div>{proj_html}' if proj_html else ""}
-        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">Formation</div></div>{edu_html}' if edu_html else ""}
-        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">Compétences</div></div><div class="skills-section">{f["skills_html"]}</div>' if f["skills_html"] else ""}
+        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">{_tr("Profil", f["lang"])}</div></div><p class="summary-text">{esc(f["summary"])}</p>' if f["summary"] else ""}
+        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">{_tr("Expériences", f["lang"])}</div></div>{exp_html}' if exp_html else ""}
+        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">{_tr("Projets", f["lang"])}</div></div>{proj_html}' if proj_html else ""}
+        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">{_tr("Formation", f["lang"])}</div></div>{edu_html}' if edu_html else ""}
+        {f'<div class="sec-head"><div class="sec-bar"></div><div class="sec-label">{_tr("Compétences", f["lang"])}</div></div><div class="skills-section">{f["skills_html"]}</div>' if f["skills_html"] else ""}
         <div class="bottom-sections">
-          {f'<div class="bottom-col"><div class="sec-head"><div class="sec-bar"></div><div class="sec-label">Langues</div></div>{langs}</div>' if langs else ""}
-          {f'<div class="bottom-col"><div class="sec-head"><div class="sec-bar"></div><div class="sec-label">Certifications</div></div>{certs}</div>' if certs else ""}
+          {f'<div class="bottom-col"><div class="sec-head"><div class="sec-bar"></div><div class="sec-label">{_tr("Langues", f["lang"])}</div></div>{langs}</div>' if langs else ""}
+          {f'<div class="bottom-col"><div class="sec-head"><div class="sec-bar"></div><div class="sec-label">{_tr("Certifications", f["lang"])}</div></div>{certs}</div>' if certs else ""}
         </div>
       </div>
     </div>
@@ -211,7 +235,7 @@ def build_minimaliste(cv_data: dict) -> str:
     edu_html = _edu_blocks(f["education"])
     langs = " · ".join(esc(l) for l in f["languages"])
     certs = " · ".join(esc(c) for c in f["certifications"])
-    sec = lambda label: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#2563EB;font-weight:700;margin:14px 0 8px;border-bottom:1.5px solid #2563EB;padding-bottom:2px;page-break-after:avoid;break-after:avoid;">{label}</div>'
+    sec = lambda label: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#2563EB;font-weight:700;margin:14px 0 8px;border-bottom:1.5px solid #2563EB;padding-bottom:2px;page-break-after:avoid;break-after:avoid;">{_tr(label, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -276,7 +300,7 @@ def build_executive(cv_data: dict) -> str:
     edu_html = _edu_blocks(f["education"])
     langs = "".join(f'<div class="lang-item">• {esc(l)}</div>' for l in f["languages"])
     certs = "".join(f'<div class="cert-item">{esc(c)}</div>' for c in f["certifications"])
-    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#10B981;margin:14px 0 8px;border-bottom:1px solid #10B98133;padding-bottom:3px;page-break-after:avoid;break-after:avoid;font-weight:700;letter-spacing:0.5px;">{t}</div>'
+    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#10B981;margin:14px 0 8px;border-bottom:1px solid #10B98133;padding-bottom:3px;page-break-after:avoid;break-after:avoid;font-weight:700;letter-spacing:0.5px;">{_tr(t, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
@@ -350,7 +374,7 @@ def build_creatif(cv_data: dict) -> str:
     edu_html = _edu_blocks(f["education"])
     langs = "".join(f'<div class="lang-item">• {esc(l)}</div>' for l in f["languages"])
     certs = "".join(f'<div class="cert-item">{esc(c)}</div>' for c in f["certifications"])
-    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#EC4899;margin:14px 0 8px;border-bottom:1px solid #EC489933;padding-bottom:3px;page-break-after:avoid;break-after:avoid;font-weight:700;letter-spacing:0.5px;">{t}</div>'
+    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#EC4899;margin:14px 0 8px;border-bottom:1px solid #EC489933;padding-bottom:3px;page-break-after:avoid;break-after:avoid;font-weight:700;letter-spacing:0.5px;">{_tr(t, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
@@ -429,7 +453,7 @@ def build_classique(cv_data: dict) -> str:
     edu_html = _edu_blocks(f["education"])
     langs = " | ".join(esc(l) for l in f["languages"])
     certs = "".join(f'<div style="font-size:9.5px;color:#333;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;">• {esc(c)}</div>' for c in f["certifications"])
-    sec = lambda t: f'<div class="sec-head" style="font-size:9.5px;text-transform:uppercase;color:#1a1a1a;font-weight:700;margin:14px 0 6px;border-bottom:1.5px solid #1a1a1a;padding-bottom:2px;page-break-after:avoid;break-after:avoid;">{t}</div>'
+    sec = lambda t: f'<div class="sec-head" style="font-size:9.5px;text-transform:uppercase;color:#1a1a1a;font-weight:700;margin:14px 0 6px;border-bottom:1.5px solid #1a1a1a;padding-bottom:2px;page-break-after:avoid;break-after:avoid;">{_tr(t, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
@@ -499,7 +523,7 @@ def build_neon_tech(cv_data: dict) -> str:
     langs = "".join(f'<div class="lang-item">• {esc(l)}</div>' for l in f["languages"])
     certs = "".join(f'<div class="cert-item">{esc(c)}</div>' for c in f["certifications"])
     fn_parts = f["full_name"].split(); fn = fn_parts[0]; ln = " ".join(fn_parts[1:])
-    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#FF00A0;margin:14px 0 8px;border-bottom:1px solid #FF00A033;padding-bottom:3px;font-family:\'Share Tech Mono\',monospace;page-break-after:avoid;break-after:avoid;">{t}</div>'
+    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#FF00A0;margin:14px 0 8px;border-bottom:1px solid #FF00A033;padding-bottom:3px;font-family:\'Share Tech Mono\',monospace;page-break-after:avoid;break-after:avoid;">{_tr(t, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
@@ -583,7 +607,7 @@ def build_scandinave(cv_data: dict) -> str:
         esc(f["location"]),
         f'LinkedIn: {esc(f["linkedin"])}' if f["linkedin"] else ""
     ]))
-    sec = lambda t: f'<div class="sec-head" style="display:flex;align-items:center;gap:10px;margin:14px 0 8px;page-break-after:avoid;break-after:avoid;"><span style="font-size:9px;text-transform:uppercase;font-weight:700;color:#1A1A1A;white-space:nowrap;">{t}</span><div style="flex:1;height:1px;background:#ddd;"></div></div>'
+    sec = lambda t: f'<div class="sec-head" style="display:flex;align-items:center;gap:10px;margin:14px 0 8px;page-break-after:avoid;break-after:avoid;"><span style="font-size:9px;text-transform:uppercase;font-weight:700;color:#1A1A1A;white-space:nowrap;">{_tr(t, f["lang"])}</span><div style="flex:1;height:1px;background:#ddd;"></div></div>'
     exp_out = ""
     for e in f["experiences"]:
         dates = " – ".join(filter(None,[e.get("start_date",""),e.get("end_date","")]))
@@ -666,7 +690,7 @@ def build_timeline(cv_data: dict) -> str:
         </div>
         """
         
-    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#E85D4A;margin:14px 0 8px;border-bottom:1px solid #E85D4A33;padding-bottom:3px;font-weight:700;page-break-after:avoid;break-after:avoid;">{t}</div>'
+    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#E85D4A;margin:14px 0 8px;border-bottom:1px solid #E85D4A33;padding-bottom:3px;font-weight:700;page-break-after:avoid;break-after:avoid;">{_tr(t, f["lang"])}</div>'
     
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>

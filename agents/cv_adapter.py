@@ -28,6 +28,23 @@ def _norm_text(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+_FR_STOPWORDS = {"le", "la", "les", "des", "une", "un", "et", "de", "du", "avec",
+                 "pour", "dans", "sur", "au", "aux", "par", "en", "ans", "compétences",
+                 "expérience", "formation", "développeur", "gestion", "projet"}
+_EN_STOPWORDS = {"the", "and", "with", "for", "of", "to", "in", "on", "at", "years",
+                 "experience", "skills", "management", "developer", "project", "team"}
+
+
+def _detect_lang_from_text(text: str) -> str:
+    """Détecte fr/en à partir du texte source (comptage de mots-outils)."""
+    tokens = _norm_text(text).split()
+    if not tokens:
+        return "fr"
+    fr = sum(1 for t in tokens if t in _FR_STOPWORDS)
+    en = sum(1 for t in tokens if t in _EN_STOPWORDS)
+    return "en" if en > fr else "fr"
+
+
 def _clean_factual(v):
     """Vide les valeurs placeholder sur les champs factuels (dates, années)."""
     if not isinstance(v, str):
@@ -58,6 +75,9 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
     """
     if not isinstance(cv_json, dict):
         return cv_json
+
+    # Langue figée depuis la source → tous les générateurs (PDF/Word/HTML) l'utilisent
+    cv_json["lang"] = _detect_lang_from_text(cv_text)
 
     source_tokens = set(_norm_text(cv_text).split())
     seen = set()
@@ -214,7 +234,7 @@ RÈGLES CRITIQUES :
 
 5. AUCUN DOUBLON : Ne répète jamais une même réalisation, même reformulée, dans deux bullets. Chaque bullet est unique.
 
-6. FAITS FIGÉS (identité, dates, formation) : Recopie EXACTEMENT depuis le CV source l'identité, les dates de début/fin, les diplômes, institutions et années. N'invente ni ne modifie AUCUNE date. Si une date/année est absente du CV source, laisse le champ VIDE (""). N'écris JAMAIS "À venir", "Non spécifiée", "N/A", "En cours" ou équivalent.
+6. FAITS FIGÉS (identité, coordonnées, dates, formation) : Recopie EXACTEMENT depuis le CV source l'identité, l'e-mail, le téléphone, les dates de début/fin, les diplômes, institutions et années. N'INVENTE JAMAIS un e-mail, un téléphone ou une date : si l'info est absente du CV source, laisse le champ VIDE (""). N'écris JAMAIS "À venir", "Non spécifiée", "N/A", "En cours" ou équivalent. Les périodes ne doivent pas se chevaucher de façon incohérente : conserve les dates telles quelles, sans créer de recouvrement.
 
 7. INTITULÉS HONNÊTES : N'ajoute JAMAIS "Lead", "Senior", "Principal", "Head" ou "Chef" à un intitulé si ce n'est pas EXACTEMENT le titre figurant dans le CV source. Conserve les intitulés d'origine tels quels.
 
