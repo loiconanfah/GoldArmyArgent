@@ -153,14 +153,13 @@ Objectif : Produire un CV parfaitement adapté à l'offre d'emploi fournie et di
 Basé sur les failles et écarts détectés : {original_failles}
 
 OBLIGATIONS ABSOLUES :
-[A] CHAQUE bullet point DOIT contenir UN KPI/métrique chiffré(e) obligatoire.
-    Format imposé : Verbe d'action + Contexte technique + Résultat quantifié
-    Exemples CORRECTS :
-    - "Développé 12 microservices FastAPI réduisant la latence P99 de 340ms à 180ms (-47%)"
-    - "Automatisé le pipeline CI/CD GitHub Actions → 0 downtime deploy, fréquence x3"
-    - "Conçu un cache Redis multicouche atteignant 98% hit-rate, économie 40% coûts DB"
-    Si tu ne connais PAS le chiffre exact, estime-le intelligemment à partir du contexte.
-    UN BULLET SANS KPI = ÉCHEC.
+[A] CHIFFRES HONNÊTES — anti-signature IA (RÈGLE CRITIQUE) :
+    - N'INVENTE JAMAIS de chiffre. N'utilise QUE des métriques réellement présentes dans le CV original.
+    - AU MAXIMUM 40% des bullets contiennent un chiffre ; jamais plus de 2 bullets chiffrés d'affilée.
+    - La MAJORITÉ des bullets décrivent l'action et l'impact QUALITATIVEMENT, sans chiffre.
+    - Varie le type de preuve : résultat concret livré, périmètre, technologie maîtrisée, responsabilité — pas seulement des %.
+    Format d'un bon bullet : Verbe d'action fort + contexte technique + résultat (chiffré UNIQUEMENT s'il vient du CV original).
+    Un CV où presque chaque ligne a un pourcentage est immédiatement repéré comme généré par IA et rejeté.
 [B] ZÉRO faute d'orthographe ou de grammaire — AUTO-VÉRIFIE chaque bullet avant de l'écrire.
     Checklist obligatoire pour chaque phrase :
     - Accord sujet/verbe correct ? (ex: "les APIs sont" pas "les APIs est")
@@ -183,7 +182,7 @@ OBLIGATIONS ABSOLUES :
     Parcours mentalement chaque bullet et vérifie :
     1. Verbes d'action tous différents dans un même poste ? Si non → remplace.
     2. Fautes d'accord ou d'accent ? Si oui → corrige.
-    3. Bullets sans KPI ? Si oui → ajoute un chiffre.
+    3. Un chiffre absent du CV original (inventé) ? Si oui → retire-le, jamais l'inverse.
     4. Les descriptions d'expériences sont-elles bien orientées et adaptées pour répondre aux besoins clés de l'offre d'emploi ? Si non → réoriente les angles.
     Seulement si ces tests sont OK → retourne le JSON."""
                     context_data = f"[OFFRE_D_EMPLOI]\n{job_text}\n\n[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
@@ -193,14 +192,13 @@ Objectif : Produire un CV digne d'un TOP recruteur FAANG — zéro faute, impact
 Basé sur les failles détectées : {original_failles}
 
 OBLIGATIONS ABSOLUES :
-[A] CHAQUE bullet point DOIT contenir UN KPI/métrique chiffré(e) obligatoire.
-    Format imposé : Verbe d'action + Contexte technique + Résultat quantifié
-    Exemples CORRECTS :
-    - "Développé 12 microservices FastAPI réduisant la latence P99 de 340ms à 180ms (-47%)"
-    - "Automatisé le pipeline CI/CD GitHub Actions → 0 downtime deploy, fréquence x3"
-    - "Conçu un cache Redis multicouche atteignant 98% hit-rate, économie 40% coûts DB"
-    Si tu ne connais PAS le chiffre exact, estime-le intelligemment à partir du contexte.
-    UN BULLET SANS KPI = ÉCHEC.
+[A] CHIFFRES HONNÊTES — anti-signature IA (RÈGLE CRITIQUE) :
+    - N'INVENTE JAMAIS de chiffre. N'utilise QUE des métriques réellement présentes dans le CV original.
+    - AU MAXIMUM 40% des bullets contiennent un chiffre ; jamais plus de 2 bullets chiffrés d'affilée.
+    - La MAJORITÉ des bullets décrivent l'action et l'impact QUALITATIVEMENT, sans chiffre.
+    - Varie le type de preuve : résultat concret livré, périmètre, technologie maîtrisée, responsabilité — pas seulement des %.
+    Format d'un bon bullet : Verbe d'action fort + contexte technique + résultat (chiffré UNIQUEMENT s'il vient du CV original).
+    Un CV où presque chaque ligne a un pourcentage est immédiatement repéré comme généré par IA et rejeté.
 [B] ZÉRO faute d'orthographe ou de grammaire — AUTO-VÉRIFIE chaque bullet avant de l'écrire.
     Checklist obligatoire pour chaque phrase :
     - Accord sujet/verbe correct ? (ex: "les APIs sont" pas "les APIs est")
@@ -222,7 +220,7 @@ OBLIGATIONS ABSOLUES :
     Parcours mentalement chaque bullet et vérifie :
     1. Verbes d'action tous différents dans un même poste ? Si non → remplace.
     2. Fautes d'accord ou d'accent ? Si oui → corrige.
-    3. Bullets sans KPI ? Si oui → ajoute un chiffre.
+    3. Un chiffre absent du CV original (inventé) ? Si oui → retire-le, jamais l'inverse.
     Seulement si les 3 tests sont OK → retourne le JSON."""
                     context_data = f"[INPUT_CV_ORIGINAL]\n{cv_text[:6000]}"
                 json_structure = """{
@@ -282,9 +280,7 @@ Génère le `correction_mapping` listant UNE faille par clé et sa correction ap
 
 **RÈGLES D'OR ABSOLUES :**
 1. **Score Honnête (Phase 1) :** Basé STRICTEMENT sur le CV fourni par rapport à l'offre (généralement 25-55/100). Jamais inventé.
-2. **KPI OBLIGATOIRE sur chaque bullet :** Chaque réalisation DOIT montrer un impact chiffré.
-   Formule : [Verbe fort] + [Technologie(s)] + [Résultat % / $ / x / ms / jours].
-   Si absent dans l'original : estime intelligemment. AUCUN bullet sans métrique = rejeté.
+2. **CHIFFRES HONNÊTES (anti-invention) :** N'utilise QUE les chiffres présents dans le CV original — n'invente JAMAIS de métrique. Au plus 40% des bullets chiffrés ; les autres montrent l'impact qualitativement (résultat concret, périmètre, techno).
 3. **ATS Max :** Mots-clés techniques, frameworks, outils, certifications de l'offre d'emploi. Min. 3 techs par bullet.
 4. **GRAMMAIRE & ORTHOGRAPHE — PRIORITÉ #1 — AUTO-VÉRIFICATION PHRASE PAR PHRASE :**
    ✓ Accents obligatoires : développé, intégré, réalisé, géré, déployé, amélioré, créé
@@ -310,9 +306,7 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
 
 **RÈGLES D'OR ABSOLUES :**
 1. **Score Honnête (Phase 1) :** Basé STRICTEMENT sur le CV fourni (généralement 25-55/100). Jamais inventé.
-2. **KPI OBLIGATOIRE sur chaque bullet :** Chaque réalisation DOIT montrer un impact chiffré.
-   Formule : [Verbe fort] + [Technologie(s)] + [Résultat % / $ / x / ms / jours].
-   Si absent dans l'original : estime intelligemment. AUCUN bullet sans métrique = rejeté.
+2. **CHIFFRES HONNÊTES (anti-invention) :** N'utilise QUE les chiffres présents dans le CV original — n'invente JAMAIS de métrique. Au plus 40% des bullets chiffrés ; les autres montrent l'impact qualitativement (résultat concret, périmètre, techno).
 3. **ATS Max :** Mots-clés techniques, frameworks, outils, certifications. Min. 3 techs par bullet.
 4. **GRAMMAIRE & ORTHOGRAPHE — PRIORITÉ #1 — AUTO-VÉRIFICATION PHRASE PAR PHRASE :**
    ✓ Accents obligatoires : développé, intégré, réalisé, géré, déployé, amélioré, créé
@@ -376,7 +370,15 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
             if i < iterations:
                 await asyncio.sleep(1)
 
-        # Finalisation
+        # Finalisation — garde-fous déterministes sur le CV réécrit :
+        # anti-fabrication (retire tout chiffre absent du CV source), dédup,
+        # plafonds dégressifs de bullets, dates figées, titres honnêtes, langue.
+        try:
+            from agents.cv_adapter import _postprocess_cv_json
+            current_cv_data = _postprocess_cv_json(current_cv_data, cv_text)
+        except Exception as e:
+            logger.warning(f"[Mentor] Post-traitement CV ignoré: {e}")
+
         last_audit["original_ats_score"] = original_ats_score
         last_audit["original_failles"] = original_failles
         cv_json = json.dumps(current_cv_data, ensure_ascii=False)

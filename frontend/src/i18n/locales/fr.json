@@ -946,6 +946,7 @@
         "interviews_chart": "Entretiens"
     },
     "common": {
+        "processing": "Traitement en cours",
         "loading": "Chargement...",
         "error": "Erreur",
         "success": "Succès",

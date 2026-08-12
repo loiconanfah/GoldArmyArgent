@@ -993,6 +993,7 @@
         "interviews_chart": "Interviews"
     },
     "common": {
+        "processing": "Processing",
         "loading": "Loading...",
         "error": "Error",
         "success": "Success",
