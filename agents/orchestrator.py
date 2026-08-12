@@ -123,6 +123,18 @@ class OrchestratorAgent:
             _add_to_history(session_id, "assistant", f"[Recherche d'emploi executée pour: {query}]")
             return response
 
+        elif intention["action"] == "refine_cv":
+            logger.info("[Orchestrator] Raffinage conversationnel du CV")
+            result = await self.mentor.refine_cv(
+                user_input.get("previous_cv") or {},
+                query,
+                user_input.get("cv_text") or "",
+                user_input.get("previous_audit") or {},
+            )
+            if query:
+                _add_to_history(session_id, "user", query)
+            return result
+
         elif intention["action"] in ["audit_cv", "generate_portfolio", "rewrite_cv"]:
             logger.info(f"[Orchestrator] Routing to MentorAgent for {intention['action']}")
             user_input["action"] = intention["action"]
@@ -199,6 +211,20 @@ class OrchestratorAgent:
         query = (user_input.get("query") or "").lower().strip()
         cv_text = user_input.get("cv_text") or ""
         has_cv = bool(cv_text.strip())
+
+        # Raffinage conversationnel : un CV a déjà été généré et l'utilisateur donne
+        # une instruction d'édition → on modifie le CV existant plutôt que tout refaire.
+        if user_input.get("previous_cv") and query:
+            edit_kw = [
+                "ajoute", "rajoute", "retire", "enlève", "enleve", "supprime", "change",
+                "modifie", "remplace", "reformule", "raccourcis", "allège", "allege",
+                "mets", "met en avant", "déplace", "deplace", "corrige", "précise", "precise",
+                "renforce", "adapte", "réécris cette", "reecris cette", "développe", "resume",
+                "add", "remove", "change", "replace", "shorten", "rewrite", "make it",
+                "update", "put", "move", "highlight", "emphasize", "expand",
+            ]
+            if any(k in query for k in edit_kw):
+                return {"action": "refine_cv"}
 
         if "portfolio" in query or "site web" in query:
             if not has_cv:

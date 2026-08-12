@@ -30,7 +30,7 @@ import {
   IdentificationIcon,
   AcademicCapIcon,
 } from '@heroicons/vue/24/solid'
-import {     SparklesIcon,
+import {     SparklesIcon, ChatBubbleLeftRightIcon,
     CloudArrowDownIcon,
     CheckCircleIcon
 } from '@heroicons/vue/24/outline'
@@ -84,6 +84,9 @@ const inputQuery = ref('')
 const inputLocation = ref('')
 const cvText = ref('')
 const cvFilename = ref('')
+// Raffinage conversationnel : dernier CV généré + son audit, gardés en contexte
+const lastCvData = ref(null)
+const lastAudit = ref(null)
 const jobUrl = ref('')
 const jobText = ref('')
 const isSaving = ref(false)
@@ -333,7 +336,10 @@ const sendMessage = async () => {
             session_id: sessionId.value,
             image_data: selectedImage.value,
             job_text: jobText.value || null,
-            job_url: jobUrl.value || null
+            job_url: jobUrl.value || null,
+            // Raffinage : si un CV a déjà été généré, on l'envoie pour modification en contexte
+            previous_cv: lastCvData.value || undefined,
+            previous_audit: lastAudit.value || undefined
         })
     })
     const data = await res.json()
@@ -355,6 +361,14 @@ const sendMessage = async () => {
     }
     
     
+    // Garde le CV généré en contexte → permet le raffinage par messages suivants
+    if (responseData.type === 'cv_audit_rewrite' || responseData.type === 'cv_rewrite') {
+      try {
+        lastCvData.value = typeof responseData.content === 'string' ? JSON.parse(responseData.content) : responseData.content
+      } catch (e) { /* garde l'ancien contexte si le parsing échoue */ }
+      if (responseData.audit && typeof responseData.audit === 'object') lastAudit.value = responseData.audit
+    }
+
     // Si c'est un portfolio (Projet structuré), on l'ouvre dans le Workspace SANS message dans le chat
     if (responseData.type === 'portfolio_project' && responseData.project) {
         workspaceProject.value = {
@@ -735,6 +749,17 @@ const restoreCvFromHistory = (entry) => {
                 </div>
               </div>
 
+              <!-- Note de raffinage (après une modification conversationnelle) -->
+              <div v-if="msg.audit.refine_note" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-700 text-xs font-semibold">
+                <SparklesIcon class="w-4 h-4 shrink-0" /> {{ msg.audit.refine_note }}
+              </div>
+
+              <!-- Indice : discuter avec le CV -->
+              <div class="flex items-center gap-2 px-4 py-2 text-[11px] text-slate-400 font-medium">
+                <ChatBubbleLeftRightIcon class="w-3.5 h-3.5 shrink-0 text-[#F59E0B]" />
+                {{ t('agent_chat.audit.refine_hint') }}
+              </div>
+
               <!-- BENTO GRID: SCORE & CATEGORIES -->
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- SCORE CENTRAL -->
@@ -746,6 +771,13 @@ const restoreCvFromHistory = (entry) => {
                   <div class="relative w-44 h-44 z-10">
                     <svg class="w-full h-full -rotate-90 drop-shadow-xl" viewBox="0 0 120 120">
                       <circle cx="60" cy="60" r="52" fill="none" stroke="#F1F5F9" stroke-width="10"/>
+                      <!-- Anneau intérieur : score AVANT (gris, discret) -->
+                      <circle v-if="msg.audit.original_ats_score" cx="60" cy="60" r="40" fill="none"
+                        stroke="#CBD5E1" stroke-width="6" stroke-linecap="round"
+                        :stroke-dasharray="`${(msg.audit.original_ats_score || 0) * 2.513} 251.3`"
+                        class="transition-all duration-[1500ms] ease-out"
+                      />
+                      <!-- Anneau extérieur : score APRÈS (couleur) -->
                       <circle cx="60" cy="60" r="52" fill="none"
                         :stroke="msg.audit.ats_score >= 75 ? '#10b981' : msg.audit.ats_score >= 50 ? '#f59e0b' : '#ef4444'"
                         stroke-width="10"
@@ -755,25 +787,25 @@ const restoreCvFromHistory = (entry) => {
                       />
                     </svg>
                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                      <div class="flex items-start">
-                        <span class="text-6xl font-black tracking-tighter text-slate-900 leading-none">{{ msg.audit.ats_score || 0 }}</span>
-                      </div>
-                      <div class="flex items-center gap-1.5 mt-2">
-                        <span class="text-slate-400 text-xs font-bold">/100</span>
-                        <div v-if="msg.audit.original_ats_score && msg.audit.original_ats_score !== msg.audit.ats_score" 
-                             class="px-2 py-0.5 bg-slate-100 rounded-full text-[9px] font-bold text-slate-500 border border-slate-200">
-                           {{ t('common.draft') || 'Draft' }}
-                        </div>
-                      </div>
+                      <span class="text-6xl font-black tracking-tighter text-slate-900 leading-none">{{ msg.audit.ats_score || 0 }}</span>
+                      <span class="text-slate-400 text-xs font-bold mt-1">/100</span>
                     </div>
                   </div>
 
-                  <div v-if="msg.audit.original_ats_score" class="mt-6 flex flex-col items-center gap-2">
-                      <div class="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-600 text-[10px] font-black rounded-full border border-green-100">
-                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                          PROGRESSION: +{{ msg.audit.ats_score - msg.audit.original_ats_score }}%
+                  <!-- Avant → Après (met en valeur le vrai gain) -->
+                  <div v-if="msg.audit.original_ats_score && msg.audit.original_ats_score !== msg.audit.ats_score" class="mt-6 flex items-center gap-4">
+                      <div class="flex flex-col items-center">
+                          <span class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">{{ t('agent_chat.audit.before') }}</span>
+                          <span class="text-2xl font-black text-slate-300 leading-none mt-1 line-through decoration-2">{{ msg.audit.original_ats_score }}</span>
                       </div>
-                      <p class="text-[11px] font-bold text-slate-400">AVANT: {{ msg.audit.original_ats_score }}</p>
+                      <div class="flex flex-col items-center text-emerald-500">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                          <span class="text-[9px] font-black mt-0.5">+{{ msg.audit.ats_score - msg.audit.original_ats_score }}</span>
+                      </div>
+                      <div class="flex flex-col items-center">
+                          <span class="text-[8px] font-black text-emerald-500 uppercase tracking-[0.2em]">{{ t('agent_chat.audit.after') }}</span>
+                          <span class="text-2xl font-black text-emerald-600 leading-none mt-1">{{ msg.audit.ats_score }}</span>
+                      </div>
                   </div>
                 </div>
 

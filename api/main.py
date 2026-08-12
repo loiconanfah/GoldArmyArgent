@@ -223,6 +223,9 @@ class ChatRequest(BaseModel):
     task_type: Optional[str] = "sniper"  # 'sniper', 'mentor', 'cv_analysis'
     job_text: Optional[str] = None
     job_url: Optional[str] = None
+    # Raffinage conversationnel du CV : CV déjà généré + son audit, à modifier
+    previous_cv: Optional[dict] = None
+    previous_audit: Optional[dict] = None
 
 
 @app.get("/")
@@ -328,7 +331,9 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks,
             "session_id": request.session_id or "default",
             "image_data": request.image_data,
             "job_text": request.job_text,
-            "job_url": request.job_url
+            "job_url": request.job_url,
+            "previous_cv": request.previous_cv,
+            "previous_audit": request.previous_audit,
         }
 
         # Background mode handling

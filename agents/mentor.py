@@ -403,6 +403,69 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
             "content": cv_json,
         }
 
+    async def refine_cv(self, cv_data: dict, instruction: str, cv_text: str = "", previous_audit: dict = None) -> Dict[str, Any]:
+        """Raffine conversationnellement un CV déjà généré selon une instruction
+        en langage naturel — sans rien inventer, avec re-scoring réel."""
+        previous_audit = previous_audit or {}
+        if not cv_data:
+            return {"status": "error", "type": "chat",
+                    "content": "Je n'ai pas de CV en cours à modifier. Génère d'abord ton CV, puis demande-moi de l'ajuster."}
+
+        prompt = f"""Tu es GoldArmy Mentor. Voici le CV structuré actuel (JSON) et une instruction du candidat.
+Applique l'instruction en modifiant UNIQUEMENT ce qui est demandé, en gardant tout le reste identique.
+RÈGLES ABSOLUES :
+- N'invente JAMAIS de chiffre : n'utilise que ceux présents dans le CV actuel, dans l'INSTRUCTION, ou dans le CV source.
+- Garde la MÊME langue et la MÊME structure JSON.
+- Ne supprime pas les coordonnées, dates ni formations, sauf demande explicite.
+
+[CV_ACTUEL_JSON]
+{json.dumps(cv_data, ensure_ascii=False)[:6500]}
+
+[CV_SOURCE_ORIGINAL]
+{(cv_text or '')[:2000]}
+
+[INSTRUCTION_DU_CANDIDAT]
+{instruction}
+
+Réponds UNIQUEMENT en JSON pur : {{"cv_data": {{ ...CV modifié... }}, "note": "1 phrase décrivant ce que tu as changé, dans la langue du CV"}}"""
+        try:
+            response = await self.generate_response(prompt, max_tokens=8192, json_mode=True)
+            start, end = response.find('{'), response.rfind('}')
+            parsed = json.loads(response[start:end + 1] if start != -1 else response)
+            new_cv = parsed.get("cv_data") or cv_data
+            note = parsed.get("note") or ""
+        except Exception as e:
+            logger.error(f"[Mentor] refine_cv parsing: {e}")
+            return {"status": "error", "type": "chat",
+                    "content": "Désolé, je n'ai pas pu appliquer cette modification. Reformule ta demande."}
+
+        # Anti-fabrication + garde-fous : la source inclut l'instruction, donc les
+        # chiffres RÉELS que le candidat fournit sont conservés.
+        try:
+            from agents.cv_adapter import _postprocess_cv_json
+            new_cv = _postprocess_cv_json(new_cv, (cv_text or "") + " " + instruction)
+        except Exception as e:
+            logger.warning(f"[Mentor] refine postprocess: {e}")
+
+        # Conserve l'audit d'origine (failles, transformations, score initial) et met à jour le score réel
+        audit = dict(previous_audit)
+        try:
+            from core.ats_score import score_cv
+            sc = score_cv(new_cv)
+            audit["ats_score"] = sc["ats_score"]
+            audit["scores"] = sc["scores"]
+        except Exception as e:
+            logger.warning(f"[Mentor] refine scoring: {e}")
+        audit["refined"] = True
+        audit["refine_note"] = note
+
+        return {
+            "status": "success",
+            "type": "cv_audit_rewrite",
+            "audit": audit,
+            "content": json.dumps(new_cv, ensure_ascii=False),
+        }
+
     async def _rewrite_cv(self, cv_text: str) -> Dict[str, Any]:
         """Rewrites the CV with ATS-optimized formatting and returns structured JSON."""
         logger.info("[Mentor] Réécriture CV ATS...")

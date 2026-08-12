@@ -1467,6 +1467,9 @@
             "restored_project": "Projet Portfolio (Restauré)"
         },
         "audit": {
+                "refine_hint": "Astuce : demande-moi d'ajuster ce CV (ex. « ajoute que j'ai réduit la latence de 30% », « raccourcis l'expérience 2 »).",
+                "before": "Avant",
+                "after": "Après",
                 "status": "Statut",
             "candidate": "Candidat",
             "title": "Titre",
