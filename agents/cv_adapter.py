@@ -1,19 +1,135 @@
 import json
 import re
+import unicodedata
 from loguru import logger
 from typing import Dict, Any
 
 from core.agent_base import BaseAgent
 
 
+# Valeurs "placeholder" que l'IA ne doit jamais laisser sur des champs factuels
+_PLACEHOLDER_VALUES = {
+    "", "à venir", "a venir", "non spécifiée", "non specifiee", "non spécifié",
+    "non specifie", "n/a", "na", "en cours", "tbd", "inconnu", "inconnue",
+    "not specified", "unknown", "present?", "-", "—",
+}
+# Mots de séniorité à ne PAS ajouter si absents du CV source (garde-fou titres)
+_SENIORITY_WORDS = {"lead", "senior", "sr", "principal", "head", "vp", "staff"}
+# Plafonds dégressifs de bullets par expérience (récent → ancien) + plafond global
+_BULLET_CAPS = [4, 3, 2]
+_BULLET_GLOBAL_CAP = 12
+
+
+def _norm_text(s: str) -> str:
+    """Minuscule, sans accents, alphanumérique — pour comparaison/dédup robuste."""
+    s = unicodedata.normalize("NFKD", (s or "").lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = re.sub(r"[^a-z0-9 ]", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _clean_factual(v):
+    """Vide les valeurs placeholder sur les champs factuels (dates, années)."""
+    if not isinstance(v, str):
+        return v
+    return "" if _norm_text(v) in _PLACEHOLDER_VALUES or v.strip().lower() in _PLACEHOLDER_VALUES else v.strip()
+
+
+def _guard_title(title: str, source_tokens: set) -> str:
+    """Retire un mot de séniorité d'un intitulé s'il n'est pas présent dans le CV source."""
+    if not title:
+        return title
+    out = title
+    for kw in _SENIORITY_WORDS:
+        toks = _norm_text(out).split()
+        if kw in toks and kw not in source_tokens:
+            # supprime le mot (et 'technique' accolé type "Lead Technique") en respectant la casse
+            out = re.sub(r'(?i)\b' + re.escape(kw) + r'\b\.?\s*', '', out).strip()
+            out = re.sub(r'\s{2,}', ' ', out).strip(" -–—/")
+    return out or title
+
+
+def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any]:
+    """Garde-fous déterministes appliqués au cv_json avant génération du PDF :
+    - dédoublonnage des bullets (exact + quasi-identique) sur tout le CV
+    - plafonds dégressifs par expérience + plafond global (≈10-12 bullets)
+    - nettoyage des dates/années placeholder ("À venir", "Non spécifiée"…)
+    - garde-fou sur les intitulés (pas de "Lead"/"Senior" inventé)
+    """
+    if not isinstance(cv_json, dict):
+        return cv_json
+
+    source_tokens = set(_norm_text(cv_text).split())
+    seen = set()
+    total = 0
+
+    experiences = cv_json.get("experiences") or []
+    for idx, exp in enumerate(experiences):
+        if not isinstance(exp, dict):
+            continue
+        exp["start_date"] = _clean_factual(exp.get("start_date", ""))
+        exp["end_date"] = _clean_factual(exp.get("end_date", ""))
+        exp["title"] = _guard_title(exp.get("title", "") or "", source_tokens)
+
+        cap = _BULLET_CAPS[idx] if idx < len(_BULLET_CAPS) else 2
+        kept = []
+        for b in (exp.get("bullets") or []):
+            nb = _norm_text(str(b))
+            if len(nb) < 4 or nb in seen:
+                continue
+            if total >= _BULLET_GLOBAL_CAP or len(kept) >= cap:
+                continue
+            seen.add(nb)
+            kept.append(str(b).strip())
+            total += 1
+        exp["bullets"] = kept
+
+    # Projets : dédoublonnage vs. le reste, plafond léger
+    for proj in (cv_json.get("projects") or []):
+        if not isinstance(proj, dict):
+            continue
+        kept = []
+        for b in (proj.get("bullets") or []):
+            nb = _norm_text(str(b))
+            if len(nb) < 4 or nb in seen:
+                continue
+            seen.add(nb)
+            kept.append(str(b).strip())
+            if len(kept) >= 3:
+                break
+        proj["bullets"] = kept
+
+    # Formation : années placeholder → vide (cohérence inter-génération)
+    for ed in (cv_json.get("education") or []):
+        if isinstance(ed, dict):
+            ed["year"] = _clean_factual(ed.get("year", ""))
+    for cert in (cv_json.get("certifications") or []):
+        if isinstance(cert, dict):
+            cert["year"] = _clean_factual(cert.get("year", ""))
+
+    return cv_json
+
+
 def _markdown_to_minimal_cv_json(markdown: str) -> Dict[str, Any]:
-    """Fallback : construit une structure cv_json minimale à partir du markdown (sans titre 'Résumé adapté')."""
+    """Fallback : construit une structure cv_json minimale à partir du markdown (sans titre 'Résumé adapté').
+    Dédoublonne et plafonne les bullets pour éviter un bloc massif d'items répétés."""
     lines = [s.strip() for s in (markdown or "").split("\n") if s.strip()]
     name = lines[0].replace("#", "").strip() if lines else "Candidat"
+    # Ne garde que les lignes qui ressemblent à des bullets, dédoublonnées et plafonnées
+    bullets, seen = [], set()
+    for ln in lines[1:]:
+        txt = ln.lstrip("-*•▸ ").strip()
+        nb = _norm_text(txt)
+        if len(nb) < 4 or nb in seen:
+            continue
+        seen.add(nb)
+        bullets.append(txt)
+        if len(bullets) >= _BULLET_GLOBAL_CAP:
+            break
     return {
         "full_name": name,
         "summary": "",
-        "experiences": [{"title": "Expérience professionnelle", "company": "", "start_date": "", "end_date": "", "bullets": lines}],
+        "experiences": [{"title": "Expérience professionnelle", "company": "", "start_date": "", "end_date": "", "bullets": bullets}],
         "skills": {},
         "education": [],
     }
@@ -82,17 +198,33 @@ class CVAdapterAgent(BaseAgent):
         et des projets recommandés en JSON.
         """
         
-        system_prompt = """Tu es un expert recrutement et ATS (Applicant Tracking System) de haut niveau. Ton rôle est de COMPLÉTER et ENRICHIR le CV du candidat pour qu'il soit une correspondance PARFAITE (100%) avec l'offre d'emploi, tout en restant crédible et professionnel.
+        system_prompt = """Tu es un expert recrutement et ATS de haut niveau. Ton rôle est d'ADAPTER et RÉORGANISER le CV du candidat pour le poste ciblé, de façon CRÉDIBLE. Un CV crédible et ciblé bat toujours un CV « parfait » sur-optimisé : les recruteurs (et Reddit) détectent immédiatement un CV généré par IA. Tu ne dois JAMAIS inventer de faits.
 
-LANGUE DE SORTIE (RÈGLE ABSOLUE) : Rédige l'INTÉGRALITÉ du CV (résumé, intitulés, bullets, compétences) DANS LA MÊME LANGUE que le CV source du candidat. Si le CV est en anglais, produis un CV en anglais ; s'il est en français, en français ; etc. En cas de doute, aligne-toi sur la langue de l'OFFRE. Ne traduis JAMAIS le CV vers une autre langue.
+LANGUE DE SORTIE (RÈGLE ABSOLUE) : Rédige l'INTÉGRALITÉ du CV DANS LA MÊME LANGUE que le CV source du candidat. En cas de doute, aligne-toi sur la langue de l'OFFRE. Ne traduis JAMAIS le CV.
 
 RÈGLES CRITIQUES :
-1. COMPLÉTION & ENRICHISSEMENT : Ne te contente pas de reformuler. Ajoute des détails, mais SANS INVENTER des liens ou ressources non fournis. Si le candidat N'A PAS fourni de lien GitHub ou de Portfolio dans son CV, LAISSE CES CHAMPS VIDES ("") ou supprime-les. Ne les invente surtout pas (ce n'est pas forcément un profil tech).
-2. VERBES D'ACTION (TRÈS IMPORTANT) : Dans les descriptions d'expériences (les "bullets"), chaque point DOIT commencer par un verbe d'action fort. En français, utilise l'INFINITIF (ex: "Développer une application", "Gérer une équipe") et non le participe passé. En anglais, utilise un verbe d'action au passé standard des CV (ex: "Developed", "Managed", "Led").
-3. PAS D'ÉMOJIS : N'utilise JAMAIS d'émojis, de symboles graphiques ou de caractères spéciaux non-standard. Le CV doit être sobre et professionnel.
-4. STRUCTURE ATS : Utilise une structure plate et standard (Expérience professionnelle, Formation, Compétences). Pas de colonnes, pas de tableaux.
-5. QUALITÉ : Utilise des chiffres (%, CA, budgets, délais) pour quantifier les accomplissements. Chaque bullet point doit démontrer un IMPACT.
-6. cv_json doit être COMPLET et VALIDE : chaque expérience doit avoir title, company, start_date, end_date, bullets (tableau de chaînes commençant par un infinitif). Les compétences en objet { "Catégorie": ["item1", "item2"] }. Formation avec degree, institution, year.
+
+1. CIBLAGE, PAS EXHAUSTIVITÉ (priorité absolue) : Sélectionne et met en avant UNIQUEMENT ce qui sert le poste ciblé. Les expériences/compétences hors-sujet sont RÉSUMÉES en une seule ligne ou omises — ne liste pas tout par exhaustivité. Le résumé et le titre doivent annoncer la spécialité du poste dès le premier mot (jamais "polyvalent" / "touche-à-tout").
+
+2. QUANTIFICATION MESURÉE (anti-signature IA) : AU MAXIMUM 40% des bullets contiennent un chiffre. JAMAIS plus de 2 bullets chiffrés consécutifs. N'INVENTE JAMAIS de pourcentage : n'utilise un chiffre QUE s'il est présent ou clairement déductible du CV source. Un CV où chaque ligne a un % rond est un rejet immédiat.
+
+3. VARIE LE TYPE DE PREUVE : alterne entre pourcentage, chiffre brut (heures, utilisateurs, volume), résultat concret (fonctionnalité livrée, contrat, migration réussie) et preuve qualitative (retour client, montée en responsabilité). La majorité des bullets décrivent l'ACTION et l'IMPACT qualitatif SANS chiffre.
+
+4. VOLUME & DÉGRESSIVITÉ : Rattache chaque bullet à SON expérience (jamais un bloc de bullets détaché). 3-4 bullets pour l'expérience la plus récente/pertinente, 2-3 pour la suivante, 1-2 pour les plus anciennes. TOTAL 10-12 bullets MAXIMUM sur tout le CV.
+
+5. AUCUN DOUBLON : Ne répète jamais une même réalisation, même reformulée, dans deux bullets. Chaque bullet est unique.
+
+6. FAITS FIGÉS (identité, dates, formation) : Recopie EXACTEMENT depuis le CV source l'identité, les dates de début/fin, les diplômes, institutions et années. N'invente ni ne modifie AUCUNE date. Si une date/année est absente du CV source, laisse le champ VIDE (""). N'écris JAMAIS "À venir", "Non spécifiée", "N/A", "En cours" ou équivalent.
+
+7. INTITULÉS HONNÊTES : N'ajoute JAMAIS "Lead", "Senior", "Principal", "Head" ou "Chef" à un intitulé si ce n'est pas EXACTEMENT le titre figurant dans le CV source. Conserve les intitulés d'origine tels quels.
+
+8. VERBES D'ACTION : chaque bullet commence par un verbe d'action fort. En français, INFINITIF (ex: "Développer", "Concevoir"). En anglais, prétérit CV (ex: "Developed", "Led").
+
+9. PAS D'INVENTION DE LIENS : si le candidat n'a pas fourni GitHub/Portfolio, laisse ces champs VIDES ("").
+
+10. PAS D'ÉMOJIS. STRUCTURE ATS plate (Expérience, Formation, Compétences), pas de colonnes ni tableaux.
+
+11. cv_json COMPLET et VALIDE : chaque expérience a title, company, start_date, end_date, bullets. Compétences en objet { "Catégorie": ["item1", "item2"] }. Formation avec degree, institution, year.
 
 Tu produis "cv_json" pour génération PDF. Structure EXACTE requise :
 {
@@ -130,23 +262,23 @@ FORMAT DE RÉPONSE OBLIGATOIRE :
 """
 
         user_prompt = f"""
-OFFRE : {job_title}
+POSTE CIBLÉ : {job_title}
 DESCRIPTION DE L'OFFRE :
 {job_desc[:3000]}
 
-CV DU CANDIDAT (à compléter et enrichir pour un matching 100% avec l'offre, SANS ÉMOJI) :
+CV SOURCE DU CANDIDAT (seule source de vérité pour l'identité, les dates, les intitulés et la formation — ne rien inventer) :
 {cv_text[:8000]}
 
-Produis le CV adapté complet, RÉDIGÉ DANS LA MÊME LANGUE que le CV du candidat ci-dessus.
+Produis un CV CIBLÉ pour ce poste : priorise et réorganise les expériences pertinentes, résume/omets le hors-sujet, applique la dégressivité (10-12 bullets max), quantifie au maximum 40% des bullets sans jamais inventer de chiffre, et recopie fidèlement les faits (dates, formation, intitulés). RÉDIGE DANS LA MÊME LANGUE que le CV source ci-dessus.
 """
         
         try:
             # Modèle rapide pour réduire le temps de traitement (flash) tout en gardant la qualité
             response = await self.generate_response(
-                prompt=user_prompt, 
-                system=system_prompt, 
+                prompt=user_prompt,
+                system=system_prompt,
                 model="gemini-2.0-flash",
-                max_tokens=6144
+                max_tokens=8192
             )
             
             logger.debug(f"Adapt Raw Gemini response length: {len(response)}")
@@ -218,6 +350,14 @@ Produis le CV adapté complet, RÉDIGÉ DANS LA MÊME LANGUE que le CV du candid
 
             if not cv_json and markdown:
                 cv_json = _markdown_to_minimal_cv_json(markdown)
+
+            # Garde-fous déterministes (dédup, plafonds dégressifs, dates figées, titres)
+            if cv_json:
+                try:
+                    cv_json = _postprocess_cv_json(cv_json, cv_text)
+                except Exception as pe:
+                    logger.warning(f"Post-traitement cv_json ignoré: {pe}")
+
             return {"markdown": markdown, "projects": projects, "cv_json": cv_json}
 
         except Exception as e:
