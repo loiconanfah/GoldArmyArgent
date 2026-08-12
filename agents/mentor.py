@@ -153,6 +153,11 @@ Objectif : Produire un CV parfaitement adapté à l'offre d'emploi fournie et di
 Basé sur les failles et écarts détectés : {original_failles}
 
 OBLIGATIONS ABSOLUES :
+[MÉTHODE OBLIGATOIRE — restructuration ciblée, applique dans CET ordre AVANT d'écrire] :
+    1. Identifie le POSTE CIBLE à partir du titre / point fort du profil (ex: ".NET/Angular", "Data", "Mobile").
+    2. Pour CHAQUE expérience, ne garde que les réalisations PERTINENTES pour ce poste cible ; écarte ou résume en UNE ligne le contenu hors-cible (ex: pour un poste .NET, AU PLUS 1 bullet IA/LLM sur tout le CV).
+    3. Rattache chaque bullet à SON expérience, dans le champ "bullets" de l'expérience correspondante — JAMAIS un bloc de bullets détaché des postes.
+    4. Aligne les compétences sur le poste cible : mets les technos du poste EN TÊTE ; ne noie pas le titre dans un fourre-tout de langages.
 [A] CHIFFRES HONNÊTES — anti-signature IA (RÈGLE CRITIQUE) :
     - N'INVENTE JAMAIS de chiffre. N'utilise QUE des métriques réellement présentes dans le CV original.
     - AU MAXIMUM 40% des bullets contiennent un chiffre ; jamais plus de 2 bullets chiffrés d'affilée.
@@ -169,7 +174,7 @@ OBLIGATIONS ABSOLUES :
     - Technologies capitalisées ? (Python, Docker, AWS, React, PostgreSQL)
 [C] Injecte massivement les mots-clés techniques requis par l'offre d'emploi et ceux identifiés en Phase 1.
     Chaque poste doit nommer AU MOINS 3-4 technologies différentes dans ses bullets.
-[D] Conserve TOUS les contacts, dates, lieux sans exception.
+[D] Conserve TOUS les contacts, dates, lieux sans exception — Y COMPRIS les années/périodes de FORMATION : recopie-les dans le champ "year" de chaque diplôme (ex: "2023 – 2026"). Ne laisse JAMAIS un champ date vide s'il figure dans le CV source.
 [E] ZÉRO RÉPETTION — Règle anti-rebrassage STRICTE :
     - Chaque bullet DOIT commencer par un verbe d'action DIFFÉRENT des autres bullets du même poste.
     - Banque de verbes imposée (varie obligatoirement) : Développé, Conçu, Architecturé, Optimisé,
@@ -192,6 +197,11 @@ Objectif : Produire un CV digne d'un TOP recruteur FAANG — zéro faute, impact
 Basé sur les failles détectées : {original_failles}
 
 OBLIGATIONS ABSOLUES :
+[MÉTHODE OBLIGATOIRE — restructuration ciblée, applique dans CET ordre AVANT d'écrire] :
+    1. Identifie le POSTE CIBLE à partir du titre / point fort du profil (ex: ".NET/Angular", "Data", "Mobile").
+    2. Pour CHAQUE expérience, ne garde que les réalisations PERTINENTES pour ce poste cible ; écarte ou résume en UNE ligne le contenu hors-cible (ex: pour un poste .NET, AU PLUS 1 bullet IA/LLM sur tout le CV).
+    3. Rattache chaque bullet à SON expérience, dans le champ "bullets" de l'expérience correspondante — JAMAIS un bloc de bullets détaché des postes.
+    4. Aligne les compétences sur le poste cible : mets les technos du poste EN TÊTE ; ne noie pas le titre dans un fourre-tout de langages.
 [A] CHIFFRES HONNÊTES — anti-signature IA (RÈGLE CRITIQUE) :
     - N'INVENTE JAMAIS de chiffre. N'utilise QUE des métriques réellement présentes dans le CV original.
     - AU MAXIMUM 40% des bullets contiennent un chiffre ; jamais plus de 2 bullets chiffrés d'affilée.
@@ -208,7 +218,7 @@ OBLIGATIONS ABSOLUES :
     - Technologies capitalisées ? (Python, Docker, AWS, React, PostgreSQL)
 [C] Injecte massivement les mots-clés techniques manquants identifiés en Phase 1.
     Chaque poste doit nommer AU MOINS 3-4 technologies différentes dans ses bullets.
-[D] Conserve TOUS les contacts, dates, lieux sans exception.
+[D] Conserve TOUS les contacts, dates, lieux sans exception — Y COMPRIS les années/périodes de FORMATION : recopie-les dans le champ "year" de chaque diplôme (ex: "2023 – 2026"). Ne laisse JAMAIS un champ date vide s'il figure dans le CV source.
 [E] ZÉRO RÉPÉTITION — Règle anti-rebrassage STRICTE :
     - Chaque bullet DOIT commencer par un verbe d'action DIFFÉRENT des autres bullets du même poste.
     - Banque de verbes imposée (varie obligatoirement) : Développé, Conçu, Architecturé, Optimisé,

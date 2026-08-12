@@ -74,13 +74,16 @@ def _source_numbers(cv_text: str) -> set:
     return set(re.findall(r'\d+(?:[.,]\d+)?', cv_text or ""))
 
 
-def _strip_fabricated_metrics(text: str, src_nums: set) -> str:
-    """Retire tout chiffre/metric ABSENT du CV source (anti-invention), en gardant
-    la phrase grammaticale. Ne touche pas aux nombres réellement présents dans la source."""
+def _strip_fabricated_metrics(text: str, src_nums: set, force: bool = False) -> str:
+    """Retire les métriques ABSENTES du CV source (anti-invention), en gardant la
+    phrase grammaticale. Si force=True, retire TOUTES les métriques (pour plafonner
+    le ratio de bullets chiffrés), qu'elles soient réelles ou non."""
     if not text:
         return text
 
     def foreign(frag: str) -> bool:
+        if force:
+            return True
         nums = re.findall(r'\d+(?:[.,]\d+)?', frag)
         return any(n.replace(',', '.') not in src_nums and n not in src_nums for n in nums)
 
@@ -183,6 +186,25 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
             if len(kept) >= 3:
                 break
         proj["bullets"] = kept
+
+    # Plafond DUR : au plus ~40% des bullets contiennent un pourcentage.
+    # (Un CV où chaque ligne a un % est la signature IA n°1 signalée par les recruteurs.)
+    refs = []
+    for e in experiences:
+        if isinstance(e, dict):
+            for i in range(len(e.get("bullets") or [])):
+                refs.append((e["bullets"], i))
+    for p in (cv_json.get("projects") or []):
+        if isinstance(p, dict):
+            for i in range(len(p.get("bullets") or [])):
+                refs.append((p["bullets"], i))
+    total_b = len(refs)
+    if total_b >= 3:
+        pct_refs = [(lst, i) for (lst, i) in refs if "%" in str(lst[i])]
+        budget = max(1, int(0.40 * total_b))  # plancher → ratio garanti ≤ 40%
+        if len(pct_refs) > budget:
+            for (lst, i) in pct_refs[budget:]:  # garde les % des 1res expériences (récentes)
+                lst[i] = _strip_fabricated_metrics(str(lst[i]), src_nums, force=True)
 
     # Formation : années placeholder → vide (cohérence inter-génération)
     for ed in (cv_json.get("education") or []):
