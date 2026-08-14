@@ -113,6 +113,26 @@ def _strip_fabricated_metrics(text: str, src_nums: set, force: bool = False) -> 
     return t
 
 
+def _limit_one_pct(text: str) -> str:
+    """Règle 3 : au plus UN pourcentage par bullet — retire les % suivants."""
+    if not text or text.count('%') < 2:
+        return text
+    seen = [0]
+
+    def repl(m):
+        seen[0] += 1
+        return m.group(0) if seen[0] == 1 else ''
+
+    t = re.sub(r'\s*\b(?:de|of|by|à|to|d[\'’])?\s*[-+]?\d[\d.,]*\s*%', repl, text, flags=re.I)
+    t = re.sub(r'\s{2,}', ' ', t)
+    t = re.sub(r'\s+([,;:])', r'\1', t)
+    t = re.sub(r'\s+\.(?=\s|$)', '.', t)
+    t = re.sub(r'\b(et|and)\s+([.!?])', r'\2', t, flags=re.I)
+    t = re.sub(r'[\s,;:]+([.!?])', r'\1', t)
+    t = re.sub(r',\s*$', '', t).strip()
+    return t
+
+
 def _guard_title(title: str, source_tokens: set) -> str:
     """Retire un mot de séniorité d'un intitulé s'il n'est pas présent dans le CV source."""
     if not title:
@@ -162,7 +182,7 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
         cap = _BULLET_CAPS[idx] if idx < len(_BULLET_CAPS) else 2
         kept = []
         for b in orig:
-            b = _strip_fabricated_metrics(b, src_nums)
+            b = _limit_one_pct(_strip_fabricated_metrics(b, src_nums))
             nb = _norm_text(b)
             if len(nb) < 4 or nb in seen:
                 continue
@@ -190,7 +210,7 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
             continue
         kept = []
         for b in (proj.get("bullets") or []):
-            b = _strip_fabricated_metrics(str(b).strip(), src_nums)
+            b = _limit_one_pct(_strip_fabricated_metrics(str(b).strip(), src_nums))
             nb = _norm_text(b)
             if len(nb) < 4 or nb in seen:
                 continue
@@ -390,7 +410,10 @@ Réponds UNIQUEMENT en JSON valide :
         les chiffres et faits — l'IA doit s'en servir plutôt que d'inventer).
         """
         
-        system_prompt = """Tu es un expert recrutement et ATS de haut niveau. Ton rôle est d'ADAPTER et RÉORGANISER le CV du candidat pour le poste ciblé, de façon CRÉDIBLE. Un CV crédible et ciblé bat toujours un CV « parfait » sur-optimisé : les recruteurs (et Reddit) détectent immédiatement un CV généré par IA. Tu ne dois JAMAIS inventer de faits.
+        system_prompt = """RÈGLE 0 — VÉRACITÉ FACTUELLE (PRIORITÉ ABSOLUE, AVANT le score ATS ou la qualité rédactionnelle) :
+Toute information du CV final DOIT provenir UNIQUEMENT (a) du CV original du candidat, ou (b) d'une réponse explicite du candidat. JAMAIS de ta connaissance générale, d'une déduction plausible (« un dev .NET utilise sûrement Azure »), du nom de l'entreprise/poste, ni d'une reformulation qui ajoute un terme plus précis que l'original (transformer « intégration de modèles IA » en « architecture RAG » = fabrication). Avant CHAQUE phrase, teste : « puis-je citer la phrase exacte du candidat qui la justifie ? » Si non → ne l'écris pas. En cas de conflit entre « améliorer le score » et « rester fidèle », choisis TOUJOURS la fidélité.
+
+Tu es un expert recrutement et ATS de haut niveau. Ton rôle est d'ADAPTER et RÉORGANISER le CV du candidat pour le poste ciblé, de façon CRÉDIBLE. Un CV crédible et ciblé bat toujours un CV « parfait » sur-optimisé : les recruteurs (et Reddit) détectent immédiatement un CV généré par IA. Tu ne dois JAMAIS inventer de faits.
 
 LANGUE DE SORTIE (RÈGLE ABSOLUE) : Rédige l'INTÉGRALITÉ du CV DANS LA MÊME LANGUE que le CV source du candidat. En cas de doute, aligne-toi sur la langue de l'OFFRE. Ne traduis JAMAIS le CV.
 
