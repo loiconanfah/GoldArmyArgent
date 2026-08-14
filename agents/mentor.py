@@ -426,6 +426,13 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
         except Exception as e:
             logger.warning(f"[Mentor] Filtre tech_ajoutees ignoré: {e}")
 
+        # Règle 8 (Passe 1) — filtre déterministe attaché à CHAQUE sortie de génération
+        try:
+            from core.cv_validation import deterministic_checks
+            last_audit["validation"] = {"findings": deterministic_checks(current_cv_data, cv_text)}
+        except Exception as e:
+            logger.warning(f"[Mentor] Validation passe 1 ignorée: {e}")
+
         last_audit["original_ats_score"] = original_ats_score
         last_audit["original_failles"] = original_failles
         cv_json = json.dumps(current_cv_data, ensure_ascii=False)
@@ -493,6 +500,12 @@ Réponds UNIQUEMENT en JSON pur : {{"cv_data": {{ ...CV modifié... }}, "note": 
             logger.warning(f"[Mentor] refine scoring: {e}")
         audit["refined"] = True
         audit["refine_note"] = note
+        # Règle 8 (Passe 1) — filtre déterministe aussi à la sortie du raffinage
+        try:
+            from core.cv_validation import deterministic_checks
+            audit["validation"] = {"findings": deterministic_checks(new_cv, (cv_text or "") + " " + instruction)}
+        except Exception as e:
+            logger.warning(f"[Mentor] Validation passe 1 (refine) ignorée: {e}")
 
         return {
             "status": "success",

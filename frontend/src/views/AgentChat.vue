@@ -96,7 +96,7 @@ function startCvQuestions(msg) { qaTargetMsg.value = msg; showCvQuestions.value 
 // ── Règle 8 : validation bloquante avant téléchargement ──
 function msgFails(msg) { return (msg.validation?.findings || []).filter(f => f.level === 'fail') }
 function msgWarnings(msg) { return (msg.validation?.findings || []).filter(f => f.level === 'warning') }
-function chooseAuto(msg) { msg.completion = 'auto'; validateMsg(msg) }
+function chooseAuto(msg) { msg.completion = 'auto'; if (!msg.validation) validateMsg(msg) }
 async function validateMsg(msg) {
   if (!msg) return
   let cvData = null
@@ -502,6 +502,11 @@ const sendMessage = async () => {
     else {
         // Pour tout le reste, on garde le message dans le chat
         messages.value.push(assistantMsg)
+        // Règle 8 : valider DÈS la sortie de l'analyse initiale (filtre appliqué à
+        // chaque étape qui produit du contenu, pas seulement après le modal).
+        if (assistantMsg.type === 'cv_audit_rewrite') {
+            validateMsg(messages.value[messages.value.length - 1])
+        }
     }
     
     // Clear image after send
