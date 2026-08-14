@@ -140,7 +140,8 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
     # Langue figée depuis la source → tous les générateurs (PDF/Word/HTML) l'utilisent
     cv_json["lang"] = _detect_lang_from_text(cv_text)
 
-    source_tokens = set(_norm_text(cv_text).split())
+    src_norm_str = _norm_text(cv_text)
+    source_tokens = set(src_norm_str.split())
     src_nums = _source_numbers(cv_text)
     seen = set()
     total = 0
@@ -157,10 +158,11 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
         exp["end_date"] = _clean_factual(exp.get("end_date", ""))
         exp["title"] = _guard_title(exp.get("title", "") or "", source_tokens)
 
+        orig = [str(b).strip() for b in (exp.get("bullets") or []) if str(b).strip()]
         cap = _BULLET_CAPS[idx] if idx < len(_BULLET_CAPS) else 2
         kept = []
-        for b in (exp.get("bullets") or []):
-            b = _strip_fabricated_metrics(str(b).strip(), src_nums)
+        for b in orig:
+            b = _strip_fabricated_metrics(b, src_nums)
             nb = _norm_text(b)
             if len(nb) < 4 or nb in seen:
                 continue
@@ -169,6 +171,17 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
             seen.add(nb)
             kept.append(b)
             total += 1
+        # Filet anti-détachement : un poste qui avait des réalisations en conserve
+        # TOUJOURS au moins une (bullets rattachées au poste) — mais jamais un doublon.
+        if not kept and orig:
+            for cand in orig:
+                c = _strip_fabricated_metrics(cand, src_nums)
+                nc = _norm_text(c)
+                if len(nc) >= 4 and nc not in seen:
+                    kept.append(c)
+                    seen.add(nc)
+                    total += 1
+                    break
         exp["bullets"] = kept
 
     # Projets : dédoublonnage vs. le reste, plafond léger
@@ -213,6 +226,25 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
     for cert in (cv_json.get("certifications") or []):
         if isinstance(cert, dict):
             cert["year"] = _clean_factual(cert.get("year", ""))
+
+    # Compétences : SOUS-ENSEMBLE de la source — jamais une techno inventée.
+    # On ne garde qu'une compétence présente (mot pour mot ou par tokens) dans le CV source.
+    def _skill_from_source(s):
+        ns = _norm_text(s)
+        if not ns:
+            return False
+        if ns in src_norm_str:  # apparaît telle quelle dans la source
+            return True
+        toks = [t for t in ns.split() if len(t) > 1]
+        return bool(toks) and all(t in source_tokens for t in toks)
+
+    sk = cv_json.get("skills")
+    if isinstance(sk, dict):
+        filtered = {k: [s for s in (v if isinstance(v, list) else [v]) if s and _skill_from_source(s)]
+                    for k, v in sk.items()}
+        cv_json["skills"] = {k: v for k, v in filtered.items() if v}
+    elif isinstance(sk, list):
+        cv_json["skills"] = [s for s in sk if s and _skill_from_source(s)]
 
     return cv_json
 
