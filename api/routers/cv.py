@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import Optional
 from loguru import logger
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional as _Opt
 from api.auth import get_current_user
 from api.subscription import check_subscription_limit, log_usage
 
@@ -294,6 +294,43 @@ async def adapt_cv_endpoint(request: CVAdaptRequest, current_user: dict = Depend
     except Exception as e:
         logger.error(f"Error in adapt_cv_endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class CVValidateRequest(BaseModel):
+    cv_json: Any
+    cv_text: Optional[str] = ""
+
+
+@router.post("/api/cv/validate")
+async def validate_cv_endpoint(request: CVValidateRequest, current_user: dict = Depends(get_current_user)):
+    """Règle 8 — validation bloquante avant export : passe 1 déterministe + passe 2 (technos via LLM)."""
+    cv_data = request.cv_json
+    if isinstance(cv_data, str):
+        try:
+            cv_data = json.loads(cv_data)
+        except Exception:
+            cv_data = {}
+    if not isinstance(cv_data, dict):
+        cv_data = {}
+
+    from core.cv_validation import deterministic_checks, build_tech_check_prompt, parse_tech_findings
+    from core.ats_score import cv_data_to_text
+
+    findings = deterministic_checks(cv_data, request.cv_text or "")
+
+    # Passe 2 — technologies en prose libre (un seul appel LLM, best-effort)
+    try:
+        from llm.unified_client import UnifiedLLMClient
+        llm = UnifiedLLMClient()
+        prompt = build_tech_check_prompt(request.cv_text or "", cv_data_to_text(cv_data))
+        raw = await llm.chat([{"role": "user", "content": prompt}], json_mode=True,
+                             model="gemini-2.0-flash", max_tokens=1024)
+        findings += parse_tech_findings(raw)
+    except Exception as e:
+        logger.warning(f"[Validate] Passe 2 (technos) ignorée: {e}")
+
+    fails = [f for f in findings if f.get("level") == "fail"]
+    return {"status": "success", "data": {"findings": findings, "can_export": len(fails) == 0}}
 
 
 @router.post("/api/adapt-cv/questions")
