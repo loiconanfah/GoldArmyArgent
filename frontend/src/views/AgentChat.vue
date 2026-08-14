@@ -30,7 +30,7 @@ import {
   IdentificationIcon,
   AcademicCapIcon,
 } from '@heroicons/vue/24/solid'
-import {     SparklesIcon, ChatBubbleLeftRightIcon,
+import {     SparklesIcon, ChatBubbleLeftRightIcon, ExclamationTriangleIcon,
     CloudArrowDownIcon,
     CheckCircleIcon
 } from '@heroicons/vue/24/outline'
@@ -92,6 +92,74 @@ const lastAudit = ref(null)
 const showCvQuestions = ref(false)
 const qaTargetMsg = ref(null)
 function startCvQuestions(msg) { qaTargetMsg.value = msg; showCvQuestions.value = true }
+
+// ── Règle 8 : validation bloquante avant téléchargement ──
+function msgFails(msg) { return (msg.validation?.findings || []).filter(f => f.level === 'fail') }
+function msgWarnings(msg) { return (msg.validation?.findings || []).filter(f => f.level === 'warning') }
+function chooseAuto(msg) { msg.completion = 'auto'; validateMsg(msg) }
+async function validateMsg(msg) {
+  if (!msg) return
+  let cvData = null
+  try { cvData = typeof msg.content === 'string' ? JSON.parse(msg.content) : msg.content } catch { }
+  if (!cvData) { msg.validation = { findings: [], checking: false }; return }
+  msg.validation = { findings: [], checking: true }
+  try {
+    const res = await authFetch('/api/cv/validate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cv_json: cvData, cv_text: cvText.value })
+    })
+    const j = await res.json(); const d = j.data || j
+    msg.validation = { findings: d.findings || [], checking: false }
+  } catch (e) { msg.validation = { findings: [], checking: false } }
+}
+// Mutations client pour résoudre un finding
+function _stripTerm(text, term) {
+  if (!term) return text
+  const esc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return String(text)
+    .replace(new RegExp('\\s*(?:,|et|and|avec|with)?\\s*\\b' + esc + '\\b', 'gi'), '')
+    .replace(/\s{2,}/g, ' ').replace(/\s+([,.;:])/g, '$1').replace(/^[\s,;:]+/, '').trim()
+}
+function _dequant(t) {
+  return String(t).replace(/\s*(?:de|of|by|à|to|d['’])?\s*[-+]?\d[\d.,]*\s*%/gi, '')
+    .replace(/\s{2,}/g, ' ').replace(/\s+([,.;:])/g, '$1').replace(/[\s,;:]+\./g, '.').replace(/,\s*$/, '').trim()
+}
+function applyResolution(msg, finding, action) {
+  let cv = null
+  try { cv = typeof msg.content === 'string' ? JSON.parse(msg.content) : JSON.parse(JSON.stringify(msg.content)) } catch { }
+  const m = finding.meta || {}
+  const exps = cv?.experiences || []; const projs = cv?.projects || []
+  if (cv) {
+    if (action === 'remove_tech' && m.term) {
+      exps.forEach(e => { e.bullets = (e.bullets || []).map(b => _stripTerm(b, m.term)) })
+      projs.forEach(p => { p.bullets = (p.bullets || []).map(b => _stripTerm(b, m.term)) })
+      if (cv.skills && !Array.isArray(cv.skills)) {
+        Object.keys(cv.skills).forEach(k => {
+          cv.skills[k] = (cv.skills[k] || []).filter(s => !String(s).toLowerCase().includes(m.term.toLowerCase()))
+          if (!cv.skills[k].length) delete cv.skills[k]
+        })
+      } else if (Array.isArray(cv.skills)) {
+        cv.skills = cv.skills.filter(s => !String(s).toLowerCase().includes(m.term.toLowerCase()))
+      }
+    } else if (action === 'revert_title') {
+      const strip = t => String(t || '').replace(new RegExp('\\b' + m.word + '\\b', 'gi'), '').replace(/\s{2,}/g, ' ').trim().replace(/^[-–—/\s]+/, '')
+      if (m.kind === 'profile') cv.title = strip(cv.title)
+      else if (exps[m.index]) exps[m.index].title = strip(exps[m.index].title)
+    } else if (action === 'remove_duplicate' && m.text) {
+      const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '')
+      const target = norm(m.text); let kept = false
+      const filt = arr => (arr || []).filter(b => { if (norm(b) === target) { if (!kept) { kept = true; return true } return false } return true })
+      exps.forEach(e => { e.bullets = filt(e.bullets) }); projs.forEach(p => { p.bullets = filt(p.bullets) })
+    } else if (action === 'dequantify') {
+      exps.forEach(e => { e.bullets = (e.bullets || []).map(_dequant) })
+      projs.forEach(p => { p.bullets = (p.bullets || []).map(_dequant) })
+    }
+    msg.content = JSON.stringify(cv)
+    try { lastCvData.value = cv } catch { }
+  }
+  // Le finding est résolu (retiré de la liste). 'confirm_*'/'ignore' = conservé volontairement.
+  if (msg.validation) msg.validation.findings = msg.validation.findings.filter(f => f.id !== finding.id)
+}
 async function onCvQuestionsSubmit(answers) {
   showCvQuestions.value = false
   const msg = qaTargetMsg.value
@@ -121,7 +189,7 @@ async function onCvQuestionsSubmit(answers) {
       toastState.addToast(rd.content || t('common.error'), 'info')
     }
   } catch (e) { toastState.addToast(t('common.network_error'), 'error') }
-  finally { msg.completing = false; msg.completion = 'auto' }
+  finally { msg.completing = false; msg.completion = 'auto'; validateMsg(msg) }
 }
 const jobUrl = ref('')
 const jobText = ref('')
@@ -980,7 +1048,7 @@ const restoreCvFromHistory = (entry) => {
                     <ArrowPathIcon class="w-5 h-5 animate-spin text-[#F59E0B]" /> {{ t('agent_chat.audit.completing') }}
                   </div>
                   <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <button @click="msg.completion = 'auto'" class="text-left p-5 rounded-2xl border border-slate-100 hover:border-[#F59E0B]/40 hover:bg-amber-50/30 transition-all">
+                    <button @click="chooseAuto(msg)" class="text-left p-5 rounded-2xl border border-slate-100 hover:border-[#F59E0B]/40 hover:bg-amber-50/30 transition-all">
                       <div class="flex items-center gap-2 mb-1"><SparklesIcon class="w-4 h-4 text-[#F59E0B]" /><span class="text-sm font-black text-slate-900">{{ t('agent_chat.audit.complete_auto') }}</span></div>
                       <p class="text-[11px] text-slate-500 m-0">{{ t('agent_chat.audit.complete_auto_desc') }}</p>
                     </button>
@@ -991,8 +1059,41 @@ const restoreCvFromHistory = (entry) => {
                   </div>
               </div>
 
-              <!-- TEMPLATE SELECTOR -->
-              <div v-if="msg.completion" class="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm">
+              <!-- VALIDATION EN COURS -->
+              <div v-if="msg.completion && msg.validation && msg.validation.checking" class="flex items-center gap-3 p-6 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm text-slate-500 text-sm font-bold">
+                <ArrowPathIcon class="w-5 h-5 animate-spin text-[#F59E0B]" /> {{ t('agent_chat.audit.validating') }}
+              </div>
+
+              <!-- ÉCRAN DE RÉSOLUTION (bloque l'export tant qu'un FAIL n'est pas résolu) -->
+              <div v-if="msg.completion && msg.validation && !msg.validation.checking && (msg.validation.findings || []).length" class="p-6 md:p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm space-y-4">
+                <div class="flex items-center gap-2">
+                  <ExclamationTriangleIcon v-if="msgFails(msg).length" class="w-5 h-5 text-rose-500 shrink-0" />
+                  <CheckCircleIcon v-else class="w-5 h-5 text-emerald-500 shrink-0" />
+                  <p class="text-sm font-black text-slate-900 m-0">
+                    {{ msgFails(msg).length ? t('agent_chat.audit.validation_fails', { n: msgFails(msg).length }) : t('agent_chat.audit.validation_warnings_only') }}
+                  </p>
+                </div>
+                <div v-for="f in msgFails(msg)" :key="f.id" class="p-4 rounded-2xl border border-rose-100 bg-rose-50/40">
+                  <p class="text-[13px] text-slate-700 font-semibold m-0">❌ {{ f.message }}</p>
+                  <p v-if="f.meta && f.meta.phrase" class="text-[11px] text-slate-400 italic mt-1 m-0">« {{ f.meta.phrase }} »</p>
+                  <div class="flex flex-wrap gap-2 mt-3">
+                    <button v-for="a in (f.actions || [])" :key="a" @click="applyResolution(msg, f, a)"
+                      :class="(a.startsWith('confirm') || a === 'ignore') ? 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300' : 'bg-[#F59E0B] text-white hover:brightness-105'"
+                      class="px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all">{{ t('agent_chat.audit.act_' + a) }}</button>
+                  </div>
+                </div>
+                <div v-for="f in msgWarnings(msg)" :key="f.id" class="p-4 rounded-2xl border border-amber-100 bg-amber-50/30">
+                  <p class="text-[13px] text-slate-700 font-semibold m-0">⚠️ {{ f.message }}</p>
+                  <div class="flex flex-wrap gap-2 mt-3">
+                    <button v-for="a in (f.actions || [])" :key="a" @click="applyResolution(msg, f, a)"
+                      class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white border border-slate-200 text-slate-600 hover:border-slate-300 transition-all">{{ t('agent_chat.audit.act_' + a) }}</button>
+                  </div>
+                </div>
+                <p v-if="msgFails(msg).length" class="text-[11px] text-rose-500 font-bold m-0">🔒 {{ t('agent_chat.audit.export_locked') }}</p>
+              </div>
+
+              <!-- TEMPLATE SELECTOR (débloqué seulement si aucun FAIL) -->
+              <div v-if="msg.completion && msg.validation && !msg.validation.checking && msgFails(msg).length === 0" class="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm">
                   <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">{{ t('agent_chat.audit.choose_template') }}</p>
                   
                   <div class="flex flex-col md:flex-row gap-8">
@@ -1036,8 +1137,8 @@ const restoreCvFromHistory = (entry) => {
                   </div>
               </div>
 
-              <!-- ACTIONS -->
-              <div v-if="msg.completion" class="flex flex-col gap-3">
+              <!-- ACTIONS (téléchargement — débloqué seulement si aucun FAIL) -->
+              <div v-if="msg.completion && msg.validation && !msg.validation.checking && msgFails(msg).length === 0" class="flex flex-col gap-3">
                   <div class="flex gap-2 w-full">
                     <button
                       @click="downloadCv('pdf', msg.content)"
