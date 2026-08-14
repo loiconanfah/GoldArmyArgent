@@ -423,8 +423,23 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
 
             if isinstance(last_audit.get("tech_ajoutees"), list):
                 last_audit["tech_ajoutees"] = [t for t in last_audit["tech_ajoutees"] if _in_source(t)]
+
+            # Le rapport (« Impact des Transformations ») ne doit pas NARRER l'ajout d'un
+            # terme entre guillemets absent de la source (ex. « enrichi avec 'Azure Data Factory' »).
+            def _quotes_fabrication(text):
+                for q in re.findall(r"['\"«»‹›]([^'\"«»‹›]{2,40})['\"«»‹›]", str(text or "")):
+                    if not _in_source(q):
+                        return True
+                return False
+
+            cm = last_audit.get("correction_mapping")
+            if isinstance(cm, dict):
+                last_audit["correction_mapping"] = {
+                    k: v for k, v in cm.items()
+                    if not _quotes_fabrication(k) and not _quotes_fabrication(v)
+                }
         except Exception as e:
-            logger.warning(f"[Mentor] Filtre tech_ajoutees ignoré: {e}")
+            logger.warning(f"[Mentor] Filtre anti-fabrication du rapport ignoré: {e}")
 
         # Règle 8 (Passe 1) — filtre déterministe attaché à CHAQUE sortie de génération
         try:

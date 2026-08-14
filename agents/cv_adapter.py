@@ -266,6 +266,35 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
     elif isinstance(sk, list):
         cv_json["skills"] = [s for s in sk if s and _skill_from_source(s)]
 
+    # Langues : ne JAMAIS inventer de niveau (CEFR A1..C2) absent de la source.
+    # Ex. « Anglais (Professionnel) » ne doit pas devenir « Anglais (Professionnel (C1)) ».
+    def _clean_lang(s):
+        s2 = re.sub(r'\b([ABC][12])\b',
+                    lambda m: m.group(0) if _norm_text(m.group(1)) in source_tokens or _norm_text(m.group(1)) in src_norm_str else '',
+                    str(s))
+        for _ in range(3):
+            s2 = re.sub(r'\(\s*\)', '', s2)         # parenthèses vides
+            s2 = re.sub(r'\(\s+', '(', s2)
+            s2 = re.sub(r'\s+\)', ')', s2)
+        s2 = re.sub(r'\s{2,}', ' ', s2).strip()
+        return s2
+
+    langs = cv_json.get("languages")
+    if isinstance(langs, list):
+        out_langs = []
+        for l in langs:
+            if isinstance(l, str):
+                out_langs.append(_clean_lang(l))
+            elif isinstance(l, dict):
+                if isinstance(l.get("proficiency"), str):
+                    l["proficiency"] = _clean_lang(l["proficiency"])
+                if isinstance(l.get("level"), str):
+                    l["level"] = _clean_lang(l["level"])
+                out_langs.append(l)
+            else:
+                out_langs.append(l)
+        cv_json["languages"] = out_langs
+
     return cv_json
 
 
