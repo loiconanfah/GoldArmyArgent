@@ -405,6 +405,27 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
         except Exception as e:
             logger.warning(f"[Mentor] Scoring ATS réel ignoré: {e}")
 
+        # Le rapport ne doit JAMAIS prétendre avoir « injecté » une techno absente de la
+        # source (ex. Pandas/NumPy déduits de « Python »). On filtre au sous-ensemble.
+        try:
+            from agents.cv_adapter import _norm_text
+            src_norm = _norm_text(cv_text or "")
+            src_toks = set(src_norm.split())
+
+            def _in_source(term):
+                nt = _norm_text(term)
+                if not nt:
+                    return False
+                if nt in src_norm:
+                    return True
+                toks = [t for t in nt.split() if len(t) > 1]
+                return bool(toks) and all(t in src_toks for t in toks)
+
+            if isinstance(last_audit.get("tech_ajoutees"), list):
+                last_audit["tech_ajoutees"] = [t for t in last_audit["tech_ajoutees"] if _in_source(t)]
+        except Exception as e:
+            logger.warning(f"[Mentor] Filtre tech_ajoutees ignoré: {e}")
+
         last_audit["original_ats_score"] = original_ats_score
         last_audit["original_failles"] = original_failles
         cv_json = json.dumps(current_cv_data, ensure_ascii=False)
