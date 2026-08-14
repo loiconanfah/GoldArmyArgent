@@ -36,6 +36,7 @@ import {     SparklesIcon, ChatBubbleLeftRightIcon,
 } from '@heroicons/vue/24/outline'
 import {     CV_TEMPLATES } from '../utils/cvTemplates/index'
 import CvEditorModal from '../components/CvEditorModal.vue'
+import CvQuestionsModal from '../components/CvQuestionsModal.vue'
 
 const route = useRoute()
 
@@ -87,6 +88,41 @@ const cvFilename = ref('')
 // Raffinage conversationnel : dernier CV généré + son audit, gardés en contexte
 const lastCvData = ref(null)
 const lastAudit = ref(null)
+// Étape « compléter via réponses » avant téléchargement
+const showCvQuestions = ref(false)
+const qaTargetMsg = ref(null)
+function startCvQuestions(msg) { qaTargetMsg.value = msg; showCvQuestions.value = true }
+async function onCvQuestionsSubmit(answers) {
+  showCvQuestions.value = false
+  const msg = qaTargetMsg.value
+  if (!msg) return
+  if (!answers || !answers.length) { msg.completion = 'auto'; return }  // aucune réponse → auto
+  let cvData = null
+  try { cvData = typeof msg.content === 'string' ? JSON.parse(msg.content) : msg.content } catch { }
+  if (!cvData) { msg.completion = 'auto'; return }
+  const instruction = t('agent_chat.audit.qa_instruction') + '\n' +
+    answers.map(a => `- ${a.question} : ${a.answer}`).join('\n')
+  msg.completing = true
+  try {
+    const res = await authFetch('/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: instruction, cv_text: cvText.value, session_id: sessionId.value,
+        previous_cv: cvData, previous_audit: (typeof msg.audit === 'object' ? msg.audit : null)
+      })
+    })
+    const data = await res.json(); const rd = data.data || data
+    if (rd.type === 'cv_audit_rewrite') {
+      msg.content = rd.content
+      if (rd.audit && typeof rd.audit === 'object') msg.audit = rd.audit
+      try { lastCvData.value = JSON.parse(rd.content) } catch { }
+      if (rd.audit && typeof rd.audit === 'object') lastAudit.value = rd.audit
+    } else {
+      toastState.addToast(rd.content || t('common.error'), 'info')
+    }
+  } catch (e) { toastState.addToast(t('common.network_error'), 'error') }
+  finally { msg.completing = false; msg.completion = 'auto' }
+}
 const jobUrl = ref('')
 const jobText = ref('')
 const isSaving = ref(false)
@@ -936,8 +972,27 @@ const restoreCvFromHistory = (entry) => {
                  </div>
               </div>
 
+              <!-- GATE : compléter avant de pouvoir télécharger -->
+              <div v-if="!msg.completion" class="p-6 md:p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm">
+                  <p class="text-sm font-black text-slate-900 m-0">{{ t('agent_chat.audit.complete_title') }}</p>
+                  <p class="text-xs text-slate-500 mt-1 mb-5">{{ t('agent_chat.audit.complete_sub') }}</p>
+                  <div v-if="msg.completing" class="flex items-center gap-3 text-slate-500 text-sm font-bold py-4">
+                    <ArrowPathIcon class="w-5 h-5 animate-spin text-[#F59E0B]" /> {{ t('agent_chat.audit.completing') }}
+                  </div>
+                  <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button @click="msg.completion = 'auto'" class="text-left p-5 rounded-2xl border border-slate-100 hover:border-[#F59E0B]/40 hover:bg-amber-50/30 transition-all">
+                      <div class="flex items-center gap-2 mb-1"><SparklesIcon class="w-4 h-4 text-[#F59E0B]" /><span class="text-sm font-black text-slate-900">{{ t('agent_chat.audit.complete_auto') }}</span></div>
+                      <p class="text-[11px] text-slate-500 m-0">{{ t('agent_chat.audit.complete_auto_desc') }}</p>
+                    </button>
+                    <button @click="startCvQuestions(msg)" class="text-left p-5 rounded-2xl border border-[#F59E0B]/30 bg-amber-50/40 hover:bg-amber-50/70 transition-all">
+                      <div class="flex items-center gap-2 mb-1"><ChatBubbleLeftRightIcon class="w-4 h-4 text-[#F59E0B]" /><span class="text-sm font-black text-slate-900">{{ t('agent_chat.audit.complete_qa') }}</span></div>
+                      <p class="text-[11px] text-slate-500 m-0">{{ t('agent_chat.audit.complete_qa_desc') }}</p>
+                    </button>
+                  </div>
+              </div>
+
               <!-- TEMPLATE SELECTOR -->
-              <div class="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm">
+              <div v-if="msg.completion" class="p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm">
                   <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">{{ t('agent_chat.audit.choose_template') }}</p>
                   
                   <div class="flex flex-col md:flex-row gap-8">
@@ -982,7 +1037,7 @@ const restoreCvFromHistory = (entry) => {
               </div>
 
               <!-- ACTIONS -->
-              <div class="flex flex-col gap-3">
+              <div v-if="msg.completion" class="flex flex-col gap-3">
                   <div class="flex gap-2 w-full">
                     <button
                       @click="downloadCv('pdf', msg.content)"
@@ -1432,6 +1487,16 @@ const restoreCvFromHistory = (entry) => {
       :cv-data="cvDataToEdit"
       @close="showCvEditor = false"
       @save="saveCvEditor"
+    />
+
+    <!-- Compléter via réponses (questions ciblées sur le CV) -->
+    <CvQuestionsModal
+      :show="showCvQuestions"
+      :job-title="''"
+      :job-description="jobText || ''"
+      :cv-text="cvText"
+      @close="showCvQuestions = false"
+      @submit="onCvQuestionsSubmit"
     />
   </div>
 </template>
