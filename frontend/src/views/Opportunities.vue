@@ -19,6 +19,7 @@ import {
     ArrowUpTrayIcon,
     XMarkIcon,
     GlobeAltIcon,
+    BuildingOffice2Icon,
     EyeIcon
 } from '@heroicons/vue/24/outline'
 import { CV_TEMPLATES } from '../utils/cvTemplates/index'
@@ -168,11 +169,11 @@ const clearCv = () => {
 
 // Filtres de source Sniper (vide = toutes les sources)
 const SOURCE_OPTIONS = [
-    { id: 'direct', labelKey: 'opportunities.src_direct', icon: '🏢' },
-    { id: 'linkedin', label: 'LinkedIn', icon: 'in' },
-    { id: 'indeed', label: 'Indeed', icon: '🔎' },
-    { id: 'glassdoor', label: 'Glassdoor', icon: '🏛️' },
-    { id: 'jobillico', label: 'Jobillico', icon: '📋' },
+    { id: 'direct', labelKey: 'opportunities.src_direct', icon: BuildingOffice2Icon },
+    { id: 'linkedin', label: 'LinkedIn', icon: GlobeAltIcon },
+    { id: 'indeed', label: 'Indeed', icon: GlobeAltIcon },
+    { id: 'glassdoor', label: 'Glassdoor', icon: GlobeAltIcon },
+    { id: 'jobillico', label: 'Jobillico', icon: GlobeAltIcon },
 ]
 const selectedSources = ref([])
 const toggleSource = (id) => {
@@ -624,7 +625,7 @@ const addToCrmAndApply = async (job) => {
                 <button v-for="s in SOURCE_OPTIONS" :key="s.id" @click="toggleSource(s.id)"
                     :class="selectedSources.includes(s.id) ? 'bg-[#F59E0B] text-white border-[#F59E0B]' : 'bg-surface-800 text-slate-300 border-slate-200 hover:border-slate-500'"
                     class="px-3 py-1.5 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5">
-                    <span class="text-[11px]">{{ s.icon }}</span> {{ s.labelKey ? t(s.labelKey) : s.label }}
+                    <component :is="s.icon" class="w-3.5 h-3.5" /> {{ s.labelKey ? t(s.labelKey) : s.label }}
                 </button>
                 <span v-if="!selectedSources.length" class="text-[10px] text-slate-500 italic ml-1">{{ t('opportunities.sources_all_hint') }}</span>
             </div>
@@ -749,8 +750,9 @@ const addToCrmAndApply = async (job) => {
                           <span class="truncate">{{ job.company }}</span>
                           <span v-if="job.source"
                               :class="job.source === 'direct' ? 'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30' : 'bg-surface-800 text-slate-400 border-slate-200'"
-                              class="shrink-0 px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider">
-                              {{ job.source === 'direct' ? ('🏢 ' + t('opportunities.src_direct')) : job.source }}
+                              class="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider">
+                              <BuildingOffice2Icon v-if="job.source === 'direct'" class="w-3 h-3" />
+                              {{ job.source === 'direct' ? t('opportunities.src_direct') : job.source }}
                           </span>
                       </div>
                   </div>
