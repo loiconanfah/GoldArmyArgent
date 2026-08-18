@@ -1304,6 +1304,9 @@
         }
     },
     "opportunities": {
+        "sources_label": "Sources",
+        "src_direct": "Direct-employer",
+        "sources_all_hint": "All sources — click to filter (\"Direct-employer\" = jobs pulled straight from company sites)",
         "title": "Sniper Opportunities",
         "tagline": "Radar Active",
         "description": "Intelligent real-time market scraping and contextual matching with your profile.",

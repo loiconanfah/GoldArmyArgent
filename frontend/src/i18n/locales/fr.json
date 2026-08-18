@@ -1257,6 +1257,9 @@
         }
     },
     "opportunities": {
+        "sources_label": "Sources",
+        "src_direct": "Direct-employeur",
+        "sources_all_hint": "Toutes les sources — clique pour filtrer (« Direct-employeur » = offres prises sur les sites des entreprises)",
         "title": "Sniper Opportunités",
         "tagline": "Radar Actif",
         "description": "Scraping intelligent du marché en temps réel et matching contextuel avec votre profil.",

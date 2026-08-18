@@ -166,6 +166,21 @@ const clearCv = () => {
     toastState.addToast('CV effacé du contexte de recherche.', 'info')
 }
 
+// Filtres de source Sniper (vide = toutes les sources)
+const SOURCE_OPTIONS = [
+    { id: 'direct', labelKey: 'opportunities.src_direct', icon: '🏢' },
+    { id: 'linkedin', label: 'LinkedIn', icon: 'in' },
+    { id: 'indeed', label: 'Indeed', icon: '🔎' },
+    { id: 'glassdoor', label: 'Glassdoor', icon: '🏛️' },
+    { id: 'jobillico', label: 'Jobillico', icon: '📋' },
+]
+const selectedSources = ref([])
+const toggleSource = (id) => {
+    const i = selectedSources.value.indexOf(id)
+    if (i >= 0) selectedSources.value.splice(i, 1)
+    else selectedSources.value.push(id)
+}
+
 const performSearch = async () => {
     if (!searchQuery.value.trim()) return
     
@@ -189,7 +204,8 @@ const performSearch = async () => {
                 cv_text: cvText.value, 
                 cv_filename: selectedFileName.value,
                 nb_results: resultLimit.value,
-                location: inputLocation.value
+                location: inputLocation.value,
+                sources: selectedSources.value
             })
         })
         const json = await res.json()
@@ -601,7 +617,18 @@ const addToCrmAndApply = async (job) => {
                     </button>
                 </div>
             </div>
-            
+
+            <!-- Filtres de source -->
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">{{ t('opportunities.sources_label') }}</span>
+                <button v-for="s in SOURCE_OPTIONS" :key="s.id" @click="toggleSource(s.id)"
+                    :class="selectedSources.includes(s.id) ? 'bg-[#F59E0B] text-white border-[#F59E0B]' : 'bg-surface-800 text-slate-300 border-slate-200 hover:border-slate-500'"
+                    class="px-3 py-1.5 rounded-full border text-xs font-bold transition-all flex items-center gap-1.5">
+                    <span class="text-[11px]">{{ s.icon }}</span> {{ s.labelKey ? t(s.labelKey) : s.label }}
+                </button>
+                <span v-if="!selectedSources.length" class="text-[10px] text-slate-500 italic ml-1">{{ t('opportunities.sources_all_hint') }}</span>
+            </div>
+
             <!-- CV Upload Expansion (Smooth transition) -->
             <transition
                 enter-active-class="transition duration-300 ease-out origin-top"
@@ -720,6 +747,11 @@ const addToCrmAndApply = async (job) => {
                               {{ job.company.charAt(0).toUpperCase() }}
                           </span>
                           <span class="truncate">{{ job.company }}</span>
+                          <span v-if="job.source"
+                              :class="job.source === 'direct' ? 'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30' : 'bg-surface-800 text-slate-400 border-slate-200'"
+                              class="shrink-0 px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wider">
+                              {{ job.source === 'direct' ? ('🏢 ' + t('opportunities.src_direct')) : job.source }}
+                          </span>
                       </div>
                   </div>
                   

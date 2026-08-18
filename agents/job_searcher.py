@@ -161,7 +161,9 @@ class JobSearchAgent(BaseAgent):
                 "job_type": profile_data.get("job_type", "emploi")
             },
             "cv_profile": profile_data.get("cv_profile", {}),
-            "limit": task.get("nb_results") or task.get("limit") or 10
+            "limit": task.get("nb_results") or task.get("limit") or 10,
+            # Filtres de source (ex: ["linkedin"], ["direct"], ["indeed","direct"]…)
+            "sources": [s.lower() for s in (task.get("sources") or []) if s],
         }
         
         logger.info(f"✅ Orchestration prête: {len(action_plan['criteria']['keywords_list'])} variations pour {base_location}")
@@ -185,7 +187,8 @@ class JobSearchAgent(BaseAgent):
             raw_query,
             "|".join(sorted(criteria.get("keywords_list", []))),
             criteria.get("location", ""),
-            criteria.get("job_type", "emploi")
+            criteria.get("job_type", "emploi"),
+            "src:" + "|".join(sorted(action_plan.get("sources", []))),
         )
         cached = await cache.get(cache_key)
         if cached:
@@ -261,6 +264,51 @@ class JobSearchAgent(BaseAgent):
             if key not in seen:
                 seen.add(key)
                 unique_final.append(j)
+
+        # --- SOURCE : étiquette chaque offre (linkedin/indeed/direct/…) ---
+        from core.ats_harvester import harvest_companies, detect_source
+        for j in unique_final:
+            if not j.get("source"):
+                j["source"] = detect_source(j.get("url") or j.get("apply_url") or j.get("link") or "")
+
+        # --- DIRECT-TO-COMPANY : offres récupérées directement sur les ATS des
+        # entreprises repérées (offres souvent absentes des plateformes). ---
+        sources_filter = [s.lower() for s in (action_plan.get("sources") or []) if s]
+        want_direct = (not sources_filter) or ("direct" in sources_filter)
+        if want_direct:
+            try:
+                top_companies = []
+                for j in sorted(unique_final, key=lambda x: x.get("match_score", 0), reverse=True):
+                    c = (j.get("company") or "").strip()
+                    if c and c.lower() not in [x.lower() for x in top_companies]:
+                        top_companies.append(c)
+                    if len(top_companies) >= 10:
+                        break
+                kw_list = list(criteria.get("keywords_list", [])) + [raw_query]
+                direct_jobs = await asyncio.wait_for(
+                    harvest_companies(top_companies, keywords=kw_list, location=criteria.get("location")),
+                    timeout=10.0,
+                )
+                kwn = [k.lower() for k in kw_list if k]
+                for dj in direct_jobs:
+                    blob = f"{dj.get('title','')} {dj.get('description','')}".lower()
+                    hits = sum(1 for k in kwn if k and k in blob)
+                    dj["match_score"] = min(100, 55 + hits * 12)  # base élevée : offre à la source
+                    dj["source"] = "direct"
+                    key = f"{dj.get('title')}-{dj.get('company')}".lower()
+                    if key not in seen:
+                        seen.add(key)
+                        unique_final.append(dj)
+                logger.success(f"🏢 Direct-to-company : {len(direct_jobs)} offres ATS ajoutées")
+            except asyncio.TimeoutError:
+                logger.warning("[Sniper] Harvest ATS interrompu (budget temps dépassé)")
+            except Exception as e:
+                logger.warning(f"[Sniper] Harvest ATS ignoré: {e}")
+
+        # --- FILTRES DE SOURCE (ex: uniquement LinkedIn, ou uniquement direct) ---
+        if sources_filter:
+            unique_final = [j for j in unique_final if (j.get("source") or "other").lower() in sources_filter]
+            logger.info(f"🔎 Filtre sources={sources_filter} → {len(unique_final)} offres")
 
         # Tri final par pertinence
         unique_final.sort(key=lambda x: x.get("match_score", 0), reverse=True)

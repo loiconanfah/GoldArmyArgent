@@ -226,6 +226,8 @@ class ChatRequest(BaseModel):
     # Raffinage conversationnel du CV : CV déjà généré + son audit, à modifier
     previous_cv: Optional[dict] = None
     previous_audit: Optional[dict] = None
+    # Filtres de source Sniper (ex: ["linkedin"], ["direct"], ["indeed","direct"])
+    sources: Optional[list] = None
 
 
 @app.get("/")
@@ -334,6 +336,7 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks,
             "job_url": request.job_url,
             "previous_cv": request.previous_cv,
             "previous_audit": request.previous_audit,
+            "sources": request.sources or [],
         }
 
         # Background mode handling
