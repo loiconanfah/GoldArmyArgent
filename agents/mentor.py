@@ -405,6 +405,24 @@ Réponds UNIQUEMENT en JSON pur. Aucun texte avant ou après.
         except Exception as e:
             logger.warning(f"[Mentor] Scoring ATS réel ignoré: {e}")
 
+        # Adaptation à l'offre (déterministe, uniquement si une offre est fournie) :
+        # score de correspondance CV↔offre AVANT→APRÈS + mots-clés de l'offre désormais couverts.
+        if job_text:
+            try:
+                from core.ats_score import offer_match
+                om_before = offer_match(cv_text, job_text)
+                om_after = offer_match(current_cv_data, job_text)
+                before_set = set(om_before["matched"])
+                added = [k for k in om_after["matched"] if k not in before_set]
+                last_audit["offer_match"] = {
+                    "before": om_before["score"],
+                    "after": om_after["score"],
+                    "added_keywords": added[:20],
+                    "still_missing": om_after["missing"][:12],
+                }
+            except Exception as e:
+                logger.warning(f"[Mentor] offer_match ignoré: {e}")
+
         # Le rapport ne doit JAMAIS prétendre avoir « injecté » une techno absente de la
         # source (ex. Pandas/NumPy déduits de « Python »). On filtre au sous-ensemble.
         try:

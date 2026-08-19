@@ -1517,6 +1517,10 @@
             "restored_project": "Portfolio Project (Restored)"
         },
         "audit": {
+                "offer_title": "Tailoring to the job",
+                "offer_match_label": "Résumé ↔ job match",
+                "offer_added": "Job keywords now covered",
+                "offer_missing": "Still to cover (if you have them)",
                 "validating": "Checking before download…",
                 "validation_fails": "{n} issue(s) to resolve before downloading",
                 "validation_warnings_only": "No blocking issue — review the warnings if needed.",

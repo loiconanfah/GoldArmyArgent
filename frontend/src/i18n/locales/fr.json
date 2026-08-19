@@ -1470,6 +1470,10 @@
             "restored_project": "Projet Portfolio (Restauré)"
         },
         "audit": {
+                "offer_title": "Adaptation à l'offre",
+                "offer_match_label": "Correspondance CV ↔ offre",
+                "offer_added": "Mots-clés de l'offre désormais couverts",
+                "offer_missing": "Encore à couvrir (si tu les maîtrises)",
                 "validating": "Vérification avant téléchargement…",
                 "validation_fails": "{n} problème(s) à résoudre avant de télécharger",
                 "validation_warnings_only": "Aucun problème bloquant — vérifie les avertissements si besoin.",

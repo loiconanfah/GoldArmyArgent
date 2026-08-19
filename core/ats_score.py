@@ -129,6 +129,39 @@ def score_text(text: str, job_text: str = None) -> dict:
     }
 
 
+_STOP = {
+    "and", "the", "for", "with", "of", "to", "in", "on", "at", "les", "des", "une", "un",
+    "avec", "pour", "dans", "sur", "au", "aux", "par", "en", "qui", "que", "est", "sont",
+    "vous", "nous", "notre", "votre", "ses", "son", "sa", "ce", "cette", "nos", "vos",
+    "poste", "emploi", "job", "offre", "role", "team", "equipe", "experience", "annees",
+    "ans", "candidat", "profil", "recherche", "mission", "missions", "will", "you", "your",
+    "we", "our", "are", "have", "work", "working", "join", "about", "plus", "type", "temps",
+}
+
+
+def _tok(text: str) -> set:
+    raw = re.findall(r"[a-zA-Z][a-zA-Z0-9+#.\-]{2,}", _norm(text or ""))
+    return {t.strip(".-") for t in raw if t.strip(".-")}
+
+
+def _offer_keywords(job_text: str) -> set:
+    return {t for t in _tok(job_text) if t not in _STOP and not t.isdigit() and len(t) >= 3}
+
+
+def offer_match(cv_text_or_data, job_text: str) -> dict:
+    """Correspondance déterministe CV ↔ offre : % de mots-clés de l'offre présents
+    dans le CV, mots-clés couverts et non couverts."""
+    cv_text = cv_data_to_text(cv_text_or_data) if isinstance(cv_text_or_data, dict) else str(cv_text_or_data or "")
+    jk = _offer_keywords(job_text)
+    if not jk:
+        return {"score": 0, "matched": [], "missing": []}
+    cv_toks = _tok(cv_text)
+    matched = sorted(jk & cv_toks)
+    missing = sorted(jk - cv_toks)
+    score = round(100 * len(matched) / len(jk))
+    return {"score": max(0, min(100, score)), "matched": matched, "missing": missing}
+
+
 def score_cv(cv_data: dict, job_text: str = None) -> dict:
     """Score ATS réel d'un cv_data structuré (mesure sur les VRAIES puces)."""
     if not isinstance(cv_data, dict):

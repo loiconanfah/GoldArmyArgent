@@ -956,6 +956,38 @@ const restoreCvFromHistory = (entry) => {
                 </div>
               </div>
 
+              <!-- ADAPTATION À L'OFFRE (uniquement si une offre est fournie) -->
+              <div v-if="msg.audit.offer_match" class="p-6 md:p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm">
+                <div class="flex items-center gap-2 mb-6">
+                  <SparklesIcon class="w-5 h-5 text-[#F59E0B]" />
+                  <h4 class="text-sm font-black text-slate-900 m-0 uppercase tracking-[0.2em]">{{ t('agent_chat.audit.offer_title') }}</h4>
+                </div>
+                <div class="flex items-center gap-5 mb-6 flex-wrap">
+                  <div class="flex flex-col items-center">
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{{ t('agent_chat.audit.before') }}</span>
+                    <span class="text-3xl font-black text-slate-300 leading-none mt-1 line-through decoration-2">{{ msg.audit.offer_match.before }}%</span>
+                  </div>
+                  <svg class="w-6 h-6 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                  <div class="flex flex-col items-center">
+                    <span class="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em]">{{ t('agent_chat.audit.after') }}</span>
+                    <span class="text-3xl font-black text-emerald-600 leading-none mt-1">{{ msg.audit.offer_match.after }}%</span>
+                  </div>
+                  <span class="text-[11px] text-slate-400 font-semibold ml-auto">{{ t('agent_chat.audit.offer_match_label') }}</span>
+                </div>
+                <div v-if="msg.audit.offer_match.added_keywords && msg.audit.offer_match.added_keywords.length">
+                  <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{{ t('agent_chat.audit.offer_added') }}</p>
+                  <div class="flex flex-wrap gap-2">
+                    <span v-for="k in msg.audit.offer_match.added_keywords" :key="k" class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[11px] font-bold">{{ k }}</span>
+                  </div>
+                </div>
+                <div v-if="msg.audit.offer_match.still_missing && msg.audit.offer_match.still_missing.length" class="mt-4">
+                  <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{{ t('agent_chat.audit.offer_missing') }}</p>
+                  <div class="flex flex-wrap gap-2">
+                    <span v-for="k in msg.audit.offer_match.still_missing" :key="k" class="px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-100 text-[11px] font-bold">{{ k }}</span>
+                  </div>
+                </div>
+              </div>
+
               <!-- ANALYSIS: FLAWS & ACTIONS -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <!-- FLAWS -->
