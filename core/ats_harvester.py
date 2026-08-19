@@ -20,6 +20,16 @@ except Exception:  # pragma: no cover
 _TIMEOUT = 3.5
 _HEADERS = {"User-Agent": "GoldArmyBot/1.0 (+https://goldarmyai.com)"}
 
+# Socle d'entreprises à FORT volume d'offres sur des ATS publics (Greenhouse/Lever/
+# Ashby/…). Sert à garantir un plancher d'offres « direct-employeur » quand la
+# recherche seule n'en remonte pas assez. Le slug-prober résout l'ATS de chacune.
+_SEED_COMPANIES = [
+    "Stripe", "Airbnb", "Dropbox", "Coinbase", "DoorDash", "Instacart", "Robinhood",
+    "Pinterest", "Reddit", "Discord", "Figma", "Ramp", "Brex", "Plaid", "Datadog",
+    "GitLab", "Notion", "Airtable", "Asana", "Twilio", "Cloudflare", "Lightspeed",
+    "Wealthsimple", "Coveo", "Hopper", "Nuvei", "Squarespace", "Affirm",
+]
+
 
 def _norm(s: str) -> str:
     s = unicodedata.normalize("NFKD", (s or "").lower())
@@ -200,28 +210,75 @@ async def harvest_company(client, company: str):
     return []
 
 
-async def harvest_companies(companies, keywords=None, location=None, max_companies=10, max_jobs=60):
-    """Récupère les offres directes pour une liste d'entreprises (best-effort)."""
-    if not httpx or not companies:
+async def harvest_companies(companies, keywords=None, location=None,
+                            min_target=0, max_companies=25, max_jobs=150):
+    """Récupère les offres directes pour une liste d'entreprises (best-effort).
+
+    Si min_target > 0, complète avec un socle d'entreprises à fort volume pour
+    garantir un plancher d'offres, en priorisant : (1) mot-clé + lieu,
+    (2) mot-clé seul, (3) n'importe quelle offre directe — jusqu'à atteindre min_target.
+    """
+    if not httpx:
         return []
-    companies = [c for c in dict.fromkeys([c.strip() for c in companies if c and c.strip()])][:max_companies]
-    kw = [_norm(k) for k in (keywords or []) if k]
-    out = []
+    companies = [c for c in dict.fromkeys([c.strip() for c in (companies or []) if c and c.strip()])][:max_companies]
+    pool = list(companies)
+    if min_target:
+        for c in _SEED_COMPANIES:
+            if c.lower() not in [x.lower() for x in pool]:
+                pool.append(c)
+    if not pool:
+        return []
+
+    kw = [_norm(k) for k in (keywords or []) if k and len(k) > 1]
+    all_jobs, seen = [], set()
     try:
-        limits = httpx.Limits(max_connections=24, max_keepalive_connections=12)
+        limits = httpx.Limits(max_connections=40, max_keepalive_connections=20)
         async with httpx.AsyncClient(timeout=_TIMEOUT, headers=_HEADERS, follow_redirects=True, limits=limits) as client:
-            results = await asyncio.gather(*[harvest_company(client, c) for c in companies], return_exceptions=True)
+            results = await asyncio.gather(*[harvest_company(client, c) for c in pool], return_exceptions=True)
         for res in results:
             if not isinstance(res, list):
                 continue
             for j in res:
-                blob = _norm(f"{j.get('title','')} {j.get('description','')}")
-                if kw and not any(k in blob for k in kw):
+                if not (j.get("title") and j.get("url")):
                     continue
-                if location and not _match_loc(f"{j.get('location','')} {j.get('description','')}", location):
+                key = f"{_norm(j.get('title',''))}-{_norm(j.get('company',''))}"
+                if key in seen:
                     continue
-                if j.get("title") and j.get("url"):
-                    out.append(j)
+                seen.add(key)
+                all_jobs.append(j)
     except Exception as e:
         logger.warning(f"[ATS] harvest_companies échec: {e}")
-    return out[:max_jobs]
+
+    def _kw_ok(j):
+        if not kw:
+            return True
+        return any(k in _norm(f"{j.get('title','')} {j.get('description','')}") for k in kw)
+
+    def _loc_ok(j):
+        return _match_loc(f"{j.get('location','')} {j.get('description','')}", location)
+
+    # Tier 1 : mot-clé + lieu
+    picked, used = [], set()
+    for j in all_jobs:
+        if _kw_ok(j) and _loc_ok(j):
+            picked.append(j); used.add(id(j))
+    # Tier 2 : mot-clé seul (lieu relâché) pour atteindre le plancher
+    if len(picked) < min_target:
+        for j in all_jobs:
+            if id(j) in used:
+                continue
+            if _kw_ok(j):
+                picked.append(j); used.add(id(j))
+                if len(picked) >= min_target:
+                    break
+    # Tier 3 : n'importe quelle offre directe pour honorer le plancher demandé
+    if len(picked) < min_target:
+        for j in all_jobs:
+            if id(j) in used:
+                continue
+            picked.append(j); used.add(id(j))
+            if len(picked) >= min_target:
+                break
+
+    logger.info(f"[ATS] {len(all_jobs)} offres directes récupérées → {len(picked)} retenues (plancher {min_target})")
+    return picked[:max_jobs]

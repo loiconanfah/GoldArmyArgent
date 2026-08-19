@@ -282,12 +282,14 @@ class JobSearchAgent(BaseAgent):
                     c = (j.get("company") or "").strip()
                     if c and c.lower() not in [x.lower() for x in top_companies]:
                         top_companies.append(c)
-                    if len(top_companies) >= 10:
+                    if len(top_companies) >= 20:
                         break
                 kw_list = list(criteria.get("keywords_list", [])) + [raw_query]
+                # Plancher : au moins 50 offres « direct-employeur » (socle d'entreprises inclus)
                 direct_jobs = await asyncio.wait_for(
-                    harvest_companies(top_companies, keywords=kw_list, location=criteria.get("location")),
-                    timeout=10.0,
+                    harvest_companies(top_companies, keywords=kw_list,
+                                      location=criteria.get("location"), min_target=50),
+                    timeout=18.0,
                 )
                 kwn = [k.lower() for k in kw_list if k]
                 for dj in direct_jobs:
