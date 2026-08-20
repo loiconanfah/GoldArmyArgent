@@ -7,7 +7,7 @@ const BASE = 'https://www.goldarmyai.com'
 useHead({
   title: 'Espace Organisation — GoldArmy pour écoles, bootcamps & organismes d\'employabilité',
   meta: [
-    { name: 'description', content: "Un portail B2B2C complet pour piloter vos cohortes : suivi des membres, mentors, réseau, communauté et facturation par paliers. Parrainez vos membres en Gold et mesurez l'insertion en temps réel." },
+    { name: 'description', content: "Un portail B2B2C complet pour piloter vos cohortes : tableau de bord, suivi des membres, mentors, réseau, communauté et facturation par paliers. Parrainez vos membres en Gold et mesurez l'insertion en temps réel." },
     { name: 'robots', content: 'index, follow' },
     { property: 'og:type', content: 'website' },
     { property: 'og:title', content: 'Espace Organisation — GoldArmy' },
@@ -20,14 +20,37 @@ useHead({
   link: [{ rel: 'canonical', href: `${BASE}/pour-les-organisations` }]
 })
 
-const modules = [
-  { t: 'Tableau de bord cohorte', d: 'KPIs animés en temps réel : taux d\'insertion, candidatures, entretiens, membres actifs.' },
-  { t: 'Suivi des membres', d: 'Progression individuelle, état d\'avancement, et parrainage en Gold membre par membre.' },
-  { t: 'Espace Mentors', d: 'Assignez des mentors et conseillers, planifiez des ateliers et des événements avec RSVP.' },
-  { t: 'Réseau', d: 'Carnet de contacts partenaires par catégorie, import CSV et suggestions pour la cohorte.' },
-  { t: 'Communauté', d: 'Un espace type Discord : partage de CV, portfolios, offres et résultats d\'entretien.' },
-  { t: 'Facturation par paliers', d: 'Payez pour parrainer vos membres — chaque forfait crédite du Gold mensuel à la cohorte.' }
+const screens = [
+  {
+    img: '/images/org-dashboard.png', eyebrow: 'Pilotage',
+    title: 'Toute votre cohorte, en un coup d\'œil',
+    desc: "Le tableau de bord réunit les indicateurs qui comptent et se met à jour en temps réel, pour piloter l'insertion sans tableur.",
+    points: ['KPIs animés : membres, actifs, candidatures, entretiens', 'Courbe des candidatures & jauge du taux d\'entretien', 'Prochain événement et membres les plus actifs'],
+    reverse: false
+  },
+  {
+    img: '/images/org-members.png', eyebrow: 'Suivi des membres',
+    title: 'Le suivi individuel, membre par membre',
+    desc: "Ouvrez la fiche d'un membre et pilotez tout son accompagnement depuis un panneau clair.",
+    points: ['Parrainage : activez l\'accès premium pour verser du Gold mensuel', 'Rôle dans l\'organisation : Membre, Mentor, Conseiller', 'Progression des candidatures, entretiens et simulations'],
+    reverse: true
+  },
+  {
+    img: '/images/org-community.png', eyebrow: 'Vie de la cohorte',
+    title: 'Une communauté façon Discord',
+    desc: "Un espace privé où votre cohorte échange, s'entraide et partage ses meilleures ressources.",
+    points: ['Salons : général, modèles-cv, portfolios, offres, résultats', 'Publications likables et commentables', 'Membres par rôle dans un panneau latéral'],
+    reverse: false
+  },
+  {
+    img: '/images/org-billing.png', eyebrow: 'Gestion',
+    title: 'Une facturation claire, par paliers',
+    desc: "Un forfait qui grandit avec votre cohorte, en mensuel ou annuel — vous parrainez à la carte.",
+    points: ['Starter, Growth, Scale, Enterprise', 'Gold mensuel par membre inclus dans chaque palier', 'Résiliable à tout moment, prix transparents'],
+    reverse: true
+  }
 ]
+
 const plans = [
   { name: 'Starter', members: 'Jusqu\'à 25 membres', gold: '300 Gold/membre/mois', highlight: false },
   { name: 'Growth', members: 'Jusqu\'à 75 membres', gold: '300 Gold/membre/mois', highlight: true },
@@ -43,13 +66,13 @@ const plans = [
       <!-- HERO -->
       <header class="org-hero">
         <div class="org-wrap org-hero-grid">
-          <div>
+          <div class="org-hero-copy">
             <span class="org-pill">Pour les organisations</span>
             <h1 class="org-h1">Pilotez l'employabilité de vos cohortes, au même endroit.</h1>
             <p class="org-lead">Écoles, bootcamps, organismes d'employabilité, agences de placement : offrez à vos membres toute la puissance de GoldArmy, et gardez le contrôle avec un portail d'administration complet.</p>
             <div class="org-hero-cta">
               <router-link to="/register" class="org-btn-primary">Créer mon espace organisation</router-link>
-              <a href="#modules" class="org-btn-ghost">Voir les modules</a>
+              <a href="#apercu" class="org-btn-ghost">Voir le portail</a>
             </div>
             <div class="org-hero-stats">
               <div><b>Temps réel</b><span>Insertion & activité</span></div>
@@ -57,21 +80,14 @@ const plans = [
               <div><b>Gold inclus</b><span>Parrainage des membres</span></div>
             </div>
           </div>
-          <!-- Mockup dashboard (illustration CSS) -->
-          <div class="org-mock" aria-hidden="true">
-            <div class="org-mock-head"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><small>Tableau de bord — cohorte</small></div>
-            <div class="org-mock-kpis">
-              <div class="kpi"><b>78%</b><span>Insertion</span></div>
-              <div class="kpi"><b>124</b><span>Membres actifs</span></div>
-              <div class="kpi"><b>312</b><span>Entretiens</span></div>
-            </div>
-            <div class="org-mock-bars"><i style="height:40%"></i><i style="height:65%"></i><i style="height:50%"></i><i style="height:80%"></i><i style="height:70%"></i><i style="height:90%"></i></div>
-            <div class="org-mock-rows"><span></span><span></span><span></span></div>
-          </div>
+          <figure class="org-frame org-frame--hero">
+            <div class="org-frame__bar"><span></span><span></span><span></span></div>
+            <img :src="screens[0].img" alt="Tableau de bord de l'espace organisation GoldArmy" loading="eager" />
+          </figure>
         </div>
       </header>
 
-      <!-- PROBLÈME -->
+      <!-- PROBLÈME / SOLUTION -->
       <section class="org-section">
         <div class="org-wrap org-two">
           <div class="org-card bad">
@@ -85,25 +101,38 @@ const plans = [
         </div>
       </section>
 
-      <!-- MODULES -->
-      <section id="modules" class="org-section org-alt">
+      <!-- APERÇU DU PORTAIL (captures réelles) -->
+      <section id="apercu" class="org-section org-alt">
         <div class="org-wrap">
           <div class="org-head">
-            <span class="org-eyebrow">Ce qui est inclus</span>
-            <h2>Un portail d'administration complet</h2>
-            <p>Tout pour accompagner une cohorte, de l'onboarding à l'insertion.</p>
+            <span class="org-eyebrow">Aperçu du portail</span>
+            <h2>Conçu pour piloter, pas pour bricoler</h2>
+            <p>Chaque écran a été pensé pour accompagner une cohorte, de l'onboarding à l'insertion.</p>
           </div>
-          <div class="org-grid">
-            <article v-for="m in modules" :key="m.t" class="org-mod">
-              <div class="org-mod-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg></div>
-              <h4>{{ m.t }}</h4>
-              <p>{{ m.d }}</p>
+
+          <div class="org-features">
+            <article v-for="s in screens" :key="s.title" :class="['org-feature', { 'org-feature--reverse': s.reverse }]">
+              <figure class="org-frame">
+                <div class="org-frame__bar"><span></span><span></span><span></span></div>
+                <img :src="s.img" :alt="s.title" loading="lazy" />
+              </figure>
+              <div class="org-feature__copy">
+                <span class="org-eyebrow">{{ s.eyebrow }}</span>
+                <h3>{{ s.title }}</h3>
+                <p>{{ s.desc }}</p>
+                <ul>
+                  <li v-for="p in s.points" :key="p">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+                    {{ p }}
+                  </li>
+                </ul>
+              </div>
             </article>
           </div>
         </div>
       </section>
 
-      <!-- MODÈLE SPONSORING -->
+      <!-- MODÈLE DE PARRAINAGE -->
       <section class="org-section">
         <div class="org-wrap org-two-b">
           <div class="org-mock2" aria-hidden="true">
@@ -137,6 +166,7 @@ const plans = [
               <router-link to="/register" class="org-plan-cta">Choisir</router-link>
             </div>
           </div>
+          <p class="org-fineprint">Prix affichés côté portail (CAD), taxes en sus. Résiliable à tout moment.</p>
         </div>
       </section>
 
@@ -155,74 +185,85 @@ const plans = [
 
 <style scoped>
 .org-page { background: #f8fafc; color: #0f172a; }
-.org-wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
-.org-pill, .org-eyebrow { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #ea580c; background: #FFF1E8; padding: .35rem .8rem; border-radius: 999px; }
+.org-wrap { max-width: 1160px; margin: 0 auto; padding: 0 1.5rem; }
+.org-pill, .org-eyebrow { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #ea580c; background: rgba(255,111,0,0.1); padding: .35rem .8rem; border-radius: 999px; }
+
 /* HERO */
-.org-hero { background: linear-gradient(160deg, #0f172a 0%, #111c2e 100%); color: #fff; padding: 4.5rem 0 4rem; }
-.org-hero-grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; align-items: center; }
-@media (min-width: 940px) { .org-hero-grid { grid-template-columns: 1.1fr .9fr; } }
-.org-h1 { font-size: clamp(2rem, 4.2vw, 3.1rem); font-weight: 800; line-height: 1.12; margin: 1.2rem 0 1rem; letter-spacing: -.02em; }
-.org-lead { color: #cbd5e1; font-size: 1.12rem; line-height: 1.6; max-width: 44ch; }
+.org-hero { background: radial-gradient(1200px 500px at 80% -10%, rgba(255,111,0,0.18), transparent 60%), linear-gradient(160deg, #0b1220 0%, #131c2e 100%); color: #fff; padding: 4.5rem 0 4.5rem; overflow: hidden; }
+.org-hero-grid { display: grid; grid-template-columns: 1fr; gap: 2.8rem; align-items: center; }
+@media (min-width: 980px) { .org-hero-grid { grid-template-columns: 1fr 1.05fr; } }
+.org-hero .org-pill { color: #ffb27d; background: rgba(255,111,0,0.16); }
+.org-h1 { font-size: clamp(2rem, 4.2vw, 3.15rem); font-weight: 800; line-height: 1.1; margin: 1.2rem 0 1rem; letter-spacing: -.025em; }
+.org-lead { color: #cbd5e1; font-size: 1.12rem; line-height: 1.6; max-width: 46ch; }
 .org-hero-cta { display: flex; gap: .8rem; flex-wrap: wrap; margin: 1.8rem 0 1.6rem; }
-.org-btn-primary { background: linear-gradient(135deg, #ff9a5c, #ff6f00); color: #000000; font-weight: 800; padding: .9rem 1.6rem; border-radius: .8rem; text-decoration: none; box-shadow: 0 12px 28px -10px rgba(255,111,0,.6); }
-.org-btn-ghost { color: #fff; border: 1px solid rgba(255,255,255,.25); padding: .9rem 1.4rem; border-radius: .8rem; text-decoration: none; font-weight: 700; }
+.org-btn-primary { background: linear-gradient(135deg, #ff9a5c, #ff6f00); color: #0b1220; font-weight: 800; padding: .9rem 1.6rem; border-radius: .8rem; text-decoration: none; box-shadow: 0 14px 30px -12px rgba(255,111,0,.7); transition: transform .2s; }
+.org-btn-primary:hover { transform: translateY(-2px); }
+.org-btn-ghost { color: #fff; border: 1px solid rgba(255,255,255,.22); padding: .9rem 1.4rem; border-radius: .8rem; text-decoration: none; font-weight: 700; }
 .org-hero-stats { display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 1.4rem; }
 .org-hero-stats div { display: flex; flex-direction: column; }
 .org-hero-stats b { color: #ff9a5c; font-size: 1.05rem; }
 .org-hero-stats span { color: #94a3b8; font-size: .8rem; }
-/* Mockup dashboard */
-.org-mock { background: #fff; border-radius: 1.3rem; padding: 1rem; box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); }
-.org-mock-head { display: flex; align-items: center; gap: .4rem; padding: .3rem .4rem .8rem; border-bottom: 1px solid #EEF0F3; }
-.org-mock-head small { color: #98A2B3; margin-left: auto; font-weight: 700; }
-.dot { width: .6rem; height: .6rem; border-radius: 50%; } .dot.r { background: #F87171; } .dot.y { background: #ff9a5c; } .dot.g { background: #34D399; }
-.org-mock-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: .6rem; margin: .9rem 0; }
-.kpi { background: #f8fafc; border: 1px solid #EEF0F3; border-radius: .8rem; padding: .7rem; text-align: center; }
-.kpi b { display: block; font-size: 1.3rem; color: #ea580c; } .kpi span { font-size: .68rem; color: #98A2B3; }
-.org-mock-bars { display: flex; align-items: flex-end; gap: .4rem; height: 70px; padding: 0 .3rem; }
-.org-mock-bars i { flex: 1; background: linear-gradient(180deg, #ff9a5c, #ff6f00); border-radius: .25rem .25rem 0 0; }
-.org-mock-rows { margin-top: .8rem; display: flex; flex-direction: column; gap: .4rem; }
-.org-mock-rows span { height: .55rem; background: #F1F3F6; border-radius: 999px; } .org-mock-rows span:nth-child(2){ width: 80%; } .org-mock-rows span:nth-child(3){ width: 60%; }
+
+/* Cadre navigateur pour les captures */
+.org-frame { margin: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(2,6,23,.35); }
+.org-frame--hero { box-shadow: 0 40px 90px -30px rgba(0,0,0,.65); transform: perspective(1400px) rotateY(-4deg); }
+.org-frame__bar { display: flex; align-items: center; gap: .4rem; padding: .6rem .85rem; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
+.org-frame__bar span { width: .6rem; height: .6rem; border-radius: 50%; background: #cbd5e1; }
+.org-frame__bar span:nth-child(1) { background: #f87171; } .org-frame__bar span:nth-child(2) { background: #fbbf24; } .org-frame__bar span:nth-child(3) { background: #34d399; }
+.org-frame img { display: block; width: 100%; height: auto; background: #f8fafc; }
+
 /* Sections */
-.org-section { padding: 4rem 0; }
+.org-section { padding: 4.5rem 0; }
 .org-alt { background: #fff; }
-.org-head { text-align: center; max-width: 640px; margin: 0 auto 2.5rem; }
-.org-head h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); font-weight: 800; margin: 1rem 0 .6rem; letter-spacing: -.02em; }
-.org-head p { color: #475569; font-size: 1.02rem; }
+.org-head { text-align: center; max-width: 660px; margin: 0 auto 3rem; }
+.org-head h2 { font-size: clamp(1.7rem, 3.6vw, 2.4rem); font-weight: 800; margin: 1rem 0 .6rem; letter-spacing: -.02em; }
+.org-head p { color: #475569; font-size: 1.05rem; }
+
+/* Problème / solution */
 .org-two, .org-two-b { display: grid; grid-template-columns: 1fr; gap: 1.2rem; align-items: center; }
-@media (min-width: 860px) { .org-two { grid-template-columns: 1fr 1fr; } .org-two-b { grid-template-columns: .9fr 1.1fr; } }
+@media (min-width: 860px) { .org-two { grid-template-columns: 1fr 1fr; } .org-two-b { grid-template-columns: .85fr 1.15fr; } }
 .org-card { border-radius: 1.3rem; padding: 1.8rem; }
 .org-card h3 { font-size: 1.1rem; font-weight: 800; margin: 0 0 1rem; }
-.org-card ul { margin: 0; padding-left: 1.1rem; line-height: 1.7; }
+.org-card ul { margin: 0; padding-left: 1.1rem; line-height: 1.75; }
 .org-card.bad { background: #FBEEE8; border: 1px solid #F0D3C6; color: #7c3a24; }
 .org-card.good { background: #EAF6EC; border: 1px solid #CDE8D2; color: #1f5130; }
-.org-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1rem; }
-.org-mod { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.2rem; padding: 1.5rem; }
-.org-alt .org-mod { background: #f8fafc; }
-.org-mod-ic { width: 2.6rem; height: 2.6rem; border-radius: .8rem; background: #FFF1E8; color: #ea580c; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
-.org-mod-ic svg { width: 1.4rem; height: 1.4rem; }
-.org-mod h4 { font-size: 1rem; font-weight: 800; margin: 0 0 .4rem; }
-.org-mod p { font-size: .88rem; color: #475569; line-height: 1.5; margin: 0; }
+
+/* Aperçu : lignes alternées capture + texte */
+.org-features { display: flex; flex-direction: column; gap: 4rem; }
+.org-feature { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: center; }
+@media (min-width: 900px) { .org-feature { grid-template-columns: 1.15fr .85fr; } .org-feature--reverse .org-frame { order: 2; } }
+.org-feature__copy h3 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); font-weight: 800; margin: .8rem 0 .7rem; letter-spacing: -.02em; }
+.org-feature__copy p { color: #475569; font-size: 1.02rem; line-height: 1.65; margin: 0 0 1.2rem; }
+.org-feature__copy ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .7rem; }
+.org-feature__copy li { display: flex; align-items: flex-start; gap: .65rem; font-size: .95rem; font-weight: 600; color: #1e293b; line-height: 1.45; }
+.org-feature__copy li svg { width: 1.15rem; height: 1.15rem; color: #16a34a; flex-shrink: 0; margin-top: .1rem; }
+
 .org-p { color: #334155; font-size: 1.05rem; line-height: 1.7; margin: 1rem 0 1.6rem; }
-/* Mockup membres */
-.org-mock2 { background: #fff; border: 1px solid #e2e8f0; border-radius: 1.3rem; padding: 1rem; box-shadow: 0 20px 40px -28px rgba(0,0,0,.3); display: flex; flex-direction: column; gap: .7rem; }
-.mem { display: flex; align-items: center; gap: .7rem; background: #f8fafc; border: 1px solid #EEF0F3; border-radius: .9rem; padding: .7rem; }
+
+/* Mockup membres (parrainage) */
+.org-mock2 { background: #fff; border: 1px solid #e2e8f0; border-radius: 1.3rem; padding: 1rem; box-shadow: 0 24px 50px -30px rgba(2,6,23,.35); display: flex; flex-direction: column; gap: .7rem; }
+.mem { display: flex; align-items: center; gap: .7rem; background: #f8fafc; border: 1px solid #eef2f7; border-radius: .9rem; padding: .7rem; }
 .mem .av { width: 2rem; height: 2rem; border-radius: 50%; background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: .8rem; }
-.mem b { font-size: .85rem; } .mem small { color: #98A2B3; font-size: .72rem; }
+.mem b { font-size: .85rem; } .mem small { color: #94a3b8; font-size: .72rem; }
 .mem .tag { margin-left: auto; font-size: .62rem; font-weight: 800; text-transform: uppercase; padding: .15rem .5rem; border-radius: 999px; }
-.tag.on { background: #D1FAE5; color: #059669; } .tag.off { background: #F1F3F6; color: #98A2B3; }
+.tag.on { background: #D1FAE5; color: #059669; } .tag.off { background: #eef2f7; color: #94a3b8; }
+
 /* Plans */
 .org-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 1rem; }
-.org-plan { position: relative; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.3rem; padding: 1.7rem 1.4rem; text-align: center; }
+.org-plan { position: relative; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.3rem; padding: 1.8rem 1.4rem; text-align: center; transition: transform .2s, box-shadow .2s; }
+.org-plan:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -26px rgba(2,6,23,.35); }
 .org-plan.hot { border-color: #ff6f00; box-shadow: 0 18px 40px -22px rgba(255,111,0,.5); background: #fff; }
 .org-plan-badge { position: absolute; top: -.6rem; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #fff; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; padding: .25rem .7rem; border-radius: 999px; }
 .org-plan h4 { font-size: 1.2rem; font-weight: 800; margin: 0 0 .5rem; }
 .org-plan-mem { color: #475569; font-size: .88rem; margin: 0 0 .3rem; }
 .org-plan-gold { color: #ea580c; font-weight: 800; font-size: .95rem; margin: 0 0 1.2rem; }
 .org-plan-cta { display: block; background: #0f172a; color: #fff; padding: .7rem; border-radius: .7rem; text-decoration: none; font-weight: 700; }
-.org-plan.hot .org-plan-cta { background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #000000; }
+.org-plan.hot .org-plan-cta { background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #0b1220; }
+.org-fineprint { text-align: center; color: #94a3b8; font-size: .82rem; margin-top: 1.6rem; }
+
 /* CTA final */
-.org-cta-final { background: linear-gradient(160deg, #0f172a, #111c2e); color: #fff; padding: 4.5rem 0; text-align: center; }
+.org-cta-final { background: radial-gradient(900px 400px at 50% -30%, rgba(255,111,0,0.2), transparent 60%), linear-gradient(160deg, #0b1220, #131c2e); color: #fff; padding: 4.5rem 0; text-align: center; }
 .org-cta-final h2 { font-size: clamp(1.8rem,3.6vw,2.5rem); font-weight: 800; margin: 0 0 .6rem; }
 .org-cta-final p { color: #cbd5e1; margin: 0 0 1.6rem; }
-.org-btn-light { background: #fff; color: #0f172a; font-weight: 800; padding: 1rem 1.8rem; border-radius: .8rem; text-decoration: none; }
+.org-btn-light { background: #fff; color: #0f172a; font-weight: 800; padding: 1rem 1.8rem; border-radius: .8rem; text-decoration: none; box-shadow: 0 14px 30px -14px rgba(0,0,0,.5); }
 </style>
