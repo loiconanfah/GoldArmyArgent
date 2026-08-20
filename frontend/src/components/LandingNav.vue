@@ -9,9 +9,13 @@ import {
   BriefcaseIcon, 
   DocumentCheckIcon, 
   CreditCardIcon, 
-  DocumentTextIcon, 
-  StarIcon, 
-  LifebuoyIcon 
+  DocumentTextIcon,
+  StarIcon,
+  LifebuoyIcon,
+  AcademicCapIcon,
+  UserGroupIcon,
+  BuildingOffice2Icon,
+  BoltIcon
 } from '@heroicons/vue/24/outline'
 
 const { t, locale } = useI18n()
@@ -93,11 +97,26 @@ function goToSection(hash) {
                   <p>Kanban &amp; Relances automatiques</p>
                 </div>
               </router-link>
+              <router-link to="/mentorat-a-la-demande" class="nav-dropdown__item" role="menuitem" @click="closeNav">
+                <span class="nav-dropdown__icon"><AcademicCapIcon class="nav-icon" /></span>
+                <div>
+                  <strong>Hub Mentors</strong>
+                  <p>Le mentorat carrière à la demande</p>
+                </div>
+              </router-link>
+              <router-link to="/communaute-goldarmy" class="nav-dropdown__item" role="menuitem" @click="closeNav">
+                <span class="nav-dropdown__icon"><UserGroupIcon class="nav-icon" /></span>
+                <div>
+                  <strong>Communauté</strong>
+                  <p>Entraide entre candidats</p>
+                </div>
+              </router-link>
             </div>
           </div>
 
           <!-- Liens directs -->
           <router-link to="/free-cv-roast" class="nav-modern__link" @click="closeNav">Audit CV Gratuit</router-link>
+          <router-link to="/pour-les-organisations" class="nav-modern__link" @click="closeNav">Organisation</router-link>
           <router-link to="/tarifs" class="nav-modern__link" @click="closeNav">Tarifs</router-link>
           <router-link to="/blog" class="nav-modern__link" @click="closeNav">Blog</router-link>
           <a href="#avis" class="nav-modern__link" @click.prevent="goToSection('avis')">Avis</a>
@@ -145,11 +164,23 @@ function goToSection(hash) {
           <router-link to="/crm-emploi" class="nav-modern__drawer-link" @click="closeNav">
             <BriefcaseIcon class="nav-icon-inline" /> CRM Emploi IA
           </router-link>
+          <router-link to="/mentorat-a-la-demande" class="nav-modern__drawer-link" @click="closeNav">
+            <AcademicCapIcon class="nav-icon-inline" /> Hub Mentors
+          </router-link>
+          <router-link to="/communaute-goldarmy" class="nav-modern__drawer-link" @click="closeNav">
+            <UserGroupIcon class="nav-icon-inline" /> Communauté
+          </router-link>
           <router-link to="/free-cv-roast" class="nav-modern__drawer-link" @click="closeNav">
             <DocumentCheckIcon class="nav-icon-inline" /> Audit CV Gratuit
           </router-link>
 
           <p class="nav-modern__drawer-title mt-4">Navigation</p>
+          <router-link to="/pour-les-organisations" class="nav-modern__drawer-link" @click="closeNav">
+            <BuildingOffice2Icon class="nav-icon-inline" /> Espace Organisation
+          </router-link>
+          <router-link to="/economie-gold" class="nav-modern__drawer-link" @click="closeNav">
+            <BoltIcon class="nav-icon-inline" /> Le Gold
+          </router-link>
           <router-link to="/tarifs" class="nav-modern__drawer-link" @click="closeNav">
             <CreditCardIcon class="nav-icon-inline" /> Tarifs &amp; Forfaits
           </router-link>
