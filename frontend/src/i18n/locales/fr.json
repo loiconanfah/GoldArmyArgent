@@ -369,6 +369,9 @@
             "cv_download": "Télécharger le CV"
         },
         "register": {
+        "perk_1": "50 Gold offerts à l'inscription",
+        "perk_2": "Un CV honnête, adapté à chaque offre",
+        "perk_3": "Des offres cachées, en direct-employeur",
             "account_type": "Type de compte",
             "candidate": "Candidat",
             "organization": "Organisation",

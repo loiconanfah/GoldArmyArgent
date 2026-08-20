@@ -369,6 +369,9 @@
             "cv_download": "Download CV"
         },
         "register": {
+        "perk_1": "50 Gold free when you sign up",
+        "perk_2": "An honest résumé, tailored to each job",
+        "perk_3": "Hidden jobs, straight from employers",
             "account_type": "Account type",
             "candidate": "Candidate",
             "organization": "Organization",

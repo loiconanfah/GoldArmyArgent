@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
-import { ArrowLeftIcon, EnvelopeIcon, LockClosedIcon, UserIcon, GiftIcon, SparklesIcon, BuildingOffice2Icon } from '@heroicons/vue/24/outline'
+import { ArrowLeftIcon, EnvelopeIcon, LockClosedIcon, UserIcon, GiftIcon, SparklesIcon, BuildingOffice2Icon, CheckCircleIcon, BoltIcon } from '@heroicons/vue/24/outline'
 import { useGoogleAuth } from '@/composables/useGoogleAuth'
 import { safeJson } from '@/utils/auth'
 import { getApiUrl } from '@/config'
@@ -145,6 +145,7 @@ const handleRegister = async () => {
               :class="['auth-type-toggle__btn', { 'auth-type-toggle__btn--active': accountType === 'candidate' }]"
               @click="accountType = 'candidate'"
             >
+              <UserIcon class="auth-type-toggle__ic" />
               {{ t('org.register.candidate') }}
             </button>
             <button
@@ -154,6 +155,7 @@ const handleRegister = async () => {
               :class="['auth-type-toggle__btn', { 'auth-type-toggle__btn--active': accountType === 'organization' }]"
               @click="accountType = 'organization'"
             >
+              <BuildingOffice2Icon class="auth-type-toggle__ic" />
               {{ t('org.register.organization') }}
             </button>
           </div>
@@ -357,6 +359,11 @@ const handleRegister = async () => {
           </router-link>
         </div>
         <div class="auth-card__visual-footer">
+          <ul class="auth-card__perks">
+            <li><BoltIcon class="auth-card__perk-ic" /> {{ t('register.perk_1') }}</li>
+            <li><CheckCircleIcon class="auth-card__perk-ic" /> {{ t('register.perk_2') }}</li>
+            <li><SparklesIcon class="auth-card__perk-ic" /> {{ t('register.perk_3') }}</li>
+          </ul>
           <h2 class="auth-card__slogan" v-html="t('register.join_elite')"></h2>
           <div class="auth-card__bars">
             <span class="auth-card__bar"></span>
@@ -949,5 +956,43 @@ const handleRegister = async () => {
 .auth-form__select option {
   background: #25252f;
   color: #fff;
+}
+
+/* Icône dans le toggle candidat/organisation */
+.auth-type-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.auth-type-toggle__ic {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Liste de bénéfices sur le volet visuel */
+.auth-card__perks {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.auth-card__perks li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+}
+.auth-card__perk-ic {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: #ff9a5c;
+  flex-shrink: 0;
 }
 </style>
