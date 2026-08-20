@@ -184,37 +184,37 @@ const plans = [
 </template>
 
 <style scoped>
-.org-page { background: #f8fafc; color: #0f172a; }
+.org-page { background: #fff; color: #0f172a; }
 .org-wrap { max-width: 1160px; margin: 0 auto; padding: 0 1.5rem; }
-.org-pill, .org-eyebrow { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #ea580c; background: rgba(255,111,0,0.1); padding: .35rem .8rem; border-radius: 999px; }
+.org-pill, .org-eyebrow { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #ea580c; background: #FFF1E8; padding: .35rem .8rem; border-radius: 999px; }
 
-/* HERO */
-.org-hero { background: radial-gradient(1200px 500px at 80% -10%, rgba(255,111,0,0.18), transparent 60%), linear-gradient(160deg, #0b1220 0%, #131c2e 100%); color: #fff; padding: 4.5rem 0 4.5rem; overflow: hidden; }
+/* HERO — léger & épuré, comme la page d'accueil */
+.org-hero { background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); color: #0f172a; padding: 4.5rem 0 4rem; overflow: hidden; }
 .org-hero-grid { display: grid; grid-template-columns: 1fr; gap: 2.8rem; align-items: center; }
 @media (min-width: 980px) { .org-hero-grid { grid-template-columns: 1fr 1.05fr; } }
-.org-hero .org-pill { color: #ffb27d; background: rgba(255,111,0,0.16); }
-.org-h1 { font-size: clamp(2rem, 4.2vw, 3.15rem); font-weight: 800; line-height: 1.1; margin: 1.2rem 0 1rem; letter-spacing: -.025em; }
-.org-lead { color: #cbd5e1; font-size: 1.12rem; line-height: 1.6; max-width: 46ch; }
+.org-h1 { font-size: clamp(2rem, 4.2vw, 3.1rem); font-weight: 800; line-height: 1.1; margin: 1.2rem 0 1rem; letter-spacing: -.025em; color: #0f172a; }
+.org-lead { color: #475569; font-size: 1.12rem; line-height: 1.6; max-width: 46ch; }
 .org-hero-cta { display: flex; gap: .8rem; flex-wrap: wrap; margin: 1.8rem 0 1.6rem; }
-.org-btn-primary { background: linear-gradient(135deg, #ff9a5c, #ff6f00); color: #0b1220; font-weight: 800; padding: .9rem 1.6rem; border-radius: .8rem; text-decoration: none; box-shadow: 0 14px 30px -12px rgba(255,111,0,.7); transition: transform .2s; }
-.org-btn-primary:hover { transform: translateY(-2px); }
-.org-btn-ghost { color: #fff; border: 1px solid rgba(255,255,255,.22); padding: .9rem 1.4rem; border-radius: .8rem; text-decoration: none; font-weight: 700; }
+.org-btn-primary { background: linear-gradient(135deg, #ff9a5c, #ff6f00); color: #000; font-weight: 800; padding: .9rem 1.6rem; border-radius: .8rem; text-decoration: none; box-shadow: 0 10px 25px rgba(255,111,0,.35); transition: transform .2s, box-shadow .2s; }
+.org-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255,111,0,.45); }
+.org-btn-ghost { color: #0f172a; border: 1px solid #e2e8f0; background: #fff; padding: .9rem 1.4rem; border-radius: .8rem; text-decoration: none; font-weight: 700; transition: border-color .2s; }
+.org-btn-ghost:hover { border-color: #ff9a5c; }
 .org-hero-stats { display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 1.4rem; }
 .org-hero-stats div { display: flex; flex-direction: column; }
-.org-hero-stats b { color: #ff9a5c; font-size: 1.05rem; }
+.org-hero-stats b { color: #ea580c; font-size: 1.05rem; }
 .org-hero-stats span { color: #94a3b8; font-size: .8rem; }
 
-/* Cadre navigateur pour les captures */
-.org-frame { margin: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(2,6,23,.35); }
-.org-frame--hero { box-shadow: 0 40px 90px -30px rgba(0,0,0,.65); transform: perspective(1400px) rotateY(-4deg); }
-.org-frame__bar { display: flex; align-items: center; gap: .4rem; padding: .6rem .85rem; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
+/* Cadre navigateur pour les captures — plat, ombre douce */
+.org-frame { margin: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 1.1rem; overflow: hidden; box-shadow: 0 24px 50px -30px rgba(2,6,23,.28); }
+.org-frame--hero { box-shadow: 0 30px 60px -30px rgba(2,6,23,.32); }
+.org-frame__bar { display: flex; align-items: center; gap: .4rem; padding: .6rem .85rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
 .org-frame__bar span { width: .6rem; height: .6rem; border-radius: 50%; background: #cbd5e1; }
 .org-frame__bar span:nth-child(1) { background: #f87171; } .org-frame__bar span:nth-child(2) { background: #fbbf24; } .org-frame__bar span:nth-child(3) { background: #34d399; }
 .org-frame img { display: block; width: 100%; height: auto; background: #f8fafc; }
 
 /* Sections */
 .org-section { padding: 4.5rem 0; }
-.org-alt { background: #fff; }
+.org-alt { background: #f8fafc; }
 .org-head { text-align: center; max-width: 660px; margin: 0 auto 3rem; }
 .org-head h2 { font-size: clamp(1.7rem, 3.6vw, 2.4rem); font-weight: 800; margin: 1rem 0 .6rem; letter-spacing: -.02em; }
 .org-head p { color: #475569; font-size: 1.05rem; }
@@ -261,9 +261,11 @@ const plans = [
 .org-plan.hot .org-plan-cta { background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #0b1220; }
 .org-fineprint { text-align: center; color: #94a3b8; font-size: .82rem; margin-top: 1.6rem; }
 
-/* CTA final */
-.org-cta-final { background: radial-gradient(900px 400px at 50% -30%, rgba(255,111,0,0.2), transparent 60%), linear-gradient(160deg, #0b1220, #131c2e); color: #fff; padding: 4.5rem 0; text-align: center; }
-.org-cta-final h2 { font-size: clamp(1.8rem,3.6vw,2.5rem); font-weight: 800; margin: 0 0 .6rem; }
-.org-cta-final p { color: #cbd5e1; margin: 0 0 1.6rem; }
-.org-btn-light { background: #fff; color: #0f172a; font-weight: 800; padding: 1rem 1.8rem; border-radius: .8rem; text-decoration: none; box-shadow: 0 14px 30px -14px rgba(0,0,0,.5); }
+/* CTA final — panneau clair, chaleureux et doux */
+.org-cta-final { background: #fff; padding: 4.5rem 0; }
+.org-cta-final .org-wrap { background: linear-gradient(135deg, #FFF7F1, #FFF1E8); border: 1px solid #FADBC6; border-radius: 1.6rem; padding: 3.5rem 2rem; text-align: center; max-width: 900px; }
+.org-cta-final h2 { font-size: clamp(1.8rem,3.6vw,2.4rem); font-weight: 800; margin: 0 0 .6rem; color: #0f172a; letter-spacing: -.02em; }
+.org-cta-final p { color: #475569; margin: 0 0 1.6rem; }
+.org-btn-light { background: linear-gradient(135deg, #ff9a5c, #ff6f00); color: #000; font-weight: 800; padding: 1rem 1.9rem; border-radius: .8rem; text-decoration: none; display: inline-block; box-shadow: 0 10px 25px rgba(255,111,0,.35); transition: transform .2s, box-shadow .2s; }
+.org-btn-light:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255,111,0,.45); }
 </style>
