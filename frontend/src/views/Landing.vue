@@ -16,6 +16,17 @@ gsap.registerPlugin(ScrollTrigger)
 const route = useRoute()
 const { t, locale } = useI18n()
 
+// Modules mis en avant sur la vitrine (nouveautés majeures)
+const _svg = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`
+const gmModules = [
+  { key: 'direct', badge: true, icon: _svg('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>') },
+  { key: 'cv', badge: true, icon: _svg('<path d="M7 3h7l4 4v14H7z"/><path d="M9.5 13l2 2 3.5-3.5"/>') },
+  { key: 'mentor', badge: false, icon: _svg('<path d="M12 4l9 5-9 5-9-5 9-5z"/><path d="M6 11v4c0 1.6 2.7 3 6 3s6-1.4 6-3v-4"/>') },
+  { key: 'community', badge: false, icon: _svg('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M15.5 15c2.6.3 4.5 2 4.5 5"/>') },
+  { key: 'business', badge: false, icon: _svg('<path d="M4 21V6l6-3v18"/><path d="M10 9h10v12H4"/><path d="M14 21v-4h3v4"/>') },
+  { key: 'gold', badge: false, icon: _svg('<path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>') },
+]
+
 // Apply ?lang= from URL (for SEO / shared links)
 if (route.query.lang === 'fr' || route.query.lang === 'en') {
   locale.value = route.query.lang
@@ -540,6 +551,25 @@ function closeNav() {
             </div>
         </div>
     </section>
+
+      <!-- MODULES GOLDARMY (nouveautés majeures) -->
+      <section class="section gm-modules">
+        <div class="gm-mod-wrap">
+          <div class="gm-mod-head">
+            <span class="gm-mod-eyebrow">{{ t('landing.modules.eyebrow') }}</span>
+            <h3 class="gm-mod-title">{{ t('landing.modules.title') }} <span class="gm-mod-em">{{ t('landing.modules.title_em') }}</span></h3>
+            <p class="gm-mod-sub">{{ t('landing.modules.sub') }}</p>
+          </div>
+          <div class="gm-mod-grid">
+            <article v-for="m in gmModules" :key="m.key" class="gm-mod-card">
+              <span v-if="m.badge" class="gm-mod-badge">{{ t('landing.modules.badge_new') }}</span>
+              <div class="gm-mod-ic" v-html="m.icon"></div>
+              <h4 class="gm-mod-card-title">{{ t('landing.modules.' + m.key + '_title') }}</h4>
+              <p class="gm-mod-card-desc">{{ t('landing.modules.' + m.key + '_desc') }}</p>
+            </article>
+          </div>
+        </div>
+      </section>
 
       <!-- HOME1 DEV - GoldArmy -->
       <section class="section home1-dev">
@@ -1330,4 +1360,21 @@ function closeNav() {
   box-shadow: 0 12px 30px rgba(255, 111, 0, 0.45);
 }
 .hero-cta-button svg { width: 1.25rem; height: 1.25rem; margin-left: 0.5rem; }
+
+/* ── Section MODULES (nouveautés) ── */
+.gm-modules { background: #FBFAF8; padding: 5rem 1.25rem; }
+.gm-mod-wrap { max-width: 1160px; margin: 0 auto; }
+.gm-mod-head { text-align: center; margin-bottom: 3rem; }
+.gm-mod-eyebrow { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #B26B00; background: #FDF4E3; padding: .35rem .8rem; border-radius: 999px; margin-bottom: 1rem; }
+.gm-mod-title { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; color: #1C1917; letter-spacing: -.02em; margin: 0; line-height: 1.1; }
+.gm-mod-em { color: #E8930C; }
+.gm-mod-sub { color: #57534E; max-width: 60ch; margin: 1rem auto 0; font-size: 1.02rem; line-height: 1.55; }
+.gm-mod-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.1rem; }
+.gm-mod-card { position: relative; background: #fff; border: 1px solid #ECE7E0; border-radius: 1.4rem; padding: 1.8rem; transition: transform .2s ease, box-shadow .2s ease; }
+.gm-mod-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -24px rgba(180, 107, 0, .35); }
+.gm-mod-ic { width: 2.8rem; height: 2.8rem; border-radius: .9rem; background: #FDF4E3; color: #B26B00; display: flex; align-items: center; justify-content: center; margin-bottom: 1.1rem; }
+.gm-mod-ic svg { width: 1.5rem; height: 1.5rem; }
+.gm-mod-badge { position: absolute; top: 1.5rem; right: 1.5rem; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #fff; background: linear-gradient(135deg, #FBBF24, #F59E0B); padding: .2rem .55rem; border-radius: 999px; }
+.gm-mod-card-title { font-size: 1.05rem; font-weight: 800; color: #1C1917; margin: 0 0 .5rem; }
+.gm-mod-card-desc { font-size: .9rem; line-height: 1.55; color: #57534E; margin: 0; }
 </style>

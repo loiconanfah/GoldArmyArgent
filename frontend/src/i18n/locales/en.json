@@ -587,6 +587,25 @@
         "theme_dark": "Dark theme"
     },
     "landing": {
+        "modules": {
+            "eyebrow": "What's new",
+            "title": "All your modules,",
+            "title_em": "in one place.",
+            "badge_new": "New",
+            "sub": "GoldArmy has grown a lot: from finding hidden jobs to an honest, tailored résumé, all the way to mentorship and community.",
+            "direct_title": "Direct-employer Sniper",
+            "direct_desc": "Hidden jobs pulled straight from company websites — not only from job platforms.",
+            "cv_title": "Honest & tailored résumé",
+            "cv_desc": "Real ATS audit, tailoring to the job with a before→after match score, and zero invented facts (anti-fabrication guards).",
+            "mentor_title": "Mentor Hub",
+            "mentor_desc": "Mentorship on demand: find a mentor, book a session, join workshops.",
+            "community_title": "Community",
+            "community_desc": "Exchange with your organization's members: résumé templates, portfolios, interview results.",
+            "business_title": "Business space",
+            "business_desc": "For organizations: cohorts, mentors, network and tiered billing.",
+            "gold_title": "Gold economy",
+            "gold_desc": "Pay as you go. Free Gold every month, top up via the Shop — and it never expires."
+        },
         "nav": {
             "agents": "Agents",
             "features": "Features",

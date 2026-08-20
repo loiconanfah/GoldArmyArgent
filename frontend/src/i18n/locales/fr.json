@@ -587,6 +587,25 @@
         "theme_dark": "Thème sombre"
     },
     "landing": {
+        "modules": {
+            "eyebrow": "Nouveautés",
+            "title": "Tous vos modules,",
+            "title_em": "réunis.",
+            "badge_new": "Nouveau",
+            "sub": "GoldArmy a beaucoup évolué : de la recherche d'offres cachées à un CV honnête et ciblé, jusqu'au mentorat et à la vie de communauté.",
+            "direct_title": "Sniper direct-employeur",
+            "direct_desc": "Des offres cachées, récupérées directement sur les sites des entreprises — pas seulement sur les plateformes d'emploi.",
+            "cv_title": "CV honnête & ciblé",
+            "cv_desc": "Audit ATS réel, adaptation à l'offre avec score avant→après, et zéro information inventée (garde-fous anti-fabrication).",
+            "mentor_title": "Hub Mentors",
+            "mentor_desc": "Le mentorat à la demande : trouve un mentor, réserve une session, participe aux ateliers.",
+            "community_title": "Communauté",
+            "community_desc": "Échange avec les membres de ton organisation : modèles de CV, portfolios, résultats d'entretien.",
+            "business_title": "Espace Business",
+            "business_desc": "Pour les organisations : cohortes, mentors, réseau et facturation par paliers.",
+            "gold_title": "Économie Gold",
+            "gold_desc": "Paie à l'usage. Du Gold offert chaque mois, rechargeable via la Boutique — et il ne périme jamais."
+        },
         "nav": {
             "agents": "Agents",
             "features": "Fonctions",
