@@ -55,7 +55,7 @@ const plans = [
   { name: 'Starter', members: 'Jusqu\'à 25 membres', gold: '300 Gold/membre/mois', highlight: false },
   { name: 'Growth', members: 'Jusqu\'à 75 membres', gold: '300 Gold/membre/mois', highlight: true },
   { name: 'Scale', members: 'Jusqu\'à 200 membres', gold: '600 Gold/membre/mois', highlight: false },
-  { name: 'Enterprise', members: 'Membres illimités', gold: '1000 Gold/membre/mois', highlight: false }
+  { name: 'Enterprise', members: 'Membres illimités', gold: 'Gold sur devis', highlight: false }
 ]
 </script>
 
