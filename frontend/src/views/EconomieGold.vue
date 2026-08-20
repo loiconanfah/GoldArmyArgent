@@ -70,23 +70,23 @@ const packs = [
 <style scoped>
 .feature-page { background: #f8fafc; color: #0f172a; }
 .feature-container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
-.feature-hero { background: #17130D; color: #fff; padding: 5rem 0 4rem; text-align: center; }
-.feature-pill { background: rgba(245,158,11,0.18); color: #F5B301; padding: 0.4rem 1rem; border-radius: 999px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+.feature-hero { background: #0f172a; color: #fff; padding: 5rem 0 4rem; text-align: center; }
+.feature-pill { background: rgba(255,111,0,0.18); color: #ff9a5c; padding: 0.4rem 1rem; border-radius: 999px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
 .feature-h1 { font-size: clamp(2rem, 4vw, 3.3rem); font-weight: 800; margin: 1.5rem 0 1rem; line-height: 1.15; }
-.feature-lead { font-size: 1.15rem; color: #D6CFC4; max-width: 720px; margin: 0 auto 2rem; line-height: 1.6; }
-.btn-primary { background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #1a1206; font-weight: 800; padding: 1rem 2rem; border-radius: 0.7rem; text-decoration: none; display: inline-block; box-shadow: 0 12px 28px -10px rgba(245,158,11,0.6); }
+.feature-lead { font-size: 1.15rem; color: #cbd5e1; max-width: 720px; margin: 0 auto 2rem; line-height: 1.6; }
+.btn-primary { background: linear-gradient(135deg, #ff9a5c, #ff6f00); color: #000000; font-weight: 800; padding: 1rem 2rem; border-radius: 0.7rem; text-decoration: none; display: inline-block; box-shadow: 0 12px 28px -10px rgba(255,111,0,0.6); }
 .feature-content-section { padding: 4rem 0; }
-.feature-text-content h2 { font-size: 1.7rem; font-weight: 800; color: #0f172a; margin: 2.5rem 0 1rem; border-bottom: 2px solid #F59E0B; padding-bottom: 0.5rem; }
+.feature-text-content h2 { font-size: 1.7rem; font-weight: 800; color: #0f172a; margin: 2.5rem 0 1rem; border-bottom: 2px solid #ff6f00; padding-bottom: 0.5rem; }
 .feature-text-content h2:first-of-type { margin-top: 0; }
 .feature-text-content p { font-size: 1.05rem; line-height: 1.75; margin-bottom: 1.25rem; color: #334155; }
 .feature-text-content ul { margin: 1.25rem 0; padding-left: 1.5rem; line-height: 1.8; color: #334155; }
 .gold-packs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; max-width: 900px; margin: 3rem auto 0; }
 .gold-pack { position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 1.2rem; padding: 1.6rem 1.2rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
-.gold-pack.hot { border-color: #F59E0B; box-shadow: 0 18px 40px -22px rgba(245,158,11,.5); }
-.gold-badge { position: absolute; top: -.6rem; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg,#FBBF24,#F59E0B); color: #fff; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; padding: .25rem .7rem; border-radius: 999px; }
+.gold-pack.hot { border-color: #ff6f00; box-shadow: 0 18px 40px -22px rgba(255,111,0,.5); }
+.gold-badge { position: absolute; top: -.6rem; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #fff; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; padding: .25rem .7rem; border-radius: 999px; }
 .gold-pack h4 { font-size: 1.15rem; font-weight: 800; margin: 0 0 .4rem; }
-.gold-amount { color: #B45309; font-weight: 800; margin: 0 0 .2rem; }
+.gold-amount { color: #ea580c; font-weight: 800; margin: 0 0 .2rem; }
 .gold-price { color: #64748b; font-size: 1.1rem; font-weight: 700; margin: 0 0 1.1rem; }
-.gold-cta { display: block; background: #1C1917; color: #fff; padding: .7rem; border-radius: .6rem; text-decoration: none; font-weight: 700; }
-.gold-pack.hot .gold-cta { background: linear-gradient(135deg,#FBBF24,#F59E0B); color: #1a1206; }
+.gold-cta { display: block; background: #0f172a; color: #fff; padding: .7rem; border-radius: .6rem; text-decoration: none; font-weight: 700; }
+.gold-pack.hot .gold-cta { background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #000000; }
 </style>
