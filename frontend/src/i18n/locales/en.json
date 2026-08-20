@@ -588,6 +588,7 @@
     },
     "landing": {
         "modules": {
+            "learn_more": "Learn more",
             "eyebrow": "What's new",
             "title": "All your modules,",
             "title_em": "in one place.",

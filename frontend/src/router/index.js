@@ -64,6 +64,26 @@ const routes = [
         name: 'Tarifs',
         component: () => import('../views/Tarifs.vue')
     },
+    {
+        path: '/pour-les-organisations',
+        name: 'PourOrganisations',
+        component: () => import('../views/PourOrganisations.vue')
+    },
+    {
+        path: '/mentorat-a-la-demande',
+        name: 'MentoratADemande',
+        component: () => import('../views/MentoratADemande.vue')
+    },
+    {
+        path: '/communaute-goldarmy',
+        name: 'CommunauteGoldArmy',
+        component: () => import('../views/CommunauteGoldArmy.vue')
+    },
+    {
+        path: '/economie-gold',
+        name: 'EconomieGold',
+        component: () => import('../views/EconomieGold.vue')
+    },
     // ── Accueil (post-login home page) ────────────────────────────────────
     {
         path: '/home',

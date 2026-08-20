@@ -19,12 +19,12 @@ const { t, locale } = useI18n()
 // Modules mis en avant sur la vitrine (nouveautés majeures)
 const _svg = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`
 const gmModules = [
-  { key: 'direct', badge: true, icon: _svg('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>') },
-  { key: 'cv', badge: true, icon: _svg('<path d="M7 3h7l4 4v14H7z"/><path d="M9.5 13l2 2 3.5-3.5"/>') },
-  { key: 'mentor', badge: false, icon: _svg('<path d="M12 4l9 5-9 5-9-5 9-5z"/><path d="M6 11v4c0 1.6 2.7 3 6 3s6-1.4 6-3v-4"/>') },
-  { key: 'community', badge: false, icon: _svg('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M15.5 15c2.6.3 4.5 2 4.5 5"/>') },
-  { key: 'business', badge: false, icon: _svg('<path d="M4 21V6l6-3v18"/><path d="M10 9h10v12H4"/><path d="M14 21v-4h3v4"/>') },
-  { key: 'gold', badge: false, icon: _svg('<path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>') },
+  { key: 'direct', badge: true, to: '/sniper-search', icon: _svg('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>') },
+  { key: 'cv', badge: true, to: '/free-cv-roast', icon: _svg('<path d="M7 3h7l4 4v14H7z"/><path d="M9.5 13l2 2 3.5-3.5"/>') },
+  { key: 'mentor', badge: false, to: '/mentorat-a-la-demande', icon: _svg('<path d="M12 4l9 5-9 5-9-5 9-5z"/><path d="M6 11v4c0 1.6 2.7 3 6 3s6-1.4 6-3v-4"/>') },
+  { key: 'community', badge: false, to: '/communaute-goldarmy', icon: _svg('<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17.5" cy="9" r="2.2"/><path d="M15.5 15c2.6.3 4.5 2 4.5 5"/>') },
+  { key: 'business', badge: false, to: '/pour-les-organisations', icon: _svg('<path d="M4 21V6l6-3v18"/><path d="M10 9h10v12H4"/><path d="M14 21v-4h3v4"/>') },
+  { key: 'gold', badge: false, to: '/economie-gold', icon: _svg('<path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>') },
 ]
 
 // Apply ?lang= from URL (for SEO / shared links)
@@ -561,12 +561,13 @@ function closeNav() {
             <p class="gm-mod-sub">{{ t('landing.modules.sub') }}</p>
           </div>
           <div class="gm-mod-grid">
-            <article v-for="m in gmModules" :key="m.key" class="gm-mod-card">
+            <router-link v-for="m in gmModules" :key="m.key" :to="m.to" class="gm-mod-card">
               <span v-if="m.badge" class="gm-mod-badge">{{ t('landing.modules.badge_new') }}</span>
               <div class="gm-mod-ic" v-html="m.icon"></div>
               <h4 class="gm-mod-card-title">{{ t('landing.modules.' + m.key + '_title') }}</h4>
               <p class="gm-mod-card-desc">{{ t('landing.modules.' + m.key + '_desc') }}</p>
-            </article>
+              <span class="gm-mod-more">{{ t('landing.modules.learn_more') }} →</span>
+            </router-link>
           </div>
         </div>
       </section>
@@ -1370,7 +1371,8 @@ function closeNav() {
 .gm-mod-em { color: #E8930C; }
 .gm-mod-sub { color: #57534E; max-width: 60ch; margin: 1rem auto 0; font-size: 1.02rem; line-height: 1.55; }
 .gm-mod-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.1rem; }
-.gm-mod-card { position: relative; background: #fff; border: 1px solid #ECE7E0; border-radius: 1.4rem; padding: 1.8rem; transition: transform .2s ease, box-shadow .2s ease; }
+.gm-mod-card { position: relative; display: block; text-decoration: none; color: inherit; background: #fff; border: 1px solid #ECE7E0; border-radius: 1.4rem; padding: 1.8rem; transition: transform .2s ease, box-shadow .2s ease; }
+.gm-mod-more { display: inline-block; margin-top: 1rem; font-size: .82rem; font-weight: 800; color: #B26B00; }
 .gm-mod-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -24px rgba(180, 107, 0, .35); }
 .gm-mod-ic { width: 2.8rem; height: 2.8rem; border-radius: .9rem; background: #FDF4E3; color: #B26B00; display: flex; align-items: center; justify-content: center; margin-bottom: 1.1rem; }
 .gm-mod-ic svg { width: 1.5rem; height: 1.5rem; }

@@ -588,6 +588,7 @@
     },
     "landing": {
         "modules": {
+            "learn_more": "En savoir plus",
             "eyebrow": "Nouveautés",
             "title": "Tous vos modules,",
             "title_em": "réunis.",

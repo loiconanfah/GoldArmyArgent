@@ -42,9 +42,10 @@ const router = useRouter()
 const currentRoute = computed(() => route.path)
 const isPublicRoute = computed(() => {
   const publicPaths = [
-    '/', '/login', '/register', '/blog', '/free-cv-roast', '/free-interview', 
-    '/support', '/privacy', '/sniper-search', '/mentor-ia', 
-    '/simulation-entretien', '/crm-emploi', '/tarifs'
+    '/', '/login', '/register', '/blog', '/free-cv-roast', '/free-interview',
+    '/support', '/privacy', '/sniper-search', '/mentor-ia',
+    '/simulation-entretien', '/crm-emploi', '/tarifs',
+    '/pour-les-organisations', '/mentorat-a-la-demande', '/communaute-goldarmy', '/economie-gold'
   ]
   return publicPaths.includes(route.path) || route.path.startsWith('/blog/')
 })
