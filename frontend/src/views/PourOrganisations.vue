@@ -274,7 +274,7 @@ const plans = [
 .org-compare--con li { color: #64748b; }
 .org-compare--con .org-compare__ic { background: #e5eaf1; color: #94a3b8; }
 /* Colonne "avec GoldArmy" — accent orange, mise en avant */
-.org-compare--pro { border-color: #ffd9bf; box-shadow: 0 22px 45px -28px rgba(255,111,0,.45); }
+.org-compare--pro { border-color: #ffd9bf; box-shadow: 0 10px 30px -20px rgba(15,23,42,.14); }
 .org-compare--pro .org-compare__tag { background: #FFF1E8; color: #ea580c; }
 .org-compare--pro li { color: #1e293b; font-weight: 600; }
 .org-compare--pro .org-compare__ic { background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #fff; }
@@ -303,7 +303,7 @@ const plans = [
 .org-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 1rem; }
 .org-plan { position: relative; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.3rem; padding: 1.8rem 1.4rem; text-align: center; transition: transform .2s, box-shadow .2s; }
 .org-plan:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -26px rgba(2,6,23,.35); }
-.org-plan.hot { border-color: #ff6f00; box-shadow: 0 18px 40px -22px rgba(255,111,0,.5); background: #fff; }
+.org-plan.hot { border-color: #ffd9bf; box-shadow: 0 10px 30px -20px rgba(15,23,42,.14); background: #fff; }
 .org-plan-badge { position: absolute; top: -.6rem; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #fff; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; padding: .25rem .7rem; border-radius: 999px; }
 .org-plan h4 { font-size: 1.2rem; font-weight: 800; margin: 0 0 .5rem; }
 .org-plan-mem { color: #475569; font-size: .88rem; margin: 0 0 .3rem; }
@@ -312,11 +312,11 @@ const plans = [
 .org-plan.hot .org-plan-cta { background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #0b1220; }
 .org-fineprint { text-align: center; color: #94a3b8; font-size: .82rem; margin-top: 1.6rem; }
 
-/* CTA final — panneau clair, chaleureux et doux */
-.org-cta-final { background: #fff; padding: 4.5rem 0; }
-.org-cta-final .org-wrap { background: linear-gradient(135deg, #FFF7F1, #FFF1E8); border: 1px solid #FADBC6; border-radius: 1.6rem; padding: 3.5rem 2rem; text-align: center; max-width: 900px; }
-.org-cta-final h2 { font-size: clamp(1.8rem,3.6vw,2.4rem); font-weight: 800; margin: 0 0 .6rem; color: #0f172a; letter-spacing: -.02em; }
-.org-cta-final p { color: #475569; margin: 0 0 1.6rem; }
-.org-btn-light { background: linear-gradient(135deg, #ff9a5c, #ff6f00); color: #000; font-weight: 800; padding: 1rem 1.9rem; border-radius: .8rem; text-decoration: none; display: inline-block; box-shadow: 0 10px 25px rgba(255,111,0,.35); transition: transform .2s, box-shadow .2s; }
+/* CTA final — minimal, comme l'index : texte centré + bouton propre */
+.org-cta-final { background: #f8fafc; padding: 5.5rem 0; border-top: 1px solid #eef2f7; }
+.org-cta-final .org-wrap { text-align: center; max-width: 680px; }
+.org-cta-final h2 { font-size: clamp(1.8rem,3.6vw,2.4rem); font-weight: 800; margin: 0 0 .8rem; color: #0f172a; letter-spacing: -.02em; }
+.org-cta-final p { color: #475569; margin: 0 0 2rem; font-size: 1.05rem; line-height: 1.55; }
+.org-btn-light { display: inline-block; background: linear-gradient(135deg, #ff9a5c, #ff6f00); color: #000; font-weight: 800; padding: 1rem 2.25rem; border-radius: 12px; text-decoration: none; box-shadow: 0 10px 25px rgba(255,111,0,.35); transition: transform .2s, box-shadow .2s; }
 .org-btn-light:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255,111,0,.45); }
 </style>
