@@ -89,14 +89,54 @@ const plans = [
 
       <!-- PROBLÈME / SOLUTION -->
       <section class="org-section">
-        <div class="org-wrap org-two">
-          <div class="org-card bad">
-            <h3>Sans outil dédié</h3>
-            <ul><li>Suivi des membres dans des tableurs éparpillés</li><li>Aucune visibilité sur l'insertion réelle</li><li>Mentors et ateliers gérés à la main</li><li>Impossible de mesurer l'impact du programme</li></ul>
+        <div class="org-wrap">
+          <div class="org-head">
+            <span class="org-eyebrow">Pourquoi un portail dédié</span>
+            <h2>Le jour et la nuit pour piloter une cohorte</h2>
           </div>
-          <div class="org-card good">
-            <h3>Avec GoldArmy Organisation</h3>
-            <ul><li>Un portail unique, KPIs animés en temps réel</li><li>Progression individuelle de chaque membre</li><li>Mentors, événements et communauté intégrés</li><li>Parrainage en Gold + facturation claire par paliers</li></ul>
+          <div class="org-two">
+            <div class="org-compare org-compare--con">
+              <span class="org-compare__tag">Sans outil dédié</span>
+              <ul>
+                <li>
+                  <span class="org-compare__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                  Suivi des membres dans des tableurs éparpillés
+                </li>
+                <li>
+                  <span class="org-compare__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                  Aucune visibilité sur l'insertion réelle
+                </li>
+                <li>
+                  <span class="org-compare__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                  Mentors et ateliers gérés à la main
+                </li>
+                <li>
+                  <span class="org-compare__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                  Impossible de mesurer l'impact du programme
+                </li>
+              </ul>
+            </div>
+            <div class="org-compare org-compare--pro">
+              <span class="org-compare__tag">Avec GoldArmy Organisation</span>
+              <ul>
+                <li>
+                  <span class="org-compare__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+                  Un portail unique, KPIs animés en temps réel
+                </li>
+                <li>
+                  <span class="org-compare__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+                  Progression individuelle de chaque membre
+                </li>
+                <li>
+                  <span class="org-compare__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+                  Mentors, événements et communauté intégrés
+                </li>
+                <li>
+                  <span class="org-compare__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></span>
+                  Parrainage en Gold + facturation claire par paliers
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -220,13 +260,24 @@ const plans = [
 .org-head p { color: #475569; font-size: 1.05rem; }
 
 /* Problème / solution */
-.org-two, .org-two-b { display: grid; grid-template-columns: 1fr; gap: 1.2rem; align-items: center; }
+.org-two, .org-two-b { display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: stretch; }
 @media (min-width: 860px) { .org-two { grid-template-columns: 1fr 1fr; } .org-two-b { grid-template-columns: .85fr 1.15fr; } }
-.org-card { border-radius: 1.3rem; padding: 1.8rem; }
-.org-card h3 { font-size: 1.1rem; font-weight: 800; margin: 0 0 1rem; }
-.org-card ul { margin: 0; padding-left: 1.1rem; line-height: 1.75; }
-.org-card.bad { background: #FBEEE8; border: 1px solid #F0D3C6; color: #7c3a24; }
-.org-card.good { background: #EAF6EC; border: 1px solid #CDE8D2; color: #1f5130; }
+.org-compare { border-radius: 1.4rem; padding: 2rem; background: #fff; border: 1px solid #e2e8f0; }
+.org-compare__tag { display: inline-block; font-size: .78rem; font-weight: 800; letter-spacing: .04em; padding: .4rem .9rem; border-radius: 999px; margin-bottom: 1.4rem; }
+.org-compare ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .95rem; }
+.org-compare li { display: flex; align-items: flex-start; gap: .8rem; font-size: .98rem; line-height: 1.45; font-weight: 500; }
+.org-compare__ic { flex-shrink: 0; width: 1.5rem; height: 1.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: .05rem; }
+.org-compare__ic svg { width: .9rem; height: .9rem; }
+/* Colonne "sans outil" — neutre grisé */
+.org-compare--con { background: #f8fafc; }
+.org-compare--con .org-compare__tag { background: #eef2f7; color: #64748b; }
+.org-compare--con li { color: #64748b; }
+.org-compare--con .org-compare__ic { background: #e5eaf1; color: #94a3b8; }
+/* Colonne "avec GoldArmy" — accent orange, mise en avant */
+.org-compare--pro { border-color: #ffd9bf; box-shadow: 0 22px 45px -28px rgba(255,111,0,.45); }
+.org-compare--pro .org-compare__tag { background: #FFF1E8; color: #ea580c; }
+.org-compare--pro li { color: #1e293b; font-weight: 600; }
+.org-compare--pro .org-compare__ic { background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #fff; }
 
 /* Aperçu : lignes alternées capture + texte */
 .org-features { display: flex; flex-direction: column; gap: 4rem; }
