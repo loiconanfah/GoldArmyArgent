@@ -1362,21 +1362,21 @@ function closeNav() {
 }
 .hero-cta-button svg { width: 1.25rem; height: 1.25rem; margin-left: 0.5rem; }
 
-/* ── Section MODULES (nouveautés) ── */
-.gm-modules { background: #f8fafc; padding: 5rem 1.25rem; }
+/* ── Section MODULES (nouveautés) — alignée sur la charte native du template ── */
+.gm-modules { background: #f8fafc; padding: 5rem 1.25rem; font-family: var(--fonts--secondaryfont, Inter, sans-serif); }
 .gm-mod-wrap { max-width: 1160px; margin: 0 auto; }
 .gm-mod-head { text-align: center; margin-bottom: 3rem; }
-.gm-mod-eyebrow { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #ea580c; background: #FFF1E8; padding: .35rem .8rem; border-radius: 999px; margin-bottom: 1rem; }
-.gm-mod-title { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; color: #0f172a; letter-spacing: -.02em; margin: 0; line-height: 1.1; }
-.gm-mod-em { color: #ff6f00; }
-.gm-mod-sub { color: #475569; max-width: 60ch; margin: 1rem auto 0; font-size: 1.02rem; line-height: 1.55; }
+.gm-mod-eyebrow { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #6b6b6b; background: #eaeaea; padding: .35rem .8rem; border-radius: 999px; margin-bottom: 1rem; }
+.gm-mod-title { font-family: var(--fonts--primaryfont, "DM Sans", sans-serif); font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; color: #2e2e2e; letter-spacing: -.02em; margin: 0; line-height: 1.1; }
+.gm-mod-em { color: #6b6b6b; }
+.gm-mod-sub { color: #6b6b6b; max-width: 60ch; margin: 1rem auto 0; font-size: 1.02rem; line-height: 1.55; }
 .gm-mod-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.1rem; }
-.gm-mod-card { position: relative; display: block; text-decoration: none; color: inherit; background: #fff; border: 1px solid #e2e8f0; border-radius: 1.4rem; padding: 1.8rem; transition: transform .2s ease, box-shadow .2s ease; }
-.gm-mod-more { display: inline-block; margin-top: 1rem; font-size: .82rem; font-weight: 800; color: #ea580c; }
-.gm-mod-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -24px rgba(255, 111, 0, .35); }
-.gm-mod-ic { width: 2.8rem; height: 2.8rem; border-radius: .9rem; background: #FFF1E8; color: #ea580c; display: flex; align-items: center; justify-content: center; margin-bottom: 1.1rem; }
+.gm-mod-card { position: relative; display: block; text-decoration: none; color: inherit; background: #fff; border: 1px solid #eaeaea; border-radius: 1.4rem; padding: 1.8rem; transition: transform .2s ease, box-shadow .2s ease; }
+.gm-mod-more { display: inline-block; margin-top: 1rem; font-size: .82rem; font-weight: 700; color: #6b6b6b; }
+.gm-mod-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -24px rgba(15, 23, 42, .14); }
+.gm-mod-ic { width: 2.8rem; height: 2.8rem; border-radius: .9rem; background: #f4f4f5; color: #161616; display: flex; align-items: center; justify-content: center; margin-bottom: 1.1rem; }
 .gm-mod-ic svg { width: 1.5rem; height: 1.5rem; }
-.gm-mod-badge { position: absolute; top: 1.5rem; right: 1.5rem; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #fff; background: linear-gradient(135deg, #ff9a5c, #ff6f00); padding: .2rem .55rem; border-radius: 999px; }
-.gm-mod-card-title { font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0 0 .5rem; }
-.gm-mod-card-desc { font-size: .9rem; line-height: 1.55; color: #475569; margin: 0; }
+.gm-mod-badge { position: absolute; top: 1.5rem; right: 1.5rem; font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #fff; background: #6b6b6b; padding: .2rem .55rem; border-radius: 999px; }
+.gm-mod-card-title { font-family: var(--fonts--primaryfont, "DM Sans", sans-serif); font-size: 1.05rem; font-weight: 700; color: #2e2e2e; margin: 0 0 .5rem; }
+.gm-mod-card-desc { font-size: .9rem; line-height: 1.55; color: #6b6b6b; margin: 0; }
 </style>
