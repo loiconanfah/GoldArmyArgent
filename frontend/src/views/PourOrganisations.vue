@@ -292,7 +292,7 @@ const plans = [
 .org-p { color: #334155; font-size: 1.05rem; line-height: 1.7; margin: 1rem 0 1.6rem; }
 
 /* Mockup membres (parrainage) */
-.org-mock2 { background: #fff; border: 1px solid #e2e8f0; border-radius: 1.3rem; padding: 1rem; box-shadow: 0 24px 50px -30px rgba(2,6,23,.35); display: flex; flex-direction: column; gap: .7rem; }
+.org-mock2 { background: #fff; border: 1px solid #e2e8f0; border-radius: 1.4rem; padding: 1rem; box-shadow: 0 20px 40px -24px rgba(15,23,42,.16); display: flex; flex-direction: column; gap: .7rem; }
 .mem { display: flex; align-items: center; gap: .7rem; background: #f8fafc; border: 1px solid #eef2f7; border-radius: .9rem; padding: .7rem; }
 .mem .av { width: 2rem; height: 2rem; border-radius: 50%; background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: .8rem; }
 .mem b { font-size: .85rem; } .mem small { color: #94a3b8; font-size: .72rem; }
@@ -301,8 +301,8 @@ const plans = [
 
 /* Plans */
 .org-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 1rem; }
-.org-plan { position: relative; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1.3rem; padding: 1.8rem 1.4rem; text-align: center; transition: transform .2s, box-shadow .2s; }
-.org-plan:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -26px rgba(2,6,23,.35); }
+.org-plan { position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 1.4rem; padding: 1.8rem; text-align: center; transition: transform .2s ease, box-shadow .2s ease; }
+.org-plan:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -24px rgba(255,111,0,.35); }
 .org-plan.hot { border-color: #ffd9bf; box-shadow: 0 10px 30px -20px rgba(15,23,42,.14); background: #fff; }
 .org-plan-badge { position: absolute; top: -.6rem; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg,#ff9a5c,#ff6f00); color: #fff; font-size: .6rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; padding: .25rem .7rem; border-radius: 999px; }
 .org-plan h4 { font-size: 1.2rem; font-weight: 800; margin: 0 0 .5rem; }
