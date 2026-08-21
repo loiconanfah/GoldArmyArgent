@@ -857,7 +857,7 @@ const resetScan = () => { result.value = null; file.value = null; }
 .page-wrapper--cv-roast :deep(.card-text-content-home1 h4),
 .page-wrapper--cv-roast :deep(.card-text-content-home1 p),
 .page-wrapper--cv-roast :deep(._3cols-heading h3), .page-wrapper--cv-roast :deep(._3cols-heading p),
-.page-wrapper--cv-roast :deep(.score-value), .page-wrapper--cv-roast :deep(.score-label),
+.page-wrapper--cv-roast :deep(.score-label),
 .page-wrapper--cv-roast :deep(.locked-text) {
   color: var(--_theme---textcolor--primarytext);
 }
@@ -962,8 +962,8 @@ const resetScan = () => { result.value = null; file.value = null; }
   padding: 2.5rem 2rem;
   border-radius: 1.1rem;
   background-color: #fff;
-  border: 1px solid #eaeaea;
-  box-shadow: 0 20px 40px -24px rgba(0,0,0,0.18);
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 18px 44px -18px rgba(0,0,0,0.20);
   text-align: center;
 }
 .analyzing-icon {
@@ -1015,8 +1015,8 @@ const resetScan = () => { result.value = null; file.value = null; }
   padding: 2.5rem 2rem;
   border-radius: 1.1rem;
   background: #fff;
-  border: 1px solid #eaeaea;
-  box-shadow: 0 24px 50px -30px rgba(0,0,0,0.22);
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 18px 44px -18px rgba(0,0,0,0.20);
   text-align: center;
   animation: scaleUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -1039,10 +1039,10 @@ const resetScan = () => { result.value = null; file.value = null; }
 
 .score-circle-wrap { position: relative; width: 130px; height: 130px; margin: 0 auto 1.25rem; }
 .score-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.score-bg { fill: none; stroke: #eeeeee; stroke-width: 8; }
+.score-bg { fill: none; stroke: #e4e4e7; stroke-width: 8; }
 .score-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
 .score-good { stroke: #16a34a; } .score-mid { stroke: #f59e0b; } .score-low { stroke: #ef4444; }
-.score-value { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--fonts--primaryfont, "DM Sans", sans-serif); font-size: 2.5rem; font-weight: 700; color: #161616; }
+.score-value { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--fonts--primaryfont, "DM Sans", sans-serif); font-size: 2.5rem; font-weight: 700; color: #ff6f00; }
 .score-label { font-size: 0.7rem; text-transform: uppercase; color: #6b6b6b; display: block; }
 
 .score-verdict-title { font-family: var(--fonts--primaryfont, "DM Sans", sans-serif); font-size: 1.5rem; font-weight: 700; color: #161616; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
