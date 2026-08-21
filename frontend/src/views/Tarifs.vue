@@ -102,7 +102,7 @@ useHead({
 
           <!-- FORFAIT ESSENTIEL (CONSEILLÉ) -->
           <div class="pricing-card-light card--essential popular-light">
-            <div class="badge-popular-light">👑 Le choix des vainqueurs (Conseillé)</div>
+            <div class="badge-popular-light">Recommandé</div>
             
             <div class="card-header-light">
               <h2>Essentiel</h2>
@@ -184,26 +184,26 @@ useHead({
 </template>
 
 <style scoped>
-/* Rendu Global Thème Clair Premium */
-.pricing-page-light { background-color: #f8fafc; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+/* Charte native : DM Sans (titres) + Inter (corps), texte #161616/#6b6b6b, accent neutre noir */
+.pricing-page-light { background-color: #fff; color: #2e2e2e; font-family: var(--fonts--secondaryfont, Inter, sans-serif); }
 .pricing-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
 
-/* HERO SECTION CLAIRE */
-.pricing-hero-light { padding: 5rem 0 3rem; text-align: center; background-color: #ffffff; border-bottom: 1px solid #e2e8f0; }
-.pricing-pill-light { background-color: #fff7ed; color: #ea580c; padding: 0.35rem 1rem; border-radius: 999px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; border: 1px solid #ffedd5; display: inline-block; margin-bottom: 1rem; }
-.pricing-h1-light { font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 800; color: #0f172a; margin: 0 0 1rem; letter-spacing: -0.02em; line-height: 1.15; }
-.pricing-lead-light { font-size: 1.1rem; color: #475569; max-width: 700px; margin: 0 auto; line-height: 1.6; }
+/* HERO */
+.pricing-hero-light { padding: 4.5rem 0 3rem; text-align: center; background: linear-gradient(180deg, #fff, #fafafa); border-bottom: 1px solid #eee; }
+.pricing-pill-light { background-color: #f1f1f2; color: #6b6b6b; padding: 0.35rem 1rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; display: inline-block; margin-bottom: 1rem; }
+.pricing-h1-light { font-family: var(--fonts--primaryfont, "DM Sans", sans-serif); font-size: clamp(2rem, 4vw, 3.1rem); font-weight: 700; color: #161616; margin: 0 0 1rem; letter-spacing: -0.02em; line-height: 1.15; }
+.pricing-lead-light { font-size: 1.1rem; color: #6b6b6b; max-width: 700px; margin: 0 auto; line-height: 1.6; }
 
 /* GRILLE DES FORFAITS */
-.pricing-grid-light { padding: 4rem 0 6rem; background-color: #f8fafc; }
+.pricing-grid-light { padding: 4rem 0 5rem; background-color: #fafafa; }
 .pricing-cards-light { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: stretch; }
 @media (min-width: 850px) { .pricing-cards-light { grid-template-columns: repeat(3, 1fr); } }
 
-/* CARTES (Light Mode Design) */
+/* CARTES */
 .pricing-card-light {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 1.4rem;
   padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
@@ -212,19 +212,16 @@ useHead({
   position: relative;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
-.pricing-card-light:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08); border-color: #94a3b8; }
+.pricing-card-light:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.16); }
 
 /* CARTE ESSENTIEL MISE EN AVANT */
 .card--essential.popular-light {
-  border: 2px solid #ea580c;
-  box-shadow: 0 10px 35px rgba(234, 88, 12, 0.12);
+  border: 2px solid #161616;
+  box-shadow: 0 20px 45px -26px rgba(0, 0, 0, 0.28);
   z-index: 10;
-  background: #ffffff;
+  background: #fff;
 }
-.card--essential.popular-light:hover { box-shadow: 0 15px 45px rgba(234, 88, 12, 0.18); border-color: #f97316; }
-
-/* CARTE PRO */
-.card--pro { background-color: #ffffff; border-color: #cbd5e1; }
+.card--essential.popular-light:hover { box-shadow: 0 24px 50px -26px rgba(0, 0, 0, 0.32); }
 
 /* BADGE POPULARITÉ */
 .badge-popular-light {
@@ -232,52 +229,49 @@ useHead({
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #ea580c;
-  color: #ffffff;
-  font-size: 0.75rem;
-  font-weight: 800;
+  background-color: #161616;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
   padding: 0.35rem 1.25rem;
   border-radius: 999px;
-  letter-spacing: 0.05em;
-  box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);
+  letter-spacing: 0.08em;
   white-space: nowrap;
 }
 
 /* EN-TÊTES DE CARTES */
-.card-header-light { border-bottom: 1px solid #f1f5f9; padding-bottom: 1.5rem; margin-bottom: 1.5rem; text-align: left; }
-.card-header-light h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0 0 0.25rem; }
-.tagline-light { font-size: 0.85rem; color: #64748b; margin: 0 0 1rem; min-height: 2.2rem; }
-.price-light { font-size: 2.75rem; font-weight: 900; color: #0f172a; margin: 0; line-height: 1; }
-.period-light { font-size: 0.9rem; font-weight: 500; color: #64748b; }
+.card-header-light { border-bottom: 1px solid #f1f1f2; padding-bottom: 1.5rem; margin-bottom: 1.5rem; text-align: left; }
+.card-header-light h2 { font-family: var(--fonts--primaryfont, "DM Sans", sans-serif); font-size: 1.5rem; font-weight: 700; color: #161616; margin: 0 0 0.25rem; }
+.tagline-light { font-size: 0.85rem; color: #6b6b6b; margin: 0 0 1rem; min-height: 2.2rem; }
+.price-light { font-family: var(--fonts--primaryfont, "DM Sans", sans-serif); font-size: 2.75rem; font-weight: 700; color: #161616; margin: 0; line-height: 1; }
+.period-light { font-size: 0.9rem; font-weight: 500; color: #6b6b6b; }
 
 /* LISTE DE CARACTÉRISTIQUES */
 .features-wrapper { flex-grow: 1; margin-bottom: 2rem; text-align: left; }
-.features-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin: 0 0 1rem; }
-.features-title.accent { color: #ea580c; }
-.features-title.pro { color: #0284c7; }
+.features-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #6b6b6b; letter-spacing: 0.05em; margin: 0 0 1rem; }
+.features-title.accent, .features-title.pro { color: #161616; }
 
 .features-list-light { list-style: none; padding: 0; margin: 0; }
-.features-list-light li { padding: 0.6rem 0; font-size: 0.9rem; color: #334155; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid #f8fafc; }
+.features-list-light li { padding: 0.6rem 0; font-size: 0.9rem; color: #2e2e2e; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid #f4f4f5; }
 .features-list-light li:last-child { border-bottom: none; }
-.features-list-light li strong { color: #0f172a; font-weight: 700; }
+.features-list-light li strong { color: #161616; font-weight: 700; }
 
-.check { color: #10b981; font-weight: bold; flex-shrink: 0; font-size: 1rem; }
-.check.accent { color: #ea580c; }
-.check.pro { color: #0284c7; }
+.check { color: #161616; font-weight: bold; flex-shrink: 0; font-size: 1rem; }
+.check.accent, .check.pro { color: #161616; }
 
 /* Puces inactives barrées */
 .features-list-light li.disabled { color: #94a3b8; text-decoration: line-through; }
 .cross { color: #cbd5e1; font-weight: bold; flex-shrink: 0; text-decoration: none; display: inline-block; }
 
-/* CALL TO ACTIONS CLAIRS */
-.card-cta-light { text-align: center; padding-top: 1rem; border-top: 1px solid #f1f5f9; }
+/* CALL TO ACTIONS */
+.card-cta-light { text-align: center; padding-top: 1rem; border-top: 1px solid #f1f1f2; }
 
 .btn-light-outline, .btn-light-accent, .btn-light-pro {
   display: block;
   width: 100%;
-  padding: 0.85rem;
-  border-radius: 0.5rem;
+  padding: 0.9rem;
+  border-radius: 0.7rem;
   font-size: 0.95rem;
   font-weight: 700;
   text-decoration: none;
@@ -286,27 +280,28 @@ useHead({
   box-sizing: border-box;
 }
 
-/* Bouton Rétrograder */
-.btn-light-outline { background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-.btn-light-outline:hover { background-color: #e2e8f0; color: #0f172a; }
+/* Bouton Gratuit */
+.btn-light-outline { background-color: #f4f4f5; color: #161616; border: 1px solid #eaeaea; }
+.btn-light-outline:hover { background-color: #ececed; }
 
-/* Bouton Essentiel */
-.btn-light-accent { background-color: #ea580c; color: #ffffff; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25); }
-.btn-light-accent:hover { background-color: #f97316; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(234, 88, 12, 0.35); }
+/* Bouton Essentiel (mis en avant) */
+.btn-light-accent { background-color: #161616; color: #fff; }
+.btn-light-accent:hover { background-color: #000; transform: translateY(-1px); }
 
-/* Bouton Pro */
-.btn-light-pro { background-color: #0f172a; color: #ffffff; }
-.btn-light-pro:hover { background-color: #1e293b; }
+/* Bouton Pro (contour) */
+.btn-light-pro { background-color: #fff; color: #161616; border: 1px solid #161616; }
+.btn-light-pro:hover { background-color: #161616; color: #fff; }
 
 .subtext-light { display: block; font-size: 0.7rem; color: #94a3b8; margin-top: 0.5rem; font-weight: 500; }
-.subtext-light.accent-sub { color: #ea580c; font-weight: 600; }
+.subtext-light.accent-sub { color: #6b6b6b; font-weight: 600; }
 
-/* FAQ SECTION CLAIRE */
-.pricing-faq-light { background-color: #ffffff; padding: 5rem 0; border-top: 1px solid #e2e8f0; }
-.faq-h2-light { font-size: 1.85rem; font-weight: 800; color: #0f172a; text-align: center; margin-bottom: 2.5rem; letter-spacing: -0.02em; }
-.faq-list-light { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.85rem; }
-.faq-item-light { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1.1rem 1.4rem; transition: background-color 0.2s; }
-.faq-item-light:hover { background: #f1f5f9; }
-.faq-item-light summary { font-weight: 700; font-size: 1rem; cursor: pointer; color: #0f172a; outline: none; }
-.faq-item-light p { margin: 0.75rem 0 0; color: #475569; line-height: 1.55; font-size: 0.9rem; }
+/* FAQ */
+.pricing-faq-light { background-color: #fff; padding: 5rem 0; border-top: 1px solid #eee; }
+.faq-h2-light { font-family: var(--fonts--primaryfont, "DM Sans", sans-serif); font-size: 1.85rem; font-weight: 700; color: #161616; text-align: center; margin-bottom: 2.5rem; letter-spacing: -0.02em; }
+.faq-list-light { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.9rem; }
+.faq-item-light { background: #fff; border: 1px solid #eaeaea; border-radius: 1rem; padding: 1.1rem 1.3rem; }
+.faq-item-light summary { font-weight: 700; font-size: 1.05rem; cursor: pointer; color: #161616; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.faq-item-light summary::after { content: "+"; font-size: 1.4rem; color: #9ca3af; font-weight: 400; }
+.faq-item-light[open] summary::after { content: "−"; }
+.faq-item-light p { margin: 0.9rem 0 0; color: #6b6b6b; line-height: 1.6; font-size: 0.95rem; }
 </style>
