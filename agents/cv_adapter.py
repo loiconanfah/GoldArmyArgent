@@ -15,9 +15,13 @@ _PLACEHOLDER_VALUES = {
 }
 # Mots de séniorité à ne PAS ajouter si absents du CV source (garde-fou titres)
 _SENIORITY_WORDS = {"lead", "senior", "sr", "principal", "head", "vp", "staff"}
-# Plafonds dégressifs de bullets par expérience (récent → ancien) + plafond global
-_BULLET_CAPS = [4, 3, 2]
-_BULLET_GLOBAL_CAP = 12
+# Plafonds de bullets par expérience (récent → ancien) + plafond global.
+# Volontairement TRÈS hauts : on ne veut plus supprimer de contenu réel du CV
+# original — juste éviter un cas pathologique (des centaines de puces). La
+# dégressivité (mettre en avant le récent) reste gérée par le prompt, pas par un couperet.
+_BULLET_CAPS = [12, 10, 9]
+_BULLET_CAP_DEFAULT = 8   # pour la 4e expérience et au-delà (au lieu de 2)
+_BULLET_GLOBAL_CAP = 60
 
 
 def _norm_text(s: str) -> str:
@@ -150,9 +154,11 @@ def _guard_title(title: str, source_tokens: set) -> str:
 def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any]:
     """Garde-fous déterministes appliqués au cv_json avant génération du PDF :
     - dédoublonnage des bullets (exact + quasi-identique) sur tout le CV
-    - plafonds dégressifs par expérience + plafond global (≈10-12 bullets)
+    - plafonds TRÈS hauts (anti-cas-pathologique) — on ne tronque plus le contenu réel
     - nettoyage des dates/années placeholder ("À venir", "Non spécifiée"…)
     - garde-fou sur les intitulés (pas de "Lead"/"Senior" inventé)
+    - anti-fabrication : métriques inventées retirées, compétences = sous-ensemble de la source
+    Objectif : CONSERVER tout le contenu du CV original, sans jamais rien inventer.
     """
     if not isinstance(cv_json, dict):
         return cv_json
@@ -179,7 +185,7 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
         exp["title"] = _guard_title(exp.get("title", "") or "", source_tokens)
 
         orig = [str(b).strip() for b in (exp.get("bullets") or []) if str(b).strip()]
-        cap = _BULLET_CAPS[idx] if idx < len(_BULLET_CAPS) else 2
+        cap = _BULLET_CAPS[idx] if idx < len(_BULLET_CAPS) else _BULLET_CAP_DEFAULT
         kept = []
         for b in orig:
             b = _limit_one_pct(_strip_fabricated_metrics(b, src_nums))
@@ -234,7 +240,7 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
     total_b = len(refs)
     if total_b >= 3:
         pct_refs = [(lst, i) for (lst, i) in refs if "%" in str(lst[i])]
-        budget = max(1, int(0.40 * total_b))  # plancher → ratio garanti ≤ 40%
+        budget = max(1, int(0.70 * total_b))  # tolérant : on garde les chiffres réels, ratio ≤ 70%
         if len(pct_refs) > budget:
             for (lst, i) in pct_refs[budget:]:  # garde les % des 1res expériences (récentes)
                 lst[i] = _strip_fabricated_metrics(str(lst[i]), src_nums, force=True)
@@ -448,13 +454,13 @@ LANGUE DE SORTIE (RÈGLE ABSOLUE) : Rédige l'INTÉGRALITÉ du CV DANS LA MÊME 
 
 RÈGLES CRITIQUES :
 
-1. CIBLAGE, PAS EXHAUSTIVITÉ (priorité absolue) : Sélectionne et met en avant UNIQUEMENT ce qui sert le poste ciblé. Les expériences/compétences hors-sujet sont RÉSUMÉES en une seule ligne ou omises — ne liste pas tout par exhaustivité. Le résumé et le titre doivent annoncer la spécialité du poste dès le premier mot (jamais "polyvalent" / "touche-à-tout").
+1. TOUT CONSERVER, RÉORGANISER PAR PERTINENCE (priorité absolue) : CONSERVE l'INTÉGRALITÉ du CV source — TOUTES les expériences, formations, compétences, langues, certifications et sections. N'OMETS JAMAIS une expérience ni une section, même hors-sujet. Réordonne pour placer en premier ce qui sert le poste, et développe davantage les expériences pertinentes ; les expériences moins pertinentes sont RÉSUMÉES (1-2 lignes) mais JAMAIS supprimées. Le résumé et le titre annoncent la spécialité du poste dès le premier mot (jamais "polyvalent" / "touche-à-tout").
 
 2. QUANTIFICATION MESURÉE (anti-signature IA) : AU MAXIMUM 40% des bullets contiennent un chiffre. JAMAIS plus de 2 bullets chiffrés consécutifs. N'INVENTE JAMAIS de pourcentage : n'utilise un chiffre QUE s'il est présent ou clairement déductible du CV source. Un CV où chaque ligne a un % rond est un rejet immédiat.
 
 3. VARIE LE TYPE DE PREUVE : alterne entre pourcentage, chiffre brut (heures, utilisateurs, volume), résultat concret (fonctionnalité livrée, contrat, migration réussie) et preuve qualitative (retour client, montée en responsabilité). La majorité des bullets décrivent l'ACTION et l'IMPACT qualitatif SANS chiffre.
 
-4. VOLUME & DÉGRESSIVITÉ : Rattache chaque bullet à SON expérience (jamais un bloc de bullets détaché). 3-4 bullets pour l'expérience la plus récente/pertinente, 2-3 pour la suivante, 1-2 pour les plus anciennes. TOTAL 10-12 bullets MAXIMUM sur tout le CV.
+4. VOLUME & DÉGRESSIVITÉ (SANS RIEN SUPPRIMER) : Rattache chaque bullet à SON expérience (jamais un bloc de bullets détaché). Développe davantage les expériences récentes/pertinentes que les anciennes, MAIS chaque expérience du CV source conserve AU MOINS ses réalisations d'origine. Ne supprime JAMAIS une réalisation réelle pour tenir un quota : il n'y a PAS de plafond de bullets. Un CV complet et fidèle vaut mieux qu'un CV tronqué.
 
 5. AUCUN DOUBLON : Ne répète jamais une même réalisation, même reformulée, dans deux bullets. Chaque bullet est unique.
 
@@ -533,7 +539,7 @@ DESCRIPTION DE L'OFFRE :
 CV SOURCE DU CANDIDAT (seule source de vérité pour l'identité, les dates, les intitulés et la formation — ne rien inventer) :
 {cv_text[:8000]}{answers_block}
 
-Produis un CV CIBLÉ pour ce poste : priorise et réorganise les expériences pertinentes, résume/omets le hors-sujet, applique la dégressivité (10-12 bullets max), quantifie au maximum 40% des bullets sans jamais inventer de chiffre (utilise en priorité les chiffres RÉELS fournis par le candidat), et recopie fidèlement les faits (dates, formation, intitulés). RÉDIGE DANS LA MÊME LANGUE que le CV source ci-dessus.
+Produis un CV ADAPTÉ pour ce poste en CONSERVANT TOUT le contenu du CV source : garde TOUTES les expériences, formations, compétences, langues, certifications et sections (n'en supprime AUCUNE), réordonne et développe en priorité ce qui sert l'offre, résume (sans supprimer) le hors-sujet. Ne tronque pas pour tenir un quota. Quantifie au maximum ~40% des bullets sans jamais inventer de chiffre (utilise en priorité les chiffres RÉELS fournis par le candidat), et recopie fidèlement les faits (dates, formation, intitulés). RÉDIGE DANS LA MÊME LANGUE que le CV source ci-dessus.
 """
         
         try:
