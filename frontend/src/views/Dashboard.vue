@@ -1806,9 +1806,9 @@ const saveWorkflowStatus = async (pb) => {
       <div v-if="isSelectionModalOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm" @click.self="isSelectionModalOpen = false">
         <div class="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[88vh]">
           <!-- Header -->
-          <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-white">
+          <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-amber-50 to-white">
             <h3 class="font-bold text-slate-800 flex items-center gap-2">
-              <span class="p-2 rounded-lg bg-indigo-100 text-indigo-600"><DocumentTextIcon class="w-5 h-5"/></span>
+              <span class="p-2 rounded-lg bg-amber-100 text-amber-600"><DocumentTextIcon class="w-5 h-5"/></span>
               Lettre de motivation
             </h3>
             <button @click="isSelectionModalOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
@@ -1819,16 +1819,16 @@ const saveWorkflowStatus = async (pb) => {
             <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
               <div class="flex items-center justify-between mb-2">
                 <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Lettre pour {{ scResult.company }}</p>
-                <button @click="scResult = null" class="text-xs text-indigo-600 font-bold hover:underline">← Modifier la demande</button>
+                <button @click="scResult = null" class="text-xs text-amber-600 font-bold hover:underline">← Modifier la demande</button>
               </div>
               <textarea v-model="scEditable" rows="14"
-                        class="w-full p-4 rounded-xl border border-slate-200 text-sm leading-relaxed text-slate-700 focus:border-indigo-400 outline-none" style="font-family: Georgia, serif;"></textarea>
+                        class="w-full p-4 rounded-xl border border-slate-200 text-sm leading-relaxed text-slate-700 focus:border-amber-400 outline-none" style="font-family: Georgia, serif;"></textarea>
               <p v-if="scResult.news" class="mt-2 text-[11px] text-slate-400 leading-snug">Actualité intégrée : {{ scResult.news.slice(0, 160) }}…</p>
             </div>
             <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center gap-2">
               <button @click="copyScLetter" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-white transition-colors">{{ scCopied ? 'Copié !' : 'Copier' }}</button>
               <button @click="generateSmartCover" :disabled="scGenerating" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-white disabled:opacity-50 transition-colors">Regénérer</button>
-              <button @click="downloadScLetter" :disabled="scDownloading" class="flex-[1.4] py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+              <button @click="downloadScLetter" :disabled="scDownloading" class="flex-[1.4] py-2.5 rounded-xl bg-amber-600 text-white text-sm font-bold hover:bg-amber-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
                 <ArrowDownTrayIcon class="w-4 h-4"/> {{ scDownloading ? 'Préparation…' : 'Télécharger PDF' }}
               </button>
             </div>
@@ -1837,8 +1837,8 @@ const saveWorkflowStatus = async (pb) => {
           <!-- VUE FORMULAIRE : choisir la source -->
           <template v-else>
             <div class="px-5 pt-4 flex gap-2">
-              <button @click="scMode = 'crm'" :class="scMode === 'crm' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">Depuis mes offres (CRM)</button>
-              <button @click="scMode = 'external'" :class="scMode === 'external' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">Lien / entreprise externe</button>
+              <button @click="scMode = 'crm'" :class="scMode === 'crm' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">Depuis mes offres (CRM)</button>
+              <button @click="scMode = 'external'" :class="scMode === 'external' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">Lien / entreprise externe</button>
             </div>
 
             <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
@@ -1847,9 +1847,9 @@ const saveWorkflowStatus = async (pb) => {
                 <div v-for="offer in last10RecentApplications" :key="offer.id"
                      @click="scSelectedAppId = offer.id"
                      class="flex items-center gap-3 p-3 rounded-xl border mb-2 cursor-pointer transition-all"
-                     :class="scSelectedAppId === offer.id ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-100 hover:border-indigo-200'">
-                  <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0" :class="scSelectedAppId === offer.id ? 'border-indigo-500' : 'border-slate-300'">
-                    <div v-if="scSelectedAppId === offer.id" class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                     :class="scSelectedAppId === offer.id ? 'border-amber-400 bg-amber-50/50' : 'border-slate-100 hover:border-amber-200'">
+                  <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0" :class="scSelectedAppId === offer.id ? 'border-amber-500' : 'border-slate-300'">
+                    <div v-if="scSelectedAppId === offer.id" class="w-2 h-2 rounded-full bg-amber-500"></div>
                   </div>
                   <div class="flex-1 min-w-0"><p class="text-sm font-bold text-slate-800 truncate">{{ offer.company }}</p><p class="text-xs text-slate-500 truncate">{{ offer.name }}</p></div>
                   <span class="text-[10px] px-2 py-1 bg-slate-100 rounded text-slate-500 shrink-0">{{ offer.date }}</span>
@@ -1864,19 +1864,19 @@ const saveWorkflowStatus = async (pb) => {
                 <div class="space-y-3">
                   <div>
                     <label class="text-xs font-bold text-slate-500">Entreprise *</label>
-                    <input v-model="scForm.company" placeholder="Ex: Shopify" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
+                    <input v-model="scForm.company" placeholder="Ex: Shopify" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-amber-400 outline-none" />
                   </div>
                   <div>
                     <label class="text-xs font-bold text-slate-500">Poste</label>
-                    <input v-model="scForm.job" placeholder="Ex: Data Analyst" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
+                    <input v-model="scForm.job" placeholder="Ex: Data Analyst" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-amber-400 outline-none" />
                   </div>
                   <div>
                     <label class="text-xs font-bold text-slate-500">Lien de l'offre (optionnel)</label>
-                    <input v-model="scForm.url" placeholder="https://…" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
+                    <input v-model="scForm.url" placeholder="https://…" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-amber-400 outline-none" />
                   </div>
                   <div>
                     <label class="text-xs font-bold text-slate-500">Description de l'offre (optionnel — colle le texte pour une lettre ciblée)</label>
-                    <textarea v-model="scForm.desc" rows="4" placeholder="Colle ici la description du poste…" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none"></textarea>
+                    <textarea v-model="scForm.desc" rows="4" placeholder="Colle ici la description du poste…" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-amber-400 outline-none"></textarea>
                   </div>
                 </div>
               </template>
@@ -1886,7 +1886,7 @@ const saveWorkflowStatus = async (pb) => {
 
             <div class="p-4 border-t border-slate-100 bg-slate-50">
               <button @click="generateSmartCover" :disabled="!scCanGenerate"
-                      class="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+                      class="w-full py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
                 <span v-if="scGenerating" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
                 {{ scGenerating ? 'Rédaction en cours…' : 'Générer la lettre' }}
               </button>

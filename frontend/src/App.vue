@@ -266,11 +266,11 @@ watch(() => route.path, () => { fetchGold() })
 
           <!-- Badge compteur (actions en attente) -->
           <span v-if="navBadges[item.href] && !isSidebarCollapsed"
-                class="ml-auto min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-black shadow-sm animate-badge-pop">
+                class="ml-auto min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-black shadow-sm animate-badge-pop">
             {{ navBadges[item.href] > 99 ? '99+' : navBadges[item.href] }}
           </span>
           <span v-else-if="navBadges[item.href] && isSidebarCollapsed"
-                class="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white"></span>
+                class="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-amber-500 border-2 border-white"></span>
 
           <div v-if="item.name === 'Mentor IA' && !navBadges[item.href] && !isSidebarCollapsed" class="ml-auto flex items-center justify-center">
              <span class="bg-gradient-to-r from-gray-700 to-gray-900 text-white text-[9px] uppercase font-black px-1.5 py-0.5 rounded-sm shadow-sm">Pro</span>
@@ -392,7 +392,7 @@ watch(() => route.path, () => { fetchGold() })
                     class="relative p-2 text-slate-400 hover:text-white rounded-full hover:bg-surface-800 transition-colors"
                 >
                     <BellIcon class="w-5 h-5" />
-                    <span v-if="unreadCount > 0" class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-surface-950"></span>
+                    <span v-if="unreadCount > 0" class="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-surface-950"></span>
                 </button>
 
                 <!-- Notifications Dropdown -->

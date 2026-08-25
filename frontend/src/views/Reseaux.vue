@@ -762,7 +762,7 @@ const downloadCarouselPDF = (postData) => {
     <!-- Hero Header -->
     <div class="relative mb-12 rounded-[2.5rem] overflow-hidden bg-white border border-slate-100 p-8 md:p-12 shadow-sm">
         <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#F59E0B]/5 via-[#F59E0B]/2 to-transparent pointer-events-none"></div>
-        <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none"></div>
         
         <div class="relative z-10 max-w-2xl">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-[#F59E0B] text-[10px] font-black tracking-[0.2em] uppercase mb-6">
@@ -786,7 +786,7 @@ const downloadCarouselPDF = (postData) => {
 
       <!-- Ambient Glows -->
       <div class="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-amber-400/10 blur-[100px] pointer-events-none"></div>
-      <div class="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none"></div>
+      <div class="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-amber-500/10 blur-[120px] pointer-events-none"></div>
 
       <!-- Header & Navigation Bar -->
       <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100 mb-8">
@@ -961,7 +961,7 @@ const downloadCarouselPDF = (postData) => {
         <div v-else-if="goldProfileStep==='plan'" class="flex-1 flex flex-col">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
-              <button @click="goldProfileStep='audit'" class="text-xs text-indigo-600 font-bold hover:underline">← Audit</button>
+              <button @click="goldProfileStep='audit'" class="text-xs text-amber-600 font-bold hover:underline">← Audit</button>
               <span class="text-slate-300">|</span>
               <h4 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <CalendarDaysIcon class="w-4 h-4 text-amber-500" />
@@ -987,7 +987,7 @@ const downloadCarouselPDF = (postData) => {
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-xs font-black text-amber-600 uppercase">Jour {{ item.day }}</span>
                   <span class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase"
-                        :class="item.funnel_stage === 'TOFU' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : item.funnel_stage === 'MOFU' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'">
+                        :class="item.funnel_stage === 'TOFU' ? 'bg-amber-100 text-amber-700 border border-amber-200' : item.funnel_stage === 'MOFU' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'">
                     {{ item.funnel_stage || 'TOFU' }}
                   </span>
                 </div>
@@ -1013,7 +1013,7 @@ const downloadCarouselPDF = (postData) => {
               Actuellement : {{ goldProfilePlanData.length }} jours de contenu stratégique prêts.
             </span>
             <button @click="fetchMoreGoldProfilePlan" :disabled="goldProfileLoading"
-                    class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-black rounded-xl shadow-md shadow-indigo-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    class="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-black rounded-xl shadow-md shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2">
               <SparklesIcon v-if="!goldProfileLoading" class="w-4 h-4" />
               <span v-if="goldProfileLoading" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
               <span>Générer les 15 jours suivants (Jour {{ goldProfilePlanData.length + 1 }} à {{ goldProfilePlanData.length + 15 }})</span>
@@ -1025,7 +1025,7 @@ const downloadCarouselPDF = (postData) => {
         <div v-else-if="goldProfileStep==='post'" class="flex-1 flex flex-col">
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
             <div class="flex items-center gap-3">
-              <button @click="goldProfileStep='plan'" class="text-xs text-indigo-600 font-bold hover:underline">← Retour au Plan</button>
+              <button @click="goldProfileStep='plan'" class="text-xs text-amber-600 font-bold hover:underline">← Retour au Plan</button>
               <button v-if="goldProfileSelectedTopic" @click="generateGoldProfilePost(goldProfileSelectedTopic, true)" :disabled="goldProfileLoading"
                       class="px-3 py-1.5 bg-white border border-slate-200 hover:border-amber-400 text-slate-700 hover:text-slate-900 text-xs font-bold rounded-xl shadow-2xs flex items-center gap-1.5">
                 <ArrowPathIcon class="w-3.5 h-3.5 text-amber-500" :class="{ 'animate-spin': goldProfileLoading }" />
@@ -1068,7 +1068,7 @@ const downloadCarouselPDF = (postData) => {
                   </button>
                   <button @click="carouselTheme = 'cyber_indigo'"
                           class="px-2.5 py-1 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5"
-                          :class="carouselTheme === 'cyber_indigo' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'">
+                          :class="carouselTheme === 'cyber_indigo' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'">
                     <BoltIcon class="w-3.5 h-3.5" />
                     <span>Cyber Indigo</span>
                   </button>
@@ -1108,13 +1108,13 @@ const downloadCarouselPDF = (postData) => {
                     
                     <!-- Glow Flare -->
                     <div class="absolute -top-16 -right-16 w-36 h-36 rounded-full blur-3xl pointer-events-none"
-                         :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500/25' : carouselTheme === 'cream_executive' ? 'bg-amber-400/20' : 'bg-indigo-500/30'"></div>
+                         :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500/25' : carouselTheme === 'cream_executive' ? 'bg-amber-400/20' : 'bg-amber-500/30'"></div>
 
                     <!-- Slide Card Header -->
                     <div class="relative z-10 flex items-center justify-between">
                       <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs text-white shadow-md"
-                             :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500' : carouselTheme === 'cream_executive' ? 'bg-amber-600' : 'bg-indigo-600'">
+                             :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500' : carouselTheme === 'cream_executive' ? 'bg-amber-600' : 'bg-amber-600'">
                           G
                         </div>
                         <div>
@@ -1124,7 +1124,7 @@ const downloadCarouselPDF = (postData) => {
                       </div>
 
                       <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
-                            :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : carouselTheme === 'cream_executive' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'">
+                            :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : carouselTheme === 'cream_executive' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'">
                         Slide {{ slide.slide_number }} / {{ goldProfilePostData.carousel_slides.length }}
                       </span>
                     </div>
@@ -1132,11 +1132,11 @@ const downloadCarouselPDF = (postData) => {
                     <!-- Slide Card Body -->
                     <div class="relative z-10 my-3">
                       <h3 class="text-lg md:text-xl font-black leading-tight mb-3 tracking-tight"
-                          :class="carouselTheme === 'gold_luxe' ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-100 to-amber-300' : carouselTheme === 'cream_executive' ? 'text-slate-900' : 'text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-cyan-300'">
+                          :class="carouselTheme === 'gold_luxe' ? 'text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-100 to-amber-300' : carouselTheme === 'cream_executive' ? 'text-slate-900' : 'text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-100 to-amber-300'">
                         {{ slide.title }}
                       </h3>
                       <div class="p-4 rounded-2xl backdrop-blur-xl border-l-4"
-                           :class="carouselTheme === 'gold_luxe' ? 'bg-white/5 border-amber-400 text-slate-200 border-y border-r border-white/10' : carouselTheme === 'cream_executive' ? 'bg-amber-50/80 border-amber-600 text-slate-800 border-y border-r border-amber-200/50' : 'bg-white/5 border-indigo-400 text-slate-100 border-y border-r border-white/10'">
+                           :class="carouselTheme === 'gold_luxe' ? 'bg-white/5 border-amber-400 text-slate-200 border-y border-r border-white/10' : carouselTheme === 'cream_executive' ? 'bg-amber-50/80 border-amber-600 text-slate-800 border-y border-r border-amber-200/50' : 'bg-white/5 border-amber-400 text-slate-100 border-y border-r border-white/10'">
                         <p class="text-xs md:text-sm font-medium leading-relaxed whitespace-pre-wrap line-clamp-4">
                           {{ slide.content }}
                         </p>
@@ -1147,7 +1147,7 @@ const downloadCarouselPDF = (postData) => {
                     <div class="relative z-10 flex items-center justify-between pt-3 border-t text-xs font-black"
                          :class="carouselTheme === 'cream_executive' ? 'border-slate-200 text-slate-600' : 'border-white/10 text-amber-400'">
                       <span class="px-3 py-1 rounded-full text-[10px] flex items-center gap-1"
-                            :class="carouselTheme === 'gold_luxe' ? 'bg-amber-400/10 text-amber-300 border border-amber-400/30' : carouselTheme === 'cream_executive' ? 'bg-slate-200/60 text-slate-800' : 'bg-indigo-400/10 text-indigo-300 border border-indigo-400/30'">
+                            :class="carouselTheme === 'gold_luxe' ? 'bg-amber-400/10 text-amber-300 border border-amber-400/30' : carouselTheme === 'cream_executive' ? 'bg-slate-200/60 text-slate-800' : 'bg-amber-400/10 text-amber-300 border border-amber-400/30'">
                         <span>Swipe pour la suite</span>
                         <ArrowRightIcon class="w-3 h-3" />
                       </span>
@@ -1195,7 +1195,7 @@ const downloadCarouselPDF = (postData) => {
                       <!-- Card Header -->
                       <div class="relative z-10 flex items-center justify-between">
                         <span class="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider"
-                              :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : carouselTheme === 'cream_executive' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'">
+                              :class="carouselTheme === 'gold_luxe' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : carouselTheme === 'cream_executive' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'">
                           Slide {{ slide.slide_number }} / {{ goldProfilePostData.carousel_slides.length }}
                         </span>
                         <span class="text-[9px] font-bold text-slate-400">@GoldArmy</span>
@@ -1208,7 +1208,7 @@ const downloadCarouselPDF = (postData) => {
                           {{ slide.title }}
                         </h6>
                         <div class="p-2.5 rounded-xl border-l-2"
-                             :class="carouselTheme === 'gold_luxe' ? 'bg-white/5 border-amber-400 text-slate-200' : carouselTheme === 'cream_executive' ? 'bg-amber-50/80 border-amber-600 text-slate-800' : 'bg-white/5 border-indigo-400 text-slate-100'">
+                             :class="carouselTheme === 'gold_luxe' ? 'bg-white/5 border-amber-400 text-slate-200' : carouselTheme === 'cream_executive' ? 'bg-amber-50/80 border-amber-600 text-slate-800' : 'bg-white/5 border-amber-400 text-slate-100'">
                           <p class="text-[10px] line-clamp-3 leading-relaxed font-medium">
                             {{ slide.content }}
                           </p>
@@ -1238,7 +1238,7 @@ const downloadCarouselPDF = (postData) => {
           <!-- Bottom Actions Bar -->
           <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100">
             <button @click="copyToClipboard(typeof goldProfilePostData === 'string' ? goldProfilePostData : goldProfilePostData?.post_content)"
-                    class="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20">
+                    class="flex-1 py-3.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2 shadow-md shadow-amber-500/20">
               <DocumentDuplicateIcon class="w-4 h-4" />
               <span>Copier le texte du post</span>
             </button>
@@ -1260,19 +1260,19 @@ const downloadCarouselPDF = (postData) => {
     <div class="relative w-full rounded-[2.5rem] bg-white border border-slate-200/80 shadow-xl overflow-hidden mb-12 p-6 md:p-8 flex flex-col justify-between">
       
       <!-- Ambient Glow Accents -->
-      <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none"></div>
+      <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-amber-500/10 blur-[120px] pointer-events-none"></div>
       <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-amber-500/10 blur-[120px] pointer-events-none"></div>
 
       <!-- Header HUD Glass -->
       <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 shrink-0">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-600 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/25 shrink-0">
             <MagnifyingGlassIcon class="w-6 h-6 text-white" />
           </div>
           <div>
             <div class="flex items-center gap-2">
               <h3 class="text-xl font-black text-slate-900 tracking-tight">Agent Headhunter 7.1 · Suite Décideurs Stratégiques</h3>
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-700 border border-indigo-200 uppercase">OSINT LinkedIn</span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-700 border border-amber-200 uppercase">OSINT LinkedIn</span>
             </div>
             <p class="text-xs text-slate-500 font-medium mt-0.5">Cartographie Algorithmique & Liens Directs 1-Click (CTOs, Recruteurs, CEOs & Heads of Talent)</p>
           </div>
@@ -1293,7 +1293,7 @@ const downloadCarouselPDF = (postData) => {
               v-model="hhCompanyName"
               type="text"
               placeholder="Saisissez le nom de l'entreprise cible (ex: Doctolib, Qonto, Stripe, Mistral AI, Microsoft...)"
-              class="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-xs"
+              class="w-full bg-white border border-slate-200 text-slate-900 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all shadow-xs"
               required
             />
           </div>
@@ -1301,7 +1301,7 @@ const downloadCarouselPDF = (postData) => {
           <button
             type="submit"
             :disabled="isHunting"
-            class="w-full md:w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-black text-sm rounded-2xl shadow-lg shadow-indigo-500/25 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+            class="w-full md:w-auto px-8 py-3.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-black text-sm rounded-2xl shadow-lg shadow-amber-500/25 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
           >
             <ArrowPathIcon v-if="isHunting" class="w-5 h-5 animate-spin" />
             <SparklesIcon v-else class="w-5 h-5" />
@@ -1314,7 +1314,7 @@ const downloadCarouselPDF = (postData) => {
           <span class="text-slate-400 font-bold shrink-0">Exemples rapides :</span>
           <button v-for="example in ['Doctolib', 'Qonto', 'Stripe', 'Mistral AI', 'Microsoft']" :key="example"
                   @click="hhCompanyName = example; findDecisionMakers()"
-                  class="px-3 py-1 bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 rounded-xl font-bold transition-all shrink-0">
+                  class="px-3 py-1 bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-600 border border-slate-200 rounded-xl font-bold transition-all shrink-0">
             + {{ example }}
           </button>
         </div>
@@ -1324,15 +1324,15 @@ const downloadCarouselPDF = (postData) => {
       <div class="relative z-10 min-h-[320px]">
         <!-- 1. Scanning State -->
         <div v-if="isHunting" class="flex flex-col items-center justify-center py-20 gap-4 text-center">
-          <div class="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-inner"></div>
+          <div class="w-16 h-16 border-4 border-amber-100 border-t-amber-600 rounded-full animate-spin shadow-inner"></div>
           <p class="text-base font-black text-slate-900">Chasse OSINT aux décideurs stratégiques en cours chez {{ hhCompanyName }}...</p>
           <p class="text-xs text-slate-400 max-w-md">Extraction des profils vérifiés (RH, CTOs, Recruteurs & Heads of Talent) via Gemini 3.1 Pro & Google X-Ray...</p>
         </div>
 
         <!-- 2. Initial Empty State -->
         <div v-else-if="!hasHunted" class="flex flex-col items-center justify-center py-16 gap-6 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-          <div class="w-20 h-20 rounded-3xl bg-indigo-50 border border-indigo-200 flex items-center justify-center shadow-inner">
-            <UsersIcon class="w-10 h-10 text-indigo-600 animate-pulse" />
+          <div class="w-20 h-20 rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center shadow-inner">
+            <UsersIcon class="w-10 h-10 text-amber-600 animate-pulse" />
           </div>
           <div class="max-w-xl">
             <h4 class="text-lg font-black text-slate-900 mb-1">Identifiez et Connectez les Vrais Décideurs</h4>
@@ -1342,9 +1342,9 @@ const downloadCarouselPDF = (postData) => {
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl w-full text-left">
             <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-start gap-2.5">
-              <UserGroupIcon class="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+              <UserGroupIcon class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <div class="text-indigo-600 font-black text-xs mb-0.5">Ciblage Précis</div>
+                <div class="text-amber-600 font-black text-xs mb-0.5">Ciblage Précis</div>
                 <p class="text-[11px] text-slate-500">Recruteurs Tech, Talent Acquisition, CTOs & CEOs.</p>
               </div>
             </div>
@@ -1477,7 +1477,7 @@ const downloadCarouselPDF = (postData) => {
 
         <!-- Ambient Warm Light Glows -->
         <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-amber-400/10 blur-[100px] pointer-events-none"></div>
-        <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none"></div>
+        <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-amber-500/10 blur-[120px] pointer-events-none"></div>
 
         <!-- Header Glass HUD (Thème Clair) -->
         <div class="absolute top-6 left-6 z-20 flex items-center gap-3">
@@ -1684,7 +1684,7 @@ const downloadCarouselPDF = (postData) => {
 
                 <div class="flex items-center gap-2 mt-4">
                     <a v-if="ninjaHoverNode.linkedin_url" :href="ninjaHoverNode.linkedin_url" target="_blank"
-                       class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-bold transition-all active:scale-95">
+                       class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold transition-all active:scale-95">
                         <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                         <span>Profil LinkedIn</span>
                     </a>
@@ -1737,18 +1737,18 @@ const downloadCarouselPDF = (postData) => {
         <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-md animate-fade-in"></div>
         <div class="relative bg-white border border-slate-200/80 rounded-[2.5rem] p-10 shadow-2xl max-w-sm w-full text-center animate-fade-in-up text-slate-900">
             <div class="relative w-24 h-24 mx-auto mb-8">
-                <div class="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
-                <div class="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <div class="absolute inset-0 border-4 border-amber-500/20 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
                 <div class="absolute inset-0 flex items-center justify-center">
-                    <SparklesIcon class="w-10 h-10 text-indigo-500 animate-pulse" />
+                    <SparklesIcon class="w-10 h-10 text-amber-500 animate-pulse" />
                 </div>
             </div>
             <h3 class="text-2xl font-black text-slate-900 mb-3">{{ t('network_osint.loading_title') }}</h3>
             <p class="text-slate-500 font-medium leading-relaxed">{{ t('network_osint.loading_desc') }}</p>
             <div class="mt-8 flex items-center justify-center gap-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0ms"></span>
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 150ms"></span>
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 300ms"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 0ms"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 150ms"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-bounce" style="animation-delay: 300ms"></span>
             </div>
         </div>
     </div>
