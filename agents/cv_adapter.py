@@ -16,12 +16,12 @@ _PLACEHOLDER_VALUES = {
 # Mots de séniorité à ne PAS ajouter si absents du CV source (garde-fou titres)
 _SENIORITY_WORDS = {"lead", "senior", "sr", "principal", "head", "vp", "staff"}
 # Plafonds de bullets par expérience (récent → ancien) + plafond global.
-# Volontairement TRÈS hauts : on ne veut plus supprimer de contenu réel du CV
-# original — juste éviter un cas pathologique (des centaines de puces). La
-# dégressivité (mettre en avant le récent) reste gérée par le prompt, pas par un couperet.
-_BULLET_CAPS = [12, 10, 9]
-_BULLET_CAP_DEFAULT = 8   # pour la 4e expérience et au-delà (au lieu de 2)
-_BULLET_GLOBAL_CAP = 60
+# Calibrés sur un bon CV complet type "PDF 12" : ~3-4 puces par poste, TOUTES
+# les expériences conservées (aucune omise). Le plafond global est haut : il ne
+# sert qu'à éviter un cas pathologique, jamais à supprimer une expérience.
+_BULLET_CAPS = [4, 4, 3]
+_BULLET_CAP_DEFAULT = 3   # 4e expérience et au-delà : reste rempli, sans surcharge
+_BULLET_GLOBAL_CAP = 40
 
 
 def _norm_text(s: str) -> str:
@@ -226,24 +226,10 @@ def _postprocess_cv_json(cv_json: Dict[str, Any], cv_text: str) -> Dict[str, Any
                 break
         proj["bullets"] = kept
 
-    # Plafond DUR : au plus ~40% des bullets contiennent un pourcentage.
-    # (Un CV où chaque ligne a un % est la signature IA n°1 signalée par les recruteurs.)
-    refs = []
-    for e in experiences:
-        if isinstance(e, dict):
-            for i in range(len(e.get("bullets") or [])):
-                refs.append((e["bullets"], i))
-    for p in (cv_json.get("projects") or []):
-        if isinstance(p, dict):
-            for i in range(len(p.get("bullets") or [])):
-                refs.append((p["bullets"], i))
-    total_b = len(refs)
-    if total_b >= 3:
-        pct_refs = [(lst, i) for (lst, i) in refs if "%" in str(lst[i])]
-        budget = max(1, int(0.70 * total_b))  # tolérant : on garde les chiffres réels, ratio ≤ 70%
-        if len(pct_refs) > budget:
-            for (lst, i) in pct_refs[budget:]:  # garde les % des 1res expériences (récentes)
-                lst[i] = _strip_fabricated_metrics(str(lst[i]), src_nums, force=True)
+    # NOTE : on NE retire PLUS les pourcentages réels pour "casser la signature IA".
+    # L'utilisateur veut un CV riche et quantifié (type PDF 12). Les chiffres INVENTÉS
+    # (absents de la source/réponses) ont déjà été retirés bullet par bullet plus haut
+    # via _strip_fabricated_metrics(...) — seuls les chiffres RÉELS subsistent.
 
     # Formation : années placeholder → vide (cohérence inter-génération)
     for ed in (cv_json.get("education") or []):
@@ -456,11 +442,11 @@ RÈGLES CRITIQUES :
 
 1. TOUT CONSERVER, RÉORGANISER PAR PERTINENCE (priorité absolue) : CONSERVE l'INTÉGRALITÉ du CV source — TOUTES les expériences, formations, compétences, langues, certifications et sections. N'OMETS JAMAIS une expérience ni une section, même hors-sujet. Réordonne pour placer en premier ce qui sert le poste, et développe davantage les expériences pertinentes ; les expériences moins pertinentes sont RÉSUMÉES (1-2 lignes) mais JAMAIS supprimées. Le résumé et le titre annoncent la spécialité du poste dès le premier mot (jamais "polyvalent" / "touche-à-tout").
 
-2. QUANTIFICATION MESURÉE (anti-signature IA) : AU MAXIMUM 40% des bullets contiennent un chiffre. JAMAIS plus de 2 bullets chiffrés consécutifs. N'INVENTE JAMAIS de pourcentage : n'utilise un chiffre QUE s'il est présent ou clairement déductible du CV source. Un CV où chaque ligne a un % rond est un rejet immédiat.
+2. QUANTIFICATION RICHE MAIS VRAIE : Un bon CV est concret et chiffré (métriques d'impact, volumes, %). Quantifie les réalisations dès que possible — MAIS uniquement avec des chiffres RÉELS venant du CV source ou des réponses du candidat. N'INVENTE JAMAIS un chiffre, un pourcentage ou une métrique. Si tu n'as pas de chiffre réel pour une réalisation, décris l'ACTION et l'IMPACT concret sans en inventer un.
 
-3. VARIE LE TYPE DE PREUVE : alterne entre pourcentage, chiffre brut (heures, utilisateurs, volume), résultat concret (fonctionnalité livrée, contrat, migration réussie) et preuve qualitative (retour client, montée en responsabilité). La majorité des bullets décrivent l'ACTION et l'IMPACT qualitatif SANS chiffre.
+3. VARIE LE TYPE DE PREUVE : alterne entre pourcentage, chiffre brut (heures, utilisateurs, volume), résultat concret (fonctionnalité livrée, contrat, migration réussie) et preuve qualitative (retour client, montée en responsabilité), pour un CV crédible et vivant.
 
-4. VOLUME & DÉGRESSIVITÉ (SANS RIEN SUPPRIMER) : Rattache chaque bullet à SON expérience (jamais un bloc de bullets détaché). Développe davantage les expériences récentes/pertinentes que les anciennes, MAIS chaque expérience du CV source conserve AU MOINS ses réalisations d'origine. Ne supprime JAMAIS une réalisation réelle pour tenir un quota : il n'y a PAS de plafond de bullets. Un CV complet et fidèle vaut mieux qu'un CV tronqué.
+4. VOLUME & ÉQUILIBRE (CV complet, ni tronqué ni gonflé) : Rattache chaque bullet à SON expérience (jamais un bloc détaché). Vise 3-4 bullets solides pour les expériences récentes/pertinentes et 2-3 pour les plus anciennes — MAIS n'OMETS AUCUNE expérience : chaque poste du CV source reste présent avec ses réalisations. Objectif : un CV COMPLET et lisible, avec toutes les sections (Profil, Expériences, Projets, Formation, Compétences, Langues, Certifications).
 
 5. AUCUN DOUBLON : Ne répète jamais une même réalisation, même reformulée, dans deux bullets. Chaque bullet est unique.
 
@@ -539,7 +525,7 @@ DESCRIPTION DE L'OFFRE :
 CV SOURCE DU CANDIDAT (seule source de vérité pour l'identité, les dates, les intitulés et la formation — ne rien inventer) :
 {cv_text[:8000]}{answers_block}
 
-Produis un CV ADAPTÉ pour ce poste en CONSERVANT TOUT le contenu du CV source : garde TOUTES les expériences, formations, compétences, langues, certifications et sections (n'en supprime AUCUNE), réordonne et développe en priorité ce qui sert l'offre, résume (sans supprimer) le hors-sujet. Ne tronque pas pour tenir un quota. Quantifie au maximum ~40% des bullets sans jamais inventer de chiffre (utilise en priorité les chiffres RÉELS fournis par le candidat), et recopie fidèlement les faits (dates, formation, intitulés). RÉDIGE DANS LA MÊME LANGUE que le CV source ci-dessus.
+Produis un CV COMPLET et bien rempli pour ce poste (qualité d'un excellent CV professionnel) : garde TOUTES les expériences, formations, compétences, langues, certifications et sections (n'en supprime AUCUNE), avec 3-4 bullets solides par expérience récente/pertinente et 2-3 pour les plus anciennes. Réordonne et développe en priorité ce qui sert l'offre. Quantifie richement les réalisations MAIS uniquement avec des chiffres RÉELS (CV source ou réponses du candidat) — n'invente JAMAIS un chiffre. Recopie fidèlement les faits (identité, coordonnées, dates, formation, intitulés). RÉDIGE DANS LA MÊME LANGUE que le CV source ci-dessus.
 """
         
         try:
