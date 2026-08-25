@@ -81,9 +81,13 @@ async def get_articles(current_user: dict = Depends(get_current_user)):
 
         cursor = db.insights_articles.find({}, {"_id": 0}).sort("created_at", -1).limit(6)
         articles = await cursor.to_list(length=6)
+        from urllib.parse import quote_plus
         for a in articles:
             if isinstance(a.get("created_at"), datetime):
                 a["created_at"] = a["created_at"].isoformat()
+            # Lien cliquable HONNÊTE : recherche Google News du sujet (pas d'URL inventée).
+            q = quote_plus(f"{a.get('title', '')} emploi recrutement")
+            a["url"] = f"https://news.google.com/search?q={q}&hl=fr"
         return {"status": "success", "data": {"articles": articles}}
     except Exception as e:
         logger.error(f"[insights] get_articles: {e}")

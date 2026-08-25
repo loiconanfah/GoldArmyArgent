@@ -70,8 +70,14 @@
     background: linear-gradient(120deg, transparent, rgba(255,255,255,0.45), transparent);
     transform: skewX(-20deg); animation: cta-shine 3.2s ease-in-out infinite;
   }
+  /* Transition douce du conseil qui change (carte dashboard) */
+  .tip-fade-enter-active, .tip-fade-leave-active { transition: opacity 0.22s ease, transform 0.22s ease; }
+  .tip-fade-enter-from { opacity: 0; transform: translateY(6px); }
+  .tip-fade-leave-to { opacity: 0; transform: translateY(-6px); }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-badge-pop, .cta-animated, .cta-shine::after { animation: none; }
+    .tip-fade-enter-active, .tip-fade-leave-active { transition: none; }
   }
 
   .perspective-1000 {

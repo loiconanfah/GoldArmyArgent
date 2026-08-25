@@ -1155,36 +1155,43 @@ const saveWorkflowStatus = async (pb) => {
     <!-- Insights : conseils, actualités emploi (IA, maj tous les 2 jours), newsletter -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
       <!-- Conseil de recherche -->
-      <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col animate-slide-up">
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col animate-slide-up transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70 hover:border-amber-200">
         <div class="flex items-center gap-2 mb-3">
           <span class="p-2 rounded-lg bg-amber-50 text-amber-600"><LightBulbIcon class="w-5 h-5"/></span>
           <h3 class="font-bold text-slate-800 text-sm">Conseil de recherche</h3>
         </div>
-        <p class="font-bold text-slate-800 text-sm mb-1">{{ currentTip.t }}</p>
-        <p class="text-xs text-slate-500 leading-relaxed flex-1">{{ currentTip.d }}</p>
-        <button @click="nextTip" class="mt-3 self-start text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors">Astuce suivante →</button>
+        <Transition name="tip-fade" mode="out-in">
+          <div :key="tipIndex" class="flex-1">
+            <p class="font-bold text-slate-800 text-sm mb-1">{{ currentTip.t }}</p>
+            <p class="text-xs text-slate-500 leading-relaxed">{{ currentTip.d }}</p>
+          </div>
+        </Transition>
+        <button @click="nextTip" class="mt-3 self-start text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors group">
+          Astuce suivante <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
+        </button>
       </div>
 
       <!-- Actualités emploi (IA) -->
-      <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col animate-slide-up" style="animation-delay:.05s;">
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col animate-slide-up transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70 hover:border-amber-200" style="animation-delay:.05s;">
         <div class="flex items-center gap-2 mb-3">
           <span class="p-2 rounded-lg bg-amber-50 text-amber-600"><NewspaperIcon class="w-5 h-5"/></span>
           <h3 class="font-bold text-slate-800 text-sm">Actualités emploi</h3>
           <span class="ml-auto text-[9px] uppercase font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">IA · maj 2j</span>
         </div>
         <div v-if="insightsLoading" class="text-xs text-slate-400 py-6 text-center flex-1">Chargement…</div>
-        <div v-else-if="insightArticles.length" class="space-y-2.5 flex-1">
-          <div v-for="(a, i) in insightArticles.slice(0, 3)" :key="i" class="pb-2 border-b border-slate-100 last:border-0 last:pb-0">
+        <div v-else-if="insightArticles.length" class="space-y-1 flex-1">
+          <a v-for="(a, i) in insightArticles.slice(0, 3)" :key="i" :href="a.url" target="_blank" rel="noopener"
+             class="block -mx-2 px-2 py-2 rounded-lg border-b border-slate-100 last:border-0 hover:bg-amber-50/50 transition-colors group cursor-pointer">
             <span class="text-[9px] uppercase font-bold text-amber-600">{{ a.category }}</span>
-            <p class="text-sm font-bold text-slate-800 leading-snug">{{ a.title }}</p>
+            <p class="text-sm font-bold text-slate-800 leading-snug group-hover:text-amber-700 transition-colors">{{ a.title }} <span class="text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity">↗</span></p>
             <p class="text-xs text-slate-500 leading-snug line-clamp-2">{{ a.summary }}</p>
-          </div>
+          </a>
         </div>
         <div v-else class="text-xs text-slate-400 py-6 text-center flex-1">Les brèves arrivent bientôt.</div>
       </div>
 
       <!-- Newsletter -->
-      <div class="bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-2xl p-5 flex flex-col animate-slide-up" style="animation-delay:.1s;">
+      <div class="bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-2xl p-5 flex flex-col animate-slide-up transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-amber-100" style="animation-delay:.1s;">
         <div class="flex items-center gap-2 mb-2">
           <span class="p-2 rounded-lg bg-amber-100 text-amber-600"><EnvelopeIcon class="w-5 h-5"/></span>
           <h3 class="font-bold text-slate-800 text-sm">Newsletter emploi</h3>
