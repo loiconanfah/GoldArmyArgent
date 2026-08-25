@@ -289,8 +289,15 @@ Règles :
                 system="Journaliste d'affaires. Trouve des faits réels et récents."
             )
         except Exception as e:
-            logger.error(f"Erreur scraping news: {e}")
-            news_text = "Pas d'actualités récentes trouvées."
+            logger.warning(f"Actualités indisponibles (grounding non dispo): {e}")
+            news_text = ""
+
+        has_news = bool(news_text and news_text.strip() and "pas d'actualit" not in news_text.lower())
+        accroche = (
+            f"3. ACCROCHE : Mentionne impérativement une de ces actualités de '{company_name}' pour montrer ton intérêt : {news_text}."
+            if has_news else
+            "3. ACCROCHE : Ouvre sur ta motivation sincère pour l'entreprise et le poste (sans inventer d'actualité que tu ne connais pas)."
+        )
 
         # 2. Rédiger la lettre avec contexte candidat
         candidate_context = f"\nVoici mon profil (CV) pour orienter la rédaction :\n{cv_text}" if cv_text else ""
@@ -303,9 +310,9 @@ Règles :
         STRUCTURE DE LA LETTRE :
         1. EN-TÊTE : [Votre Nom] à [Lieu/Date].
         2. OBJET : Candidature au poste de {job_title}.
-        3. ACCROCHE : Mentionne impérativement une de ces actualités de '{company_name}' pour montrer ton intérêt : {news_text}.
-        4. CORPS (VOUS/MOI/NOUS) : 
-           - Pourquoi l'entreprise m'attire (basé sur l'actu).
+        {accroche}
+        4. CORPS (VOUS/MOI/NOUS) :
+           - Pourquoi l'entreprise m'attire.
            - Ce que j'apporte (basé sur mon CV).
            - Ce que nous ferons ensemble.
         5. CONCLUSION : Appel à l'action pour un entretien.
@@ -317,14 +324,19 @@ Règles :
         - Pas de Markdown (# ou **).
         """
         try:
-            letter, _ = await self.generate_with_sources(
-                writing_prompt,
+            # Rédaction : génération simple (PAS de grounding — sinon "requiert Gemini API"
+            # avec un client OpenRouter). Le grounding sert uniquement, en best-effort, à
+            # récupérer l'actualité plus haut.
+            letter = await self.generate_response(
+                prompt=writing_prompt,
+                system="Tu es un expert en copywriting A-List. Tu rédiges des lettres de motivation percutantes, uniques et structurées qui captent l'attention en 5 secondes. Tu fournis uniquement le texte final, prêt à l'emploi.",
                 model="gemini-2.0-flash",
-                system="Tu es un expert en copywriting A-List. Tu rédiges des lettres de motivation percutantes, uniques et structurées qui captent l'attention en 5 secondes. Tu fournis uniquement le texte final, prêt à l'emploi."
             )
+            if not letter or not letter.strip():
+                return {"error": "La rédaction n'a rien renvoyé. Réessaie."}
             return {
                 "news": news_text,
-                "letter": letter
+                "letter": letter.strip()
             }
         except Exception as e:
             logger.error(f"Erreur génération lettre: {e}")
