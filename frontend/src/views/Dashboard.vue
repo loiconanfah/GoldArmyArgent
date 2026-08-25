@@ -24,10 +24,11 @@ import {
   EyeIcon,
   XMarkIcon,
   RocketLaunchIcon, 
-  EnvelopeIcon, 
-  UsersIcon, 
+  EnvelopeIcon,
+  UsersIcon,
   LightBulbIcon,
-  MagnifyingGlassIcon, 
+  NewspaperIcon,
+  MagnifyingGlassIcon,
   MegaphoneIcon, 
   HandThumbUpIcon, 
   InformationCircleIcon,
@@ -501,6 +502,47 @@ const downloadScLetter = async () => {
     } catch (e) {} finally {
         scDownloading.value = false
     }
+}
+
+// ── Cartes d'insights du dashboard : conseils, actualités emploi (IA), newsletter ──
+const searchTips = [
+    { t: 'Vise le marché caché', d: "70% des postes ne sont jamais publiés. Contacte les entreprises en direct via le Sniper." },
+    { t: 'Quantifie tes réalisations', d: "Un CV avec des résultats chiffrés (réels) marque les recruteurs et passe mieux les ATS." },
+    { t: 'Relance sous 7 jours', d: "Une relance polie après candidature augmente nettement tes chances de réponse." },
+    { t: 'Adapte chaque candidature', d: "Reprends les mots-clés exacts de l'offre dans ton CV et ta lettre." },
+    { t: 'Prépare tes entretiens', d: "Entraîne-toi à l'oral avec le simulateur : la répétition réduit le stress." },
+    { t: 'Soigne ton profil LinkedIn', d: "Titre clair, réalisations, mots-clés du métier : les recruteurs le vérifient." },
+]
+const tipIndex = ref(0)
+const currentTip = computed(() => searchTips[tipIndex.value % searchTips.length])
+const nextTip = () => { tipIndex.value = (tipIndex.value + 1) % searchTips.length }
+
+const insightArticles = ref([])
+const insightsLoading = ref(false)
+const loadInsightArticles = async () => {
+    insightsLoading.value = true
+    try {
+        const r = await authFetch('/api/insights/articles')
+        const j = await r.json()
+        if (j?.status === 'success') insightArticles.value = j.data.articles || []
+    } catch (e) {} finally { insightsLoading.value = false }
+}
+onMounted(loadInsightArticles)
+
+const newsletterEmail = ref('')
+const newsletterState = ref('')   // '' | 'sending' | 'ok' | 'err'
+const subscribeNewsletter = async () => {
+    const email = newsletterEmail.value.trim()
+    if (!email) return
+    newsletterState.value = 'sending'
+    try {
+        const r = await authFetch('/api/insights/newsletter', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        })
+        newsletterState.value = r.ok ? 'ok' : 'err'
+        if (r.ok) newsletterEmail.value = ''
+    } catch (e) { newsletterState.value = 'err' }
 }
 
 const startBulkExecution = async () => {
@@ -1107,6 +1149,59 @@ const saveWorkflowStatus = async (pb) => {
             <span class="greeting-sub">{{ t('dashboard.ask_anything') }}</span>
           </div>
           <button class="btn-icon-white rounded-full"><span class="w-5 h-5 block text-center leading-5">&plus;</span></button>
+      </div>
+    </div>
+
+    <!-- Insights : conseils, actualités emploi (IA, maj tous les 2 jours), newsletter -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+      <!-- Conseil de recherche -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col animate-slide-up">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="p-2 rounded-lg bg-amber-50 text-amber-600"><LightBulbIcon class="w-5 h-5"/></span>
+          <h3 class="font-bold text-slate-800 text-sm">Conseil de recherche</h3>
+        </div>
+        <p class="font-bold text-slate-800 text-sm mb-1">{{ currentTip.t }}</p>
+        <p class="text-xs text-slate-500 leading-relaxed flex-1">{{ currentTip.d }}</p>
+        <button @click="nextTip" class="mt-3 self-start text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors">Astuce suivante →</button>
+      </div>
+
+      <!-- Actualités emploi (IA) -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col animate-slide-up" style="animation-delay:.05s;">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="p-2 rounded-lg bg-amber-50 text-amber-600"><NewspaperIcon class="w-5 h-5"/></span>
+          <h3 class="font-bold text-slate-800 text-sm">Actualités emploi</h3>
+          <span class="ml-auto text-[9px] uppercase font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">IA · maj 2j</span>
+        </div>
+        <div v-if="insightsLoading" class="text-xs text-slate-400 py-6 text-center flex-1">Chargement…</div>
+        <div v-else-if="insightArticles.length" class="space-y-2.5 flex-1">
+          <div v-for="(a, i) in insightArticles.slice(0, 3)" :key="i" class="pb-2 border-b border-slate-100 last:border-0 last:pb-0">
+            <span class="text-[9px] uppercase font-bold text-amber-600">{{ a.category }}</span>
+            <p class="text-sm font-bold text-slate-800 leading-snug">{{ a.title }}</p>
+            <p class="text-xs text-slate-500 leading-snug line-clamp-2">{{ a.summary }}</p>
+          </div>
+        </div>
+        <div v-else class="text-xs text-slate-400 py-6 text-center flex-1">Les brèves arrivent bientôt.</div>
+      </div>
+
+      <!-- Newsletter -->
+      <div class="bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-2xl p-5 flex flex-col animate-slide-up" style="animation-delay:.1s;">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="p-2 rounded-lg bg-amber-100 text-amber-600"><EnvelopeIcon class="w-5 h-5"/></span>
+          <h3 class="font-bold text-slate-800 text-sm">Newsletter emploi</h3>
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed mb-3 flex-1">Conseils, tendances du marché et offres cachées, directement dans ta boîte mail.</p>
+        <div v-if="newsletterState === 'ok'" class="text-xs font-bold text-emerald-600">✓ Inscription confirmée, merci !</div>
+        <template v-else>
+          <div class="flex gap-2">
+            <input v-model="newsletterEmail" type="email" placeholder="ton@email.com" @keyup.enter="subscribeNewsletter"
+                   class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-amber-200 text-sm focus:border-amber-400 outline-none" />
+            <button @click="subscribeNewsletter" :disabled="newsletterState === 'sending'"
+                    class="px-3 py-2 rounded-lg bg-amber-500 text-white text-sm font-bold hover:bg-amber-600 disabled:opacity-50 transition-colors whitespace-nowrap">
+              {{ newsletterState === 'sending' ? '…' : "S'inscrire" }}
+            </button>
+          </div>
+          <p v-if="newsletterState === 'err'" class="text-xs text-rose-600 mt-1">Adresse invalide ou erreur. Réessaie.</p>
+        </template>
       </div>
     </div>
 
