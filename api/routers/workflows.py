@@ -25,8 +25,15 @@ class SmartCoverRequest(BaseModel):
 async def execute_smart_cover(req: SmartCoverRequest, current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
     """Exécute le Playbook 10 (Smart Cover) et retourne le résultat."""
     from agents.headhunter import headhunter_agent
+    from api.subscription import check_subscription_limit, log_usage
 
     user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
+
+    # Vérifie le solde Gold avant de générer (coût "cover_letter").
+    check = await check_subscription_limit(user_id, "cover_letter")
+    if not check.get("allowed"):
+        raise HTTPException(status_code=403, detail=check.get("message", "Gold insuffisant pour générer une lettre."))
+
     user_data = await db.users.find_one({"id": user_id})
     cv_text = user_data.get("cv_text", "") if user_data else ""
 
@@ -36,6 +43,9 @@ async def execute_smart_cover(req: SmartCoverRequest, current_user: dict = Depen
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
 
+    # Débite le Gold seulement après une génération réussie.
+    await log_usage(user_id, "cover_letter")
+
     return {"status": "success", "data": result}
 
 
@@ -43,16 +53,24 @@ async def execute_smart_cover(req: SmartCoverRequest, current_user: dict = Depen
 async def execute_smart_cover_bulk(req: List[SmartCoverRequest], current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
     """Exécute le Playbook 10 pour plusieurs entreprises."""
     from agents.headhunter import headhunter_agent
+    from api.subscription import log_usage
 
     user_id = current_user.get("user_id") or current_user.get("id") or current_user.get("sub")
     user_data = await db.users.find_one({"id": user_id})
     cv_text = user_data.get("cv_text", "") if user_data else ""
 
     results = []
+    generated = 0
     for item in req:
         logger.info(f"🧪 Bulk Smart Cover pour {item.company_name}")
         res = await headhunter_agent.generate_smart_cover_letter(item.company_name, item.job_title, cv_text=cv_text)
+        if isinstance(res, dict) and res.get("letter"):
+            generated += 1
         results.append({"company": item.company_name, "result": res})
+
+    # Débite le Gold pour chaque lettre réellement générée.
+    if generated:
+        await log_usage(user_id, "cover_letter", generated)
 
     return {"status": "success", "data": results}
 
