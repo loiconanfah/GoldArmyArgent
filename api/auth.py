@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import jwt
 import bcrypt
 import os
+import re
 from core.database import get_db
 from config.settings import settings
 import uuid
@@ -115,10 +116,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     return user
 
-@router.post("/register", response_model=Token)
+@router.post("/register")
 async def register(user_data: UserCreate):
     db = get_db()
     try:
+        # Validation basique de l'adresse (bloque les saisies grossièrement invalides)
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", (user_data.email or "").strip()):
+            raise HTTPException(status_code=400, detail="Adresse e-mail invalide.")
         # Check if email exists
         existing_user = await db.users.find_one({"email": user_data.email})
         if existing_user:
@@ -220,42 +224,27 @@ async def register(user_data: UserCreate):
                     org_id = joined["organization"]["id"]
         except Exception as org_err:
             logger.warning(f"[REGISTER] Traitement organisation échoué: {org_err}")
-        try:
-            otp_code = str(random.randint(100000, 999999))
-            expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
-            await db.otp_codes.update_one(
-                {"email": user_data.email},
-                {"$set": {"code": otp_code, "expires_at": expires_at}},
-                upsert=True
-            )
-            await email_service.send_otp(user_data.email, otp_code)
-        except: pass
-        
-        # Create access + refresh tokens
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": user_id, "email": user_data.email}, expires_delta=access_token_expires
+        # Vérification e-mail OBLIGATOIRE : on envoie un code et on NE connecte PAS.
+        # Tant que le code n'est pas validé (via /verify-otp), aucun token n'est délivré.
+        otp_code = str(random.randint(100000, 999999))
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+        await db.otp_codes.update_one(
+            {"email": user_data.email},
+            {"$set": {"code": otp_code, "expires_at": expires_at}},
+            upsert=True,
         )
-        refresh_token = create_refresh_token(data={"sub": user_id, "email": user_data.email})
-
-        # Palier effectif (peut avoir changé si l'utilisateur a rejoint une organisation)
-        fresh = await db.users.find_one({"id": user_id}, {"_id": 0, "subscription_tier": 1})
-        effective_tier = (fresh or {}).get("subscription_tier", "FREE")
+        try:
+            sent = await email_service.send_otp(user_data.email, otp_code)
+        except Exception as mail_err:
+            sent = False
+            logger.error(f"[REGISTER] Envoi OTP échoué pour {user_data.email}: {mail_err}")
+        if not sent:
+            logger.warning(f"[REGISTER] OTP NON envoyé à {user_data.email} — vérifier la config SMTP.")
 
         return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
-            "user": {
-                "id": user_id,
-                "email": user_data.email,
-                "subscription_tier": effective_tier,
-                "is_verified": False,
-                "full_name": full_name,
-                "role": org_role,
-                "account_type": org_account_type,
-                "organization_id": org_id,
-            }
+            "status": "verification_required",
+            "email": user_data.email,
+            "message": "Un code de vérification a été envoyé à ton adresse e-mail. Saisis-le pour activer ton compte.",
         }
     except Exception as e:
         if isinstance(e, HTTPException):
@@ -263,19 +252,39 @@ async def register(user_data: UserCreate):
         logger.error(f"Erreur inscription: {e}")
         raise HTTPException(status_code=500, detail=f"Database/Registration Error: {str(e)}")
 
-@router.post("/login", response_model=Token)
+@router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     try:
         db = get_db()
         user = await db.users.find_one({"email": form_data.username})
-        
+
         if not user or not verify_password(form_data.password, user.get("hashed_password", "")):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-            
+
+        # Vérification e-mail obligatoire pour les comptes créés en direct (non-Google).
+        # Les anciens comptes ont été marqués vérifiés par la migration → non impactés.
+        if not user.get("is_verified", False) and not user.get("google_id"):
+            otp_code = str(random.randint(100000, 999999))
+            expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+            await db.otp_codes.update_one(
+                {"email": user["email"]},
+                {"$set": {"code": otp_code, "expires_at": expires_at}},
+                upsert=True,
+            )
+            try:
+                await email_service.send_otp(user["email"], otp_code)
+            except Exception:
+                pass
+            return {
+                "status": "verification_required",
+                "email": user["email"],
+                "message": "Ton adresse e-mail n'est pas encore vérifiée. Un nouveau code vient de t'être envoyé.",
+            }
+
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": user["id"], "email": user["email"]}, expires_delta=access_token_expires
@@ -409,6 +418,10 @@ async def google_login(payload: GoogleTokenRequest):
             }
             await db.users.insert_one(new_user)
             tier = "FREE"
+            try:
+                await email_service.send_welcome(email, full_name or email.split("@")[0])
+            except Exception:
+                pass
         else:
             user_id = user["id"]
             tier = user.get("subscription_tier", "FREE")
@@ -481,6 +494,10 @@ async def apple_login(payload: AppleTokenRequest):
             }
             await db.users.insert_one(new_user)
             tier = "FREE"
+            try:
+                await email_service.send_welcome(email, full_name or email.split("@")[0])
+            except Exception:
+                pass
         else:
             user_id = user["id"]
             tier = user.get("subscription_tier", "FREE")
@@ -541,10 +558,52 @@ async def send_otp(email_data: dict):
 
 @router.post("/verify-otp")
 async def verify_otp(request: dict):
-    db, email, code = get_db(), request.get("email"), request.get("code")
+    db = get_db()
+    email = (request.get("email") or "").strip()
+    code = str(request.get("code") or "").strip()
     otp_record = await db.otp_codes.find_one({"email": email, "code": code})
-    if not otp_record or otp_record["expires_at"] < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail="Code invalide/expiré")
+    if not otp_record:
+        raise HTTPException(status_code=400, detail="Code invalide.")
+    exp = otp_record.get("expires_at")
+    if exp and exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if not exp or exp < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Code expiré. Demande un nouveau code.")
+
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="Compte introuvable.")
+
+    already_verified = user.get("is_verified", False)
     await db.users.update_one({"email": email}, {"$set": {"is_verified": True}})
     await db.otp_codes.delete_one({"email": email})
-    return {"status": "success"}
+
+    # Mail de bienvenue à la première vérification (best-effort, ne bloque pas la connexion).
+    if not already_verified:
+        try:
+            await email_service.send_welcome(email, user.get("full_name") or email.split("@")[0])
+        except Exception as we:
+            logger.warning(f"[verify-otp] mail de bienvenue non envoyé: {we}")
+
+    # Compte vérifié → on délivre enfin les tokens (connexion).
+    access_token = create_access_token(
+        data={"sub": user["id"], "email": email},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    refresh_token = create_refresh_token(data={"sub": user["id"], "email": email})
+    return {
+        "status": "success",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "email": email,
+            "subscription_tier": user.get("subscription_tier", "FREE"),
+            "is_verified": True,
+            "full_name": user.get("full_name"),
+            "role": user.get("role"),
+            "account_type": user.get("account_type"),
+            "organization_id": user.get("organization_id"),
+        },
+    }

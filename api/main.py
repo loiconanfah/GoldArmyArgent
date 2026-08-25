@@ -29,6 +29,7 @@ from api.notifications import router as notifications_router
 from api.referral import router as referral_router
 from api.subscription import check_subscription_limit, log_usage
 from core.database import get_db
+from datetime import datetime, timezone
 from api.tasks import create_task, run_background_task
 
 # --- Routers par domaine (découpage de l'ancien monolithe) ---
@@ -157,6 +158,21 @@ async def startup_event():
     try:
         logger.info("📡 Étape 1: Initialisation de la base de données...")
         await init_db()
+
+        # Migration one-shot : "grand-père" les comptes existants comme vérifiés,
+        # pour que la nouvelle vérification e-mail n'impacte QUE les nouvelles inscriptions.
+        try:
+            db = get_db()
+            flag = await db.app_meta.find_one({"key": "verify_migration_v1"})
+            if not flag:
+                res = await db.users.update_many(
+                    {"is_verified": {"$ne": True}},
+                    {"$set": {"is_verified": True}},
+                )
+                await db.app_meta.insert_one({"key": "verify_migration_v1", "at": datetime.now(timezone.utc)})
+                logger.info(f"✅ Migration vérification : {res.modified_count} comptes existants marqués vérifiés.")
+        except Exception as mig_err:
+            logger.warning(f"[startup] migration vérification ignorée: {mig_err}")
 
         logger.info("🤖 Étape 2: Initialisation de l'orchestrateur d'agents...")
         await orchestrator.initialize()

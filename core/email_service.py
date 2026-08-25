@@ -44,6 +44,32 @@ class EmailService:
         """
         return await self.send_email(to_email, subject, html)
 
+    async def send_welcome(self, to_email: str, name: str = "") -> bool:
+        """E-mail de bienvenue envoyé après vérification du compte."""
+        hello = f"Bienvenue {name} !" if name else "Bienvenue !"
+        subject = "Bienvenue sur GoldArmy 🎉"
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"></head>
+        <body style="margin:0;padding:0;background-color:#0f172a;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#f8fafc;">
+            <div style="max-width:600px;margin:40px auto;background-color:#1e293b;border-radius:16px;border:1px solid #334155;overflow:hidden;padding:32px;">
+                <div style="text-align:center;margin-bottom:24px;">
+                    <h1 style="color:#f59e0b;margin:0;font-size:28px;font-weight:800;">GOLDARMY</h1>
+                    <p style="color:#94a3b8;font-size:12px;font-weight:600;text-transform:uppercase;margin-top:4px;">Ton co-pilote de carrière</p>
+                </div>
+                <h2 style="color:#f8fafc;font-size:22px;margin:0 0 12px;">{hello}</h2>
+                <p style="color:#cbd5e1;font-size:14px;line-height:1.6;margin:0 0 16px;">Ton compte est vérifié et prêt. Tu as reçu <strong style="color:#f59e0b;">50 Gold</strong> pour démarrer : lance ta première recherche Sniper, audite ton CV et prépare tes entretiens.</p>
+                <div style="text-align:center;margin:24px 0;">
+                    <a href="https://www.goldarmyai.com/dashboard" style="display:inline-block;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a;font-weight:800;padding:12px 28px;border-radius:10px;text-decoration:none;">Ouvrir mon tableau de bord</a>
+                </div>
+                <p style="color:#94a3b8;font-size:13px;line-height:1.5;margin:0;">Bonne chasse aux opportunités 💪</p>
+            </div>
+        </body>
+        </html>
+        """
+        return await self.send_email(to_email, subject, html)
+
     async def send_subscription_confirmation(self, to_email: str, tier_name: str) -> bool:
         """Envoie un e-mail de confirmation d'abonnement réussi."""
         tier_display = "GoldArmy Essentiel" if tier_name.upper() == "ESSENTIAL" else "GoldArmy Pro"

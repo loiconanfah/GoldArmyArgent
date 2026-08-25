@@ -16,6 +16,14 @@ const errorMsg = ref('')
 const isLoading = ref(false)
 const showPassword = ref(false)
 
+// ── Vérification e-mail par code (OTP) ──
+const showOtp = ref(false)
+const otpEmail = ref('')
+const otpCode = ref('')
+const otpError = ref('')
+const otpLoading = ref(false)
+const otpResendMsg = ref('')
+
 useHead({
   title: computed(() => t('auth.login_title') + ' | GoldArmy'),
   meta: [
@@ -45,7 +53,12 @@ const handleLogin = async () => {
       errorMsg.value = data?.detail || (t('common.error') + ': ' + t('auth.invalid_credentials'))
     } else if (!data) {
       errorMsg.value = t('common.error') + ': ' + t('auth.invalid_response')
-    } else {
+    } else if (data.status === 'verification_required') {
+      otpEmail.value = data.email || email.value
+      otpCode.value = ''
+      otpError.value = ''
+      showOtp.value = true
+    } else if (data.access_token) {
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('user', JSON.stringify(data.user))
       router.push('/home')
@@ -55,6 +68,44 @@ const handleLogin = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const verifyOtp = async () => {
+  otpError.value = ''
+  const code = (otpCode.value || '').trim()
+  if (code.length < 6) { otpError.value = 'Entre le code à 6 chiffres reçu par e-mail.'; return }
+  otpLoading.value = true
+  try {
+    const res = await fetch(getApiUrl('/api/auth/verify-otp'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: otpEmail.value, code })
+    })
+    const data = await safeJson(res)
+    if (!res.ok || !data?.access_token) {
+      otpError.value = data?.detail || 'Code invalide ou expiré.'
+    } else {
+      localStorage.setItem('token', data.access_token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      router.push('/home')
+    }
+  } catch (e) {
+    otpError.value = t('common.error') + ': Connexion au serveur.'
+  } finally {
+    otpLoading.value = false
+  }
+}
+
+const resendOtp = async () => {
+  otpResendMsg.value = ''
+  try {
+    await fetch(getApiUrl('/api/auth/send-otp'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: otpEmail.value })
+    })
+    otpResendMsg.value = 'Nouveau code envoyé.'
+  } catch (e) { otpResendMsg.value = "Impossible d'envoyer le code." }
 }
 </script>
 
@@ -194,6 +245,28 @@ const handleLogin = async () => {
             </div>
             <p v-if="googleError" class="auth-form__google-error">{{ googleError }}</p>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vérification e-mail par code (OTP) -->
+    <div v-if="showOtp" style="position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;background:rgba(10,10,20,0.75);backdrop-filter:blur(6px);">
+      <div style="width:100%;max-width:420px;background:#0f172a;border:1px solid #334155;border-radius:18px;padding:2rem;text-align:center;color:#f8fafc;">
+        <div style="width:56px;height:56px;border-radius:14px;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+          <EnvelopeIcon style="width:28px;height:28px;color:#f59e0b;" />
+        </div>
+        <h3 style="font-size:1.25rem;font-weight:800;margin:0 0 .5rem;">Vérifie ton adresse e-mail</h3>
+        <p style="font-size:.9rem;color:#94a3b8;line-height:1.5;margin:0 0 1.25rem;">Un code à 6 chiffres a été envoyé à <strong style="color:#f8fafc;">{{ otpEmail }}</strong>. Saisis-le pour continuer.</p>
+        <input v-model="otpCode" inputmode="numeric" maxlength="6" placeholder="123456" @keyup.enter="verifyOtp"
+               style="width:100%;text-align:center;letter-spacing:.5em;font-size:1.5rem;font-weight:800;padding:.75rem;border-radius:12px;background:#1e293b;border:1px solid #334155;color:#fff;outline:none;box-sizing:border-box;" />
+        <p v-if="otpError" style="color:#f87171;font-size:.85rem;margin:.6rem 0 0;">{{ otpError }}</p>
+        <button @click="verifyOtp" :disabled="otpLoading"
+                style="width:100%;margin-top:1rem;padding:.85rem;border:none;border-radius:12px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a;font-weight:800;font-size:.95rem;cursor:pointer;">
+          {{ otpLoading ? 'Vérification…' : 'Vérifier & continuer' }}
+        </button>
+        <div style="margin-top:.9rem;">
+          <button @click="resendOtp" style="background:none;border:none;color:#94a3b8;font-size:.82rem;cursor:pointer;text-decoration:underline;">Renvoyer le code</button>
+          <span v-if="otpResendMsg" style="color:#34d399;font-size:.8rem;margin-left:.5rem;">{{ otpResendMsg }}</span>
         </div>
       </div>
     </div>
