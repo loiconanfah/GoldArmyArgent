@@ -271,7 +271,13 @@ Règles :
         Génère une lettre de motivation 'Smart' en scrapant les dernières actus de la boîte.
         """
         logger.info(f"🗞️ Génération Smart Cover pour {company_name}")
-        
+
+        # Robustesse : l'agent global peut ne pas avoir été initialisé par l'appelant
+        # (l'endpoint /api/workflows/smart-cover n'appelait pas initialize()). Sans ça,
+        # llm_client est None → generate_with_sources lève et aucune lettre n'est produite.
+        if not self.llm_client:
+            await self.initialize()
+
         # 1. Rechercher les actualités récentes
         search_prompt = f"Trouve les 3 dernières actualités majeures (levée de fonds, nouveaux produits, recrutements, partenariats) concernant l'entreprise '{company_name}'."
         try:
