@@ -77,6 +77,7 @@ const fetchGold = async () => {
 const userTier = ref('FREE')
 const userRole = ref(null)
 const userOrgId = ref(null)
+const profileMissing = ref(0)   // nb de champs clés manquants (pour le badge Profil)
 
 onMounted(async () => {
   userEmail.value = t('common.loading')
@@ -103,7 +104,14 @@ onMounted(async () => {
         userOrgId.value = json.data.organization_id || null
         userEmail.value = json.data.full_name || json.data.email.split('@')[0]
         userAvatar.value = json.data.avatar_url || ''
-        
+
+        // Champs clés manquants → badge Profil (incite à compléter)
+        const d = json.data
+        profileMissing.value =
+            (d.cv_text ? 0 : 1) +
+            (d.phone ? 0 : 1) +
+            ((d.linkedin_profile || d.linkedin) ? 0 : 1)
+
         // Identify user in Clarity
         Clarity.identify(json.data.id || json.data.email, undefined, undefined, json.data.full_name || json.data.email)
       }
@@ -175,25 +183,24 @@ const toggleNotifications = () => {
 }
 
 // --- Badges compteurs sur la navigation (actions en attente) ---
-const navBadges = ref({})
-const refreshNavBadges = async () => {
-    if (!localStorage.getItem('token')) return
-    try {
-        // CRM : relances anti-fantôme dues (source réelle : statut Ghostbuster)
-        const r = await authFetch('/api/workflows/ghostbuster/status')
-        const j = await r.json()
-        const due = j?.data?.last_result_count || 0
-        navBadges.value = { ...navBadges.value, '/crm': due }
-    } catch (e) { /* silencieux */ }
-}
+// Source unifiée : notifications non lues regroupées par section (action_url) —
+// ex. "Sniper terminé" → /opportunities, "CV prêt"/"Relances" → /crm — plus les
+// champs de profil manquants pour /profile. Le badge se vide quand l'utilisateur
+// lit ses notifications ou complète son profil. Aucune donnée inventée.
+const navBadges = computed(() => {
+    const b = {}
+    for (const n of notifications.value) {
+        if (!n.is_read && n.action_url) b[n.action_url] = (b[n.action_url] || 0) + 1
+    }
+    if (profileMissing.value > 0) b['/profile'] = profileMissing.value
+    return b
+})
 
 onMounted(() => {
     fetchNotifications()
     fetchGold()
-    refreshNavBadges()
     const timer = setInterval(fetchNotifications, 60000 * 5) // Toutes les 5 min
-    const badgeTimer = setInterval(refreshNavBadges, 60000 * 5)
-    return () => { clearInterval(timer); clearInterval(badgeTimer) }
+    return () => clearInterval(timer)
 })
 
 watch(() => route.path, () => { fetchGold() })

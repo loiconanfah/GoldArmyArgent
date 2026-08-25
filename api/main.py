@@ -268,6 +268,7 @@ async def _enrich_contacts_from_jobs(content: Any, user_id: str) -> None:
     companies = companies[:12]
     if not companies:
         return
+    added = 0
     try:
         from tools.web_searcher import web_searcher
         from core.contacts import contacts_manager
@@ -287,11 +288,21 @@ async def _enrich_contacts_from_jobs(content: Any, user_id: str) -> None:
                         category="Sniper Recherche",
                         user_id=user_id
                     )
+                    added += 1
                     logger.info(f"📇 Carnet enrichi: {data['company_name']} ({len(emails)} emails)")
             except Exception as e:
                 logger.debug(f"Enrich contact {c.get('company')}: {e}")
     except Exception as e:
         logger.warning(f"Enrichissement carnet: {e}")
+
+    if added:
+        try:
+            from api.notifications import notify
+            await notify(user_id, "Nouveaux contacts RH",
+                         f"{added} entreprise(s) ajoutée(s) à ton carnet avec leurs contacts.",
+                         "success", "/network")
+        except Exception:
+            pass
 
 
 @app.post("/api/chat")
