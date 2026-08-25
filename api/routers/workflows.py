@@ -19,6 +19,8 @@ router = APIRouter()
 class SmartCoverRequest(BaseModel):
     company_name: str
     job_title: Optional[str] = "Poste ouvert"
+    job_description: Optional[str] = ""   # description collée depuis un lien externe (optionnel)
+    job_url: Optional[str] = None         # lien de l'offre (référence, optionnel)
 
 
 @router.post("/api/workflows/smart-cover")
@@ -38,7 +40,8 @@ async def execute_smart_cover(req: SmartCoverRequest, current_user: dict = Depen
     cv_text = user_data.get("cv_text", "") if user_data else ""
 
     logger.info(f"🧪 Test Smart Cover pour {req.company_name} par {current_user['email']}")
-    result = await headhunter_agent.generate_smart_cover_letter(req.company_name, req.job_title, cv_text=cv_text)
+    result = await headhunter_agent.generate_smart_cover_letter(
+        req.company_name, req.job_title, cv_text=cv_text, job_desc=req.job_description or "")
 
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])

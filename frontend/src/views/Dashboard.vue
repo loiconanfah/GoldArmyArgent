@@ -279,7 +279,8 @@ const togglePlaybook = async (pb) => {
     bulkResults.value = []
     
     if (pb.id === 10) {
-        // Ouvre la sélection pour le Workflow 10
+        // Ouvre le studio Smart Cover (lettre de motivation)
+        resetSmartCover()
         isSelectionModalOpen.value = true
         execPlaybook.value = pb
         return
@@ -411,37 +412,94 @@ const last10RecentApplications = computed(() => {
     return recentActivity.value.slice(0, 10)
 })
 
-// Génération directe d'une lettre pour une entreprise saisie à la main
-// (ne dépend PAS des candidatures CRM — corrige le cas "rien ne se passe au clic").
-const manualCover = ref({ company: '', job: '' })
-const generateManualCover = async () => {
-    const company = manualCover.value.company.trim()
-    if (!company) return
-    const job = manualCover.value.job.trim() || 'Poste ouvert'
-    isSelectionModalOpen.value = false
-    realExecutionResult.value = null
-    bulkResults.value = []
-    isExecuting.value = true
-    execStep.value = 0
-    execLogs.value = [`[00:00] Génération de la lettre pour ${company}...`]
+// ── Smart Cover studio : génère une lettre depuis une offre du CRM ou un lien/saisie externe,
+// puis permet de l'éditer, la copier et la télécharger en PDF. Ne dépend plus d'une console.
+const scMode = ref('crm')                         // 'crm' | 'external'
+const scForm = ref({ company: '', job: '', url: '', desc: '' })
+const scSelectedAppId = ref(null)
+const scGenerating = ref(false)
+const scResult = ref(null)                        // { company, letter, news }
+const scEditable = ref('')
+const scCopied = ref(false)
+const scDownloading = ref(false)
+const scError = ref('')
+
+const resetSmartCover = () => {
+    scMode.value = 'crm'
+    scForm.value = { company: '', job: '', url: '', desc: '' }
+    scSelectedAppId.value = null
+    scResult.value = null
+    scEditable.value = ''
+    scError.value = ''
+    scGenerating.value = false
+}
+
+const scCanGenerate = computed(() => {
+    if (scGenerating.value) return false
+    return scMode.value === 'crm' ? !!scSelectedAppId.value : !!scForm.value.company.trim()
+})
+
+const generateSmartCover = async () => {
+    scError.value = ''
+    let company = '', job = 'Poste ouvert', desc = '', url = ''
+    if (scMode.value === 'crm') {
+        const app = last10RecentApplications.value.find(o => o.id === scSelectedAppId.value)
+        if (!app) return
+        company = app.company; job = app.name || 'Poste ouvert'
+    } else {
+        company = scForm.value.company.trim()
+        if (!company) return
+        job = scForm.value.job.trim() || 'Poste ouvert'
+        desc = scForm.value.desc.trim(); url = scForm.value.url.trim()
+    }
+    scGenerating.value = true
+    scResult.value = null
     try {
-        advanceStep(2, `[00:02] Recherche d'actualités & rédaction pour ${company}...`)
-        const response = await authFetch('/api/workflows/smart-cover', {
+        const r = await authFetch('/api/workflows/smart-cover', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ company_name: company, job_title: job })
+            body: JSON.stringify({ company_name: company, job_title: job, job_description: desc, job_url: url })
         })
-        const res = await response.json()
-        if (res.status === 'success' && res.data?.letter) {
-            bulkResults.value.push({ company, letter: res.data.letter, news: res.data.news })
-            advanceStep(4, `[00:08] Lettre prête pour ${company}.`)
-            realExecutionResult.value = { isBulk: true, items: bulkResults.value }
-            finishExecution()
+        const j = await r.json()
+        if (j.status === 'success' && j.data?.letter) {
+            scResult.value = { company, letter: j.data.letter, news: j.data.news || '' }
+            scEditable.value = j.data.letter
         } else {
-            advanceStep(4, `[ERR] ${res.detail || 'Génération impossible. Réessaie.'}`)
+            scError.value = j.detail || 'Génération impossible. Vérifie ton solde Gold et réessaie.'
         }
     } catch (e) {
-        advanceStep(4, `[ERR] Échec réseau. Réessaie.`)
+        scError.value = 'Échec réseau. Réessaie.'
+    } finally {
+        scGenerating.value = false
+    }
+}
+
+const copyScLetter = async () => {
+    try {
+        await navigator.clipboard.writeText(scEditable.value)
+        scCopied.value = true
+        setTimeout(() => { scCopied.value = false }, 2500)
+    } catch (e) {}
+}
+
+const downloadScLetter = async () => {
+    if (!scResult.value) return
+    scDownloading.value = true
+    try {
+        const r = await authFetch('/api/workflows/smart-cover/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company: scResult.value.company, letter: scEditable.value, force_standard: !isPremium.value })
+        })
+        const blob = await r.blob()
+        const u = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = u
+        a.download = `lettre_motivation_${scResult.value.company}.pdf`
+        document.body.appendChild(a); a.click(); document.body.removeChild(a)
+        window.URL.revokeObjectURL(u)
+    } catch (e) {} finally {
+        scDownloading.value = false
     }
 }
 
@@ -1745,67 +1803,95 @@ const saveWorkflowStatus = async (pb) => {
 
 
     <Transition name="fade">
-      <div v-if="isSelectionModalOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm">
-        <div class="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
-          <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+      <div v-if="isSelectionModalOpen" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm" @click.self="isSelectionModalOpen = false">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[88vh]">
+          <!-- Header -->
+          <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-white">
             <h3 class="font-bold text-slate-800 flex items-center gap-2">
-              <span class="p-2 rounded-lg bg-indigo-50 text-indigo-500"><DocumentDuplicateIcon class="w-5 h-5"/></span>
-              Sélectionner les offres (Max 3)
+              <span class="p-2 rounded-lg bg-indigo-100 text-indigo-600"><DocumentTextIcon class="w-5 h-5"/></span>
+              Lettre de motivation
             </h3>
             <button @click="isSelectionModalOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
           </div>
-          
-          <!-- Saisie manuelle : générer pour n'importe quelle entreprise (sans passer par le CRM) -->
-          <div class="p-4 border-b border-slate-100 bg-white">
-            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-tight mb-2">Générer directement pour une entreprise</p>
-            <div class="flex flex-col sm:flex-row gap-2">
-              <input v-model="manualCover.company" placeholder="Entreprise (ex: Shopify)"
-                     @keyup.enter="generateManualCover"
-                     class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
-              <input v-model="manualCover.job" placeholder="Poste (ex: Data Analyst)"
-                     @keyup.enter="generateManualCover"
-                     class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
-              <button @click="generateManualCover" :disabled="!manualCover.company.trim()"
-                      class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold disabled:opacity-50 hover:bg-indigo-700 transition-colors whitespace-nowrap">
-                Générer
+
+          <!-- VUE RÉSULTAT : lettre éditable + téléchargement -->
+          <template v-if="scResult">
+            <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Lettre pour {{ scResult.company }}</p>
+                <button @click="scResult = null" class="text-xs text-indigo-600 font-bold hover:underline">← Modifier la demande</button>
+              </div>
+              <textarea v-model="scEditable" rows="14"
+                        class="w-full p-4 rounded-xl border border-slate-200 text-sm leading-relaxed text-slate-700 focus:border-indigo-400 outline-none" style="font-family: Georgia, serif;"></textarea>
+              <p v-if="scResult.news" class="mt-2 text-[11px] text-slate-400 leading-snug">Actualité intégrée : {{ scResult.news.slice(0, 160) }}…</p>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center gap-2">
+              <button @click="copyScLetter" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-white transition-colors">{{ scCopied ? 'Copié !' : 'Copier' }}</button>
+              <button @click="generateSmartCover" :disabled="scGenerating" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-white disabled:opacity-50 transition-colors">Regénérer</button>
+              <button @click="downloadScLetter" :disabled="scDownloading" class="flex-[1.4] py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                <ArrowDownTrayIcon class="w-4 h-4"/> {{ scDownloading ? 'Préparation…' : 'Télécharger PDF' }}
               </button>
             </div>
-          </div>
+          </template>
 
-          <!-- Banner Information -->
-          <div class="px-5 py-2.5 bg-indigo-50/50 border-b border-indigo-100/50 flex items-center gap-2">
-            <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-            <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-tight">Ou coche jusqu'à 3 candidatures récentes du CRM</p>
-          </div>
+          <!-- VUE FORMULAIRE : choisir la source -->
+          <template v-else>
+            <div class="px-5 pt-4 flex gap-2">
+              <button @click="scMode = 'crm'" :class="scMode === 'crm' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">Depuis mes offres (CRM)</button>
+              <button @click="scMode = 'external'" :class="scMode === 'external' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">Lien / entreprise externe</button>
+            </div>
 
-          <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            <div v-for="offer in last10RecentApplications" :key="offer.id" 
-                 class="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all cursor-pointer"
-                 @click="selectedOffers.includes(offer.id) ? selectedOffers = selectedOffers.filter(id => id !== offer.id) : (selectedOffers.length < 3 && selectedOffers.push(offer.id))">
-              <div class="w-5 h-5 rounded border-2 flex items-center justify-center transition-colors" 
-                   :class="selectedOffers.includes(offer.id) ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-200'">
-                <CheckIcon v-if="selectedOffers.includes(offer.id)" class="w-3 h-3"/>
-              </div>
-              <div class="flex-1">
-                <p class="text-sm font-bold text-slate-800">{{ offer.company }}</p>
-                <p class="text-xs text-slate-500">{{ offer.name }}</p>
-              </div>
-              <span class="text-[10px] px-2 py-1 bg-slate-100 rounded text-slate-500">{{ offer.date }}</span>
+            <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
+              <!-- Mode CRM : choisir une candidature -->
+              <template v-if="scMode === 'crm'">
+                <div v-for="offer in last10RecentApplications" :key="offer.id"
+                     @click="scSelectedAppId = offer.id"
+                     class="flex items-center gap-3 p-3 rounded-xl border mb-2 cursor-pointer transition-all"
+                     :class="scSelectedAppId === offer.id ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-100 hover:border-indigo-200'">
+                  <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0" :class="scSelectedAppId === offer.id ? 'border-indigo-500' : 'border-slate-300'">
+                    <div v-if="scSelectedAppId === offer.id" class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                  </div>
+                  <div class="flex-1 min-w-0"><p class="text-sm font-bold text-slate-800 truncate">{{ offer.company }}</p><p class="text-xs text-slate-500 truncate">{{ offer.name }}</p></div>
+                  <span class="text-[10px] px-2 py-1 bg-slate-100 rounded text-slate-500 shrink-0">{{ offer.date }}</span>
+                </div>
+                <div v-if="last10RecentApplications.length === 0" class="text-center py-8 text-slate-400 text-sm">
+                  Aucune offre dans ton CRM.<br>Utilise l'onglet « Lien / entreprise externe ».
+                </div>
+              </template>
+
+              <!-- Mode externe : saisie + lien -->
+              <template v-else>
+                <div class="space-y-3">
+                  <div>
+                    <label class="text-xs font-bold text-slate-500">Entreprise *</label>
+                    <input v-model="scForm.company" placeholder="Ex: Shopify" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
+                  </div>
+                  <div>
+                    <label class="text-xs font-bold text-slate-500">Poste</label>
+                    <input v-model="scForm.job" placeholder="Ex: Data Analyst" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
+                  </div>
+                  <div>
+                    <label class="text-xs font-bold text-slate-500">Lien de l'offre (optionnel)</label>
+                    <input v-model="scForm.url" placeholder="https://…" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
+                  </div>
+                  <div>
+                    <label class="text-xs font-bold text-slate-500">Description de l'offre (optionnel — colle le texte pour une lettre ciblée)</label>
+                    <textarea v-model="scForm.desc" rows="4" placeholder="Colle ici la description du poste…" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none"></textarea>
+                  </div>
+                </div>
+              </template>
+
+              <p v-if="scError" class="mt-3 text-xs text-rose-600 font-medium">{{ scError }}</p>
             </div>
-            <div v-if="last10RecentApplications.length === 0" class="text-center py-10 text-slate-400 text-sm">
-              Aucune offre récente disponible dans le CRM.
+
+            <div class="p-4 border-t border-slate-100 bg-slate-50">
+              <button @click="generateSmartCover" :disabled="!scCanGenerate"
+                      class="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+                <span v-if="scGenerating" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                {{ scGenerating ? 'Rédaction en cours…' : 'Générer la lettre' }}
+              </button>
             </div>
-          </div>
-          <div class="p-5 border-t border-slate-100 bg-slate-50 flex flex-col gap-4">
-             <div class="flex items-center justify-between text-xs font-medium text-slate-500">
-                <span>{{ selectedOffers.length }} / 3 sélectionné(s)</span>
-                <span v-if="selectedOffers.length === 3" class="text-amber-600">Limite atteinte</span>
-             </div>
-             <button @click="startBulkExecution" :disabled="selectedOffers.length === 0"
-                     class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:shadow-none hover:bg-indigo-700 transition-all">
-               Lancer l'Agent Sniper Smart-Cover
-             </button>
-          </div>
+          </template>
         </div>
       </div>
     </Transition>

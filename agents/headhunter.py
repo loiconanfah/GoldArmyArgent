@@ -266,9 +266,10 @@ Règles :
         logger.success(f"💎 Sniper : {len(final_profiles)} profils identifiés.")
         return final_profiles[:8]
     
-    async def generate_smart_cover_letter(self, company_name: str, job_title: str = "Poste ouvert", cv_text: str = "") -> Dict[str, Any]:
+    async def generate_smart_cover_letter(self, company_name: str, job_title: str = "Poste ouvert", cv_text: str = "", job_desc: str = "") -> Dict[str, Any]:
         """
         Génère une lettre de motivation 'Smart' en scrapant les dernières actus de la boîte.
+        job_desc : description de l'offre (ex. collée depuis un lien externe) pour cibler la lettre.
         """
         logger.info(f"🗞️ Génération Smart Cover pour {company_name}")
 
@@ -293,10 +294,11 @@ Règles :
 
         # 2. Rédiger la lettre avec contexte candidat
         candidate_context = f"\nVoici mon profil (CV) pour orienter la rédaction :\n{cv_text}" if cv_text else ""
-        
+        offer_context = f"\nDESCRIPTION DE L'OFFRE CIBLÉE (utilise-la pour coller aux exigences réelles du poste) :\n{job_desc[:2500]}" if job_desc else ""
+
         writing_prompt = f"""
         Rédige une lettre de motivation COMPLÈTE et UNIQUE pour le poste de '{job_title}' chez '{company_name}'.
-        {candidate_context}
+        {candidate_context}{offer_context}
         
         STRUCTURE DE LA LETTRE :
         1. EN-TÊTE : [Votre Nom] à [Lieu/Date].
