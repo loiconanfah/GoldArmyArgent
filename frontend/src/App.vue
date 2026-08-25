@@ -174,11 +174,26 @@ const toggleNotifications = () => {
     }
 }
 
+// --- Badges compteurs sur la navigation (actions en attente) ---
+const navBadges = ref({})
+const refreshNavBadges = async () => {
+    if (!localStorage.getItem('token')) return
+    try {
+        // CRM : relances anti-fantôme dues (source réelle : statut Ghostbuster)
+        const r = await authFetch('/api/workflows/ghostbuster/status')
+        const j = await r.json()
+        const due = j?.data?.last_result_count || 0
+        navBadges.value = { ...navBadges.value, '/crm': due }
+    } catch (e) { /* silencieux */ }
+}
+
 onMounted(() => {
     fetchNotifications()
     fetchGold()
+    refreshNavBadges()
     const timer = setInterval(fetchNotifications, 60000 * 5) // Toutes les 5 min
-    return () => clearInterval(timer)
+    const badgeTimer = setInterval(refreshNavBadges, 60000 * 5)
+    return () => { clearInterval(timer); clearInterval(badgeTimer) }
 })
 
 watch(() => route.path, () => { fetchGold() })
@@ -241,8 +256,16 @@ watch(() => route.path, () => { fetchGold() })
           <component :is="item.icon" class="w-5 h-5 shrink-0" :class="item.href === currentRoute || (item.href !== '/' && currentRoute.startsWith(item.href)) ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'" />
           
           <span v-if="!isSidebarCollapsed" class="whitespace-nowrap transition-opacity duration-300">{{ item.name }}</span>
-          
-          <div v-if="item.name === 'Mentor IA' && !isSidebarCollapsed" class="ml-auto flex items-center justify-center">
+
+          <!-- Badge compteur (actions en attente) -->
+          <span v-if="navBadges[item.href] && !isSidebarCollapsed"
+                class="ml-auto min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-black shadow-sm animate-badge-pop">
+            {{ navBadges[item.href] > 99 ? '99+' : navBadges[item.href] }}
+          </span>
+          <span v-else-if="navBadges[item.href] && isSidebarCollapsed"
+                class="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white"></span>
+
+          <div v-if="item.name === 'Mentor IA' && !navBadges[item.href] && !isSidebarCollapsed" class="ml-auto flex items-center justify-center">
              <span class="bg-gradient-to-r from-gray-700 to-gray-900 text-white text-[9px] uppercase font-black px-1.5 py-0.5 rounded-sm shadow-sm">Pro</span>
           </div>
           <div v-if="item.name === 'Mentor IA' && isSidebarCollapsed" class="absolute top-1 right-1">
@@ -327,7 +350,7 @@ watch(() => route.path, () => { fetchGold() })
             <!-- Gold balance -->
             <router-link
                 to="/boutique"
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-black shadow-sm hover:shadow-md hover:brightness-105 transition-all border border-amber-300/40"
+                class="cta-animated flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-white text-xs font-black shadow-sm hover:brightness-105 border border-amber-300/40"
                 :title="t('shop.your_gold')"
             >
                 <BoltIcon class="w-4 h-4" />
