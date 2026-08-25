@@ -21,6 +21,8 @@ class CVAdaptRequest(BaseModel):
     cv_text: str
     # Réponses aux questions ciblées (mode conversationnel) — optionnel
     answers: Optional[List[Dict[str, Any]]] = None
+    # Compétences cochées par le candidat à l'étape "proposition" — optionnel
+    confirmed_skills: Optional[List[str]] = None
 
 
 class CVQuestionsRequest(BaseModel):
@@ -285,6 +287,7 @@ async def adapt_cv_endpoint(request: CVAdaptRequest, current_user: dict = Depend
             job_desc=request.job_description,
             cv_text=request.cv_text,
             answers=request.answers,
+            confirmed_skills=request.confirmed_skills,
         )
 
         await log_usage(current_user["id"], "cv_adaptation")
@@ -355,6 +358,31 @@ async def adapt_cv_questions_endpoint(request: CVQuestionsRequest, current_user:
         raise
     except Exception as e:
         logger.error(f"Error in adapt_cv_questions_endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/adapt-cv/skills")
+async def adapt_cv_skills_endpoint(request: CVQuestionsRequest, current_user: dict = Depends(get_current_user)):
+    """Analyse tout le CV et propose les compétences RÉELLEMENT démontrées (y compris
+    celles citées dans les expériences/projets mais absentes de la rubrique Compétences).
+    Le front les affiche à cocher AVANT génération — rien n'est ajouté sans confirmation."""
+    try:
+        if not request.cv_text or len(request.cv_text) < 50:
+            raise HTTPException(status_code=400, detail="Le texte du CV est introuvable ou trop court. Veuillez uploader un CV d'abord.")
+
+        from agents.cv_adapter import CVAdapterAgent
+        adapter = CVAdapterAgent()
+        await adapter.initialize()
+
+        categories = await adapter.suggest_skills(
+            cv_text=request.cv_text,
+            job_desc=request.job_description,
+        )
+        return {"status": "success", "data": {"categories": categories}}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in adapt_cv_skills_endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

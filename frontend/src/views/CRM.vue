@@ -213,12 +213,12 @@ const openCvQuestions = () => {
   if (!cvTextForAdapt.value || cvTextForAdapt.value.length < 50) { toastState.addToast('CV manquant.', 'info'); return }
   showCvQuestions.value = true
 }
-const onCvQuestionsSubmit = (answers) => { showCvQuestions.value = false; runAdapt(answers) }
-const runAdapt = async (answers = null) => {
+const onCvQuestionsSubmit = (payload) => { showCvQuestions.value = false; const p = payload || {}; runAdapt(p.answers || [], p.confirmedSkills || []) }
+const runAdapt = async (answers = null, confirmedSkills = null) => {
   if (!adaptCvCard.value || !cvTextForAdapt.value || cvTextForAdapt.value.length < 50) { toastState.addToast('CV manquant.', 'info'); return }
   isAdaptingCv.value = true
   try {
-    const res = await authFetch('/api/adapt-cv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ job_title: adaptCvCard.value.job_title, job_description: adaptCvCard.value.notes || '', cv_text: cvTextForAdapt.value, answers: answers || undefined }) })
+    const res = await authFetch('/api/adapt-cv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ job_title: adaptCvCard.value.job_title, job_description: adaptCvCard.value.notes || '', cv_text: cvTextForAdapt.value, answers: answers || undefined, confirmed_skills: (confirmedSkills && confirmedSkills.length) ? confirmedSkills : undefined }) })
     const json = await res.json()
     if (json.status === 'success' && json.data) { adaptedData.value = json.data; showAdaptCvModal.value = false; showDownloadCvModal.value = true; selectedCvTheme.value = 'goldarmy' }
     else { toastState.addToast(json.detail || "Erreur.", 'error') }

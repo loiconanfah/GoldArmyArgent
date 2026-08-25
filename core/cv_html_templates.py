@@ -143,7 +143,7 @@ def build_goldarmy(cv_data: dict) -> str:
 @page{{size: A4; margin: 0;}}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:'Inter',sans-serif;font-size:9.5px;line-height:1.45;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;color:#333;}}
+body{{font-family:'Inter',sans-serif;font-size:11px;line-height:1.45;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;color:#333;}}
 .page-table{{width:100%;border-collapse:collapse;}}
 .header-space{{height:35px;}}
 .footer-space{{height:35px;}}
@@ -152,39 +152,39 @@ body{{font-family:'Inter',sans-serif;font-size:9.5px;line-height:1.45;background
 .header-main{{display:flex;align-items:center;gap:16px;}}
 .initials{{width:48px;height:48px;border-radius:50%;background:#FF6B35;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0;}}
 .header-name{{display:flex;flex-direction:column;}}
-.name-first{{font-size:10px;color:#FF6B35;text-transform:uppercase;font-weight:600;letter-spacing:1px;}}
+.name-first{{font-size:11.5px;color:#FF6B35;text-transform:uppercase;font-weight:600;letter-spacing:1px;}}
 .name-last{{font-size:22px;font-weight:800;color:#fff;line-height:1.1;}}
-.job-title{{font-size:10px;color:#9CA3AF;margin-top:2px;text-transform:uppercase;font-weight:600;letter-spacing:1px;}}
+.job-title{{font-size:11.5px;color:#9CA3AF;margin-top:2px;text-transform:uppercase;font-weight:600;letter-spacing:1px;}}
 .contact-row{{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid #ffffff15;}}
-.ci{{display:flex;align-items:center;gap:4px;font-size:9px;color:#9CA3AF;}}
-.ci-ic{{font-size:10px;color:#FF6B35;font-weight:700;}}
+.ci{{display:flex;align-items:center;gap:4px;font-size:10.5px;color:#9CA3AF;}}
+.ci-ic{{font-size:11.5px;color:#FF6B35;font-weight:700;}}
 .sec-head{{display:flex;align-items:center;gap:6px;margin:14px 0 8px;page-break-after:avoid;break-after:avoid;}}
 .sec-bar{{width:3px;height:12px;background:#FF6B35;border-radius:2px;flex-shrink:0;}}
-.sec-label{{font-size:10px;text-transform:uppercase;color:#111827;font-weight:800;letter-spacing:0.5px;}}
-.summary-text{{font-size:9.5px;color:#4B5563;line-height:1.6;margin-bottom:8px;}}
+.sec-label{{font-size:11.5px;text-transform:uppercase;color:#111827;font-weight:800;letter-spacing:0.5px;}}
+.summary-text{{font-size:11px;color:#4B5563;line-height:1.6;margin-bottom:8px;}}
 .exp-block{{margin-bottom:10px;padding-left:10px;border-left:2px solid #E5E7EB;page-break-inside:avoid;break-inside:avoid;}}
 .exp-top{{display:flex;justify-content:space-between;align-items:baseline;}}
-.exp-title{{font-size:10.5px;font-weight:700;color:#111827;}}
-.exp-dates{{font-size:9px;color:#FF6B35;font-weight:600;}}
-.exp-co{{font-size:9.5px;color:#4B5563;margin-bottom:3px;font-weight:600;}}
+.exp-title{{font-size:12px;font-weight:700;color:#111827;}}
+.exp-dates{{font-size:10.5px;color:#FF6B35;font-weight:600;}}
+.exp-co{{font-size:11px;color:#4B5563;margin-bottom:3px;font-weight:600;}}
 .exp-loc{{color:#9CA3AF;font-weight:400;}}
-.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:9px;color:#4B5563;}}
-.bdot{{flex-shrink:0;font-size:9px;margin-top:0.5px;}}
+.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:10.5px;color:#4B5563;}}
+.bdot{{flex-shrink:0;font-size:10.5px;margin-top:0.5px;}}
 .proj-block{{margin-bottom:10px;padding:8px 12px;border:1px solid #E5E7EB;border-radius:4px;page-break-inside:avoid;break-inside:avoid;}}
-.proj-name{{font-size:10px;font-weight:700;color:#111827;margin-bottom:2px;}}
-.proj-desc{{font-size:9px;color:#4B5563;margin-bottom:3px;}}
+.proj-name{{font-size:11.5px;font-weight:700;color:#111827;margin-bottom:2px;}}
+.proj-desc{{font-size:10.5px;color:#4B5563;margin-bottom:3px;}}
 .edu-block{{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.edu-degree{{font-size:10px;font-weight:700;color:#111827;}}
-.edu-school{{font-size:9.5px;color:#4B5563;}}
-.edu-meta{{font-size:8.5px;color:#9CA3AF;}}
+.edu-degree{{font-size:11.5px;font-weight:700;color:#111827;}}
+.edu-school{{font-size:11px;color:#4B5563;}}
+.edu-meta{{font-size:10px;color:#9CA3AF;}}
 .skills-section{{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.skill-cat{{font-size:8.5px;text-transform:uppercase;color:#FF6B35;font-weight:700;width:100%;margin-top:2px;}}
+.skill-cat{{font-size:10px;text-transform:uppercase;color:#FF6B35;font-weight:700;width:100%;margin-top:2px;}}
 .skill-pills{{display:flex;flex-wrap:wrap;gap:3px;}}
-.pill{{background:#F3F4F6;border:1px solid #FF6B3522;border-radius:2px;padding:1px 5px;font-size:8.5px;color:#111827;font-weight:600;}}
+.pill{{background:#F3F4F6;border:1px solid #FF6B3522;border-radius:2px;padding:1px 5px;font-size:10px;color:#111827;font-weight:600;}}
 .bottom-sections{{display:flex;gap:24px;margin-top:8px;page-break-inside:avoid;break-inside:avoid;}}
 .bottom-col{{flex:1;}}
-.lang-item{{font-size:9.5px;color:#4B5563;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
-.cert-item{{font-size:9.5px;color:#4B5563;margin-bottom:2px;border-left:2px solid #FF6B35;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
+.lang-item{{font-size:11px;color:#4B5563;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
+.cert-item{{font-size:11px;color:#4B5563;margin-bottom:2px;border-left:2px solid #FF6B35;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
 </style></head><body>
 <table class="page-table">
   <thead><tr><td><div class="header-space"></div></td></tr></thead>
@@ -235,38 +235,38 @@ def build_minimaliste(cv_data: dict) -> str:
     edu_html = _edu_blocks(f["education"])
     langs = " · ".join(esc(l) for l in f["languages"])
     certs = " · ".join(esc(c) for c in f["certifications"])
-    sec = lambda label: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#2563EB;font-weight:700;margin:14px 0 8px;border-bottom:1.5px solid #2563EB;padding-bottom:2px;page-break-after:avoid;break-after:avoid;">{_tr(label, f["lang"])}</div>'
+    sec = lambda label: f'<div class="sec-head" style="font-size:11.5px;text-transform:uppercase;color:#2563EB;font-weight:700;margin:14px 0 8px;border-bottom:1.5px solid #2563EB;padding-bottom:2px;page-break-after:avoid;break-after:avoid;">{_tr(label, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 @page{{size: A4; margin: 0;}}
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:'Inter',sans-serif;font-size:9.5px;line-height:1.45;background:#fff;color:#1F2937;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+body{{font-family:'Inter',sans-serif;font-size:11px;line-height:1.45;background:#fff;color:#1F2937;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
 .page-table{{width:100%;border-collapse:collapse;}}
 .header-space{{height:35px;}}
 .footer-space{{height:35px;}}
 .page{{width:100%;padding:0 48px;}}
 h1{{font-size:24px;font-weight:700;color:#111827;letter-spacing:-0.5px;}}
-.subtitle{{font-size:11px;color:#2563EB;text-transform:uppercase;margin-top:2px;font-weight:600;letter-spacing:0.5px;}}
-.contact{{font-size:9px;color:#4B5563;margin-top:6px;}}
-.summary-text{{font-size:9.5px;color:#4B5563;line-height:1.6;}}
+.subtitle{{font-size:12.5px;color:#2563EB;text-transform:uppercase;margin-top:2px;font-weight:600;letter-spacing:0.5px;}}
+.contact{{font-size:10.5px;color:#4B5563;margin-top:6px;}}
+.summary-text{{font-size:11px;color:#4B5563;line-height:1.6;}}
 .exp-block,.proj-block{{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}}
 .exp-top{{display:flex;justify-content:space-between;}}
-.exp-title{{font-size:10.5px;font-weight:700;color:#111827;}}
-.exp-dates{{font-size:9px;color:#2563EB;font-weight:600;}}
-.exp-co{{font-size:9.5px;color:#4B5563;margin-bottom:3px;font-weight:600;}}
+.exp-title{{font-size:12px;font-weight:700;color:#111827;}}
+.exp-dates{{font-size:10.5px;color:#2563EB;font-weight:600;}}
+.exp-co{{font-size:11px;color:#4B5563;margin-bottom:3px;font-weight:600;}}
 .exp-loc{{color:#9CA3AF;}}
-.bullet-row{{display:flex;gap:5px;font-size:9px;color:#4B5563;margin-bottom:1.5px;}}
-.bdot{{flex-shrink:0;color:#2563EB;font-size:9px;margin-top:0.5px;}}
-.proj-name{{font-size:10px;font-weight:700;color:#111827;}}
-.proj-desc{{font-size:9px;color:#4B5563;}}
+.bullet-row{{display:flex;gap:5px;font-size:10.5px;color:#4B5563;margin-bottom:1.5px;}}
+.bdot{{flex-shrink:0;color:#2563EB;font-size:10.5px;margin-top:0.5px;}}
+.proj-name{{font-size:11.5px;font-weight:700;color:#111827;}}
+.proj-desc{{font-size:10.5px;color:#4B5563;}}
 .edu-block{{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.edu-degree{{font-size:10px;font-weight:700;color:#111827;}}
-.edu-school{{font-size:9.5px;color:#4B5563;}}
-.edu-meta{{font-size:8.5px;color:#9CA3AF;}}
-.skill-cat{{font-size:8.5px;text-transform:uppercase;color:#2563EB;font-weight:700;margin:4px 0 2px;}}
+.edu-degree{{font-size:11.5px;font-weight:700;color:#111827;}}
+.edu-school{{font-size:11px;color:#4B5563;}}
+.edu-meta{{font-size:10px;color:#9CA3AF;}}
+.skill-cat{{font-size:10px;text-transform:uppercase;color:#2563EB;font-weight:700;margin:4px 0 2px;}}
 .skill-pills{{display:flex;flex-wrap:wrap;gap:3px;}}
-.pill{{border:1px solid #E5E7EB;border-radius:2px;padding:1px 5px;font-size:8.5px;color:#374151;background:#F9FAFB;}}
+.pill{{border:1px solid #E5E7EB;border-radius:2px;padding:1px 5px;font-size:10px;color:#374151;background:#F9FAFB;}}
 .skills-section{{page-break-inside:avoid;break-inside:avoid;}}
 </style></head><body>
 <table class="page-table">
@@ -281,8 +281,8 @@ h1{{font-size:24px;font-weight:700;color:#111827;letter-spacing:-0.5px;}}
       {f'{sec("Projets")}{proj_html}' if proj_html else ""}
       {f'{sec("Formation")}{edu_html}' if edu_html else ""}
       {f'{sec("Compétences")}<div class="skills-section">{f["skills_html"]}</div>' if f["skills_html"] else ""}
-      {f'{sec("Langues")}<p style="font-size:9.5px;color:#4B5563;">{langs}</p>' if langs else ""}
-      {f'{sec("Certifications")}<p style="font-size:9.5px;color:#4B5563;">{certs}</p>' if certs else ""}
+      {f'{sec("Langues")}<p style="font-size:11px;color:#4B5563;">{langs}</p>' if langs else ""}
+      {f'{sec("Certifications")}<p style="font-size:11px;color:#4B5563;">{certs}</p>' if certs else ""}
     </div>
   </td></tr></tbody>
   <tfoot><tr><td><div class="footer-space"></div></td></tr></tfoot>
@@ -300,44 +300,44 @@ def build_executive(cv_data: dict) -> str:
     edu_html = _edu_blocks(f["education"])
     langs = "".join(f'<div class="lang-item">• {esc(l)}</div>' for l in f["languages"])
     certs = "".join(f'<div class="cert-item">{esc(c)}</div>' for c in f["certifications"])
-    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#10B981;margin:14px 0 8px;border-bottom:1px solid #10B98133;padding-bottom:3px;page-break-after:avoid;break-after:avoid;font-weight:700;letter-spacing:0.5px;">{_tr(t, f["lang"])}</div>'
+    sec = lambda t: f'<div class="sec-head" style="font-size:11.5px;text-transform:uppercase;color:#10B981;margin:14px 0 8px;border-bottom:1px solid #10B98133;padding-bottom:3px;page-break-after:avoid;break-after:avoid;font-weight:700;letter-spacing:0.5px;">{_tr(t, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:'Inter',sans-serif;font-size:9.5px;background:#0F172A;color:#E2E8F0;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;line-height:1.45;}}
+body{{font-family:'Inter',sans-serif;font-size:11px;background:#0F172A;color:#E2E8F0;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;line-height:1.45;}}
 .page-table{{width:100%;border-collapse:collapse;}}
 .header-space{{height:35px;}}
 .footer-space{{height:35px;}}
 .page{{width:100%;padding:0 44px;}}
 .header{{background:#1E293B;padding:20px 24px;border:1px solid #10B98133;border-radius:6px;margin-bottom:16px;}}
 .hdr-name{{font-size:22px;font-weight:800;color:#fff;line-height:1.1;}}
-.hdr-title{{font-size:10.5px;color:#10B981;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;font-weight:600;}}
+.hdr-title{{font-size:12px;color:#10B981;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;font-weight:600;}}
 .contact-row{{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid #10B98115;}}
-.ci{{display:flex;align-items:center;gap:4px;font-size:9px;color:#94A3B8;}}
+.ci{{display:flex;align-items:center;gap:4px;font-size:10.5px;color:#94A3B8;}}
 .ci-ic{{color:#10B981;font-weight:700;}}
-.summary-text{{font-size:9.5px;color:#94A3B8;line-height:1.6;margin-bottom:8px;}}
+.summary-text{{font-size:11px;color:#94A3B8;line-height:1.6;margin-bottom:8px;}}
 .exp-block{{margin-bottom:10px;padding-left:10px;border-left:2px solid #1E293B;page-break-inside:avoid;break-inside:avoid;}}
 .exp-top{{display:flex;justify-content:space-between;align-items:baseline;}}
-.exp-title{{font-size:10.5px;font-weight:700;color:#fff;}}
-.exp-dates{{font-size:9px;color:#10B981;font-weight:600;}}
-.exp-co{{font-size:9.5px;color:#10B981;margin-bottom:3px;font-weight:600;}}
+.exp-title{{font-size:12px;font-weight:700;color:#fff;}}
+.exp-dates{{font-size:10.5px;color:#10B981;font-weight:600;}}
+.exp-co{{font-size:11px;color:#10B981;margin-bottom:3px;font-weight:600;}}
 .exp-loc{{color:#64748B;font-weight:400;}}
-.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:9px;color:#94A3B8;}}
-.bdot{{flex-shrink:0;font-size:9px;margin-top:0.5px;}}
+.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:10.5px;color:#94A3B8;}}
+.bdot{{flex-shrink:0;font-size:10.5px;margin-top:0.5px;}}
 .proj-block{{margin-bottom:10px;padding:8px 12px;border:1px solid #1E293B;border-radius:4px;background:#1E293B;page-break-inside:avoid;break-inside:avoid;}}
-.proj-name{{font-size:10px;font-weight:700;color:#fff;margin-bottom:2px;}}
-.proj-desc{{font-size:9px;color:#94A3B8;margin-bottom:3px;}}
+.proj-name{{font-size:11.5px;font-weight:700;color:#fff;margin-bottom:2px;}}
+.proj-desc{{font-size:10.5px;color:#94A3B8;margin-bottom:3px;}}
 .edu-block{{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.edu-degree{{font-size:10px;font-weight:700;color:#fff;}}
-.edu-school{{font-size:9.5px;color:#94A3B8;}}
-.edu-meta{{font-size:8.5px;color:#64748B;}}
+.edu-degree{{font-size:11.5px;font-weight:700;color:#fff;}}
+.edu-school{{font-size:11px;color:#94A3B8;}}
+.edu-meta{{font-size:10px;color:#64748B;}}
 .skills-section{{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.skill-cat{{font-size:8.5px;text-transform:uppercase;color:#10B981;font-weight:700;width:100%;margin-top:2px;}}
-.pill{{background:#1E293B;border:1px solid #10B98133;border-radius:2px;padding:1px 5px;font-size:8.5px;color:#E2E8F0;font-weight:600;}}
-.lang-item{{font-size:9.5px;color:#94A3B8;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
-.cert-item{{font-size:9.5px;color:#94A3B8;margin-bottom:2px;border-left:2px solid #10B981;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
+.skill-cat{{font-size:10px;text-transform:uppercase;color:#10B981;font-weight:700;width:100%;margin-top:2px;}}
+.pill{{background:#1E293B;border:1px solid #10B98133;border-radius:2px;padding:1px 5px;font-size:10px;color:#E2E8F0;font-weight:600;}}
+.lang-item{{font-size:11px;color:#94A3B8;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
+.cert-item{{font-size:11px;color:#94A3B8;margin-bottom:2px;border-left:2px solid #10B981;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
 </style></head><body>
 <table class="page-table">
   <thead><tr><td><div class="header-space"></div></td></tr></thead>
@@ -374,44 +374,44 @@ def build_creatif(cv_data: dict) -> str:
     edu_html = _edu_blocks(f["education"])
     langs = "".join(f'<div class="lang-item">• {esc(l)}</div>' for l in f["languages"])
     certs = "".join(f'<div class="cert-item">{esc(c)}</div>' for c in f["certifications"])
-    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#EC4899;margin:14px 0 8px;border-bottom:1px solid #EC489933;padding-bottom:3px;page-break-after:avoid;break-after:avoid;font-weight:700;letter-spacing:0.5px;">{_tr(t, f["lang"])}</div>'
+    sec = lambda t: f'<div class="sec-head" style="font-size:11.5px;text-transform:uppercase;color:#EC4899;margin:14px 0 8px;border-bottom:1px solid #EC489933;padding-bottom:3px;page-break-after:avoid;break-after:avoid;font-weight:700;letter-spacing:0.5px;">{_tr(t, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:'Nunito',sans-serif;font-size:9.5px;background:#18181B;color:#F4F4F5;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;line-height:1.45;}}
+body{{font-family:'Nunito',sans-serif;font-size:11px;background:#18181B;color:#F4F4F5;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;line-height:1.45;}}
 .page-table{{width:100%;border-collapse:collapse;}}
 .header-space{{height:35px;}}
 .footer-space{{height:35px;}}
 .page{{width:100%;padding:0 44px;}}
 .header{{background:linear-gradient(135deg, #4F46E5 0%, #EC4899 100%);padding:20px 24px;border-radius:6px;margin-bottom:16px;}}
 .hdr-name{{font-size:22px;font-weight:800;color:#fff;line-height:1.1;}}
-.hdr-title{{font-size:10.5px;color:#fff;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;font-weight:600;opacity:0.9;}}
+.hdr-title{{font-size:12px;color:#fff;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;font-weight:600;opacity:0.9;}}
 .contact-row{{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid #ffffff20;}}
-.ci{{display:flex;align-items:center;gap:4px;font-size:9px;color:#fff;opacity:0.8;}}
+.ci{{display:flex;align-items:center;gap:4px;font-size:10.5px;color:#fff;opacity:0.8;}}
 .ci-ic{{color:#fff;font-weight:700;}}
-.summary-text{{font-size:9.5px;color:#D4D4D8;line-height:1.6;margin-bottom:8px;}}
+.summary-text{{font-size:11px;color:#D4D4D8;line-height:1.6;margin-bottom:8px;}}
 .exp-block{{margin-bottom:10px;padding-left:10px;border-left:2px solid #27272A;page-break-inside:avoid;break-inside:avoid;}}
 .exp-top{{display:flex;justify-content:space-between;align-items:baseline;}}
-.exp-title{{font-size:10.5px;font-weight:700;color:#fff;}}
-.exp-dates{{font-size:9px;color:#EC4899;font-weight:600;}}
-.exp-co{{font-size:9.5px;color:#EC4899;margin-bottom:3px;font-weight:600;}}
+.exp-title{{font-size:12px;font-weight:700;color:#fff;}}
+.exp-dates{{font-size:10.5px;color:#EC4899;font-weight:600;}}
+.exp-co{{font-size:11px;color:#EC4899;margin-bottom:3px;font-weight:600;}}
 .exp-loc{{color:#71717A;font-weight:400;}}
-.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:9px;color:#D4D4D8;}}
-.bdot{{flex-shrink:0;font-size:9px;margin-top:0.5px;}}
+.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:10.5px;color:#D4D4D8;}}
+.bdot{{flex-shrink:0;font-size:10.5px;margin-top:0.5px;}}
 .proj-block{{margin-bottom:10px;padding:8px 12px;border:1px solid #27272A;border-radius:4px;background:#27272A;page-break-inside:avoid;break-inside:avoid;}}
-.proj-name{{font-size:10px;font-weight:700;color:#fff;margin-bottom:2px;}}
-.proj-desc{{font-size:9px;color:#A1A1AA;margin-bottom:4px;}}
+.proj-name{{font-size:11.5px;font-weight:700;color:#fff;margin-bottom:2px;}}
+.proj-desc{{font-size:10.5px;color:#A1A1AA;margin-bottom:4px;}}
 .edu-block{{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.edu-degree{{font-size:10px;font-weight:700;color:#fff;}}
-.edu-school{{font-size:9.5px;color:#A1A1AA;}}
-.edu-meta{{font-size:8.5px;color:#71717A;}}
+.edu-degree{{font-size:11.5px;font-weight:700;color:#fff;}}
+.edu-school{{font-size:11px;color:#A1A1AA;}}
+.edu-meta{{font-size:10px;color:#71717A;}}
 .skills-section{{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.skill-cat{{font-size:8.5px;text-transform:uppercase;color:#EC4899;font-weight:700;width:100%;margin-top:2px;}}
-.pill{{background:#27272A;border:1px solid #EC489933;border-radius:2px;padding:1px 5px;font-size:8.5px;color:#F4F4F5;font-weight:600;}}
-.lang-item{{font-size:9.5px;color:#D4D4D8;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
-.cert-item{{font-size:9.5px;color:#D4D4D8;margin-bottom:2px;border-left:2px solid #EC4899;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
+.skill-cat{{font-size:10px;text-transform:uppercase;color:#EC4899;font-weight:700;width:100%;margin-top:2px;}}
+.pill{{background:#27272A;border:1px solid #EC489933;border-radius:2px;padding:1px 5px;font-size:10px;color:#F4F4F5;font-weight:600;}}
+.lang-item{{font-size:11px;color:#D4D4D8;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
+.cert-item{{font-size:11px;color:#D4D4D8;margin-bottom:2px;border-left:2px solid #EC4899;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
 </style></head><body>
 <table class="page-table">
   <thead><tr><td><div class="header-space"></div></td></tr></thead>
@@ -452,42 +452,42 @@ def build_classique(cv_data: dict) -> str:
     proj_html = _proj_blocks(f["projects"], "#1a1a1a")
     edu_html = _edu_blocks(f["education"])
     langs = " | ".join(esc(l) for l in f["languages"])
-    certs = "".join(f'<div style="font-size:9.5px;color:#333;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;">• {esc(c)}</div>' for c in f["certifications"])
-    sec = lambda t: f'<div class="sec-head" style="font-size:9.5px;text-transform:uppercase;color:#1a1a1a;font-weight:700;margin:14px 0 6px;border-bottom:1.5px solid #1a1a1a;padding-bottom:2px;page-break-after:avoid;break-after:avoid;">{_tr(t, f["lang"])}</div>'
+    certs = "".join(f'<div style="font-size:11px;color:#333;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;">• {esc(c)}</div>' for c in f["certifications"])
+    sec = lambda t: f'<div class="sec-head" style="font-size:11px;text-transform:uppercase;color:#1a1a1a;font-weight:700;margin:14px 0 6px;border-bottom:1.5px solid #1a1a1a;padding-bottom:2px;page-break-after:avoid;break-after:avoid;">{_tr(t, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
 @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;600&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:'EB Garamond',serif;font-size:10.5px;background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;line-height:1.45;}}
+body{{font-family:'EB Garamond',serif;font-size:12px;background:#fff;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;line-height:1.45;}}
 .page-table{{width:100%;border-collapse:collapse;}}
 .header-space{{height:40px;}}
 .footer-space{{height:40px;}}
 .page{{width:100%;padding:0 52px;}}
 .hdr{{text-align:center;margin-bottom:16px;border-bottom:1.5px solid #1a1a1a;padding-bottom:12px;}}
 h1{{font-size:28px;font-weight:600;text-transform:uppercase;}}
-.hdr-title{{font-size:12px;font-style:italic;color:#555;margin-top:2px;}}
-.contact{{font-size:9px;color:#444;font-family:'Inter',sans-serif;margin-top:6px;}}
-.summary-text{{font-size:10.5px;line-height:1.6;color:#333;font-style:italic;}}
+.hdr-title{{font-size:13.5px;font-style:italic;color:#555;margin-top:2px;}}
+.contact{{font-size:10.5px;color:#444;font-family:'Inter',sans-serif;margin-top:6px;}}
+.summary-text{{font-size:12px;line-height:1.6;color:#333;font-style:italic;}}
 .exp-block{{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}}
 .exp-top{{display:flex;justify-content:space-between;align-items:baseline;}}
-.exp-title{{font-size:10.5px;font-weight:600;}}
-.exp-dates{{font-size:9px;color:#666;font-family:'Inter',sans-serif;}}
-.exp-co{{font-size:10px;color:#444;font-style:italic;margin-bottom:3px;}}
+.exp-title{{font-size:12px;font-weight:600;}}
+.exp-dates{{font-size:10.5px;color:#666;font-family:'Inter',sans-serif;}}
+.exp-co{{font-size:11.5px;color:#444;font-style:italic;margin-bottom:3px;}}
 .exp-loc{{color:#888;}}
-.bullet-row{{display:flex;gap:5px;font-size:9.5px;color:#333;margin-bottom:1.5px;}}
-.bdot{{flex-shrink:0;font-size:9px;margin-top:0.5px;}}
+.bullet-row{{display:flex;gap:5px;font-size:11px;color:#333;margin-bottom:1.5px;}}
+.bdot{{flex-shrink:0;font-size:10.5px;margin-top:0.5px;}}
 .proj-block{{margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}}
-.proj-name{{font-size:10.5px;font-weight:600;}}
-.proj-desc{{font-size:9.5px;color:#555;font-style:italic;}}
-.edu-degree{{font-size:10px;font-weight:600;}}
-.edu-school{{font-size:10px;color:#444;font-style:italic;}}
-.edu-meta{{font-size:8.5px;color:#888;font-family:'Inter',sans-serif;}}
+.proj-name{{font-size:12px;font-weight:600;}}
+.proj-desc{{font-size:11px;color:#555;font-style:italic;}}
+.edu-degree{{font-size:11.5px;font-weight:600;}}
+.edu-school{{font-size:11.5px;color:#444;font-style:italic;}}
+.edu-meta{{font-size:10px;color:#888;font-family:'Inter',sans-serif;}}
 .edu-block{{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
 .bottom{{display:grid;grid-template-columns:1fr 1fr;gap:24px;page-break-inside:avoid;break-inside:avoid;}}
-.skill-cat{{font-size:8.5px;text-transform:uppercase;color:#1a1a1a;font-weight:600;margin:4px 0 2px;font-family:'Inter',sans-serif;}}
+.skill-cat{{font-size:10px;text-transform:uppercase;color:#1a1a1a;font-weight:600;margin:4px 0 2px;font-family:'Inter',sans-serif;}}
 .skill-pills{{display:flex;flex-wrap:wrap;gap:3px;}}
-.pill{{border:1px solid #ddd;border-radius:2px;padding:1px 5px;font-size:8.5px;color:#333;}}
+.pill{{border:1px solid #ddd;border-radius:2px;padding:1px 5px;font-size:10px;color:#333;}}
 </style></head><body>
 <table class="page-table">
   <thead><tr><td><div class="header-space"></div></td></tr></thead>
@@ -503,7 +503,7 @@ h1{{font-size:28px;font-weight:600;text-transform:uppercase;}}
       {f'{sec("Projets")}{proj_html}' if proj_html else ""}
       {f'{sec("Formation")}{edu_html}' if edu_html else ""}
       {f'{sec("Compétences")}<div class="skills-section">{f["skills_html"]}</div>' if f["skills_html"] else ""}
-      {f'{sec("Langues")}<p style="font-size:9.5px;color:#444;">{langs}</p>' if langs else ""}
+      {f'{sec("Langues")}<p style="font-size:11px;color:#444;">{langs}</p>' if langs else ""}
       {f'{sec("Certifications")}{certs}' if certs else ""}
     </div>
   </td></tr></tbody>
@@ -523,13 +523,13 @@ def build_neon_tech(cv_data: dict) -> str:
     langs = "".join(f'<div class="lang-item">• {esc(l)}</div>' for l in f["languages"])
     certs = "".join(f'<div class="cert-item">{esc(c)}</div>' for c in f["certifications"])
     fn_parts = f["full_name"].split(); fn = fn_parts[0]; ln = " ".join(fn_parts[1:])
-    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#FF00A0;margin:14px 0 8px;border-bottom:1px solid #FF00A033;padding-bottom:3px;font-family:\'Share Tech Mono\',monospace;page-break-after:avoid;break-after:avoid;">{_tr(t, f["lang"])}</div>'
+    sec = lambda t: f'<div class="sec-head" style="font-size:11.5px;text-transform:uppercase;color:#FF00A0;margin:14px 0 8px;border-bottom:1px solid #FF00A033;padding-bottom:3px;font-family:\'Share Tech Mono\',monospace;page-break-after:avoid;break-after:avoid;">{_tr(t, f["lang"])}</div>'
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600;700;800&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:'Inter',sans-serif;font-size:9.5px;background:#090D16;color:#E2E8F0;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;line-height:1.45;}}
+body{{font-family:'Inter',sans-serif;font-size:11px;background:#090D16;color:#E2E8F0;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;line-height:1.45;}}
 .page-table{{width:100%;border-collapse:collapse;}}
 .header-space{{height:35px;}}
 .footer-space{{height:35px;}}
@@ -538,33 +538,33 @@ body{{font-family:'Inter',sans-serif;font-size:9.5px;background:#090D16;color:#E
 .header-main{{display:flex;align-items:center;gap:16px;}}
 .avatar{{width:48px;height:48px;border-radius:50%;border:2px solid #00E5FF;box-shadow:0 0 10px #00E5FF33;display:flex;align-items:center;justify-content:center;background:#1A1A35;font-family:'Share Tech Mono',monospace;font-size:16px;color:#00E5FF;flex-shrink:0;}}
 .header-name{{display:flex;flex-direction:column;}}
-.nm-first{{font-size:9.5px;color:#00E5FF;letter-spacing:1px;text-transform:uppercase;font-family:'Share Tech Mono',monospace;}}
+.nm-first{{font-size:11px;color:#00E5FF;letter-spacing:1px;text-transform:uppercase;font-family:'Share Tech Mono',monospace;}}
 .nm-last{{font-size:22px;font-weight:800;color:#fff;line-height:1.1;}}
-.nm-title{{font-size:10px;color:#FF00A0;letter-spacing:0.5px;text-transform:uppercase;font-family:'Share Tech Mono',monospace;margin-top:2px;font-weight:600;}}
+.nm-title{{font-size:11.5px;color:#FF00A0;letter-spacing:0.5px;text-transform:uppercase;font-family:'Share Tech Mono',monospace;margin-top:2px;font-weight:600;}}
 .contact-row{{display:flex;flex-wrap:wrap;gap:12px;padding-top:12px;border-top:1px solid #00E5FF15;}}
-.ci{{display:flex;align-items:center;gap:4px;font-size:9px;color:#8F90A6;}}
+.ci{{display:flex;align-items:center;gap:4px;font-size:10.5px;color:#8F90A6;}}
 .ci-ic{{color:#00E5FF;font-weight:700;font-family:'Share Tech Mono',monospace;}}
-.summary-text{{font-size:9.5px;color:#C0C0D8;line-height:1.6;margin-bottom:8px;}}
+.summary-text{{font-size:11px;color:#C0C0D8;line-height:1.6;margin-bottom:8px;}}
 .exp-block{{margin-bottom:10px;padding-left:10px;border-left:2px solid #1A1A3A;page-break-inside:avoid;break-inside:avoid;}}
 .exp-top{{display:flex;justify-content:space-between;align-items:baseline;}}
-.exp-title{{font-size:10.5px;font-weight:700;color:#fff;}}
-.exp-dates{{font-size:9px;color:#00E5FF;font-family:'Share Tech Mono',monospace;}}
-.exp-co{{font-size:9.5px;color:#FF00A0;margin-bottom:3px;font-weight:600;}}
+.exp-title{{font-size:12px;font-weight:700;color:#fff;}}
+.exp-dates{{font-size:10.5px;color:#00E5FF;font-family:'Share Tech Mono',monospace;}}
+.exp-co{{font-size:11px;color:#FF00A0;margin-bottom:3px;font-weight:600;}}
 .exp-loc{{color:#60608F;font-weight:400;}}
-.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:9px;color:#C0C0D8;}}
-.bdot{{flex-shrink:0;font-size:9px;margin-top:0.5px;}}
+.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:10.5px;color:#C0C0D8;}}
+.bdot{{flex-shrink:0;font-size:10.5px;margin-top:0.5px;}}
 .proj-block{{margin-bottom:10px;padding:8px 12px;border:1px solid #1A1A3A;border-radius:4px;background:#111128;page-break-inside:avoid;break-inside:avoid;}}
-.proj-name{{font-size:10px;font-weight:700;color:#fff;margin-bottom:2px;}}
-.proj-desc{{font-size:9px;color:#8F90A6;margin-bottom:3px;}}
+.proj-name{{font-size:11.5px;font-weight:700;color:#fff;margin-bottom:2px;}}
+.proj-desc{{font-size:10.5px;color:#8F90A6;margin-bottom:3px;}}
 .edu-block{{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.edu-degree{{font-size:10px;font-weight:700;color:#fff;}}
-.edu-school{{font-size:9.5px;color:#8F90A6;}}
-.edu-meta{{font-size:8.5px;color:#404070;}}
+.edu-degree{{font-size:11.5px;font-weight:700;color:#fff;}}
+.edu-school{{font-size:11px;color:#8F90A6;}}
+.edu-meta{{font-size:10px;color:#404070;}}
 .skills-section{{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.skill-cat{{font-size:8.5px;text-transform:uppercase;color:#00E5FF;font-weight:700;width:100%;margin-top:2px;font-family:'Share Tech Mono',monospace;}}
-.pill{{background:#1A1A3A;border:1px solid #00E5FF33;border-radius:2px;padding:1px 5px;font-size:8.5px;color:#C0C0FF;font-weight:600;}}
-.lang-item{{font-size:9.5px;color:#8F90A6;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
-.cert-item{{font-size:9.5px;color:#8F90A6;margin-bottom:2px;border-left:2px solid #FF00A0;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
+.skill-cat{{font-size:10px;text-transform:uppercase;color:#00E5FF;font-weight:700;width:100%;margin-top:2px;font-family:'Share Tech Mono',monospace;}}
+.pill{{background:#1A1A3A;border:1px solid #00E5FF33;border-radius:2px;padding:1px 5px;font-size:10px;color:#C0C0FF;font-weight:600;}}
+.lang-item{{font-size:11px;color:#8F90A6;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
+.cert-item{{font-size:11px;color:#8F90A6;margin-bottom:2px;border-left:2px solid #FF00A0;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
 </style></head><body>
 <table class="page-table">
   <thead><tr><td><div class="header-space"></div></td></tr></thead>
@@ -607,32 +607,32 @@ def build_scandinave(cv_data: dict) -> str:
         esc(f["location"]),
         f'LinkedIn: {esc(f["linkedin"])}' if f["linkedin"] else ""
     ]))
-    sec = lambda t: f'<div class="sec-head" style="display:flex;align-items:center;gap:10px;margin:14px 0 8px;page-break-after:avoid;break-after:avoid;"><span style="font-size:9px;text-transform:uppercase;font-weight:700;color:#1A1A1A;white-space:nowrap;">{_tr(t, f["lang"])}</span><div style="flex:1;height:1px;background:#ddd;"></div></div>'
+    sec = lambda t: f'<div class="sec-head" style="display:flex;align-items:center;gap:10px;margin:14px 0 8px;page-break-after:avoid;break-after:avoid;"><span style="font-size:10.5px;text-transform:uppercase;font-weight:700;color:#1A1A1A;white-space:nowrap;">{_tr(t, f["lang"])}</span><div style="flex:1;height:1px;background:#ddd;"></div></div>'
     exp_out = ""
     for e in f["experiences"]:
         dates = " – ".join(filter(None,[e.get("start_date",""),e.get("end_date","")]))
-        bullets = "".join(f'<li style="padding-left:10px;margin-bottom:2px;font-size:9.5px;color:#444;position:relative;list-style:none;"><span style="position:absolute;left:0;color:#4A7C59;font-weight:700;">•</span>{esc(b)}</li>' for b in (e.get("bullets") or []))
-        exp_out += f'<div style="margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:10.5px;font-weight:600;color:#1A1A1A;">{esc(e.get("title",""))}</span><span style="color:#BBB;"> — </span><span style="font-size:9.5px;color:#4A7C59;">{esc(e.get("company",""))}</span></div><span style="font-size:9px;color:#888;">{esc(dates)}</span></div><ul style="padding:0;margin-top:2px;">{bullets}</ul></div>'
-    edu_out = "".join(f'<div style="display:flex;justify-content:space-between;margin-bottom:6px;page-break-inside:avoid;break-inside:avoid;"><span style="font-size:10px;font-weight:600;color:#1A1A1A;">{esc(e.get("degree",""))}</span><span style="font-size:9.5px;color:#666;font-style:italic;">{esc(e.get("institution") or e.get("school",""))}</span></div>' for e in f["education"])
+        bullets = "".join(f'<li style="padding-left:10px;margin-bottom:2px;font-size:11px;color:#444;position:relative;list-style:none;"><span style="position:absolute;left:0;color:#4A7C59;font-weight:700;">•</span>{esc(b)}</li>' for b in (e.get("bullets") or []))
+        exp_out += f'<div style="margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;justify-content:space-between;align-items:baseline;"><div><span style="font-size:12px;font-weight:600;color:#1A1A1A;">{esc(e.get("title",""))}</span><span style="color:#BBB;"> — </span><span style="font-size:11px;color:#4A7C59;">{esc(e.get("company",""))}</span></div><span style="font-size:10.5px;color:#888;">{esc(dates)}</span></div><ul style="padding:0;margin-top:2px;">{bullets}</ul></div>'
+    edu_out = "".join(f'<div style="display:flex;justify-content:space-between;margin-bottom:6px;page-break-inside:avoid;break-inside:avoid;"><span style="font-size:11.5px;font-weight:600;color:#1A1A1A;">{esc(e.get("degree",""))}</span><span style="font-size:11px;color:#666;font-style:italic;">{esc(e.get("institution") or e.get("school",""))}</span></div>' for e in f["education"])
     langs = " – ".join(esc(l) for l in f["languages"])
-    certs = "".join(f'<div style="font-size:9.5px;color:#444;border-left:2px solid #4A7C59;padding-left:5px;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;">{esc(c)}</div>' for c in f["certifications"])
+    certs = "".join(f'<div style="font-size:11px;color:#444;border-left:2px solid #4A7C59;padding-left:5px;margin-bottom:3px;page-break-inside:avoid;break-inside:avoid;">{esc(c)}</div>' for c in f["certifications"])
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:'DM Sans',sans-serif;background:#FAFAF7;color:#2B2B2B;font-size:9.5px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+body{{font-family:'DM Sans',sans-serif;background:#FAFAF7;color:#2B2B2B;font-size:11px;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
 .page-table{{width:100%;border-collapse:collapse;}}
 .header-space{{height:40px;}}
 .footer-space{{height:40px;}}
 .page{{width:100%;padding:0 52px;}}
 h1{{font-family:'Lora',serif;font-size:28px;font-weight:600;color:#1A1A1A;}}
-.hdr-title{{font-size:11px;font-weight:300;color:#4A7C59;text-transform:uppercase;margin-top:2px;letter-spacing:0.5px;}}
-.contact{{font-size:9px;color:#666;margin-top:6px;}}
-.summary-text{{font-size:10px;color:#444;line-height:1.7;font-style:italic;font-family:'Lora',serif;}}
-.skill-cat{{font-size:8.5px;text-transform:uppercase;color:#4A7C59;margin:4px 0 2px;font-weight:600;}}
+.hdr-title{{font-size:12.5px;font-weight:300;color:#4A7C59;text-transform:uppercase;margin-top:2px;letter-spacing:0.5px;}}
+.contact{{font-size:10.5px;color:#666;margin-top:6px;}}
+.summary-text{{font-size:11.5px;color:#444;line-height:1.7;font-style:italic;font-family:'Lora',serif;}}
+.skill-cat{{font-size:10px;text-transform:uppercase;color:#4A7C59;margin:4px 0 2px;font-weight:600;}}
 .skill-pills{{display:flex;flex-wrap:wrap;gap:3px;}}
-.pill{{border:1px solid #ddd;border-radius:2px;padding:1px 5px;font-size:8.5px;color:#444;background:#fff;}}
+.pill{{border:1px solid #ddd;border-radius:2px;padding:1px 5px;font-size:10px;color:#444;background:#fff;}}
 .bottom{{display:grid;grid-template-columns:1fr 1fr;gap:24px;page-break-inside:avoid;break-inside:avoid;}}
 </style></head><body>
 <table class="page-table">
@@ -648,7 +648,7 @@ h1{{font-family:'Lora',serif;font-size:28px;font-weight:600;color:#1A1A1A;}}
       {f'{sec("Expériences")}{exp_out}' if exp_out else ""}
       {f'{sec("Formation")}{edu_out}' if edu_out else ""}
       {f'{sec("Compétences")}<div class="skills-section">{f["skills_html"]}</div>' if f["skills_html"] else ""}
-      {f'{sec("Langues")}<p style="font-size:9.5px;color:#444;">{langs}</p>' if langs else ""}
+      {f'{sec("Langues")}<p style="font-size:11px;color:#444;">{langs}</p>' if langs else ""}
       {f'{sec("Certifications")}{certs}' if certs else ""}
     </div>
   </td></tr></tbody>
@@ -690,43 +690,43 @@ def build_timeline(cv_data: dict) -> str:
         </div>
         """
         
-    sec = lambda t: f'<div class="sec-head" style="font-size:10px;text-transform:uppercase;color:#E85D4A;margin:14px 0 8px;border-bottom:1px solid #E85D4A33;padding-bottom:3px;font-weight:700;page-break-after:avoid;break-after:avoid;">{_tr(t, f["lang"])}</div>'
+    sec = lambda t: f'<div class="sec-head" style="font-size:11.5px;text-transform:uppercase;color:#E85D4A;margin:14px 0 8px;border-bottom:1px solid #E85D4A33;padding-bottom:3px;font-weight:700;page-break-after:avoid;break-after:avoid;">{_tr(t, f["lang"])}</div>'
     
     return f"""<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"/>
 <style>
 @page{{size: A4; margin: 0;}}
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Playfair+Display:wght@700&display=swap');
 *{{margin:0;padding:0;box-sizing:border-box;}}
-body{{font-family:'Nunito',sans-serif;background:#F9F5F0;color:#2D2D2D;font-size:9.5px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
+body{{font-family:'Nunito',sans-serif;background:#F9F5F0;color:#2D2D2D;font-size:11px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact;width:210mm;min-height:297mm;}}
 .page-table{{width:100%;border-collapse:collapse;}}
 .header-space{{height:35px;}}
 .footer-space{{height:35px;}}
 .page{{width:100%;padding:0 44px;}}
 .header{{background:#2D2D2D;padding:20px 24px;border-radius:6px;margin-bottom:16px;color:#fff;}}
 .hdr-name{{font-family:'Playfair Display',serif;font-size:24px;color:#fff;line-height:1.1;}}
-.hdr-title{{font-size:10.5px;color:#E85D4A;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;font-weight:600;}}
+.hdr-title{{font-size:12px;color:#E85D4A;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;font-weight:600;}}
 .contact-row{{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid #ffffff15;}}
-.ci{{display:flex;align-items:center;gap:4px;font-size:9px;color:#BBBBBB;}}
+.ci{{display:flex;align-items:center;gap:4px;font-size:10.5px;color:#BBBBBB;}}
 .ci-ic{{color:#E85D4A;font-weight:700;}}
-.summary-text{{font-size:9.5px;color:#444;line-height:1.6;font-style:italic;margin-bottom:8px;padding-left:8px;border-left:3px solid #E85D4A;}}
+.summary-text{{font-size:11px;color:#444;line-height:1.6;font-style:italic;margin-bottom:8px;padding-left:8px;border-left:3px solid #E85D4A;}}
 .tl-container{{position:relative;border-left:2px solid #E85D4A33;margin-left:8px;padding-left:18px;margin-bottom:10px;}}
 .tl-card{{position:relative;margin-bottom:12px;background:#fff;border-radius:6px;padding:10px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.03);page-break-inside:avoid;break-inside:avoid;}}
-.tl-dot{{position:absolute;left:-25px;top:10px;width:12px;height:12px;border-radius:50%;background:#E85D4A;color:#fff;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:800;}}
-.tl-dates{{font-size:9px;color:#E85D4A;font-weight:700;margin-bottom:2px;}}
-.tl-title{{font-size:10.5px;font-weight:700;color:#2D2D2D;}}
-.tl-sub{{font-size:9.5px;color:#666;margin-bottom:3px;font-weight:600;}}
-.tl-desc{{font-size:9px;color:#555;margin-bottom:3px;}}
-.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:9px;color:#555;}}
-.bdot{{flex-shrink:0;font-size:9px;margin-top:0.5px;}}
+.tl-dot{{position:absolute;left:-25px;top:10px;width:12px;height:12px;border-radius:50%;background:#E85D4A;color:#fff;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:800;}}
+.tl-dates{{font-size:10.5px;color:#E85D4A;font-weight:700;margin-bottom:2px;}}
+.tl-title{{font-size:12px;font-weight:700;color:#2D2D2D;}}
+.tl-sub{{font-size:11px;color:#666;margin-bottom:3px;font-weight:600;}}
+.tl-desc{{font-size:10.5px;color:#555;margin-bottom:3px;}}
+.bullet-row{{display:flex;gap:5px;margin-bottom:1.5px;font-size:10.5px;color:#555;}}
+.bdot{{flex-shrink:0;font-size:10.5px;margin-top:0.5px;}}
 .edu-block{{margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.edu-degree{{font-size:10px;font-weight:700;color:#2D2D2D;}}
-.edu-school{{font-size:9.5px;color:#666;}}
-.edu-meta{{font-size:8.5px;color:#888;}}
+.edu-degree{{font-size:11.5px;font-weight:700;color:#2D2D2D;}}
+.edu-school{{font-size:11px;color:#666;}}
+.edu-meta{{font-size:10px;color:#888;}}
 .skills-section{{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}}
-.skill-cat{{font-size:8.5px;text-transform:uppercase;color:#E85D4A;font-weight:700;width:100%;margin-top:2px;}}
-.pill{{background:#fff;border:1px solid #E85D4A33;border-radius:2px;padding:1px 5px;font-size:8.5px;color:#555;font-weight:600;}}
-.lang-item{{font-size:9.5px;color:#555;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
-.cert-item{{font-size:9.5px;color:#555;margin-bottom:2px;border-left:2px solid #E85D4A;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
+.skill-cat{{font-size:10px;text-transform:uppercase;color:#E85D4A;font-weight:700;width:100%;margin-top:2px;}}
+.pill{{background:#fff;border:1px solid #E85D4A33;border-radius:2px;padding:1px 5px;font-size:10px;color:#555;font-weight:600;}}
+.lang-item{{font-size:11px;color:#555;margin-bottom:2px;page-break-inside:avoid;break-inside:avoid;}}
+.cert-item{{font-size:11px;color:#555;margin-bottom:2px;border-left:2px solid #E85D4A;padding-left:5px;page-break-inside:avoid;break-inside:avoid;}}
 </style></head><body>
 <table class="page-table">
   <thead><tr><td><div class="header-space"></div></td></tr></thead>

@@ -311,12 +311,13 @@ const openCvQuestions = () => {
   }
   showCvQuestions.value = true
 }
-const onCvQuestionsSubmit = (answers) => {
+const onCvQuestionsSubmit = (payload) => {
   showCvQuestions.value = false
-  runAdapt(answers)
+  const p = payload || {}
+  runAdapt(p.answers || [], p.confirmedSkills || [])
 }
 
-const runAdapt = async (answers = null) => {
+const runAdapt = async (answers = null, confirmedSkills = null) => {
   if (!adaptCvCard.value || !cvTextForAdapt.value || cvTextForAdapt.value.length < 50) {
     toastState.addToast('CV manquant ou trop court.', 'info')
     return
@@ -330,7 +331,8 @@ const runAdapt = async (answers = null) => {
         job_title: adaptCvCard.value.title,
         job_description: adaptCvCard.value.desc,
         cv_text: cvTextForAdapt.value,
-        answers: answers || undefined
+        answers: answers || undefined,
+        confirmed_skills: (confirmedSkills && confirmedSkills.length) ? confirmedSkills : undefined
       })
     })
     const json = await res.json()

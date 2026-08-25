@@ -78,6 +78,51 @@ def _source_numbers(cv_text: str) -> set:
     return set(re.findall(r'\d+(?:[.,]\d+)?', cv_text or ""))
 
 
+def _skill_evidenced(skill: str, src_norm_str: str, source_tokens: set) -> bool:
+    """True si une compétence est RÉELLEMENT présente dans le texte du CV (mot pour mot
+    ou tous ses tokens présents). Sert de garde-fou anti-hallucination : on ne propose
+    JAMAIS une compétence qui n'apparaît pas dans le CV du candidat."""
+    ns = _norm_text(skill)
+    if not ns:
+        return False
+    if ns in src_norm_str:
+        return True
+    toks = [t for t in ns.split() if len(t) > 1]
+    return bool(toks) and all(t in source_tokens for t in toks)
+
+
+def _ensure_confirmed_skills(cv_json: Dict[str, Any], confirmed_list: list) -> Dict[str, Any]:
+    """Garantit que chaque compétence CONFIRMÉE par le candidat figure dans la section
+    Compétences (le LLM peut en oublier). N'ajoute que des compétences confirmées (donc
+    réellement maîtrisées et présentes dans le CV) — jamais d'invention."""
+    if not isinstance(cv_json, dict) or not confirmed_list:
+        return cv_json
+    lang = cv_json.get("lang") or "fr"
+    default_cat = "Skills" if lang == "en" else "Compétences"
+
+    sk = cv_json.get("skills")
+    if isinstance(sk, list):
+        sk = {default_cat: [s for s in sk if s]}
+    elif not isinstance(sk, dict):
+        sk = {}
+
+    present = set()
+    for items in sk.values():
+        for s in (items if isinstance(items, list) else [items]):
+            present.add(_norm_text(str(s)))
+
+    for s in confirmed_list:
+        if _norm_text(s) not in present:
+            sk.setdefault(default_cat, [])
+            if not isinstance(sk[default_cat], list):
+                sk[default_cat] = [sk[default_cat]]
+            sk[default_cat].append(s)
+            present.add(_norm_text(s))
+
+    cv_json["skills"] = {k: v for k, v in sk.items() if v}
+    return cv_json
+
+
 def _strip_fabricated_metrics(text: str, src_nums: set, force: bool = False) -> str:
     """Retire les métriques ABSENTES du CV source (anti-invention), en gardant la
     phrase grammaticale. Si force=True, retire TOUTES les métriques (pour plafonner
@@ -422,7 +467,73 @@ Réponds UNIQUEMENT en JSON valide :
         # Filet de secours : questions génériques dans la bonne langue
         return _fallback_questions(lang)
 
-    async def adapt(self, job_title: str, job_desc: str, cv_text: str, answers: list = None) -> Dict[str, Any]:
+    async def suggest_skills(self, cv_text: str, job_desc: str = "") -> list:
+        """Lit TOUT le CV et en extrait les compétences RÉELLEMENT démontrées (technos,
+        outils, méthodes, savoir-faire), regroupées par catégorie — pour n'importe quel
+        métier. Chaque compétence est vérifiée présente dans le texte (anti-invention).
+
+        Retourne : [ {"category": "...", "skills": ["...", ...]} ]
+        Le front les proposera à cocher AVANT génération (l'utilisateur confirme ce qu'il
+        maîtrise). Rien n'est ajouté sans son accord côté génération.
+        """
+        lang = _detect_lang_from_text(cv_text)
+        system_prompt = (
+            "Tu es un expert en analyse de CV et en compatibilité ATS. Ta mission : LIRE "
+            "l'INTÉGRALITÉ d'un CV (titre, résumé, expériences, projets, formation) et en "
+            "EXTRAIRE la liste des compétences, technologies, outils, logiciels et savoir-faire "
+            "qui y sont RÉELLEMENT démontrés — y compris ceux cités dans les réalisations mais "
+            "oubliés de la section Compétences. RÈGLE ABSOLUE : ne propose QUE ce qui est "
+            "explicitement présent dans le texte du CV. N'INVENTE JAMAIS une compétence absente. "
+            "Regroupe par catégories pertinentes au métier du candidat (ex. pour la data : "
+            "'Business Intelligence', 'Bases de données', 'Langages', 'Cloud' ; pour la santé : "
+            "'Soins', 'Outils cliniques' ; adapte selon le métier). "
+            f"Rédige les libellés dans la langue du CV ({'anglais' if lang=='en' else 'français'})."
+        )
+        user_prompt = f"""OFFRE VISÉE (contexte de pertinence, ne pas en tirer de compétences) : {job_desc[:800]}
+
+CV DU CANDIDAT (SEULE source autorisée) :
+{cv_text[:8000]}
+
+Extrais toutes les compétences/outils/technos/méthodes RÉELLEMENT présents dans ce CV,
+en incluant celles mentionnées dans les expériences/projets mais pas dans la rubrique Compétences.
+Réponds UNIQUEMENT en JSON valide :
+{{"categories": [{{"name": "Catégorie", "skills": ["Compétence 1", "Compétence 2"]}}]}}"""
+        try:
+            response = await self.generate_response(
+                prompt=user_prompt, system=system_prompt,
+                model="gemini-2.0-flash", max_tokens=1500,
+            )
+            raw = response.replace("```json", "").replace("```", "").strip()
+            match = re.search(r'\{.*\}', raw, re.DOTALL)
+            data = json.loads(match.group(0)) if match else json.loads(raw)
+        except Exception as e:
+            logger.warning(f"suggest_skills: parsing échoué ({e})")
+            return []
+
+        # Garde-fou anti-hallucination : on ne garde QUE les compétences réellement
+        # présentes dans le texte du CV.
+        src_norm = _norm_text(cv_text)
+        src_tokens = set(src_norm.split())
+        out, seen = [], set()
+        for cat in (data.get("categories") or []):
+            if not isinstance(cat, dict):
+                continue
+            name = str(cat.get("name") or "").strip() or ("Skills" if lang == "en" else "Compétences")
+            kept = []
+            for sk in (cat.get("skills") or []):
+                s = str(sk).strip()
+                key = _norm_text(s)
+                if not s or key in seen:
+                    continue
+                if _skill_evidenced(s, src_norm, src_tokens):
+                    kept.append(s)
+                    seen.add(key)
+            if kept:
+                out.append({"category": name, "skills": kept})
+        return out
+
+    async def adapt(self, job_title: str, job_desc: str, cv_text: str, answers: list = None,
+                    confirmed_skills: list = None) -> Dict[str, Any]:
         """
         Analyse l'offre et le CV, puis génère un CV adapté en Markdown
         et des projets recommandés en JSON.
@@ -517,15 +628,27 @@ FORMAT DE RÉPONSE OBLIGATOIRE :
                     + "\n".join(lines)
                 )
 
+        # Compétences confirmées par le candidat (cochées à l'étape "proposition") :
+        # elles DOIVENT figurer dans la section Compétences du CV final.
+        confirmed_list = [str(s).strip() for s in (confirmed_skills or []) if str(s).strip()]
+        confirmed_text = " ".join(confirmed_list)
+        skills_block = ""
+        if confirmed_list:
+            skills_block = (
+                "\n\nCOMPÉTENCES CONFIRMÉES PAR LE CANDIDAT (il les maîtrise réellement — elles "
+                "DOIVENT toutes apparaître, bien rangées par catégorie, dans la section Compétences) :\n"
+                + ", ".join(confirmed_list)
+            )
+
         user_prompt = f"""
 POSTE CIBLÉ : {job_title}
 DESCRIPTION DE L'OFFRE :
 {job_desc[:3000]}
 
 CV SOURCE DU CANDIDAT (seule source de vérité pour l'identité, les dates, les intitulés et la formation — ne rien inventer) :
-{cv_text[:8000]}{answers_block}
+{cv_text[:8000]}{answers_block}{skills_block}
 
-Produis un CV COMPLET et bien rempli pour ce poste (qualité d'un excellent CV professionnel) : garde TOUTES les expériences, formations, compétences, langues, certifications et sections (n'en supprime AUCUNE), avec 3-4 bullets solides par expérience récente/pertinente et 2-3 pour les plus anciennes. Réordonne et développe en priorité ce qui sert l'offre. Quantifie richement les réalisations MAIS uniquement avec des chiffres RÉELS (CV source ou réponses du candidat) — n'invente JAMAIS un chiffre. Recopie fidèlement les faits (identité, coordonnées, dates, formation, intitulés). RÉDIGE DANS LA MÊME LANGUE que le CV source ci-dessus.
+Produis un CV COMPLET et bien rempli pour ce poste (qualité d'un excellent CV professionnel) : garde TOUTES les expériences, formations, compétences, langues, certifications et sections (n'en supprime AUCUNE), avec 3-4 bullets solides par expérience récente/pertinente et 2-3 pour les plus anciennes. Réordonne et développe en priorité ce qui sert l'offre. La section COMPÉTENCES doit refléter TOUT ce qui est démontré dans le CV : toute technologie/outil/méthode citée dans une expérience, un projet ou le résumé DOIT aussi apparaître dans les Compétences (bien rangées par catégorie) — n'oublie aucune compétence réellement utilisée. Quantifie richement les réalisations MAIS uniquement avec des chiffres RÉELS (CV source ou réponses du candidat) — n'invente JAMAIS un chiffre. Recopie fidèlement les faits (identité, coordonnées, dates, formation, intitulés). RÉDIGE DANS LA MÊME LANGUE que le CV source ci-dessus.
 """
         
         try:
@@ -608,12 +731,19 @@ Produis un CV COMPLET et bien rempli pour ce poste (qualité d'un excellent CV p
                 cv_json = _markdown_to_minimal_cv_json(markdown)
 
             # Garde-fous déterministes (dédup, plafonds, dates, titres, anti-fabrication).
-            # La source inclut les réponses du candidat → leurs chiffres RÉELS sont conservés.
+            # La source inclut les réponses + les compétences confirmées → elles sont conservées.
             if cv_json:
                 try:
-                    cv_json = _postprocess_cv_json(cv_json, cv_text + " " + answers_text)
+                    cv_json = _postprocess_cv_json(cv_json, cv_text + " " + answers_text + " " + confirmed_text)
                 except Exception as pe:
                     logger.warning(f"Post-traitement cv_json ignoré: {pe}")
+                # Garantie : chaque compétence confirmée par le candidat figure bien dans la
+                # section Compétences (le LLM peut en oublier). Ajout déterministe si absente.
+                if confirmed_list:
+                    try:
+                        cv_json = _ensure_confirmed_skills(cv_json, confirmed_list)
+                    except Exception as se:
+                        logger.warning(f"Fusion compétences confirmées ignorée: {se}")
 
             return {"markdown": markdown, "projects": projects, "cv_json": cv_json}
 

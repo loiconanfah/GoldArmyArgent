@@ -21,6 +21,12 @@ const questions = ref([])
 const answers = ref({})
 const errorMsg = ref('')
 
+// Étape 2 : compétences proposées (détectées dans le CV, à cocher)
+const step = ref('questions')          // 'questions' | 'skills'
+const skillsLoading = ref(false)
+const skillCats = ref([])              // [{ category, skills: [...] }]
+const skillChecked = ref({})           // { "Compétence": true/false }
+
 const CAT_ICON = { metrics: ChartBarIcon, achievement: TrophyIcon, seniority: AcademicCapIcon, focus: FlagIcon }
 function catIcon(c) { return CAT_ICON[c] || SparklesIcon }
 function catLabel(c) { return t('cvq.cat_' + (CAT_ICON[c] ? c : 'focus')) }
@@ -30,6 +36,9 @@ async function loadQuestions() {
   errorMsg.value = ''
   questions.value = []
   answers.value = {}
+  step.value = 'questions'
+  skillCats.value = []
+  skillChecked.value = {}
   try {
     const res = await authFetch('/api/adapt-cv/questions', {
       method: 'POST',
@@ -51,13 +60,44 @@ async function loadQuestions() {
 
 watch(() => props.show, (v) => { if (v) loadQuestions() })
 
+// Passe à l'étape "compétences" : détecte les compétences réelles du CV et les propose.
+async function goToSkills() {
+  skillsLoading.value = true
+  step.value = 'skills'
+  try {
+    const res = await authFetch('/api/adapt-cv/skills', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_title: props.jobTitle, job_description: props.jobDescription, cv_text: props.cvText }),
+    })
+    const json = await res.json()
+    const cats = (json?.status === 'success' && json.data?.categories) ? json.data.categories : []
+    skillCats.value = cats
+    const checked = {}
+    for (const c of cats) for (const s of (c.skills || [])) checked[s] = true  // pré-cochées
+    skillChecked.value = checked
+    // Aucune compétence détectée → on génère directement, pas d'étape vide.
+    if (!cats.length) generate()
+  } catch (e) {
+    skillCats.value = []
+    generate()
+  } finally {
+    skillsLoading.value = false
+  }
+}
+
 function buildAnswers() {
   return questions.value
     .map(q => ({ question: q.question, answer: (answers.value[q.id] || '').trim() }))
     .filter(a => a.answer)
 }
-function generate() { emit('submit', buildAnswers()) }
-function skip() { emit('submit', []) }
+function buildConfirmedSkills() {
+  const out = []
+  for (const c of skillCats.value) for (const s of (c.skills || [])) if (skillChecked.value[s]) out.push(s)
+  return out
+}
+function generate() { emit('submit', { answers: buildAnswers(), confirmedSkills: buildConfirmedSkills() }) }
+function skip() { emit('submit', { answers: [], confirmedSkills: [] }) }
 </script>
 
 <template>
@@ -76,28 +116,58 @@ function skip() { emit('submit', []) }
         </header>
 
         <div class="cvq__body">
-          <div v-if="loading" class="cvq__loading">
-            <span class="cvq__spin"></span>{{ t('cvq.loading') }}
-          </div>
-          <div v-else-if="errorMsg" class="cvq__error">{{ errorMsg }}</div>
-          <template v-else>
-            <div v-for="(q, i) in questions" :key="q.id" class="cvq__q">
-              <div class="cvq__q-head">
-                <span class="cvq__num">{{ i + 1 }}</span>
-                <component :is="catIcon(q.category)" class="cvq__cat-ic" />
-                <span class="cvq__cat">{{ catLabel(q.category) }}</span>
-              </div>
-              <label class="cvq__label">{{ q.question }}</label>
-              <textarea v-model="answers[q.id]" :placeholder="q.hint || t('cvq.answer_ph')" rows="2" class="cvq__input"></textarea>
+          <!-- ÉTAPE 1 : questions ciblées -->
+          <template v-if="step === 'questions'">
+            <div v-if="loading" class="cvq__loading">
+              <span class="cvq__spin"></span>{{ t('cvq.loading') }}
             </div>
+            <div v-else-if="errorMsg" class="cvq__error">{{ errorMsg }}</div>
+            <template v-else>
+              <div v-for="(q, i) in questions" :key="q.id" class="cvq__q">
+                <div class="cvq__q-head">
+                  <span class="cvq__num">{{ i + 1 }}</span>
+                  <component :is="catIcon(q.category)" class="cvq__cat-ic" />
+                  <span class="cvq__cat">{{ catLabel(q.category) }}</span>
+                </div>
+                <label class="cvq__label">{{ q.question }}</label>
+                <textarea v-model="answers[q.id]" :placeholder="q.hint || t('cvq.answer_ph')" rows="2" class="cvq__input"></textarea>
+              </div>
+            </template>
+          </template>
+
+          <!-- ÉTAPE 2 : compétences détectées dans le CV, à cocher -->
+          <template v-else>
+            <div v-if="skillsLoading" class="cvq__loading">
+              <span class="cvq__spin"></span>{{ t('cvq.skills_loading') }}
+            </div>
+            <template v-else>
+              <p class="cvq__skills-intro">{{ t('cvq.skills_intro') }}</p>
+              <div v-for="c in skillCats" :key="c.category" class="cvq__skill-cat">
+                <div class="cvq__skill-cat-name">{{ c.category }}</div>
+                <div class="cvq__skill-chips">
+                  <label v-for="s in c.skills" :key="s" class="cvq__chip" :class="{ 'is-on': skillChecked[s] }">
+                    <input type="checkbox" v-model="skillChecked[s]" />
+                    <span>{{ s }}</span>
+                  </label>
+                </div>
+              </div>
+            </template>
           </template>
         </div>
 
         <footer class="cvq__foot">
-          <button class="cvq__skip" @click="skip" :disabled="loading">{{ t('cvq.skip') }}</button>
-          <button class="cvq__go" @click="generate" :disabled="loading">
-            <SparklesIcon class="w-4 h-4" /> {{ t('cvq.generate') }}
-          </button>
+          <template v-if="step === 'questions'">
+            <button class="cvq__skip" @click="skip" :disabled="loading">{{ t('cvq.skip') }}</button>
+            <button class="cvq__go" @click="goToSkills" :disabled="loading">
+              {{ t('cvq.next_skills') }}
+            </button>
+          </template>
+          <template v-else>
+            <button class="cvq__skip" @click="step = 'questions'" :disabled="skillsLoading">{{ t('cvq.back') }}</button>
+            <button class="cvq__go" @click="generate" :disabled="skillsLoading">
+              <SparklesIcon class="w-4 h-4" /> {{ t('cvq.generate') }}
+            </button>
+          </template>
         </footer>
       </div>
     </div>
@@ -131,6 +201,14 @@ function skip() { emit('submit', []) }
 .cvq__skip:hover { color: #101828; }
 .cvq__go { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.7rem 1.4rem; border-radius: 0.8rem; background: linear-gradient(135deg, #FBBF24, #F59E0B); color: #fff; border: none; font-weight: 800; font-size: 0.88rem; cursor: pointer; box-shadow: 0 10px 22px -12px rgba(245,158,11,0.7); }
 .cvq__go:disabled, .cvq__skip:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Étape compétences */
+.cvq__skills-intro { font-size: 0.85rem; color: #475569; margin: 0 0 0.4rem; line-height: 1.45; }
+.cvq__skill-cat { display: flex; flex-direction: column; gap: 0.5rem; }
+.cvq__skill-cat-name { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #D97706; }
+.cvq__skill-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.cvq__chip { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.7rem; border-radius: 999px; border: 1px solid #E5E7EB; background: #F9FAFB; color: #64748B; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; user-select: none; }
+.cvq__chip.is-on { border-color: #F59E0B; background: #FEF3C7; color: #92400E; }
+.cvq__chip input { accent-color: #F59E0B; width: 0.9rem; height: 0.9rem; cursor: pointer; }
 .cvq-fade-enter-active, .cvq-fade-leave-active { transition: opacity 0.2s; }
 .cvq-fade-enter-from, .cvq-fade-leave-to { opacity: 0; }
 </style>
