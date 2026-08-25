@@ -411,6 +411,40 @@ const last10RecentApplications = computed(() => {
     return recentActivity.value.slice(0, 10)
 })
 
+// Génération directe d'une lettre pour une entreprise saisie à la main
+// (ne dépend PAS des candidatures CRM — corrige le cas "rien ne se passe au clic").
+const manualCover = ref({ company: '', job: '' })
+const generateManualCover = async () => {
+    const company = manualCover.value.company.trim()
+    if (!company) return
+    const job = manualCover.value.job.trim() || 'Poste ouvert'
+    isSelectionModalOpen.value = false
+    realExecutionResult.value = null
+    bulkResults.value = []
+    isExecuting.value = true
+    execStep.value = 0
+    execLogs.value = [`[00:00] Génération de la lettre pour ${company}...`]
+    try {
+        advanceStep(2, `[00:02] Recherche d'actualités & rédaction pour ${company}...`)
+        const response = await authFetch('/api/workflows/smart-cover', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ company_name: company, job_title: job })
+        })
+        const res = await response.json()
+        if (res.status === 'success' && res.data?.letter) {
+            bulkResults.value.push({ company, letter: res.data.letter, news: res.data.news })
+            advanceStep(4, `[00:08] Lettre prête pour ${company}.`)
+            realExecutionResult.value = { isBulk: true, items: bulkResults.value }
+            finishExecution()
+        } else {
+            advanceStep(4, `[ERR] ${res.detail || 'Génération impossible. Réessaie.'}`)
+        }
+    } catch (e) {
+        advanceStep(4, `[ERR] Échec réseau. Réessaie.`)
+    }
+}
+
 const startBulkExecution = async () => {
     if (selectedOffers.value.length === 0) return
     isSelectionModalOpen.value = false
@@ -1721,10 +1755,27 @@ const saveWorkflowStatus = async (pb) => {
             <button @click="isSelectionModalOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
           </div>
           
+          <!-- Saisie manuelle : générer pour n'importe quelle entreprise (sans passer par le CRM) -->
+          <div class="p-4 border-b border-slate-100 bg-white">
+            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-tight mb-2">Générer directement pour une entreprise</p>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input v-model="manualCover.company" placeholder="Entreprise (ex: Shopify)"
+                     @keyup.enter="generateManualCover"
+                     class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
+              <input v-model="manualCover.job" placeholder="Poste (ex: Data Analyst)"
+                     @keyup.enter="generateManualCover"
+                     class="flex-1 px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 outline-none" />
+              <button @click="generateManualCover" :disabled="!manualCover.company.trim()"
+                      class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold disabled:opacity-50 hover:bg-indigo-700 transition-colors whitespace-nowrap">
+                Générer
+              </button>
+            </div>
+          </div>
+
           <!-- Banner Information -->
           <div class="px-5 py-2.5 bg-indigo-50/50 border-b border-indigo-100/50 flex items-center gap-2">
             <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-            <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-tight">Focus : 10 dernières candidatures ajoutées</p>
+            <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-tight">Ou coche jusqu'à 3 candidatures récentes du CRM</p>
           </div>
 
           <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
