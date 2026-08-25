@@ -291,6 +291,10 @@ async def adapt_cv_endpoint(request: CVAdaptRequest, current_user: dict = Depend
         )
 
         await log_usage(current_user["id"], "cv_adaptation")
+        from api.notifications import notify
+        await notify(current_user["id"], "CV adapté prêt",
+                     f"Ton CV ciblé pour « {request.job_title} » est prêt à télécharger.",
+                     "success", "/crm")
         return {"status": "success", "data": result}
     except HTTPException:
         raise

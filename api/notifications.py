@@ -34,6 +34,28 @@ async def send_expo_push_notification(token: str, title: str, body: str, data: d
     except Exception as e:
         print(f"Erreur d'envoi Push Expo: {e}")
 
+async def notify(user_id: str, title: str, message: str, type: str = "success", action_url: Optional[str] = None):
+    """Crée une notification in-app pour un utilisateur (best-effort, ne casse jamais
+    l'action en cours). À appeler à la fin de chaque workflow important : CV prêt,
+    lettre générée, Sniper terminé, relance Ghostbuster, etc."""
+    if not user_id:
+        return
+    try:
+        db = get_db()
+        await db.notifications.insert_one({
+            "user_id": user_id,
+            "title": title,
+            "message": message,
+            "type": type,
+            "action_url": action_url,
+            "is_read": False,
+            "created_at": datetime.now(timezone.utc),
+        })
+    except Exception as e:
+        from loguru import logger
+        logger.warning(f"[notify] échec création notification: {e}")
+
+
 router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
 
 class NotificationCreate(BaseModel):

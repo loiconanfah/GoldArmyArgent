@@ -149,6 +149,9 @@ async def gold_profile_audit(req: Optional[GoldProfileAuditRequest] = None, curr
         {"$set": {"gold_profile_audit": audit_data, "gold_profile_updated_at": now_iso}}
     )
 
+    # Débit Gold une seule fois pour le Portfolio / Gold Profile (sur l'audit, pas le plan).
+    await log_usage(current_user["id"], "portfolio")
+
     return {"status": "success", "data": audit_data}
 
 

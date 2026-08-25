@@ -359,6 +359,15 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks,
             await log_usage(current_user["id"], "sniper_search")
             # Enrichissement carnet en arrière-plan : site officiel + emails RH pour chaque entreprise
             asyncio.create_task(_enrich_contacts_from_jobs(response.get("content"), current_user["id"]))
+            try:
+                _n = len(response.get("content") or [])
+                if _n:
+                    from api.notifications import notify
+                    await notify(current_user["id"], "Sniper terminé",
+                                 f"{_n} offre(s) ciblée(s) trouvée(s) pour toi.",
+                                 "success", "/opportunities")
+            except Exception:
+                pass
 
         # Persistance du Portfolio en MongoDB si généré
         if response.get("type") == "portfolio_project":

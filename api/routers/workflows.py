@@ -45,6 +45,10 @@ async def execute_smart_cover(req: SmartCoverRequest, current_user: dict = Depen
 
     # Débite le Gold seulement après une génération réussie.
     await log_usage(user_id, "cover_letter")
+    from api.notifications import notify
+    await notify(user_id, "Lettre de motivation prête",
+                 f"Ta lettre Smart Cover pour {req.company_name} est prête à télécharger.",
+                 "success")
 
     return {"status": "success", "data": result}
 
@@ -137,16 +141,23 @@ async def ghostbuster_scan(
             force_regenerate=req.force_regenerate,
         )
 
+        eligible_count = len(result.get("eligible", []))
         await db.ghostbuster_config.update_one(
             {"user_id": user_id},
             {
                 "$set": {
                     "last_run_at": datetime.now(timezone.utc),
-                    "last_result_count": len(result.get("eligible", [])),
+                    "last_result_count": eligible_count,
                 }
             },
             upsert=True,
         )
+
+        if eligible_count:
+            from api.notifications import notify
+            await notify(user_id, "Relances prêtes",
+                         f"{eligible_count} relance(s) anti-fantôme prête(s) à envoyer.",
+                         "info", "/crm")
 
         return {"status": "success", "data": result}
     except Exception as e:
@@ -598,11 +609,14 @@ async def generate_post_interview(
             "debrief": req.get("debrief")
         })
 
-        if req.get("app_id") and result.get("status") == "success":
-            await db.applications.update_one(
-                {"id": req.get("app_id"), "user_id": user_id},
-                {"$set": {"status": "FOLLOW_UP", "updated_at": datetime.utcnow()}}
-            )
+        if result.get("status") == "success":
+            from api.subscription import log_usage
+            await log_usage(user_id, "post_interview")
+            if req.get("app_id"):
+                await db.applications.update_one(
+                    {"id": req.get("app_id"), "user_id": user_id},
+                    {"$set": {"status": "FOLLOW_UP", "updated_at": datetime.utcnow()}}
+                )
 
         return result
     except Exception as e:
