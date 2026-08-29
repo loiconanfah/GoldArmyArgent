@@ -16,8 +16,37 @@ class EmailService:
         return re.sub(r'<[^<]+?>', '', html).strip()
 
     async def send_email(self, to_email: str, subject: str, html_content: str) -> bool:
-        """Envoie un email HTML via SMTP Gandi à un destinataire unique."""
+        """Envoie un e-mail HTML. Priorité à Resend (API HTTPS, non bloquée par les
+        hébergeurs type Render qui ferment les ports SMTP sortants). Repli sur SMTP."""
+        if getattr(settings, "resend_api_key", None):
+            ok = await self._send_via_resend(to_email, subject, html_content)
+            if ok:
+                return True
+            logger.warning("[EmailService] Resend indisponible → tentative SMTP en secours.")
         return await asyncio.to_thread(self._send_sync, to_email, subject, html_content, False)
+
+    async def _send_via_resend(self, to_email: str, subject: str, html_content: str) -> bool:
+        """Envoi via l'API Resend (HTTPS). Nécessite un domaine expéditeur vérifié dans Resend."""
+        try:
+            import httpx
+            from_addr = settings.smtp_from or "GoldArmy <support@goldarmyai.com>"
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {settings.resend_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={"from": from_addr, "to": [to_email], "subject": subject, "html": html_content},
+                )
+            if r.status_code in (200, 201):
+                logger.info(f"[EmailService] Resend OK → {to_email}")
+                return True
+            logger.error(f"[EmailService] Resend {r.status_code} → {to_email}: {r.text[:300]}")
+            return False
+        except Exception as e:
+            logger.error(f"[EmailService] Resend exception → {to_email}: {e}")
+            return False
 
     async def send_otp(self, to_email: str, otp_code: str) -> bool:
         """Envoie un code OTP à un utilisateur pour vérification de compte."""

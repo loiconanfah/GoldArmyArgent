@@ -546,6 +546,27 @@ async def delete_user_me(current_user: dict = Depends(get_current_user)):
         logger.error(f"Erreur delete account: {e}")
         raise HTTPException(status_code=500, detail="Error deleting account")
 
+@router.post("/email-test")
+async def email_test(request: dict, current_user: dict = Depends(get_current_user)):
+    """Diagnostic (ADMIN) : envoie un e-mail de test et indique la config active."""
+    db = get_db()
+    uid = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
+    u = await db.users.find_one({"id": uid}) or {}
+    if u.get("subscription_tier") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Réservé aux administrateurs.")
+    to = (request.get("to") or u.get("email") or "").strip()
+    if not to:
+        raise HTTPException(status_code=400, detail="Destinataire manquant.")
+    ok = await email_service.send_email(to, "Test e-mail GoldArmy", "<p>Ceci est un test d'envoi ✅ — si tu le reçois, la config e-mail fonctionne.</p>")
+    return {
+        "status": "success" if ok else "failed",
+        "to": to,
+        "resend_configured": bool(getattr(settings, "resend_api_key", None)),
+        "smtp_configured": bool(settings.smtp_user and settings.smtp_password),
+        "from": settings.smtp_from,
+    }
+
+
 @router.post("/send-otp")
 async def send_otp(email_data: dict):
     email = email_data.get("email")
