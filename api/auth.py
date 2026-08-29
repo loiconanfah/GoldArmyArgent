@@ -557,14 +557,9 @@ async def email_test(request: dict, current_user: dict = Depends(get_current_use
     to = (request.get("to") or u.get("email") or "").strip()
     if not to:
         raise HTTPException(status_code=400, detail="Destinataire manquant.")
-    ok = await email_service.send_email(to, "Test e-mail GoldArmy", "<p>Ceci est un test d'envoi ✅ — si tu le reçois, la config e-mail fonctionne.</p>")
-    return {
-        "status": "success" if ok else "failed",
-        "to": to,
-        "resend_configured": bool(getattr(settings, "resend_api_key", None)),
-        "smtp_configured": bool(settings.smtp_user and settings.smtp_password),
-        "from": settings.smtp_from,
-    }
+    # Diagnostic détaillé : renvoie l'erreur EXACTE si l'envoi échoue.
+    diag = await email_service.diagnose(to)
+    return {"status": "success" if diag.get("sent") else "failed", "to": to, **diag}
 
 
 @router.post("/send-otp")

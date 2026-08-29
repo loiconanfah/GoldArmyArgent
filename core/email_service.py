@@ -25,6 +25,43 @@ class EmailService:
             logger.warning("[EmailService] Resend indisponible → tentative SMTP en secours.")
         return await asyncio.to_thread(self._send_sync, to_email, subject, html_content, False)
 
+    async def diagnose(self, to_email: str) -> dict:
+        """Diagnostic complet : quelle config est active + erreur EXACTE si l'envoi échoue.
+        Renvoie un dict lisible pour comprendre pourquoi un e-mail ne part pas en prod."""
+        info = {
+            "resend_key_present": bool(getattr(settings, "resend_api_key", None)),
+            "smtp_creds_present": bool(settings.smtp_user and settings.smtp_password),
+            "from": settings.smtp_from,
+            "smtp_host": settings.smtp_host,
+            "smtp_port": settings.smtp_port,
+        }
+        if getattr(settings, "resend_api_key", None):
+            try:
+                import httpx
+                async with httpx.AsyncClient(timeout=15) as client:
+                    r = await client.post(
+                        "https://api.resend.com/emails",
+                        headers={"Authorization": f"Bearer {settings.resend_api_key}", "Content-Type": "application/json"},
+                        json={"from": settings.smtp_from, "to": [to_email], "subject": "Test e-mail GoldArmy",
+                              "html": "<p>Test d'envoi ✅ — si tu reçois ce message, Resend fonctionne.</p>"},
+                    )
+                info["resend_status"] = r.status_code
+                info["resend_response"] = r.text[:500]
+                info["sent"] = r.status_code in (200, 201)
+                return info
+            except Exception as e:
+                info["resend_error"] = f"{type(e).__name__}: {e}"
+        # Repli SMTP
+        try:
+            ok = await asyncio.to_thread(self._send_sync, to_email, "Test e-mail GoldArmy",
+                                         "<p>Test d'envoi ✅ (SMTP)</p>")
+            info["smtp_sent"] = ok
+            info["sent"] = ok
+        except Exception as e:
+            info["smtp_error"] = f"{type(e).__name__}: {e}"
+            info["sent"] = False
+        return info
+
     async def _send_via_resend(self, to_email: str, subject: str, html_content: str) -> bool:
         """Envoi via l'API Resend (HTTPS). Nécessite un domaine expéditeur vérifié dans Resend."""
         try:
